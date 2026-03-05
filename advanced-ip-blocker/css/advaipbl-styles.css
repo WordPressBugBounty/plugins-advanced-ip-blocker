@@ -1,0 +1,477 @@
+/**
+ * Advanced IP Blocker - Admin Panel Styles
+ * Version: 8.8.8
+ */
+
+/* ==========================================================================
+   PALETA DE COLORES CORPORATIVA (VARIABLES CSS)
+   ========================================================================== */
+:root {
+    --advaipbl-color-primary: #2271b1;       /* Color de marca para acentos principales */
+	--advaipbl-color-header: #2271b1;       /* Fondo nativo */
+    --advaipbl-color-secondary: #43b4e6;     /* Azul claro para acentos secundarios */
+    --advaipbl-color-text-light: #ffffff;   /* Texto sobre fondos oscuros/de color */
+    --advaipbl-color-text-dark: #1d2327;    /* Títulos y texto importante */
+    --advaipbl-color-text-body: #444444;     /* Texto de párrafo principal */
+    --advaipbl-color-border: #dcdcde;        /* Bordes estándar */
+    --advaipbl-color-background-alt: #f0f0f1;/* Fondos alternativos sutiles */
+    
+    /* Colores de Estado Estándar */
+    --advaipbl-color-success: #00a32a;
+    --advaipbl-color-warning: #f59e0b;
+    --advaipbl-color-error: #d63638;
+}
+
+/* ==========================================================================
+   CABECERA, NAVEGACIÓN Y LAYOUT GENERAL
+   ========================================================================== */
+.advaipbl-header { background-color: var(--advaipbl-color-header); padding: 15px 25px; margin: 10px -20px 20px -20px; display: flex; align-items: center; gap: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); box-sizing: border-box; }
+.advaipbl-header-logo img { display: block; height: 48px; width: auto; max-width: 350px; }
+.advaipbl-header-title h1 { color: var(--advaipbl-color-text-light); font-size: 24px; font-weight: 600; margin: 0; line-height: 1.2; }
+.advaipbl-main-nav-wrapper { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--advaipbl-color-border); }
+.advaipbl-main-nav-wrapper .nav-tab-wrapper { border-bottom: none; white-space: nowrap; padding-bottom: 0; margin-bottom: 0; }
+.advaipbl-main-nav-wrapper .nav-tab { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 10px 15px; margin-bottom: -1px; background: transparent; border: none; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+.advaipbl-main-nav-wrapper .nav-tab:hover { background-color: var(--advaipbl-color-background-alt); color: var(--advaipbl-color-primary); }
+.nav-tab.nav-tab-active, .nav-tab.nav-tab-active:hover { background-color: var(--advaipbl-color-text-light); font-weight: 600; color: var(--advaipbl-color-primary); border-bottom-color: var(--advaipbl-color-primary); }
+.advaipbl-sub-nav-wrapper { background-color: #f6f7f7; border-bottom: 1px solid var(--advaipbl-color-border); padding: 5px 10px; margin: 0 -20px 25px -20px; overflow-x: auto; white-space: nowrap; }
+.advaipbl-sub-nav-item { display: inline-block; padding: 6px 12px; margin: 3px; text-decoration: none; color: var(--advaipbl-color-primary); border-radius: 3px; font-size: 13px; transition: background-color 0.2s; }
+.advaipbl-sub-nav-item:hover { background-color: #e0e0e0; }
+.advaipbl-sub-nav-item.active { background-color: var(--advaipbl-color-primary); color: var(--advaipbl-color-text-light); font-weight: 600; }
+.advaipbl-card { background: var(--advaipbl-color-text-light); padding: 20px 25px; border: 1px solid var(--advaipbl-color-border); box-shadow: 0 1px 1px rgba(0,0,0,.04); margin-top: 25px; border-radius: 4px; border-left: 4px solid var(--advaipbl-color-primary); }
+.advaipbl-card h2, .advaipbl-card h3 { color: var(--advaipbl-color-text-dark); margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0; }
+.widefat { border-radius: 4px; border: 1px solid var(--advaipbl-color-border); box-shadow: none; }
+.form-table td .description { display: block; clear: both; padding-top: 8px; }
+
+/* ==========================================================================
+   ESTILO GLOBAL PARA EL CONTADOR DE NOTIFICACIONES
+   ========================================================================== */
+.advaipbl-block-count {
+    display: inline-block;
+    vertical-align: baseline;
+    position: relative;
+    top: -1px;
+    background-color: var(--advaipbl-color-error);
+    color: var(--advaipbl-color-text-light) !important;
+    font-size: 11px;
+    line-height: 1.5;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0 7px;
+    margin-left: 8px;
+}
+
+/* ==========================================================================
+   MODALES (MAPA, CONFIRMACIÓN, ETC.)
+   ========================================================================== */
+
+#mapModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+#mapModalContent { background: var(--advaipbl-color-text-light); border-radius: 8px; max-width: 90%; width: 100%; max-height: 90%; position: relative; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+#mapModalHeader { padding: 10px 15px; text-align: right; background-color: var(--advaipbl-color-background-alt); border-bottom: 1px solid var(--advaipbl-color-border); }
+#mapModalFrame { width: 100%; height: 70vh; border: none; }
+
+/* Specific Styles for Bulk Import Modal */
+#advaipbl-bulk-import-modal .advaipbl-modal-content {
+    position: relative; 
+}
+.advaipbl-modal-close {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+    z-index: 10;
+    transition: color 0.2s;
+}
+.advaipbl-modal-close:hover {
+    color: var(--advaipbl-color-error);
+}
+
+.advaipbl-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+.advaipbl-modal-content { display: flex; flex-direction: column; max-height: 90vh; background: var(--advaipbl-color-text-light); padding: 20px 30px; border-radius: 4px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.advaipbl-modal-title { color: var(--advaipbl-color-text-dark); margin-top: 0; border-bottom: 1px solid var(--advaipbl-color-border); padding-bottom: 15px; font-size: 1.3em; }
+.advaipbl-modal-body { overflow-y: auto; flex-grow: 1; padding: 15px; border-top: 1px solid var(--advaipbl-color-border); border-bottom: 1px solid var(--advaipbl-color-border); background-color: #f9f9f9; }
+.advaipbl-modal-footer { text-align: right; border-top: 1px solid var(--advaipbl-color-border); padding-top: 15px; }
+.advaipbl-modal-footer .button { margin-left: 10px; }
+
+/* ==========================================================================
+   TABLAS Y PAGINACIÓN
+   ========================================================================== */
+.tablenav-pages .page-numbers { font-size: 14px; padding: 5px 10px; margin: 0 2px; border-radius: 4px; transition: background-color 0.2s, color 0.2s; border: 1px solid var(--advaipbl-color-border); background-color: #f6f7f7; color: var(--advaipbl-color-primary); text-decoration: none; }
+.tablenav-pages .page-numbers.current { background-color: var(--advaipbl-color-primary); border-color: var(--advaipbl-color-primary); color: var(--advaipbl-color-text-light); font-weight: bold; }
+.tablenav-pages a.page-numbers:hover { border-color: var(--advaipbl-color-primary); background-color: var(--advaipbl-color-background-alt); color: var(--advaipbl-color-primary); }
+.tablenav-pages .dots { padding: 6px 4px; border: none; background-color: transparent; }
+
+/* ==========================================================================
+   DASHBOARD Y WIDGETS
+   ========================================================================== */
+#advaipbl-dashboard { position: relative; min-height: 400px; }
+.advaipbl-loader-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px; color: #666; }
+.advaipbl-loader { border: 5px solid var(--advaipbl-color-background-alt); border-top: 5px solid var(--advaipbl-color-secondary); border-radius: 50%; width: 50px; height: 50px; animation: advaipbl-spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes advaipbl-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.advaipbl-dashboard-row { display: flex; flex-wrap: wrap; gap: 20px; box-sizing: border-box; margin-bottom: 20px; align-items: stretch; }
+#advaipbl-map-wrapper { flex-grow: 1; position: relative; }
+.advaipbl-dashboard-widget { background: var(--advaipbl-color-text-light); border: 1px solid var(--advaipbl-color-border); padding: 20px; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04); display: flex; flex-direction: column; width: auto; box-sizing: border-box; }
+.widget-full { flex: 1 1 100%; }
+.widget-third { flex: 1 1 0; min-width: 0; }
+.widget-two-thirds { flex: 2 1 0; min-width: 0; }
+.advaipbl-widget-footer { margin-top: auto; padding-top: 1em; text-align: right; border-top: 1px solid var(--advaipbl-color-background-alt); }
+.advaipbl-widget-footer a { text-decoration: none; font-weight: 600; color: var(--advaipbl-color-primary); }
+@media screen and (max-width: 960px) { .widget-third, .widget-two-thirds { flex-basis: 100%; flex-grow: 1; } }
+.advaipbl-dashboard-widget h3, .advaipbl-dashboard-widget h4 { color: var(--advaipbl-color-text-dark); margin-top: 0; padding-bottom: 15px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+.advaipbl-summary-stats { display: flex; align-items: center; gap: 20px; }
+.advaipbl-summary-chart { flex: 0 0 150px; height: 150px; }
+.advaipbl-summary-legend { flex: 1; }
+.advaipbl-summary-legend h4 { margin-top: 0; font-size: 14px; }
+.advaipbl-summary-legend .legend-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+.advaipbl-summary-legend .legend-label-group { display: flex; align-items: center; }
+.advaipbl-summary-legend .legend-color-box { width: 12px; height: 12px; margin-right: 8px; border-radius: 3px; flex-shrink: 0; }
+.advaipbl-summary-legend .legend-value { font-weight: 600; padding-left: 10px; }
+.advaipbl-timeline-chart-container { position: relative; height: 300px; width: 100%; }
+.advaipbl-top-list { width: 100%; flex-grow: 1; }
+.advaipbl-top-list table { width: 100%; border-collapse: collapse; }
+.advaipbl-top-list td { padding: 8px 4px; border-bottom: 1px solid var(--advaipbl-color-background-alt); font-size: 13px; }
+.advaipbl-top-list tr:last-child td { border-bottom: none; }
+.advaipbl-top-list td:last-child { text-align: right; font-weight: 600; }
+.advaipbl-top-list code { background: var(--advaipbl-color-background-alt); padding: 2px 5px; border-radius: 3px; }
+.advaipbl-top-list .country-cell { display: flex; align-items: center; gap: 8px; }
+.advaipbl-top-list .country-flag { border: 1px solid #eee; flex-shrink: 0; }
+.advaipbl-status-list { display: flex; flex-direction: column; gap: 12px; }
+.advaipbl-status-item { display: flex; align-items: center; font-size: 13px; }
+.advaipbl-status-item .dashicons { font-size: 20px; width: 20px; height: 20px; margin-right: 8px; }
+.advaipbl-status-label { flex-grow: 1; }
+.advaipbl-status-tag { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+.advaipbl-status-tag.enabled { background-color: #e7f7e7; color: #006400; }
+.advaipbl-status-tag.disabled { background-color: var(--advaipbl-color-background-alt); color: #555; }
+.advaipbl-status-widget { display: flex; align-items: center; gap: 15px; margin: 10px 0; }
+.advaipbl-status-widget .dashicons { font-size: 40px; width: 40px; height: 40px; }
+.advaipbl-status-icon-success { color: var(--advaipbl-color-success); }
+.advaipbl-status-icon-disabled { color: #999; }
+.advaipbl-pulse-icon { background-color: rgba(231, 76, 60, 0.9); border-radius: 50%; width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+.advaipbl-pulse-icon div { position: absolute; top: -5px; left: -5px; width: 30px; height: 30px; border-radius: 50%; background-color: rgba(231, 76, 60, 0.7); animation: pulse-animation 1.5s ease-out infinite; }
+@keyframes pulse-animation { 0% { transform: scale(0); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+
+/* ==========================================================================
+   ESTILOS ESPECÍFICOS Y UTILIDADES
+   ========================================================================== */
+.advaipbl-table-responsive-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--advaipbl-color-border); border-radius: 4px; }
+.advaipbl-table-responsive-wrapper .wp-list-table { border: none; min-width: 600px; }
+.advaipbl-table-responsive-wrapper .wp-list-table td.column-primary, .advaipbl-table-responsive-wrapper .wp-list-table th.column-primary { width: auto !important; }
+.signature-components { list-style: disc; padding-left: 20px; background: #f9f9f9; border: 1px solid #eee; padding: 15px; margin-bottom: 20px; word-break: break-all; }
+.signature-components code { background: #e0e0e0; }
+.advaipbl-threat-scores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px 25px; margin-top: 10px; }
+.advaipbl-threat-score-item { display: flex; align-items: center; justify-content: space-between; background-color: #f6f7f7; padding: 10px 15px; border-radius: 4px; border: 1px solid var(--advaipbl-color-border); }
+.advaipbl-threat-score-item label { font-weight: 600; color: var(--advaipbl-color-text-dark); padding-right: 10px; }
+.advaipbl-threat-score-item input[type="number"] { max-width: 80px; text-align: right; }
+
+/* ==========================================================================
+   INTERRUPTORES (TOGGLE SWITCHES)
+   ========================================================================== */
+.advaipbl-switch { position: relative; display: inline-block; width: 38px; height: 20px; vertical-align: middle; }
+.advaipbl-switch input[type="checkbox"] { opacity: 0; width: 0; height: 0; }
+.advaipbl-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+.advaipbl-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+.advaipbl-switch input:checked + .advaipbl-slider { background-color: var(--advaipbl-color-primary); }
+.advaipbl-switch input:focus + .advaipbl-slider { box-shadow: 0 0 1px var(--advaipbl-color-primary); }
+.advaipbl-switch input:checked + .advaipbl-slider:before { transform: translateX(18px); }
+
+/* ==========================================================================
+   LAYOUT DE LA PÁGINA DE AJUSTES CON MENÚ LATERAL
+   ========================================================================== */
+.advaipbl-settings-layout { display: flex; gap: 20px; align-items: flex-start; }
+.advaipbl-settings-nav { width: 200px; flex-shrink: 0; position: -webkit-sticky; position: sticky; top: 50px; }
+.advaipbl-settings-nav ul { list-style: none; margin-top: 25px; padding: 0; border: 1px solid var(--advaipbl-color-border); background: var(--advaipbl-color-text-light); border-radius: 4px; }
+.advaipbl-settings-nav li a { display: block; padding: 10px 15px; text-decoration: none; color: var(--advaipbl-color-text-body); border-bottom: 1px solid var(--advaipbl-color-border); transition: all 0.1s ease-in-out; }
+.advaipbl-settings-nav li:last-child a { border-bottom: none; }
+.advaipbl-settings-nav li a:hover { background-color: var(--advaipbl-color-background-alt); color: var(--advaipbl-color-text-dark); }
+.advaipbl-settings-nav li a.active { background-color: var(--advaipbl-color-primary); color: var(--advaipbl-color-text-light); font-weight: 600; box-shadow: -3px 0 0 var(--advaipbl-color-primary) inset; }
+.advaipbl-settings-content { flex-grow: 1; min-width: 0; }
+.advaipbl-settings-section h2:first-child { margin-top: 0; padding-top: 10px; }
+@media screen and (max-width: 960px) {
+    .advaipbl-settings-layout { flex-direction: column; }
+    .advaipbl-settings-nav { display: none; }
+}
+.advaipbl-settings-search-wrapper {
+                    position: relative;
+                    margin-bottom: 20px;
+                }
+.advaipbl-settings-search-wrapper .dashicons-search {
+                    position: absolute;
+                    top: 50%;
+                    left: 10px;
+                    transform: translateY(-50%);
+                    color: #888;
+                }
+#advaipbl-settings-search {
+                    width: 100%;
+                    padding: 8px 12px 8px 35px; /* Espacio para el icono */
+                    font-size: 1.1em;
+                    border-radius: 4px;
+                }
+.search-highlight {
+                    background-color: #fff3a3;
+                    font-weight: bold;
+                }
+.no-results-message {
+                    padding: 20px;
+                    text-align: center;
+                    background-color: #f6f7f7;
+                    border: 1px dashed #ddd;
+                    border-radius: 4px;
+                    display: none; /* Oculto por defecto */
+                }
+/* Estilos generales del Wizard */
+.advaipbl-wizard-wrap { max-width: 780px; margin: 40px auto; background: #fff; padding: 40px 40px; box-shadow: 0 1px 3px rgba(0,0,0,.13); border-radius: 4px; }
+.advaipbl-wizard-wrap h2 { font-size: 1.5em; border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 20px; }
+.advaipbl-wizard-ips { background: #f6f7f7; border-left: 4px solid #0073aa; padding: 10px 20px; margin: 20px 0; }
+.advaipbl-wizard-ips code { font-size: 1.2em; }
+.skip-link { text-align: center; margin-top: 15px; }
+.skip-link a { text-decoration: none; color: #50575e; }
+.advaipbl-wizard-options { margin: 20px 0; }
+.wizard-option-item { display: block; padding: 15px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px; }
+.wizard-option-item label { display: flex; align-items: flex-start; font-size: 1.1em; }
+.wizard-option-item input[type="checkbox"] { margin-top: 4px; margin-right: 15px; transform: scale(1.4); }
+.wizard-option-item .description { font-size: 13px; color: #646970; margin: 5px 0 0 0; }
+.advaipbl-wizard-final-step{text-align:center;padding:40px 20px;}.advaipbl-wizard-final-step .dashicons{font-size:80px;width:80px;height:80px;color:#4ab866;}.advaipbl-wizard-final-step h2{font-size:2em;margin:20px 0 10px;}.advaipbl-wizard-final-step h3{margin-top:40px;border-top:1px solid #ddd;padding-top:30px;}.advaipbl-wizard-next-steps{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;}
+            				
+/* --- Estilos Finales para Reglas Avanzadas (Layout en Línea) --- */
+#advaipbl-advanced-rules-list .advaipbl-rule-card {
+    display: flex !important; /* Forza el layout flex */
+    align-items: center;      /* Alinea verticalmente los elementos */
+    gap: 20px;                /* Espacio entre elementos */
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    border-left-width: 4px;
+    border-left-color: #72aee6;
+}
+
+/* Nombre de la regla: tamaño fijo, no se encoge */
+#advaipbl-advanced-rules-list .rule-name {
+    flex-shrink: 0;
+    font-weight: 600;
+    min-width: 150px; /* Ancho mínimo para el nombre */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Añade "..." si el nombre es muy largo */
+}
+
+/* Resumen (IF) y Acción (THEN) */
+#advaipbl-advanced-rules-list .rule-summary,
+#advaipbl-advanced-rules-list .rule-action {
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: nowrap; /* Evita que el contenido se parta en varias líneas */
+}
+
+#advaipbl-advanced-rules-list .rule-summary ul { display: inline; margin: 0; padding: 0; list-style: none; }
+#advaipbl-advanced-rules-list .rule-summary li { display: inline; }
+#advaipbl-advanced-rules-list .rule-summary li:not(:last-child):after { content: 'AND'; font-weight: bold; color: #50575e; font-size: 10px; margin: 0 8px; }
+
+/* Acciones: empujadas al final */
+#advaipbl-advanced-rules-list .rule-actions {
+    margin-left: auto; /* ¡Esta es la magia! Empuja este elemento a la derecha */
+    flex-shrink: 0;    /* Evita que los botones se encojan */
+    white-space: nowrap;
+}
+
+/* Estilos para los componentes internos */
+#advaipbl-advanced-rules-list .rule-component-operator { font-style: italic; }
+#advaipbl-advanced-rules-list .rule-component-value { background: #f0f0f1; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+#advaipbl-advanced-rules-list .rule-action-type { text-transform: capitalize; color: #d63638; font-weight: bold; }
+#advaipbl-advanced-rules-list .rule-action-param { font-size: 12px; color: #50575e; }
+#advaipbl-advanced-rules-list .rule-component-type {
+    text-transform: capitalize;
+    color: #2271b1; /* Color azul de WordPress */
+    font-weight: bold;
+}
+
+/* --- Estilos para la Barra de Navegación de Reglas Avanzadas --- */
+.advaipbl-rules-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 32px;
+    margin-bottom: 10px;
+}
+.advaipbl-rules-nav-bottom {
+    margin-top: 10px;
+}
+.advaipbl-rules-nav-bar .bulkactions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+/* El contenedor de paginación se alineará a la derecha por el justify-content: space-between */
+.advaipbl-rules-nav-bar .advaipbl-pagination-container {
+    /* No necesita float */
+}
+
+/* ==========================================================================
+   Estilos para el Constructor de Reglas (Modal)
+   ========================================================================== */
+
+/* Contenedor de cada fila de condición */
+#advaipbl-rule-builder-modal .advaipbl-condition-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+/* Anchos fijos para los selectores */
+#advaipbl-rule-builder-modal .advaipbl-condition-row .condition-type {
+    flex-basis: 180px;
+    flex-shrink: 0;
+}
+#advaipbl-rule-builder-modal .advaipbl-condition-row .condition-operator {
+    flex-basis: 150px;
+    flex-shrink: 0;
+}
+
+/* El contenedor del valor ocupa el espacio restante */
+#advaipbl-rule-builder-modal .advaipbl-condition-row .condition-value-container {
+    flex-grow: 1;
+}
+
+/* Asegura que el input o select de valor ocupe todo el espacio disponible en su contenedor */
+#advaipbl-rule-builder-modal .condition-value {
+    width: 100%;
+}
+
+/* Estilo del botón de borrar */
+#advaipbl-rule-builder-modal .advaipbl-condition-row .remove-condition {
+    text-decoration: none;
+    flex-shrink: 0;
+}
+#advaipbl-rule-builder-modal .advaipbl-condition-row .remove-condition .dashicons {
+    color: #a0a5aa;
+    transition: color 0.1s ease-in-out;
+}
+#advaipbl-rule-builder-modal .advaipbl-condition-row .remove-condition:hover .dashicons {
+    color: #d63638;
+}
+/* --- Estilos para Acciones en Lote de Reglas Avanzadas --- */
+.advaipbl-rules-nav-bar .bulkactions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    float: left;
+}
+
+#advaipbl-advanced-rules-list .advaipbl-rule-card .rule-selector {
+    padding-top: 2px; /* Alinea el checkbox con el texto */
+    margin-right: 5px;
+}
+
+#advaipbl-advanced-rules-list .advaipbl-rule-card {
+    align-items: flex-start; /* Asegura alineación superior */
+}
+/* ==========================================================================
+   Estilos Responsive para el Panel de Administración
+   ========================================================================== */
+
+@media screen and (max-width: 782px) {
+
+    /* --- Responsive para Tarjetas de Reglas Avanzadas --- */
+    #advaipbl-advanced-rules-list .advaipbl-rule-card {
+        flex-wrap: wrap; /* ¡La clave! Permite que los elementos salten de línea */
+        gap: 10px;       /* Reduce el espacio entre elementos */
+    }
+
+    #advaipbl-advanced-rules-list .rule-name,
+    #advaipbl-advanced-rules-list .rule-summary,
+    #advaipbl-advanced-rules-list .rule-action {
+        flex-basis: 100%; /* Ocupan toda la primera línea, forzando a los botones a bajar */
+        white-space: normal; /* Permite que el texto largo se divida en líneas */
+    }
+
+    #advaipbl-advanced-rules-list .rule-actions {
+        margin-left: 0;   /* Resetea el margen que los empujaba a la derecha */
+        margin-top: 10px; /* Añade un pequeño espacio superior */
+        flex-basis: 100%; /* Ocupan todo el ancho disponible */
+        display: flex;
+        justify-content: flex-end; /* Alinea los botones a la derecha en su propia línea */
+    }
+    
+    /* Hacemos que la paginación sea más compacta */
+    .advaipbl-rules-nav-bar .displaying-num {
+        display: none; /* Ocultamos el contador "X items" en móviles */
+    }
+
+}
+/* ==========================================================================
+   Estilos para la Tabla de Sesiones de Usuario (Versión Final)
+   ========================================================================== */
+
+/* --- Estilos Base (Escritorio y Móvil) --- */
+.advaipbl-sessions-table {
+    /* Un ancho mínimo global para evitar que se colapse demasiado */
+    min-width: 800px;
+}
+
+/* Asignamos anchos de columna para dar estructura a la tabla.
+   Estos actuarán como anchos base que el navegador puede ajustar. */
+.advaipbl-sessions-table th:nth-child(1), .advaipbl-sessions-table td:nth-child(1) { width: 18%; } /* User */
+.advaipbl-sessions-table th:nth-child(2), .advaipbl-sessions-table td:nth-child(2) { width: 10%; } /* Role */
+.advaipbl-sessions-table th:nth-child(3), .advaipbl-sessions-table td:nth-child(3) { width: 15%; } /* IP */
+.advaipbl-sessions-table th:nth-child(4), .advaipbl-sessions-table td:nth-child(4) { width: 22%; } /* Location */
+.advaipbl-sessions-table th:nth-child(5), .advaipbl-sessions-table td:nth-child(5) { width: 15%; } /* ISP */
+.advaipbl-sessions-table th:nth-child(6), .advaipbl-sessions-table td:nth-child(6) { width: 20%; } /* Last Activity */
+.advaipbl-sessions-table th:nth-child(7), .advaipbl-sessions-table td:nth-child(7) { width: 130px; text-align: center; } /* Actions */
+
+
+/* --- Estilos específicos para celdas --- */
+
+/* Forzamos el salto de palabra en celdas con texto potencialmente largo */
+.advaipbl-sessions-table td {
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Aseguramos que los botones de acción no se partan y tengan espacio */
+.advaipbl-sessions-table td:nth-child(7) .button {
+    white-space: nowrap;
+    margin: 2px; /* Pequeño margen para que no se peguen a los bordes */
+}
+
+/* --- Estilos Responsive (Móvil) --- */
+@media screen and (max-width: 782px) {
+    /* Opcional: Ocultar la columna menos crítica en pantallas MUY pequeñas */
+    @media screen and (max-width: 480px) {
+        .advaipbl-sessions-table th:nth-child(5), /* Ocultar ISP */
+        .advaipbl-sessions-table td:nth-child(5) {
+            display: none;
+        }
+    }
+}
+/* Estilo para la acción 'Allow' en las tarjetas de Reglas Avanzadas */
+#advaipbl-advanced-rules-list .rule-action-type[data-action="allow"] {
+    color: #00a32a; /* Verde éxito */
+}
+
+.advaipbl-help-icon {
+    text-decoration: none;
+    color: #2271b1; /* Color azul estándar de WP */
+    vertical-align: middle;
+    margin-left: 5px;
+    display: inline-block;
+}
+
+.advaipbl-help-icon:hover {
+    color: #135e96;
+}
+
+.advaipbl-help-icon .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}

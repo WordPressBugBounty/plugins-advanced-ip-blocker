@@ -1,0 +1,104 @@
+/**
+ * Advanced IP Blocker - Live Feed Styles (High Specificity Version)
+ */
+
+/* Usamos un selector de cuerpo común de WordPress para aumentar la especificidad. */
+body.post-template-default #advaipbl-live-feed-container,
+body.page-template-default #advaipbl-live-feed-container,
+body.single-post #advaipbl-live-feed-container,
+body.page #advaipbl-live-feed-container {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
+    padding: 20px !important;
+    border-radius: 8px !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    overflow: hidden !important;
+    margin: 2em 0; /* Añadimos un margen para separarlo del contenido. */
+}
+
+#advaipbl-live-feed-container h3 {
+    color: #fff !important;
+    margin-top: 0 !important;
+    margin-bottom: 15px !important;
+    font-size: 16px !important;
+    border-bottom: 1px solid #334155 !important;
+    padding-bottom: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#advaipbl-live-feed-container .live-dot {
+    font-size: 10px !important;
+    margin-right: 10px !important;
+    color: #22c55e !important; /* Verde brillante */
+    animation: advaipbl-blink 1.5s infinite;
+}
+
+@keyframes advaipbl-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+#advaipbl-live-feed-container #advaipbl-live-feed-list {
+    list-style-type: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    font-size: 13px !important;
+}
+
+#advaipbl-live-feed-container .feed-item {
+    padding: 10px 5px !important;
+    border-bottom: 1px solid #334155 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px 15px !important;
+    line-height: 1.6 !important;
+    animation: advaipbl-fade-in 0.5s ease-out;
+}
+
+#advaipbl-live-feed-container .feed-item:first-child {
+    border-top: 1px solid #334155 !important;
+}
+
+#advaipbl-live-feed-container .feed-item .ip {
+    font-weight: bold !important;
+    color: #f87171 !important; /* Rojo para destacar la IP */
+}
+
+#advaipbl-live-feed-container .feed-item .type {
+    background-color: #334155 !important;
+    color: #cbd5e1 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+}
+
+#advaipbl-live-feed-container .feed-item .location {
+    color: #94a3b8 !important;
+}
+
+#advaipbl-live-feed-container .feed-item .time {
+    color: #64748b !important;
+    font-style: italic !important;
+}
+
+#advaipbl-live-feed-container .feed-item.placeholder {
+    color: #64748b !important;
+    justify-content: center !important;
+    font-style: italic !important;
+}
+
+@keyframes advaipbl-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
