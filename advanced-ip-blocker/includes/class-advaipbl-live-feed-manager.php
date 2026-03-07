@@ -52,6 +52,7 @@ class ADVAIPBL_Live_Feed_Manager {
         $since_id = isset($since_id) ? (int) $since_id : 0;
         
         $table_name = $wpdb->prefix . 'advaipbl_activity_log';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
              return new WP_REST_Response(['attacks' => [], 'last_id' => 0], 200);
         }
@@ -77,7 +78,7 @@ class ADVAIPBL_Live_Feed_Manager {
              $query = $sql;
         }
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_results($query, ARRAY_A);
         
         $attacks = [];
@@ -104,6 +105,7 @@ class ADVAIPBL_Live_Feed_Manager {
                         $details_message = sprintf(__('Blocked by AbuseIPDB with a score of %d%%.', 'advanced-ip-blocker'), $score);
                         break;
                     case 'advanced_rule':
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                         $block_entry = $wpdb->get_row($wpdb->prepare("SELECT reason FROM {$wpdb->prefix}advaipbl_blocked_ips WHERE ip_range = %s", $row['ip']), ARRAY_A);
                         if ($block_entry && !empty($block_entry['reason'])) {
                             $details_message = $block_entry['reason'];
@@ -121,16 +123,16 @@ class ADVAIPBL_Live_Feed_Manager {
                         break;
                 }
                 
+                $obfuscated_ip = $this->obfuscate_ip($row['ip']);
+                
                 $attacks[] = [
                     'id'          => (int) $row['log_id'],
                     'time'        => human_time_diff(strtotime($row['timestamp'])) . ' ago',
-                    'ip'          => esc_html($row['ip']),
+                    'ip'          => esc_html($obfuscated_ip),
                     'type'        => esc_html(ucwords(str_replace('_', ' ', $log_type))),
                     'location'    => esc_html($location),
                     'method'      => esc_html($details_data['method'] ?? 'N/A'),
-                    'details'     => esc_html($details_message),
-                    'user_agent'  => esc_html($details_data['user_agent'] ?? 'N/A'),
-                    'uri'         => esc_html($details_data['uri'] ?? ($details_data['url'] ?? '')),
+                    'details'     => esc_html($details_message)
                 ];
             }
         }
@@ -139,6 +141,45 @@ class ADVAIPBL_Live_Feed_Manager {
             'attacks'  => $attacks,
             'last_id'  => $last_id,
         ], 200);
+    }
+
+    /**
+     * Obfuscates an IP address for public display (GDPR compliance).
+     * IPv4: 192.168.1.55 -> 192.168.1.*
+     * IPv6: 2001:0db8:85a3:0000:0000:8a2e:0370:7334 -> 2001:0db8:85a3:****:****:****:****:****
+     * 
+     * @param string $ip
+     * @return string
+     */
+    private function obfuscate_ip($ip) {
+        if (empty($ip)) {
+            return '';
+        }
+
+        // IPv4 Obfuscation
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ip);
+            if (count($parts) === 4) {
+                // Return 192.168.1.*
+                return $parts[0] . '.' . $parts[1] . '.' . $parts[2] . '.*';
+            }
+        } 
+        // IPv6 Obfuscation
+        elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            // Expand IPv6 to full length to parse correctly
+            $expanded = inet_ntop(inet_pton($ip));
+            if ($expanded !== false) {
+                $parts = explode(':', $expanded);
+                if (count($parts) === 8) {
+                    // Return first 3 blocks, obfuscate the rest
+                    return $parts[0] . ':' . $parts[1] . ':' . $parts[2] . ':**::**';
+                }
+            }
+        }
+
+        // Fallback: simply mask the last half of the string if validation fails
+        $len = strlen($ip);
+        return substr($ip, 0, (int)($len / 2)) . '***';
     }
 
     /**
@@ -154,35 +195,6 @@ class ADVAIPBL_Live_Feed_Manager {
      * Shortcode renderer [advaipbl_live_feed]
      */
     public function render_shortcode($atts) {
-        // Use the proper paths relative to this file's location in includes/
-        // Original: plugin_dir_url(dirname(__FILE__)) . 'js/...'
-        // If this file is in includes/, dirname is includes. 
-        // plugin_dir_url(includes) -> yields URL to includes.
-        // But 'js/' is usually at the root of the plugin or assets/.
-        // Original main was in includes/ too? checking...
-        // Main path: .../includes/class-advaipbl-main.php
-        // The original code used: plugin_dir_url(dirname(__FILE__)) . 'js/advaipbl-live-feed.js'
-        // dirname(__FILE__) = .../includes
-        // plugin_dir_url via dirname would point to the includes folder URL.
-        // BUT 'js' folder is likely parallel to 'includes', not inside it.
-        // Original code logic: plugin_dir_url(...) returns URL with trailing slash.
-        // If dirname is .../includes, url is https://.../includes/
-        // Then . 'js/...' -> https://.../includes/js/...
-        // This implies /includes/js/ exists?
-        // Re-checking list_dir: js is at logical root, includes is at logical root.
-        // Wait, list_dir of includes showed 'lib' inside.
-        // list_dir of root (implicit from previous context) showed 'js' folder.
-        // So 'js' is a sibling of 'includes'.
-        // So the original code `plugin_dir_url(dirname(__FILE__))` pointing to includes/ seems wrong if it appends 'js/' directly, unless 'js' IS inside includes.
-        // Let's use `plugin_dir_url( dirname( __DIR__ ) )` to go up one level safely.
-        // dirname(__DIR__) from includes/class... -> .../plugin-root
-        
-        $root_url = plugin_dir_url( dirname( __FILE__ ) ); // Points to .../includes/ OR plugin root?
-        // plugin_dir_url accepts a FILE path.
-        // plugin_dir_url( __FILE__ ) ->  .../includes/
-        // plugin_dir_url( dirname( __FILE__ ) . '/../advanced-ip-blocker.php' ) -> Root.
-        
-        // Safer approach used in many plugins:
         $root_url = plugins_url( '/', dirname( __FILE__ ) ); 
 
         wp_enqueue_script('advaipbl-live-feed-js', $root_url . 'js/advaipbl-live-feed.js', ['jquery'], ADVAIPBL_VERSION, true);

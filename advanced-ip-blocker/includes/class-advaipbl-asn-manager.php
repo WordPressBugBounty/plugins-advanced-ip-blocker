@@ -120,12 +120,12 @@ class ADVAIPBL_Asn_Manager {
     public function get_log_details($ip) {
         global $wpdb;
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $log_json = $wpdb->get_var($wpdb->prepare(
             "SELECT log_details FROM {$this->table_name} WHERE ip = %s",
             $ip
         ));
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
         if ($log_json === null) {
             return false;

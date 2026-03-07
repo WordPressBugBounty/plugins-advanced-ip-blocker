@@ -57,7 +57,7 @@ class ADVAIPBL_Audit_Logger {
 
         $ip = $this->main_instance->get_client_ip();
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->insert(
             $this->table_name,
             [
@@ -122,12 +122,12 @@ class ADVAIPBL_Audit_Logger {
      */
     public function get_logs($limit = 20, $offset = 0) {
         global $wpdb;
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         return $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$this->table_name} ORDER BY timestamp DESC LIMIT %d OFFSET %d",
             $limit, $offset
         ), ARRAY_A);
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     }
     
     /**
@@ -147,9 +147,9 @@ class ADVAIPBL_Audit_Logger {
         // Use gmdate to avoid timezone warnings and ensure consistency
         $cutoff_date = gmdate('Y-m-d H:i:s', current_time('timestamp') - ($retention_days * DAY_IN_SECONDS));
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query($wpdb->prepare("DELETE FROM {$this->table_name} WHERE timestamp < %s", $cutoff_date));
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     }
 
     /**
@@ -159,8 +159,8 @@ class ADVAIPBL_Audit_Logger {
      */
     public function clear_all_logs() {
         global $wpdb;
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         return $wpdb->query("TRUNCATE TABLE {$this->table_name}");
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     }
 }

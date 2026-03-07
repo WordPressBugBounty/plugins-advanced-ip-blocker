@@ -38,7 +38,7 @@ if ( ! empty( $settings_option['delete_data_on_uninstall'] ) && '1' === $setting
     ];
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     foreach ( $tables_to_drop as $table_name ) {
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         $wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . $table_name );
     }
     // --- 1.5. Limpiar Cloudflare (Si está habilitado) ---

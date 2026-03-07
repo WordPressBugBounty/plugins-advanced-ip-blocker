@@ -50,6 +50,7 @@ class ADVAIPBL_2FA_Users_List_Table extends WP_List_Table {
         // 3. Añadir lógica de filtro por estado 2FA
         $tfa_status_filter = isset($_REQUEST['tfa_status']) ? sanitize_text_field(wp_unslash($_REQUEST['tfa_status'])) : 'all';
         if ( in_array( $tfa_status_filter, ['active', 'inactive'] ) ) {
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
             $args['meta_key'] = ADVAIPBL_2fa_Manager::META_ENABLED_AT;
             if ( 'active' === $tfa_status_filter ) {
                 $args['meta_compare'] = 'EXISTS';
@@ -203,6 +204,7 @@ class ADVAIPBL_2FA_Users_List_Table extends WP_List_Table {
         $total_users = count_users()['total_users'];
         
         // Contar usuarios con 2FA activo
+        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
         $active_users_count = count( get_users([
             'meta_key' => ADVAIPBL_2fa_Manager::META_ENABLED_AT,
             'meta_compare' => 'EXISTS',

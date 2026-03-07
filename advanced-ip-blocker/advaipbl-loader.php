@@ -5,7 +5,8 @@
 
 // Explicit check for direct access to satisfy Plugin Check while allowing auto_prepend_file.
 if ( ! defined( 'ABSPATH' ) ) {
-    if ( basename( $_SERVER['SCRIPT_FILENAME'] ) === basename( __FILE__ ) ) {
+    $script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? sanitize_text_field(wp_unslash($_SERVER['SCRIPT_FILENAME'])) : '';
+    if ( basename( $script_filename ) === basename( __FILE__ ) ) {
         exit( 'Restricted access.' );
     }
 }

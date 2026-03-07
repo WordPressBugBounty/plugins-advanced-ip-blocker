@@ -127,6 +127,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
         if ( empty( $options['enable_logging'] ) ) return;
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         @$wpdb->insert( $table_name, [ 'timestamp' => current_time( 'mysql', 1 ), 'ip' => is_array($ip) ? wp_json_encode($ip) : $ip, 'log_type' => 'general', 'level' => $level, 'message' => $message, 'details' => wp_json_encode( [ 'source' => 'WP-CLI' ] ) ] );
     }
 
@@ -170,7 +171,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
         // Comprobamos si ya está bloqueado en la nueva tabla.
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip_or_range));
 
         if ($exists) {
@@ -677,7 +678,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
 	private function log_list( $args, $assoc_args ) {
 		global $wpdb; $table_name = $wpdb->prefix . 'advaipbl_logs'; $type = $assoc_args['type'] ?? 'general'; $count = $assoc_args['count'] ?? 20;
         $where_clause = '1=1'; if ( 'all' !== $type ) { $where_clause = $wpdb->prepare( 'log_type = %s', $type ); }
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$logs = $wpdb->get_results( $wpdb->prepare( "SELECT timestamp, level, ip, message, details FROM $table_name WHERE $where_clause ORDER BY timestamp DESC LIMIT %d", $count ), ARRAY_A );
 		if ( empty( $logs ) ) { WP_CLI::line( 'No log entries found for the specified type.' ); return; }
 		WP_CLI\Utils\format_items( $assoc_args['format'] ?? 'table', $logs, [ 'timestamp', 'level', 'ip', 'message' ] );
@@ -687,8 +688,12 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
         $type = $assoc_args['type'] ?? 'all';
 		if ( ! isset( $assoc_args['force'] ) ) { $confirm_message = ( 'all' === $type ) ? 'Are you sure you want to clear ALL logs? This action cannot be undone.' : "Are you sure you want to clear all '{$type}' logs?"; WP_CLI::confirm( $confirm_message ); }
 		global $wpdb; $table_name = $wpdb->prefix . 'advaipbl_logs'; $this->log_event_autonomo( "WP-CLI: Clearing logs of type '{$type}'.", 'warning' );
-		if ( 'all' !== $type ) { $deleted = $wpdb->delete( $table_name, [ 'log_type' => $type ], [ '%s' ] ); WP_CLI::success( "{$deleted} logs of type '{$type}' have been cleared." ); } else { 
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( 'all' !== $type ) { 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $deleted = $wpdb->delete( $table_name, [ 'log_type' => $type ], [ '%s' ] ); 
+            WP_CLI::success( "{$deleted} logs of type '{$type}' have been cleared." ); 
+        } else { 
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->query( "TRUNCATE TABLE $table_name" ); WP_CLI::success( 'All logs have been cleared.' ); }
 	}
 

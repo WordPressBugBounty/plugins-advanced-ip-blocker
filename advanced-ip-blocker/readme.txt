@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.8.8
+Stable tag: 8.8.9
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -223,8 +223,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.8.9 =
+*   **SECURITY UPDATE:** Fixed an issue where the "Export Template" feature was inadvertently including sensitive API keys (`cf_api_token`, `cf_zone_id`, `abuseipdb_api_key`) in the generated JSON. Templates are now completely clean of private tokens.
+*   **MAINTENANCE:** Cleaned up excessive developer comments in the frontend JS inclusion logic for better code readability.
+*   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
+
 = 8.8.8 =
 *   **CRITICAL FIX:** Resolved an issue where IPs imported via the Bulk Import tool were not immediately synchronized with the Server-Level Firewall (`.htaccess`). Synchronization is now instantaneous and safely batched.
+*   **CRITICAL FIX:** Addressed a regression introduced in the `.htaccess` fix where Cloudflare Edge Firewalls stopped synchronizing imported IPs. Bulk Imports will now immediately trigger a background Cloudflare Sync Event to safely upload large IP batches without dropping connections.
 
 = 8.8.7 =
 *   **ENHANCEMENT:** Bulk Import overhaul. Imported IPs are now strictly categorized under a new `bulk_import` block type, fixing issues where imported blocks were permanently categorized as Manual blocks. 
@@ -398,8 +404,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
+= 8.8.9 =
+**SECURITY UPDATE:** Patches a vulnerability in the Settings exporter where the "Template (No API Keys)" file was accidentally leaking Cloudflare and AbuseIPDB API keys. Update immediately if you plan to export your configuration templates to share with others.
+
 = 8.8.8 =
-**CRITICAL UPDATE:** Fixes a `.htaccess` synchronization bug with the Bulk Import tool. Update immediately to ensure imported IPs are actively blocking threats at the server level.
+**CRITICAL UPDATE:** Fixes a `.htaccess` synchronization bug with the Bulk Import tool. Resolves a regression where Bulk Imports stopped pushing new blocks to Cloudflare. Update immediately to ensure imported IPs are actively blocking threats at both the server level and the cloud edge.
 
 = 8.8.7 =
 **FEATURE & UX UPDATE:** Overhauled the Bulk Import Blocked IPs functionality. Includes a new `bulk_import` filtering type and smarter, safer defaults (24 hours instead of Permanent).

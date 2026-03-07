@@ -227,11 +227,11 @@ class ADVAIPBL_Admin_Pages {
         }
         $where_sql = implode(' AND ', $where_clauses);
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total_items = $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $logs = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE $where_sql ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
         ?>
         
@@ -468,12 +468,12 @@ public function display_asn_blocking_tab() {
         $per_page = isset($_GET['advaipbl_per_page']) ? absint($_GET['advaipbl_per_page']) : 20;
         // phpcs:enable
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total_items = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name}");
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $items = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$table_name} ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d",
             $per_page, $offset
@@ -626,10 +626,10 @@ public function display_asn_blocking_tab() {
         </div>
         <?php
         // Primero, limpiamos los lockdowns expirados.
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query($wpdb->prepare("DELETE FROM {$table_name} WHERE expires_at <= %d", time()));
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $items = $wpdb->get_results("SELECT * FROM {$table_name} ORDER BY created_at DESC", ARRAY_A);
         ?>
         <h2><?php esc_html_e('Active Endpoint Lockdowns', 'advanced-ip-blocker'); ?></h2>
@@ -1433,11 +1433,11 @@ public function display_general_settings_tab() {
 
     $where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
 
-    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     $total_items = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where_sql}");
     $total_pages = ceil($total_items / $per_page);
 
-    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     $items_for_page = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table_name} {$where_sql} ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
 
     $ips_and_ranges_on_page = wp_list_pluck($items_for_page, 'ip_range');
@@ -1899,11 +1899,11 @@ public function display_general_log_tab() {
     }
     $where_sql = implode(' AND ', $where_clauses);
     
-    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     $total_items = $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
     $total_pages = ceil($total_items / $per_page);
     $offset = ($current_page - 1) * $per_page;
-    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     $logs = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE $where_sql ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
     
     ?>
@@ -2018,12 +2018,12 @@ public function display_general_log_tab() {
         }
         $where_sql = implode(' AND ', $where_clauses);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total_items = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} WHERE {$where_sql}");
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $items = $wpdb->get_results($wpdb->prepare(
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             "SELECT * FROM {$table_name} WHERE {$where_sql} ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d",
@@ -2200,11 +2200,11 @@ public function display_general_log_tab() {
         }
         
         $where_sql = implode(' AND ', $where_clauses);
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total_items = $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $logs = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE $where_sql ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
     ?>
     <h2><?php echo esc_html($title); ?></h2>
@@ -3579,7 +3579,7 @@ public function display_scanner_tab() {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_activity_log';
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
              $logs = [];
              $total_items = 0;
@@ -3589,7 +3589,7 @@ public function display_scanner_tab() {
              $logs = $this->plugin->audit_logger->get_logs($per_page, $offset);
              
              // Count total for pagination (Simple implementation)
-             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
              $total_items = $wpdb->get_var("SELECT COUNT(id) FROM $table_name");
              $total_pages = ceil($total_items / $per_page);
         }

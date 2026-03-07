@@ -47,6 +47,7 @@ class ADVAIPBL_Action_Handler {
             if ( wp_verify_nonce( $nonce, 'advaipbl_delete_lockdown_' . $lockdown_id ) && current_user_can('manage_options') ) {
                 global $wpdb;
                 $lockdowns_table = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                 $wpdb->delete($lockdowns_table, ['id' => $lockdown_id], ['%d']);
 
                 $this->plugin->log_event(sprintf('Endpoint lockdown #%d was manually cancelled by %s.', $lockdown_id, $this->plugin->get_current_admin_username()), 'warning');
@@ -211,7 +212,7 @@ class ADVAIPBL_Action_Handler {
                 case 'clear_all_threat_scores':                
                 global $wpdb;
                 $table_name = $wpdb->prefix . 'advaipbl_ip_scores';
-                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                 $wpdb->query("TRUNCATE TABLE `{$table_name}`");
                 /* translators: %s: Username. */
                 $this->plugin->log_event(sprintf(__('All threat scores have been manually reset to 0 by %s.', 'advanced-ip-blocker'), $current_user_login), 'critical');
@@ -221,7 +222,7 @@ class ADVAIPBL_Action_Handler {
 				case 'clear_all_signatures':
                 global $wpdb;
                 $table_name = $wpdb->prefix . 'advaipbl_malicious_signatures';
-                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                 $wpdb->query("TRUNCATE TABLE `{$table_name}`");
                 /* translators: %s: Username. */
                 $this->plugin->log_event(sprintf(__('All malicious signatures have been manually deleted by %s.', 'advanced-ip-blocker'), $current_user_login), 'critical');
@@ -234,7 +235,7 @@ class ADVAIPBL_Action_Handler {
                     if (!empty($log_types_to_clear)) {
                         $placeholders = implode(', ', array_fill(0, count($log_types_to_clear), '%s'));
                         
-                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                         $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->prefix}advaipbl_logs WHERE log_type IN ({$placeholders})", $log_types_to_clear));
                         
                         $types_string = implode(', ', $log_types_to_clear);
@@ -249,9 +250,9 @@ class ADVAIPBL_Action_Handler {
                     break;
                 case 'clear_all_logs':
                     global $wpdb;
-                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                     $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}advaipbl_logs`");
-                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                     $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}advaipbl_notifications_queue`");
 					/* translators: %s: Username. */
                     $this->plugin->log_event(sprintf(__('All log records have been manually deleted by %s.', 'advanced-ip-blocker'), $current_user_login), 'critical');
@@ -268,7 +269,7 @@ class ADVAIPBL_Action_Handler {
                                 // Esta es la nueva lógica centralizada
                                 global $wpdb;
                                 $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-                                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                                 $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip_or_range));
                                 
                                 if ($exists) {

@@ -51,7 +51,7 @@ class ADVAIPBL_Notification_Manager {
         $ids = array_map(function($n) { return (int) $n->id; }, $notifications);
         if (!empty($ids)) {
             $ids_placeholder = implode(',', $ids);
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->query("DELETE FROM $table_name WHERE id IN ($ids_placeholder)");
         }
     }
@@ -93,7 +93,7 @@ class ADVAIPBL_Notification_Manager {
         $ids = array_map(function($n) { return (int) $n->id; }, $notifications);
         if (!empty($ids)) {
             $ids_placeholder = implode(',', $ids);
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->query("DELETE FROM $table_name WHERE id IN ($ids_placeholder)");
         }
     }

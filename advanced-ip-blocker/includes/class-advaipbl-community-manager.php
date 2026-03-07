@@ -35,7 +35,7 @@ class ADVAIPBL_Community_Manager {
         $table_name = $wpdb->prefix . 'advaipbl_community_ips';
 
         // 1. Vaciar la tabla (Truncate es más rápido que Delete)
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->query("TRUNCATE TABLE {$table_name}");
 
         // 2. Insertar por lotes (Batch Insert) para rendimiento

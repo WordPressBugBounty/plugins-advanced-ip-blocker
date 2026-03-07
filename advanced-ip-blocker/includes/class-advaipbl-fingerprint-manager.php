@@ -70,14 +70,14 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
     $signatures_table = $wpdb->prefix . 'advaipbl_malicious_signatures';
 
     // Borramos las firmas que ya han expirado
-    // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query($wpdb->prepare("DELETE FROM {$signatures_table} WHERE expires_at <= %d", time()));
-    // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
     $start_time = time() - $analysis_window_seconds;
 
     // 1. Encontrar firmas sospechosas (usadas por múltiples IPs)
-    // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     $suspicious_signatures = $wpdb->get_results(
         $wpdb->prepare(
             "SELECT signature_hash, COUNT(DISTINCT ip_hash) as ip_count, MAX(timestamp) as last_seen
@@ -89,7 +89,7 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
             $ip_threshold
         )
     );
-    // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     
     if (empty($suspicious_signatures)) {
         return;
@@ -99,15 +99,15 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
 
     foreach ($suspicious_signatures as $sig) {
         // Comprobamos si esta firma ya está marcada como maliciosa (y no ha expirado)
-        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $is_already_flagged = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$signatures_table} WHERE signature_hash = %s", $sig->signature_hash));
-        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         if ($is_already_flagged) {
             continue;
         }
 
         // 2. Obtener un ejemplo de la petición más común para esta firma
-        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $sample = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT user_agent, request_uri, COUNT(*) as occurrence
@@ -120,7 +120,7 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
                 $start_time
             )
         );
-        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
         // Añadimos un log si la consulta de ejemplo falla, para depuración futura.
         if (!$sample) {
@@ -212,19 +212,19 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
         $log_table = $wpdb->prefix . 'advaipbl_request_log';
 
         // 1. Obtenemos una petición de ejemplo para desglosar la firma (cabeceras, etc.)
-        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $sample_request = $wpdb->get_row($wpdb->prepare(
             "SELECT user_agent, request_headers FROM {$log_table} WHERE signature_hash = %s LIMIT 1",
             $signature_hash
         ));
-        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
         if (!$sample_request) {
             return false;
         }
         
         // 2. Obtenemos la evidencia: las últimas 15 IPs distintas que usaron esta firma.
-        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $evidence = $wpdb->get_results($wpdb->prepare(
             "SELECT DISTINCT ip_hash, user_agent, request_uri, timestamp, is_fake_bot as is_impersonator 
              FROM {$log_table} 
@@ -233,7 +233,7 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
              LIMIT 15",
             $signature_hash
         ));
-        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         $details = [
             'sample_user_agent' => $sample_request->user_agent,

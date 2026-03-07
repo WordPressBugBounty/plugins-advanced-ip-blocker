@@ -242,7 +242,9 @@ private function __construct() {
         add_action('wp_ajax_advaipbl_clear_audit_log', [$this->ajax_handler, 'ajax_clear_audit_logs']);
         add_action('wp_ajax_advaipbl_run_fim_scan', [$this->ajax_handler, 'ajax_run_fim_scan']);
         
-        if (is_admin() || (isset($_GET['action']) && strpos($_GET['action'], 'advaipbl_') === 0)) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
+        if (is_admin() || (strpos($action, 'advaipbl_') === 0)) {
             add_action('admin_init', [$this, 'initialize_backend_managers'], 0);
 
         }
@@ -445,8 +447,10 @@ private function __construct() {
      */
     public function log_request_signature() {
         if (empty($this->options['enable_signature_engine'])) { return; }
+        
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
 		// No loguear las peticiones del Live Feed interno
-        if (strpos($_SERVER['REQUEST_URI'], '/advaipbl/v1/live-attacks') !== false) {
+        if (strpos($request_uri, '/advaipbl/v1/live-attacks') !== false) {
             return;
         }
         
@@ -455,7 +459,6 @@ private function __construct() {
             return; 
         }
         
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
         if (wp_is_json_request() && strpos($request_uri, '/telemetry/') === false && strpos($request_uri, '/aib-network/') === false && strpos($request_uri, '/aib-scanner/') === false) {
             return;
         }
@@ -586,6 +589,7 @@ private function __construct() {
             'is_fake_bot'       => $is_fake_bot,
         ];
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->insert($table_name, $data_to_log);
     }           
       
@@ -691,6 +695,7 @@ public function verify_known_bots() {
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_js_token'])) {
     // Parámetros para el desafío de firmas: cookie 'advaipbl_js_verified', duración 4 horas.
     $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', 4 * HOUR_IN_SECONDS);
@@ -705,10 +710,12 @@ public function verify_known_bots() {
         $signatures_table = $wpdb->prefix . 'advaipbl_malicious_signatures';
         
         // Fix: Check if table exists to avoid fatal error on fresh install
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         if ($wpdb->get_var("SHOW TABLES LIKE '$signatures_table'") != $signatures_table) {
             return;
         }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $is_malicious = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$signatures_table} WHERE signature_hash = %s AND expires_at > %d",
             $signature_hash,
@@ -741,6 +748,7 @@ public function verify_known_bots() {
         if (empty($this->options['enable_geo_challenge'])) {
             return;
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_challenge_type']) && $_POST['_advaipbl_challenge_type'] === 'geo_challenge') {
             $duration_hours = (int)($this->options['geo_challenge_cookie_duration'] ?? 24);
             $duration_seconds = ($duration_hours > 0) ? $duration_hours * HOUR_IN_SECONDS : 0;
@@ -977,6 +985,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
         $script_url = add_query_arg('render', $site_key, $script_url);
     }
 
+    // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
     wp_enqueue_script(
         'google-recaptcha',
         $script_url,
@@ -1117,11 +1126,13 @@ public function validate_recaptcha_response($user, $username, $password) {
         return $user;
     }
 
-    if (!isset($_POST['g-recaptcha-response']) || empty($_POST['g-recaptcha-response'])) {
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $recaptcha_response = isset($_POST['g-recaptcha-response']) ? sanitize_text_field(wp_unslash($_POST['g-recaptcha-response'])) : '';
+    if (empty($recaptcha_response)) {
         return new WP_Error('recaptcha_empty', __('<strong>ERROR</strong>: Please complete the reCAPTCHA verification.', 'advanced-ip-blocker'));
     }
 
-    $token = sanitize_text_field($_POST['g-recaptcha-response']);
+    $token = $recaptcha_response;
     $visitor_ip = $this->get_client_ip(); 
 
     $response = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', array(
@@ -1261,7 +1272,7 @@ public function get_blocked_count() {
         $this->limpiar_ips_expiradas(); // La limpieza es crucial antes de contar
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $count = (int) $wpdb->get_var("SELECT COUNT(id) FROM {$table_name}");
         wp_cache_set('blocked_ips_count', $count, 'advaipbl', 300); // Cache por 5 minutos
     }
@@ -1280,7 +1291,7 @@ public function get_blocked_signatures_count() {
     // Usamos cache para evitar consultas repetidas en la misma petición
     $count = wp_cache_get('blocked_signatures_count', 'advaipbl');
     if (false === $count) {
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(id) FROM {$table_name} WHERE expires_at > %d", time()));
         wp_cache_set('blocked_signatures_count', $count, 'advaipbl', 300); // Cache por 5 minutos
     }
@@ -1297,9 +1308,9 @@ public function get_blocked_endpoints_count() {
     $count = wp_cache_get('blocked_endpoints_count', 'advaipbl');
     if (false === $count) {
         // Primero, limpiamos los expirados para un conteo preciso
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query($wpdb->prepare("DELETE FROM {$table_name} WHERE expires_at <= %d", time()));
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $count = (int) $wpdb->get_var("SELECT COUNT(id) FROM {$table_name}");
         wp_cache_set('blocked_endpoints_count', $count, 'advaipbl', 300); // Cache por 5 minutos
     }
@@ -1383,7 +1394,7 @@ public function get_blocked_endpoints_count() {
         // Vaciamos la tabla de caché.
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_cache';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query("TRUNCATE TABLE `{$table_name}`");
 
         /* translators: %s: Admin username. */
@@ -1522,9 +1533,12 @@ public function get_blocked_endpoints_count() {
 
 
         // --- 1. Determinar la pestaña y sub-pestaña activas ---
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $current_page_slug = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
         
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if (isset($_GET['tab'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             $active_main_tab = sanitize_key($_GET['tab']);
         } else {
             // Si no hay tab, intentamos deducirlo del page slug (Menu Navigation fix)
@@ -1546,6 +1560,7 @@ public function get_blocked_endpoints_count() {
             }
         }
         
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $active_sub_tab = isset($_GET['sub-tab']) ? sanitize_key($_GET['sub-tab']) : null;
 
         // Si no hay sub-pestaña en la URL, la deducimos de la pestaña principal.
@@ -1617,9 +1632,12 @@ public function get_blocked_endpoints_count() {
             // Cargar assets del Dashboard Principal
             if ( 'main_dashboard' === $active_sub_tab ) {
                 wp_enqueue_script('chartjs', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/chart.min.js', [], '3.9.1', true);
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
                 wp_enqueue_style('leaflet-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/leaflet.css');
                 wp_enqueue_script('leaflet-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/leaflet.js', [], '1.9.4', true);
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
                 wp_enqueue_style('leaflet-markercluster-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/MarkerCluster.css');
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
                 wp_enqueue_style('leaflet-markercluster-default-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/MarkerCluster.Default.css');
                 wp_enqueue_script('leaflet-markercluster-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/leaflet.markercluster.js', ['leaflet-js'], '1.5.3', true);
                 wp_enqueue_script('advaipbl-dashboard-js', plugin_dir_url( dirname( __FILE__ ) ) . 'js/advaipbl-dashboard.js', ['jquery', 'chartjs', 'leaflet-markercluster-js', 'advaipbl-admin-core-js'], ADVAIPBL_VERSION, true);
@@ -1627,7 +1645,9 @@ public function get_blocked_endpoints_count() {
 
             // Cargar assets de la página "About"
             // STRICT CHECK: Ensure we are explicitly on the about tab to avoid loading Stripe/Sift on other pages (CSP issues)
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             if (isset($_GET['tab']) && $_GET['tab'] === 'about') {
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
                 wp_enqueue_script('stripe-buy-button', 'https://js.stripe.com/v3/buy-button.js', [], null, true);
             }
         }
@@ -2036,6 +2056,7 @@ return $status_header;
     // Solo actuar si la opción está activada y no estamos en el admin.
     if ( ! empty( $this->options['prevent_author_scanning'] ) && ! is_admin() ) {
         // Comprobamos directamente el parámetro GET 'author'. Es mucho más fiable.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if ( isset( $_GET['author'] ) && is_numeric( $_GET['author'] ) ) {
             wp_safe_redirect( home_url(), 301 );
             exit;
@@ -2437,6 +2458,7 @@ return $status_header;
         // Suppress errors to avoid filling the log with "Deadlock found" messages. 
         // If a deadlock occurs, it just means another process is handling this IP, which is fine.
         $wpdb->suppress_errors();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $lock_acquired = $wpdb->query($wpdb->prepare("INSERT IGNORE INTO {$wpdb->prefix}advaipbl_cache (cache_key, cache_value, expires_at) VALUES (%s, '1', %d)", $lock_key, time() + 15));
         $wpdb->show_errors();
 
@@ -2447,7 +2469,7 @@ return $status_header;
         
         
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         if ($wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip))) {
             $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
             if ($context === 'frontend_block') { $this->access_denied_page(__('403 - Access Denied', 'advanced-ip-blocker'), $this->get_block_message('generic')); exit; }
@@ -2473,6 +2495,7 @@ if ($custom_duration_seconds !== null) {
 
 $expires_at = ($duration_in_seconds > 0) ? $timestamp + $duration_in_seconds : 0;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->insert($table_name, [ 'ip_range' => $ip, 'block_type' => $type, 'timestamp' => $timestamp, 'expires_at' => $expires_at, 'reason' => $reason_message ]);
         
         // Pass the reason to the logger
@@ -2533,6 +2556,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $this->reporter_manager->queue_report( $ip, $type, $extra_data );
     }
 
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
 
         if ($context === 'frontend_block') {
@@ -2596,7 +2620,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE timestamp < DATE_SUB(NOW(), INTERVAL %d DAY)", $retention_days));
     }
     
@@ -2615,6 +2639,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $table_audit = $wpdb->prefix . 'advaipbl_activity_log';
         $table_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
         
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $table_missing = ($wpdb->get_var("SHOW TABLES LIKE '$table_audit'") != $table_audit) 
                       || ($wpdb->get_var("SHOW TABLES LIKE '$table_blocked'") != $table_blocked);
 
@@ -2755,6 +2780,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
                 $expires_at = $timestamp + $duration_in_seconds;
 
                 // Insertamos la fila en la nueva tabla.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                 $wpdb->insert(
                     $table_name,
                     [
@@ -3259,6 +3285,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
 		default: $message = sprintf(__('A %s error occurred.', 'advanced-ip-blocker'), strtoupper($type)); break;
     }
     
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
     @$wpdb->insert(
         $table_name,
         [
@@ -3475,6 +3502,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         $lock_key = 'lock_blocking_shutdown_' . md5($ip);
         
         $wpdb->suppress_errors(); // Avoid deadlock noise
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $lock_acquired = $wpdb->query($wpdb->prepare(
             "INSERT IGNORE INTO {$wpdb->prefix}advaipbl_cache (cache_key, cache_value, expires_at) VALUES (%s, %s, %d)",
             $lock_key, '1', time() + 15
@@ -3485,9 +3513,10 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             return;
         }
         $table_name_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $existing_block = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name_blocked} WHERE ip_range = %s", $ip));
         if ($existing_block) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
             return;
         }
@@ -3506,6 +3535,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         ];
         $option_key = $option_key_map[$type] ?? null;
         if ( ! $option_key ) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]); // Liberar cerrojo antes de salir
             return;
         }
@@ -3578,6 +3608,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
 
         } elseif ($notification_enabled && in_array($frequency, ['daily', 'weekly'])) {
             $table_name_queue = $wpdb->prefix . 'advaipbl_notifications_queue';
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             @$wpdb->insert($table_name_queue, ['timestamp' => current_time('mysql', 1), 'ip' => $ip, 'block_type' => $type, 'reason' => $reason]);
         }
 
@@ -3598,6 +3629,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
              $this->reporter_manager->queue_report( $ip, 'login_lockdown', ['trigger' => $trigger] );
         }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
     }
 	
@@ -4084,7 +4116,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     }
     $this->block_response_initiated = true;
 
-    $is_xmlrpc_request = (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'xmlrpc.php') !== false);
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+    $is_xmlrpc_request = (strpos($request_uri, 'xmlrpc.php') !== false);
 
     $custom_message = $this->options['custom_block_message'] ?? '';
     $display_message = '';
@@ -4151,11 +4184,12 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         $is_single_ip = filter_var($entry_to_unblock, FILTER_VALIDATE_IP);
 
-        // Borrar de la nueva tabla
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->delete($table_name, ['ip_range' => $entry_to_unblock]);
         
         // También borrar de la tabla de reportes pendientes para evitar falsos positivos
         $table_reports = $wpdb->prefix . 'advaipbl_pending_reports';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->delete($table_reports, ['ip' => $entry_to_unblock]);
         
         $this->clear_blocked_ips_cache();
@@ -4211,12 +4245,12 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         $table_name_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
 
         // 1. Vaciar la tabla de IPs bloqueadas.
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query("TRUNCATE TABLE `{$table_name_blocked}`");
         
         // También vaciar la tabla de reportes pendientes
         $table_reports = $wpdb->prefix . 'advaipbl_pending_reports';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query("TRUNCATE TABLE `{$table_reports}`");
 
         // 2. Limpiar la caché de objetos para el contador.
@@ -4259,7 +4293,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
         // 1. Obtener todas las IPs que van a expirar
         // Aumentamos el límite a 100 para procesar en lotes razonables y evitar timeouts masivos
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $expiring_ips = $wpdb->get_results($wpdb->prepare(
             "SELECT ip_range, block_type FROM {$table_name} WHERE expires_at < %d AND expires_at > 0 LIMIT 100",
             $now
@@ -4682,6 +4716,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 * elimina todos los demás avisos de administrador para una interfaz limpia.
 */
 public function conditionally_remove_admin_notices() {
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     $current_page_slug = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
     $plugin_pages = [
         'advaipbl_settings_page',
@@ -5002,6 +5037,7 @@ private function get_first_public_ip_from_string($ip_string) {
     $arrow_class = ($orderby === $column_key) ? 'sorted ' . $order : 'sortable desc';
     
     // Obtenemos los parámetros de la URL actual para mantenerlos al ordenar
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     $current_params = $_GET;
     $url_params = array_merge($current_params, [
         'orderby' => $column_key,
@@ -5188,7 +5224,7 @@ private function get_first_public_ip_from_string($ip_string) {
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         $definitions = $this->get_all_block_type_definitions();
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results("SELECT * FROM {$table_name}", ARRAY_A);
 
         $all_blocked = [];
@@ -5485,7 +5521,9 @@ private function get_first_public_ip_from_string($ip_string) {
      */
     public function display_telemetry_notice() {
         // Condición 1: Solo mostrar en las páginas de nuestro plugin.
-        if (!isset($_GET['page']) || strpos($_GET['page'], 'advaipbl_settings_page') === false) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+        if (strpos($page, 'advaipbl_settings_page') === false) {
             return;
         }
 
@@ -5599,6 +5637,7 @@ private function get_first_public_ip_from_string($ip_string) {
         ];
 
         $seven_days_ago = gmdate('Y-m-d H:i:s', strtotime('-7 days'));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $blocks_by_type_results = $wpdb->get_results( $wpdb->prepare(
             "SELECT log_type, COUNT(log_id) as count FROM {$wpdb->prefix}advaipbl_logs WHERE level = 'critical' AND timestamp >= %s GROUP BY log_type",
             $seven_days_ago
@@ -5616,11 +5655,14 @@ private function get_first_public_ip_from_string($ip_string) {
             'honeypot_urls_count'     => count(get_option(self::OPTION_HONEYPOT_URLS, [])),
             'blocked_user_agents_count' => count(get_option(self::OPTION_BLOCKED_UAS, [])),
             'manual_asn_count'        => count(get_option(self::OPTION_BLOCKED_ASNS, [])),
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             'total_blocks_7d'         => (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(log_id) FROM {$wpdb->prefix}advaipbl_logs WHERE level = 'critical' AND timestamp >= %s", $seven_days_ago)),
             'blocks_by_type_7d'       => $blocks_by_type_7d,
             'geoblock_country_count'  => count($this->options['geoblock_countries'] ?? []),
             'active_blocks_count'     => $this->get_blocked_count(),
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             'ips_with_active_score'   => (int) $wpdb->get_var("SELECT COUNT(id) FROM {$wpdb->prefix}advaipbl_ip_scores"),
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			'active_malicious_signatures' => (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(id) FROM {$wpdb->prefix}advaipbl_malicious_signatures WHERE expires_at > %d", time())),
             'geo_challenge_country_count' => count($this->options['geo_challenge_countries'] ?? []),
 		];
@@ -5655,7 +5697,8 @@ public function handle_export_settings_ajax() {
         }
         check_ajax_referer( 'advaipbl_export_nonce', 'nonce' );
 
-        $export_type = isset( $_POST['export_type'] ) && in_array( $_POST['export_type'], ['template', 'full_backup'] ) ? $_POST['export_type'] : 'template';
+        $export_type_raw = isset( $_POST['export_type'] ) ? sanitize_text_field(wp_unslash($_POST['export_type'])) : 'template';
+        $export_type = in_array( $export_type_raw, ['template', 'full_backup'] ) ? $export_type_raw : 'template';
 
         global $wpdb;
         $settings_to_export = [];
@@ -5668,7 +5711,7 @@ public function handle_export_settings_ajax() {
 
         // 2. Exportar la tabla de IPs bloqueadas
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $blocked_ips_data = $wpdb->get_results("SELECT ip_range, block_type, timestamp, expires_at, reason FROM {$table_name}", ARRAY_A);
         if (!empty($blocked_ips_data)) {
             $settings_to_export['blocked_ips_table'] = $blocked_ips_data;
@@ -5679,7 +5722,8 @@ public function handle_export_settings_ajax() {
             $sensitive_keys = [
                 'recaptcha_site_key', 'recaptcha_secret_key', 
                 'api_key_ipapicom', 'api_key_ipstackcom', 'api_key_ipinfocom', 
-                'api_key_ip_apicom', 'maxmind_license_key', 'push_webhook_urls'
+                'api_key_ip_apicom', 'maxmind_license_key', 'push_webhook_urls',
+                'cf_api_token', 'cf_zone_id', 'abuseipdb_api_key'
             ];
             foreach ($sensitive_keys as $sensitive_key) {
                 if (isset($settings_to_export[self::OPTION_SETTINGS][$sensitive_key])) {
@@ -5709,13 +5753,18 @@ public function handle_import_settings() {
     $message = '';
     $type = 'error';
 
-    if ( isset( $_FILES['advaipbl_import_file'] ) && UPLOAD_ERR_OK === $_FILES['advaipbl_import_file']['error'] ) {
-        $file_name = $_FILES['advaipbl_import_file']['name'];
+    $file_error = isset($_FILES['advaipbl_import_file']['error']) ? (int) $_FILES['advaipbl_import_file']['error'] : UPLOAD_ERR_NO_FILE;
+    if ( isset( $_FILES['advaipbl_import_file'] ) && UPLOAD_ERR_OK === $file_error ) {
+        $file_name = isset( $_FILES['advaipbl_import_file']['name'] ) ? sanitize_file_name(wp_unslash($_FILES['advaipbl_import_file']['name'])) : '';
         if ( 'json' !== pathinfo( $file_name, PATHINFO_EXTENSION ) ) {
             $message = __( 'Error: The uploaded file is not a .json file.', 'advanced-ip-blocker' );
             $this->log_event( sprintf( 'A failed settings import was attempted by %s (invalid file type).', $this->get_current_admin_username() ), 'error' );
         } else {
-            $file_content = file_get_contents( $_FILES['advaipbl_import_file']['tmp_name'] );
+            $tmp_name = isset( $_FILES['advaipbl_import_file']['tmp_name'] ) ? sanitize_text_field(wp_unslash($_FILES['advaipbl_import_file']['tmp_name'])) : '';
+            if (empty($tmp_name)) {
+                return;
+            }
+            $file_content = file_get_contents( $tmp_name );
             $settings_to_import = json_decode( $file_content, true );
 
             if ( JSON_ERROR_NONE === json_last_error() && is_array( $settings_to_import ) ) {
@@ -5738,7 +5787,7 @@ public function handle_import_settings() {
                     elseif ($key === 'blocked_ips_table' && is_array($value)) {
                         global $wpdb;
                         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                         $wpdb->query("TRUNCATE TABLE `{$table_name}`");
                         
                         foreach ($value as $row) {
@@ -5896,10 +5945,10 @@ public function handle_import_settings() {
      */
     public function handle_login_action() {
         if ( ! isset( $_POST['advaipbl_2fa_login_step'] ) ) { return; }
-        $step = $_POST['advaipbl_2fa_login_step'];
+        $step = sanitize_text_field(wp_unslash($_POST['advaipbl_2fa_login_step']));
         $user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
-        $code = isset( $_POST['advaipbl_2fa_code'] ) ? trim( sanitize_text_field( $_POST['advaipbl_2fa_code'] ) ) : '';
-        $nonce = $_POST['_wpnonce'] ?? '';
+        $code = isset( $_POST['advaipbl_2fa_code'] ) ? trim( sanitize_text_field( wp_unslash($_POST['advaipbl_2fa_code']) ) ) : '';
+        $nonce = isset($_POST['_wpnonce']) ? sanitize_text_field(wp_unslash($_POST['_wpnonce'])) : '';
         $user = get_user_by( 'id', $user_id );
         if ( ! $user ) { wp_die( 'Authentication error: Invalid user.' ); }
         $is_valid = false;
@@ -5920,7 +5969,7 @@ public function handle_import_settings() {
         }
         if ( $is_valid ) {
             wp_set_auth_cookie( $user->ID, isset( $_POST['rememberme'] ) );
-            $redirect_to = isset( $_REQUEST['redirect_to'] ) && !empty($_REQUEST['redirect_to']) ? wp_unslash( $_REQUEST['redirect_to'] ) : admin_url();
+            $redirect_to = (isset( $_REQUEST['redirect_to'] ) && !empty($_REQUEST['redirect_to'])) ? sanitize_text_field(wp_unslash( $_REQUEST['redirect_to'] )) : admin_url();
             wp_safe_redirect( $redirect_to );
             exit;
         } else {
@@ -5934,7 +5983,7 @@ public function handle_import_settings() {
                 'action' => $error_action_redirect,
                 'user_id' => $user->ID,
                 'wp_auth_nonce' => wp_create_nonce( 'advaipbl-2fa-interim-' . $user->ID ),
-                'redirect_to' => $_REQUEST['redirect_to'] ?? '',
+                'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
             ], site_url( 'wp-login.php', 'login' ) );
             wp_safe_redirect( $redirect_url );
             exit;
@@ -5975,8 +6024,10 @@ public function handle_import_settings() {
                 'action' => 'advaipbl_validate_2fa',
                 'user_id' => $user->ID,
                 'wp_auth_nonce' => wp_create_nonce( 'advaipbl-2fa-interim-' . $user->ID ),
-                'redirect_to' => $_REQUEST['redirect_to'] ?? '',
-                'rememberme' => $_REQUEST['rememberme'] ?? '',
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                'rememberme' => isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : '',
             ], site_url( 'wp-login.php', 'login' ) );
             wp_safe_redirect( $redirect_url );
             exit;
@@ -5996,7 +6047,7 @@ public function handle_import_settings() {
      */
         public function display_2fa_login_form_step_2() {
         $user_id = isset( $_GET['user_id'] ) ? absint( $_GET['user_id'] ) : 0;
-        $nonce = $_GET['wp_auth_nonce'] ?? '';
+        $nonce = isset($_GET['wp_auth_nonce']) ? sanitize_text_field(wp_unslash($_GET['wp_auth_nonce'])) : '';
 
         if ( ! $user_id || ! wp_verify_nonce( $nonce, 'advaipbl-2fa-interim-' . $user_id ) ) {
             wp_die( 'Invalid 2FA request.' );
@@ -6004,7 +6055,7 @@ public function handle_import_settings() {
 
         $message = '';
         if ( isset( $_COOKIE['advaipbl_login_error'] ) ) {
-            $message = '<div id="login_error" class="notice notice-error">' . wp_kses_post( $_COOKIE['advaipbl_login_error'] ) . '</div>';
+            $message = '<div id="login_error" class="notice notice-error">' . wp_kses_post( wp_unslash($_COOKIE['advaipbl_login_error']) ) . '</div>';
             // Borramos la cookie para que no se muestre de nuevo
             unset( $_COOKIE['advaipbl_login_error'] );
             setcookie( 'advaipbl_login_error', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN );
@@ -6024,8 +6075,8 @@ public function handle_import_settings() {
                 <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" pattern="[0-9]*" inputmode="numeric" autocomplete="one-time-code" placeholder="123 456" />
             </p>
             <input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
-            <input type="hidden" name="redirect_to" value="<?php echo esc_attr( $_REQUEST['redirect_to'] ?? '' ); ?>" />
-            <input type="hidden" name="rememberme" value="<?php echo esc_attr( $_REQUEST['rememberme'] ?? '' ); ?>" />
+            <input type="hidden" name="redirect_to" value="<?php echo esc_attr( isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '' ); ?>" />
+            <input type="hidden" name="rememberme" value="<?php echo esc_attr( isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : '' ); ?>" />
             <input type="hidden" name="advaipbl_2fa_login_step" value="2" />
             <?php wp_nonce_field( 'advaipbl-2fa-verify-' . $user_id ); ?>
             <p class="submit">
@@ -6039,7 +6090,7 @@ public function handle_import_settings() {
                         'action' => 'advaipbl_validate_2fa_backup',
                         'user_id' => $user_id,
                         'wp_auth_nonce' => $nonce,
-                        'redirect_to' => $_REQUEST['redirect_to'] ?? '',
+                        'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
                     ], site_url( 'wp-login.php', 'login' ) ) );
                 ?>">
                     <?php esc_html_e( 'Use a recovery code', 'advanced-ip-blocker' ); ?>
@@ -6056,7 +6107,7 @@ public function handle_import_settings() {
      */
         public function display_2fa_backup_code_form() {
         $user_id = isset( $_GET['user_id'] ) ? absint( $_GET['user_id'] ) : 0;
-        $nonce = $_GET['wp_auth_nonce'] ?? '';
+        $nonce = isset($_GET['wp_auth_nonce']) ? sanitize_text_field(wp_unslash($_GET['wp_auth_nonce'])) : '';
 
         if ( ! $user_id || ! wp_verify_nonce( $nonce, 'advaipbl-2fa-interim-' . $user_id ) ) {
             wp_die( 'Invalid recovery code request.' );
@@ -6064,7 +6115,7 @@ public function handle_import_settings() {
         
         $message = '';
         if ( isset( $_COOKIE['advaipbl_login_error'] ) ) {
-            $message = '<div id="login_error" class="notice notice-error">' . wp_kses_post( $_COOKIE['advaipbl_login_error'] ) . '</div>';
+            $message = '<div id="login_error" class="notice notice-error">' . wp_kses_post( wp_unslash($_COOKIE['advaipbl_login_error']) ) . '</div>';
             unset( $_COOKIE['advaipbl_login_error'] );
             setcookie( 'advaipbl_login_error', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN );
         } else {
@@ -6083,8 +6134,8 @@ public function handle_import_settings() {
                 <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" autocomplete="off" placeholder="XXXXX-XXXXX" />
             </p>
             <input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
-            <input type="hidden" name="redirect_to" value="<?php echo esc_attr( $_REQUEST['redirect_to'] ?? '' ); ?>" />
-            <input type="hidden" name="rememberme" value="<?php echo esc_attr( $_REQUEST['rememberme'] ?? '' ); ?>" />
+            <input type="hidden" name="redirect_to" value="<?php echo esc_attr( isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '' ); ?>" />
+            <input type="hidden" name="rememberme" value="<?php echo esc_attr( isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : '' ); ?>" />
             <input type="hidden" name="advaipbl_2fa_login_step" value="backup" />
             <?php wp_nonce_field( 'advaipbl-2fa-verify-backup-' . $user_id ); ?>
             <p class="submit">
@@ -6098,7 +6149,7 @@ public function handle_import_settings() {
                         'action' => 'advaipbl_validate_2fa',
                         'user_id' => $user_id,
                         'wp_auth_nonce' => $nonce,
-                        'redirect_to' => $_REQUEST['redirect_to'] ?? '',
+                        'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
                     ], site_url( 'wp-login.php', 'login' ) ) );
                 ?>">
                     <?php esc_html_e( 'Use an authenticator app code', 'advanced-ip-blocker' ); ?>
@@ -6401,7 +6452,9 @@ public function handle_import_settings() {
          !empty($this->options['maxmind_license_key']) && $this->geoip_manager
      ) {
          // Increase limits for large file download/extraction
+         // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
          if (function_exists('set_time_limit')) { @set_time_limit(300); }
+         // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
          @ini_set('memory_limit', '256M');
          
          $this->log_event('Starting scheduled GeoIP database update.', 'info');
@@ -6468,7 +6521,7 @@ public function handle_import_settings() {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $is_blocked_in_db = $wpdb->get_var( $wpdb->prepare(
             "SELECT id FROM {$table_name} WHERE ip_range = %s AND (expires_at = 0 OR expires_at > %d)",
             $ip,
@@ -6522,6 +6575,7 @@ public function handle_import_settings() {
         ];
 
         foreach ($options_to_optimize as $option_name) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->query( $wpdb->prepare( 
                 "UPDATE {$wpdb->options} SET `autoload` = 'no' WHERE `option_name` = %s", 
                 $option_name 
@@ -6591,7 +6645,8 @@ public function handle_import_settings() {
     public function get_request_method() {
         static $request_method = null;
         if (is_null($request_method)) {
-            $request_method = sanitize_text_field($_SERVER['REQUEST_METHOD'] ?? 'GET');
+            $request_method_raw = isset($_SERVER['REQUEST_METHOD']) ? wp_unslash($_SERVER['REQUEST_METHOD']) : 'GET';
+            $request_method = sanitize_text_field($request_method_raw);
         }
         return $request_method;
     }
@@ -6615,7 +6670,8 @@ public function handle_import_settings() {
     public function get_remote_addr() {
         static $remote_addr = null;
         if (is_null($remote_addr)) {
-            $remote_addr = filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) ?: '';
+            $remote_addr_raw = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+            $remote_addr = filter_var($remote_addr_raw, FILTER_VALIDATE_IP) ?: '';
         }
         return $remote_addr;
     }
@@ -6670,6 +6726,7 @@ public function handle_import_settings() {
             $details = wp_json_encode(['triggering_ip_hashes' => $trigger_data['ips']]);
 
             // Insertamos el lockdown en nuestra nueva tabla.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->insert(
                 $lockdowns_table,
                 [
@@ -6682,6 +6739,7 @@ public function handle_import_settings() {
             );
 
             // Limpiamos el contador de la caché, ya que el lockdown está activo.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->delete($wpdb->prefix . 'advaipbl_cache', ['cache_key' => $cache_key]);
 
             $this->log_event(sprintf('Endpoint Lockdown activated for "%s" for %d minutes due to %d suspicious blocks.', $endpoint_key, $duration_minutes, $trigger_data['count']), 'critical');
@@ -6733,7 +6791,7 @@ public function handle_import_settings() {
             $lockdowns_table = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
 
             // Verificamos que no haya ya un lockdown activo para este endpoint para evitar duplicados.
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $is_already_active = $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM {$lockdowns_table} WHERE endpoint_key = %s AND expires_at > %d",
                 $endpoint_key, time()
@@ -6750,6 +6808,7 @@ public function handle_import_settings() {
                 );
                 $details = wp_json_encode(['triggering_ip_hashes' => $trigger_data['ip_hashes']]);
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                 $wpdb->insert(
                     $lockdowns_table,
                     [
@@ -6766,6 +6825,7 @@ public function handle_import_settings() {
             }
             
             // Limpiamos el contador de la caché, ya que el lockdown está activo.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->delete($wpdb->prefix . 'advaipbl_cache', ['cache_key' => $cache_key]);
         }
     }
@@ -6787,6 +6847,7 @@ public function handle_import_settings() {
         if ($this->request_is_asn_whitelisted) { return; }
         
         // Procesa la respuesta del desafío si es para este tipo.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_challenge_type']) && $_POST['_advaipbl_challenge_type'] === 'endpoint') {
             // Un pase de 1 hora es suficiente para un endpoint crítico.
             $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', 1 * HOUR_IN_SECONDS);
@@ -6814,7 +6875,7 @@ public function handle_import_settings() {
 
         global $wpdb;
         $lockdowns_table = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $is_lockdown_active = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$lockdowns_table} WHERE endpoint_key = %s AND expires_at > %d",
             $endpoint_key,
@@ -6889,6 +6950,7 @@ public function maybe_redirect_to_wizard() {
  */
 public function display_setup_wizard_notice() {
     // Solo mostrar el aviso si la bandera existe, el usuario puede gestionar opciones, y no estamos ya en el asistente.
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     if ( get_option( 'advaipbl_run_setup_wizard' ) && current_user_can( 'manage_options' ) && ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'advaipbl-setup-wizard' ) ) {
         $wizard_url = admin_url( 'admin.php?page=advaipbl-setup-wizard' );
         ?>
@@ -7043,7 +7105,7 @@ public function check_ip_with_abuseipdb() {
              $lockdowns_table = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
              
              // Check if already active
-             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
              $is_active = $wpdb->get_var($wpdb->prepare(
                  "SELECT id FROM {$lockdowns_table} WHERE endpoint_key = %s AND expires_at > %d",
                  $endpoint_key, time()
@@ -7067,6 +7129,7 @@ public function check_ip_with_abuseipdb() {
                  ];
                  $details = wp_json_encode($details_array);
 
+                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                  $wpdb->insert(
                      $lockdowns_table,
                      [
@@ -7083,6 +7146,7 @@ public function check_ip_with_abuseipdb() {
              }
              
              // Clear cache as lockdown is now active
+             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
              $wpdb->delete($wpdb->prefix . 'advaipbl_cache', ['cache_key' => $cache_key]);
         }
     }
@@ -7093,7 +7157,7 @@ public function check_ip_with_abuseipdb() {
     private function is_lockdown_active_for_type($type) {
          global $wpdb;
          $lockdowns_table = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
-         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
          return $wpdb->get_var($wpdb->prepare(
              "SELECT id FROM {$lockdowns_table} WHERE endpoint_key = %s AND expires_at > %d",
              $type, time()
@@ -7101,6 +7165,7 @@ public function check_ip_with_abuseipdb() {
     }
 
 public function scanner_ping_endpoint() {
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     if (isset($_GET['advaipbl-ping']) && $_GET['advaipbl-ping'] === '1') {
         
         $encoded_ips = [
@@ -7119,8 +7184,8 @@ public function scanner_ping_endpoint() {
         $allowed_ips = array_map('base64_decode', $encoded_ips);
         $expected_user_agent = base64_decode($encoded_user_agent);
         
-        $visitor_ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $request_user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $visitor_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+        $request_user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
 
         if (in_array($visitor_ip, $allowed_ips, true) && hash_equals($expected_user_agent, $request_user_agent)) {
 

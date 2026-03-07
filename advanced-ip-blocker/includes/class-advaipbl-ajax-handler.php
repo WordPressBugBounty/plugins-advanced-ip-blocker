@@ -170,7 +170,7 @@ class ADVAIPBL_Ajax_Handler {
 
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $lockdown = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $lockdown_id), ARRAY_A);
 
         if ($lockdown) {
@@ -952,6 +952,7 @@ public function ajax_verify_abuseipdb_key() {
             }
 
             // Check if actively blocked (expires_at is 0 OR expires_at > current_time)
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $exists = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM {$table_name} WHERE ip_range = %s AND (expires_at = 0 OR expires_at > %d)", 
                 $ip_or_range, 
@@ -1020,7 +1021,7 @@ public function ajax_verify_abuseipdb_key() {
         $current_time = time();
         
         // Fetch ALL actively blocked IPs (permanent or not expired)
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results($wpdb->prepare("SELECT ip_range, reason, expires_at, block_type FROM {$table_name} WHERE expires_at = 0 OR expires_at > %d", $current_time), ARRAY_A);
 
         if (empty($results)) {
