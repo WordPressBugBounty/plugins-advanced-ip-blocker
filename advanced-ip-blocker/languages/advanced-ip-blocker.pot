@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.8.9\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -1412,6 +1412,38 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php:3065
 msgid "ASN blocklist saved successfully."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:501
+msgid "Whitelist Login Countries"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1210
+msgid "Select one or more countries that are allowed to access wp-login.php. If empty, all countries are allowed."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1434
+msgid "AIB Account Connection"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1435
+msgid "Not Connected"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1436
+msgid "Get a Free API Key below to connect your site to the AIB Cloud Network."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1437
+msgid "API Token"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1438
+msgid "Get Free Key"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1439
+msgid "Connecting to the Advanced IP Blocker cloud network gives you access to the community blocklist and deep site scanning."
 msgstr ""
 
 #: includes/class-advaipbl-main.php:3078

@@ -180,7 +180,7 @@ private function __construct() {
     // --- Hook para reglas de usuario (Username Block) ---
     add_filter('authenticate', [$this, 'check_login_rules'], 20, 3);
 
-    add_action('plugins_loaded', [$this, 'check_database_update']);
+    add_action('admin_init', [$this, 'check_database_update']);
     $this->add_hooks();
     
     if (is_admin()) {
@@ -259,6 +259,7 @@ private function __construct() {
         add_filter('get_the_author_login', [$this, 'prevent_user_enumeration_via_feeds']);
         add_action('wp_login_failed', [$this, 'registrar_intento_login_fallido']);
         add_action('login_init', [ $this, 'handle_login_page_restriction' ], 1 );
+		add_action('login_init', [ $this, 'handle_login_geo_restriction' ], 2 );
         add_action('wp_login', [$this, 'auto_whitelist_admin_on_login'], 10, 2);
         add_filter('rest_endpoints', [ $this, 'disable_rest_api_user_endpoints' ] );
 		add_filter('oembed_response_data', [$this, 'prevent_user_enumeration_via_oembed'], 99, 4);
@@ -320,6 +321,7 @@ private function __construct() {
             add_action('wp_ajax_advaipbl_test_outbound_connection', [$this->ajax_handler, 'ajax_test_outbound_connection']);
             add_action('wp_ajax_advaipbl_add_ip_to_whitelist', [$this->ajax_handler, 'ajax_add_ip_to_whitelist']);
             add_action('wp_ajax_advaipbl_verify_api_key', [$this->ajax_handler, 'ajax_verify_api_key']);
+            add_action('wp_ajax_advaipbl_get_free_api_key', [$this->ajax_handler, 'ajax_get_free_api_key']);
 			add_action('wp_ajax_advaipbl_update_geoip_db', [$this->ajax_handler, 'ajax_update_geoip_db']);
 			add_action('wp_ajax_advaipbl_get_dashboard_stats', [$this->ajax_handler, 'ajax_get_dashboard_stats']); 
             add_action('wp_ajax_advaipbl_export_settings_ajax', [ $this, 'handle_export_settings_ajax' ] );
@@ -374,6 +376,33 @@ private function __construct() {
 
         if ( version_compare( $installed_ver, ADVAIPBL_DB_VERSION, '<' ) ) {
             self::setup_database_tables();
+        }
+    }
+    
+    /**
+     * Helper routine to automatically generate V3 API Tokens for users who
+     * already had the AIB Network activated in older versions.
+     */
+    private function auto_migrate_v3_token() {
+        // Ensure options are freshly loaded since this runs early in init during updates
+        $this->options = get_option(self::OPTION_SETTINGS, []);
+
+        // If the user hasn't opted-in to the community network, do nothing (privacy first)
+        if (empty($this->options['enable_community_network'])) {
+            return;
+        }
+        
+        // If they already have a V3 token, do nothing
+        if (!empty($this->options['api_token_v3'])) {
+            return;
+        }
+
+        // Trigger the internal site registration to generate keys and fetch the V3 token
+        if (isset($this->community_manager)) {
+            $this->community_manager->register_site();
+            
+            // Re-load options into memory as register_site() modifies the DB directly sometimes
+            $this->options = get_option(self::OPTION_SETTINGS, []);
         }
     }
 	
@@ -459,7 +488,7 @@ private function __construct() {
             return; 
         }
         
-        if (wp_is_json_request() && strpos($request_uri, '/telemetry/') === false && strpos($request_uri, '/aib-network/') === false && strpos($request_uri, '/aib-scanner/') === false) {
+        if (wp_is_json_request() && strpos($request_uri, '/telemetry/') === false && strpos($request_uri, '/aib-network/') === false && strpos($request_uri, '/aib-scanner/') === false && strpos($request_uri, '/aib-api/') === false) {
             return;
         }
         if ($this->challenge_passed_this_request) { return; }
@@ -592,6 +621,57 @@ private function __construct() {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->insert($table_name, $data_to_log);
     }           
+
+    /**
+     * Purges all cache from popular caching plugins.
+     * Called when security settings or blocklists change to ensure immediate effect.
+     */
+    public function purge_all_page_caches() {
+        // LiteSpeed Cache
+        if (has_action('litespeed_purge_all')) {
+            do_action('litespeed_purge_all');
+        } elseif (defined('LSCWP_V')) {
+            do_action('litespeed_purge_all_hook'); 
+        }
+
+        // WP Rocket
+        if (function_exists('rocket_clean_domain')) {
+            rocket_clean_domain();
+        }
+
+        // W3 Total Cache
+        if (function_exists('w3tc_flush_all')) {
+            w3tc_flush_all();
+        }
+
+        // WP Super Cache
+        if (function_exists('wp_cache_clear_cache')) {
+            wp_cache_clear_cache();
+        }
+
+        // WP Fastest Cache
+        if (isset($GLOBALS['wp_fastest_cache']) && method_exists($GLOBALS['wp_fastest_cache'], 'deleteCache')) {
+            $GLOBALS['wp_fastest_cache']->deleteCache(true);
+        }
+
+        // Autoptimize
+        if (class_exists('autoptimizeCache')) {
+            autoptimizeCache::clearall();
+        }
+
+        // SG Optimizer (SiteGround)
+        if (function_exists('sg_cachepress_purge_cache')) {
+            sg_cachepress_purge_cache();
+        }
+        
+        // Kinsta Cache
+        if (class_exists('Kinsta\Cache')) {
+            do_action('kinsta_purge_edge_cache');
+        }
+        
+        /* translators: %s: Type of action triggered. */
+        $this->log_event(__('System page caches successfully flushed after a security update.', 'advanced-ip-blocker'), 'info', 'localhost');
+    }
       
 	/**
  * Se ejecuta temprano para verificar bots conocidos y tomar acciones.
@@ -2002,6 +2082,39 @@ return $status_header;
             }
         }
     }
+
+    /**
+     * Handles the geo-restriction of the login page.
+     * Hooked to 'login_init' with priority 2.
+     */
+    public function handle_login_geo_restriction() {
+        if ( ! empty( $this->options['login_restrict_countries'] ) && is_array( $this->options['login_restrict_countries'] ) ) {
+            $client_ip = $this->get_client_ip();
+            
+            // Bypass logic: whitelisted IPs are always allowed
+            if ( $this->is_whitelisted( $client_ip ) ) {
+                return;
+            }
+
+            // Fetch the location of the IP
+            $location = $this->geolocation_manager->fetch_location( $client_ip );
+            $country_code = $location['country_code'] ?? '';
+
+            // If the country is not found, or it's not in the allowed list, block it
+            if ( empty($country_code) || ! in_array( $country_code, $this->options['login_restrict_countries'], true ) ) {
+                
+                /* translators: 1: The IP address, 2: The Country Code */
+                $this->log_event( sprintf( __( 'Login access denied due to Geo-Blocking restrictions for IP %1$s (%2$s)', 'advanced-ip-blocker' ), $client_ip, empty($country_code) ? 'Unknown' : $country_code ), 'warning', ['ip' => $client_ip] );
+                
+                // Show a generic access denied message
+                wp_die(
+                    esc_html__( 'Login access from your location is not allowed.', 'advanced-ip-blocker' ),
+                    esc_html__( 'Access Denied', 'advanced-ip-blocker' ),
+                    [ 'response' => 403 ]
+                );
+            }
+        }
+    }
 	
     /**
      * Disables the REST API user endpoints for non-authenticated users if the option is enabled.
@@ -2632,6 +2745,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         
         // Valor por defecto '1.0' para instalaciones muy antiguas
         $current_db_version = get_option('advaipbl_db_version', '1.0');
+        $installed_plugin_ver = get_option('advaipbl_version_installed', '0.0.0');
         
         // Si la versión guardada es menor que la versión actual del código ('1.9')
         // O si falta la tabla de logs de auditoría (verificación de auto-reparación)
@@ -2661,6 +2775,18 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
                  $this->community_manager->update_list();
                  $this->log_event('Community list forced update during DB upgrade.', 'info');
             }
+        }
+        
+        // --- Migraciones de nueva generación basadas en Plugin Version ---
+        if ( version_compare($installed_plugin_ver, ADVAIPBL_VERSION, '<') ) {
+            
+            // Migración a 8.9.0: Auto-Generar Token V3
+            if ( version_compare($installed_plugin_ver, '8.9.0', '<') && $installed_plugin_ver !== '0.0.0' ) {
+                $this->auto_migrate_v3_token();
+            }
+
+            // Actualizar la versión instalada en la base de datos
+            update_option('advaipbl_version_installed', ADVAIPBL_VERSION);
         }
 		
 		$already_checked = true;
@@ -5556,11 +5682,11 @@ private function get_first_public_ip_from_string($ip_string) {
      * Recopila y envía datos de telemetría anónimos a un endpoint de API REST.
      * Se ejecuta a través de una tarea de WP-Cron.
      */
-            public function send_telemetry_data() {
-        if (empty($this->options['allow_telemetry']) || '1' !== $this->options['allow_telemetry']) {
-            return;
-        }
-
+    /**
+     * Genera el payload de telemetría de uso del plugin.
+     * @return array
+     */
+    private function get_telemetry_payload() {
         global $wpdb;
         $is_woocommerce_active = class_exists('WooCommerce');
         
@@ -5576,7 +5702,7 @@ private function get_first_public_ip_from_string($ip_string) {
             'user_count'     => count_users()['total_users'] ?? 0,
             'is_woo_active'  => $is_woocommerce_active,
             'geo_provider'   => $this->options['geolocation_provider'] ?? 'N/A',
-			'geolocation_method' => $this->options['geolocation_method'] ?? 'api',
+            'geolocation_method' => $this->options['geolocation_method'] ?? 'api',
         ];
 
         if ($is_woocommerce_active) {
@@ -5588,7 +5714,6 @@ private function get_first_public_ip_from_string($ip_string) {
         }
         
         // Array de settings completo que refleja todos los módulos principales.
-        // Las claves coinciden con las opciones reales para mayor claridad.
         $telemetry_data['settings'] = [
             'enable_waf'                  => !empty($this->options['enable_waf']),
             'rate_limiting_enable'        => !empty($this->options['rate_limiting_enable']),
@@ -5597,22 +5722,22 @@ private function get_first_public_ip_from_string($ip_string) {
             'enable_user_agent_blocking'  => !empty($this->options['enable_user_agent_blocking']),
             'enable_spamhaus_asn'         => !empty($this->options['enable_spamhaus_asn']),
             'enable_manual_asn'           => !empty($this->options['enable_manual_asn']),
-			'enable_abuseipdb'            => !empty($this->options['enable_abuseipdb']),
+            'enable_abuseipdb'            => !empty($this->options['enable_abuseipdb']),
             'xmlrpc_protection_mode'      => $this->options['xmlrpc_protection_mode'] ?? 'smart',
             'recaptcha_enable'            => !empty($this->options['recaptcha_enable']),
             'enable_push_notifications'   => !empty($this->options['enable_push_notifications']),
-			'enable_threat_scoring'       => !empty($this->options['enable_threat_scoring']),
-			'auto_whitelist_admin'        => !empty($this->options['auto_whitelist_admin']),
+            'enable_threat_scoring'       => !empty($this->options['enable_threat_scoring']),
+            'auto_whitelist_admin'        => !empty($this->options['auto_whitelist_admin']),
             'disable_user_enumeration'    => !empty($this->options['disable_user_enumeration']),
             'prevent_author_scanning'     => !empty($this->options['prevent_author_scanning']),
             'restrict_login_page'         => !empty($this->options['restrict_login_page']),
-			'prevent_login_hinting'       => !empty($this->options['prevent_login_hinting']),
-			'enable_email_notifications'  => !empty($this->options['enable_email_notifications']),
-			'enable_signature_engine'     => !empty($this->options['enable_signature_engine']),
+            'prevent_login_hinting'       => !empty($this->options['prevent_login_hinting']),
+            'enable_email_notifications'  => !empty($this->options['enable_email_notifications']),
+            'enable_signature_engine'     => !empty($this->options['enable_signature_engine']),
             'enable_signature_analysis'   => !empty($this->options['enable_signature_analysis']),
             'enable_signature_blocking'   => !empty($this->options['enable_signature_blocking']),
-			'enable_2fa'                  => !empty($this->options['enable_2fa']),
-			'enable_xmlrpc_lockdown'      => !empty($this->options['enable_xmlrpc_lockdown']),
+            'enable_2fa'                  => !empty($this->options['enable_2fa']),
+            'enable_xmlrpc_lockdown'      => !empty($this->options['enable_xmlrpc_lockdown']),
             'enable_login_lockdown'       => !empty($this->options['enable_login_lockdown']),
             'enable_404_lockdown'         => !empty($this->options['enable_404_lockdown']),
             'enable_403_lockdown'         => !empty($this->options['enable_403_lockdown']),
@@ -5620,16 +5745,15 @@ private function get_first_public_ip_from_string($ip_string) {
             'enable_scheduled_scans'      => !empty($this->options['enable_scheduled_scans']),
             'enable_audit_log'            => !empty($this->options['enable_audit_log']),
             'enable_fim'                  => !empty($this->options['enable_fim']),
-
-			'enable_bot_verification'   => !empty($this->options['enable_bot_verification']),
-            'enable_geo_challenge'      => !empty($this->options['enable_geo_challenge']),
+            'enable_bot_verification'     => !empty($this->options['enable_bot_verification']),
+            'enable_geo_challenge'        => !empty($this->options['enable_geo_challenge']),
             'htaccess_write'              => !empty($this->options['enable_htaccess_write']),
             'htaccess_sync_ips'           => !empty($this->options['enable_htaccess_ip_blocking']),
             'htaccess_include_temps'      => !empty($this->options['enable_htaccess_all_ips']),
             'htaccess_hardening_system'   => !empty($this->options['htaccess_protect_system_files']),
             'htaccess_hardening_config'   => !empty($this->options['htaccess_protect_wp_config']),
             'htaccess_hardening_readme'   => !empty($this->options['htaccess_protect_readme']),
-			'cloudflare_enabled'          => !empty($this->options['enable_cloudflare']),
+            'cloudflare_enabled'          => !empty($this->options['enable_cloudflare']),
             'cloudflare_sync_manual'      => !empty($this->options['cf_sync_manual']),
             'cloudflare_sync_temp'        => !empty($this->options['cf_sync_temporary']),
             'aib_network_join'            => !empty($this->options['enable_community_network']),
@@ -5663,9 +5787,9 @@ private function get_first_public_ip_from_string($ip_string) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             'ips_with_active_score'   => (int) $wpdb->get_var("SELECT COUNT(id) FROM {$wpdb->prefix}advaipbl_ip_scores"),
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			'active_malicious_signatures' => (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(id) FROM {$wpdb->prefix}advaipbl_malicious_signatures WHERE expires_at > %d", time())),
+            'active_malicious_signatures' => (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(id) FROM {$wpdb->prefix}advaipbl_malicious_signatures WHERE expires_at > %d", time())),
             'geo_challenge_country_count' => count($this->options['geo_challenge_countries'] ?? []),
-		];
+        ];
 
         $server_ip = $this->get_server_ip();
         if ($server_ip) {
@@ -5674,17 +5798,44 @@ private function get_first_public_ip_from_string($ip_string) {
                 $telemetry_data['server_country'] = $location['country_code'];
             }
         }
+        
+        return $telemetry_data;
+    }
+
+    /**
+     * Recopila y envía datos de telemetría anónimos a un endpoint de API REST.
+     * Se ejecuta a través de una tarea de WP-Cron.
+     */
+    public function send_telemetry_data() {
+        if (empty($this->options['allow_telemetry']) || '1' !== $this->options['allow_telemetry']) {
+            return;
+        }
+
+        // Si tenemos V3 y participamos en la red comunitaria, la telemetría viaja incrustada
+        // en 'execute_community_report' para ahorrar envíos. Se anula el envío V2 aislado.
+        if (!empty($this->options['api_token_v3']) && !empty($this->options['enable_community_network'])) {
+            return;
+        }
+
+        $telemetry_data = $this->get_telemetry_payload();
 
         $endpoint_url = 'https://advaipbl.com/wp-json/telemetry/v2/submit';
         $secret_key   = 'yV.vZRp|g6E{zJ,DI7WcMIiGDejmH($$~<0-I$$Bd7Y) D5Z65M/*P:h>w:/E<D<';
 
+        $headers = [
+            'Content-Type'    => 'application/json',
+            'X-Telemetry-Key' => $secret_key
+        ];
+
+        // Incluir Token V3 como fallback si llegara aquí, aunque V3 debe saltar arriba.
+        if (!empty($this->options['api_token_v3'])) {
+            $headers['Authorization'] = 'Bearer ' . $this->options['api_token_v3'];
+        }
+
         wp_remote_post($endpoint_url, [
             'timeout'   => 15,
             'blocking'  => false,
-            'headers'   => [
-                'Content-Type'    => 'application/json',
-                'X-Telemetry-Key' => $secret_key
-            ],
+            'headers'   => $headers,
             'body'      => wp_json_encode($telemetry_data),
         ]);
     }
@@ -5723,7 +5874,7 @@ public function handle_export_settings_ajax() {
                 'recaptcha_site_key', 'recaptcha_secret_key', 
                 'api_key_ipapicom', 'api_key_ipstackcom', 'api_key_ipinfocom', 
                 'api_key_ip_apicom', 'maxmind_license_key', 'push_webhook_urls',
-                'cf_api_token', 'cf_zone_id', 'abuseipdb_api_key'
+                'cf_api_token', 'cf_zone_id', 'abuseipdb_api_key', 'api_token_v3'
             ];
             foreach ($sensitive_keys as $sensitive_key) {
                 if (isset($settings_to_export[self::OPTION_SETTINGS][$sensitive_key])) {
@@ -6932,14 +7083,21 @@ public function handle_import_settings() {
  */
 public function maybe_redirect_to_wizard() {
     if ( get_option( 'advaipbl_run_setup_wizard' ) ) {
-        // Eliminamos la opción para que no se redirija en bucle
+        
+        // Evitar bucles infinitos en servidores con Object Caches muy lentos (ej. LiteSpeed)
+        // comprobando si YA estamos en la ruta de destino.
+        $is_already_on_wizard = ( isset( $_GET['page'] ) && $_GET['page'] === 'advaipbl-setup-wizard' );
+        
         delete_option( 'advaipbl_run_setup_wizard' ); 
         
-        if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['activate-multi'] ) ) {
-            // Si es una activación masiva, volvemos a añadir la opción para que se muestre el aviso.
-            add_option( 'advaipbl_run_setup_wizard', true );
+        if ( $is_already_on_wizard || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['activate-multi'] ) ) {
+            // Si es activación masiva, volvemos a poner para mostrar mensaje.
+            if ( isset( $_GET['activate-multi'] ) ) {
+                add_option( 'advaipbl_run_setup_wizard', true );
+            }
             return;
         }
+
         wp_safe_redirect( admin_url( 'admin.php?page=advaipbl-setup-wizard' ) );
         exit;
     }
@@ -7213,47 +7371,77 @@ public function scanner_ping_endpoint() {
     }
 }
 
-/**
+    /**
      * Ejecuta el envío de reportes a la API central.
      */
     public function execute_community_report() {
-        // 1. Verificar si el usuario participa
+        // 1. Obtener el lote de bloqueos (solo si participa en AIB Network)
+        $payload = [
+            'site_hash' => hash('sha256', home_url()),
+            'version'   => ADVAIPBL_VERSION,
+            'reports'   => []
+        ];
+        
+        global $wpdb;
         if ( empty($this->options['enable_community_network']) ) {
-            // Si no participa, limpiamos la tabla local para no acumular basura
-            global $wpdb;
+            // Si no participa en red, no enviamos reportes de amenazas (pero la telemetria puede enviarse abajo)
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}advaipbl_pending_reports");
-            return;
+        } else {
+            $gathered_payload = $this->reporter_manager->get_batch_for_api(100);
+            if (!empty($gathered_payload)) {
+                $payload = $gathered_payload;
+            }
         }
 
-        // 2. Obtener el lote
-        $payload = $this->reporter_manager->get_batch_for_api(100); // 100 reportes por envío
+        $has_reports = !empty($payload['reports']);
         
-        if ( empty($payload['reports']) ) {
-            return; // Nada que enviar
+        $has_v3_token = !empty($this->options['api_token_v3']);
+
+        // 3. Fallback a V2 si no hay token V3 (V2 no agrupa telemetría, aborta si no hay reportes)
+        if (!$has_v3_token && !$has_reports) {
+            return; 
         }
 
-        // 3. Enviar a la API (V2 con strict anti-poisoning)
-        $api_url = 'https://advaipbl.com/wp-json/aib-network/v2/report';
-        
-        // La API V2 requiere el site_hash explicitamente en el root del JSON para aplicar el Rate Limiting local
+        // Asegurar site_hash para Rate Limiting V2 o info cruda
         $payload_data = $payload;
         $payload_data['site_hash'] = $payload['site_hash'] ?? hash('sha256', get_site_url());
 
-        $response = wp_remote_post( $api_url, [
-            'body'    => wp_json_encode($payload_data),
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'X-AIB-Site-Hash' => $payload_data['site_hash'], // Cabecera de autenticación simple
-            ],
-            'timeout' => 10,
-            'blocking' => false // "Fire and forget" para no ralentizar el cron
-        ]);
-
-        if ( is_wp_error($response) ) {
-            // Loguear error silenciosamente para debug
-            // error_log('AIB Network Report Failed: ' . $response->get_error_message());
+        // 4. Parámetros de envío
+        if ($has_v3_token) {
+            $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/report';
+            $headers = [
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . $this->options['api_token_v3']
+            ];
+            
+            // En V3 inyectamos la telemetría general en el mismo paquete para ahorrar recursos del cliente y servidor
+            if (!empty($this->options['allow_telemetry']) && '1' === $this->options['allow_telemetry']) {
+                $payload_data['telemetry'] = $this->get_telemetry_payload();
+            } else {
+                $payload_data['telemetry'] = [];
+            }
+            
+            // Si después de intentarlo no hay ni amenazas locales ni métricas permitidas, no saturamos la red
+            if (!$has_reports && empty($payload_data['telemetry'])) {
+                return;
+            }
+            
+        } else {
+            // Configuración V2 (Asegurar que nunca llegamos aquí si !$has_reports por la comprobación anterior)
+            $api_url = 'https://advaipbl.com/wp-json/aib-network/v2/report';
+            $headers = [
+                'Content-Type'    => 'application/json',
+                'X-AIB-Site-Hash' => $payload_data['site_hash'],
+            ];
         }
+
+        $response = wp_remote_post( $api_url, [
+            'body'     => wp_json_encode($payload_data),
+            'headers'  => $headers,
+            'timeout'  => 5,
+            'blocking' => false
+        ]);
     }
 
 

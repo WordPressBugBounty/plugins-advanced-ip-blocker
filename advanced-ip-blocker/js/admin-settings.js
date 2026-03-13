@@ -560,6 +560,113 @@ jQuery(document).ready(function ($) {
                     $button.prop('disabled', false);
                 });
         });
+
+        // Handler específico para el Token API V3
+        $('body').on('click', '#advaipbl-verify-api-token', function (e) {
+            e.preventDefault();
+            const $button = $(this);
+            // El selector del token V3 ahora usa _display o el input oculto tras darle a editar
+            let apiKey = $('#advaipbl_api_token_v3_display').val() || $('#advaipbl_api_token_v3').val();
+            const $statusContainer = $button.closest('.advaipbl-status-indicator');
+            const texts = adminData.text || {};
+
+            $button.text(texts.verifying_api || 'Verifying...').prop('disabled', true);
+
+            if (!apiKey || apiKey.indexOf('•') !== -1) { // If it's obfuscated, we just grab the real one
+                apiKey = $('#advaipbl_api_token_v3').val();
+            }
+
+            if (!apiKey) {
+                showAdminNotice(texts.enter_api_key || 'Please enter an API key first.', 'error');
+                $button.text('Verify Connection').prop('disabled', false);
+                return;
+            }
+
+            $.post(ajaxurl, {
+                action: 'advaipbl_verify_api_key',
+                nonce: adminData.nonces.verify_api,
+                provider: 'api_token_v3',
+                api_key: apiKey
+            })
+                .done(function (response) {
+                    const $resultSpan = $('#advaipbl-api-verification-result');
+                    if (response.success) {
+                        $resultSpan.text(response.data.message).css({ 'color': 'green', 'font-weight': 'bold' });
+                        $button.text('Verify Connection');
+                    } else {
+                        $resultSpan.text('Error: ' + response.data.message).css({ 'color': 'red', 'font-weight': 'bold' });
+                        $button.text('Verify Connection');
+                    }
+                })
+                .fail(function () {
+                    const $resultSpan = $('#advaipbl-api-verification-result');
+                    $resultSpan.text(texts.ajax_error || 'AJAX error.').css({ 'color': 'red', 'font-weight': 'bold' });
+                    $button.text('Verify Connection');
+                })
+                .always(function () {
+                    $button.prop('disabled', false);
+                });
+        });
+
+        // Handler para generar una clave gratuita (In-App Registration)
+        $('body').on('click', '#advaipbl-get-api-token', function (e) {
+            e.preventDefault();
+            const $button = $(this);
+            const $spinner = $('#advaipbl-api-token-spinner');
+            const originalText = $button.text();
+
+            $button.prop('disabled', true).text('Generating...');
+            $spinner.addClass('is-active');
+
+            $.post(ajaxurl, {
+                action: 'advaipbl_get_free_api_key',
+                nonce: adminData.nonces.verify_api, // Reutilizamos el nonce de ajustes generales
+                _t: Date.now() // Cache buster para Cloudflare
+            })
+                .done(function (response) {
+                    if (response.success) {
+                        showAdminNotice(response.data.message, 'success');
+                        // Actualizar el valor visual localmente sin recargar
+                        const newHtml = `
+                        <input type="text" id="advaipbl_api_token_v3_display" class="regular-text" style="font-family: monospace;" value="${response.data.api_token_visual}" disabled>
+                        <input type="hidden" name="advaipbl_settings[api_token_v3]" id="advaipbl_api_token_v3" value="${response.data.api_token}">
+                        <button type="button" class="button" id="advaipbl-edit-api-token" title="Edit API Key"><span class="dashicons dashicons-edit" style="margin-top: 2px;"></span></button>
+                    `;
+                        // Recargar suavemente para asegurar que todo WordPress capte el Token V3 en backend sin error
+                        // Eliminado reload automático para no perder el token sin guardar.
+                        // setTimeout(() => window.location.reload(), 2000);
+                        
+                        // En su lugar, actualizamos el texto de validación también
+                        $('#advaipbl-api-verification-result').html('<span style="color: green;">' + (adminData.text.api_key_generated || 'API Key Generated!') + '</span>');
+                        
+                        // Localizar el indicador de estado de la red AIB y cambiarlo a activo visualmente
+                        var $statusIndicator = $('.advaipbl-status-indicator');
+                        if($statusIndicator.length) {
+                             $statusIndicator.css({
+                                 'background': '#f0f6fc',
+                                 'border': '1px solid #cce5ff'
+                             });
+                             $statusIndicator.html('<span class="dashicons dashicons-cloud-saved" style="color: #2271b1; vertical-align: middle;"></span> <strong>' + (adminData.text.protection_active || 'Protection Active:') + '</strong> <span style="margin-left:5px;">Connected (Waiting for first sync)</span>');
+                        } else {
+                             // Si estaba 'Not Connected', no existe el div con esa clase, así que lo inyectamos
+                             var $card = $button.closest('.advaipbl-card');
+                             var $header = $card.find('h3').first();
+                             $header.after('<div class="advaipbl-status-indicator" style="margin-bottom: 15px; padding: 10px; background: #f0f6fc; border: 1px solid #cce5ff; border-radius: 4px;"><span class="dashicons dashicons-cloud-saved" style="color: #2271b1; vertical-align: middle;"></span> <strong>' + (adminData.text.protection_active || 'Protection Active:') + '</strong> <span style="margin-left:5px;">Connected (Waiting for first sync)</span></div>');
+                             // Si hay un texto de 'No Conectado' previo en la tabla, podríamos querer ocultarlo
+                             $card.find('td:contains("Not Connected"), td:contains("No Conectado")').html('<span style="color:green; font-weight:bold;">' + (adminData.text.connected || 'Connected') + '</span>');
+                        }
+                    } else {
+                        showAdminNotice('Error: ' + response.data.message, 'error');
+                        $button.prop('disabled', false).text(originalText);
+                        $spinner.removeClass('is-active');
+                    }
+                })
+                .fail(function () {
+                    showAdminNotice(adminData.text.ajax_error || 'AJAX error.', 'error');
+                    $button.prop('disabled', false).text(originalText);
+                    $spinner.removeClass('is-active');
+                });
+        });
     }
 
     function initFIMActions() {

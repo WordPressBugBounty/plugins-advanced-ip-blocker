@@ -236,12 +236,20 @@ class ADVAIPBL_Site_Scanner {
         $api_url = 'https://advaipbl.com/wp-json/aib-scanner/v2/check';
         $site_hash = hash('sha256', get_site_url());
         
+        $headers = [
+            'Content-Type' => 'application/json',
+            'X-AIB-Site-Hash' => $site_hash
+        ];
+
+        // Incluir V3 Token y saltar a endpoint V3 si existe
+        if (!empty($this->plugin->options['api_token_v3'])) {
+            $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/scanner/check';
+            $headers['Authorization'] = 'Bearer ' . $this->plugin->options['api_token_v3'];
+        }
+
         $response = wp_remote_post( $api_url, [
             'body'    => wp_json_encode( $payload ),
-            'headers' => [ 
-                'Content-Type' => 'application/json',
-                'X-AIB-Site-Hash' => $site_hash 
-            ],
+            'headers' => $headers,
             'timeout' => 15 // Subimos un poco el timeout por si la lista es larga
         ]);
 
@@ -289,12 +297,20 @@ class ADVAIPBL_Site_Scanner {
         // 1. Remote Check (API Real)
         $api_check_url = 'https://advaipbl.com/wp-json/aib-scanner/v2/check-ip?ip=' . $server_ip;
         $site_hash = hash('sha256', get_site_url());
+
+        $headers = [
+            'X-AIB-Site-Hash' => $site_hash
+        ];
+
+        // Incluir V3 Token y saltar a endpoint V3 si existe
+        if (!empty($this->plugin->options['api_token_v3'])) {
+            $api_check_url = 'https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . $server_ip;
+            $headers['Authorization'] = 'Bearer ' . $this->plugin->options['api_token_v3'];
+        }
         
         $response = wp_remote_get($api_check_url, [
             'timeout' => 5,
-            'headers' => [
-                'X-AIB-Site-Hash' => $site_hash
-            ]
+            'headers' => $headers
         ]);
         
         if ( is_wp_error($response) ) {

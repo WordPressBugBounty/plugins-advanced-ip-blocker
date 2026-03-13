@@ -40,6 +40,8 @@ class ADVAIPBL_Settings_Manager {
     add_settings_field('advaipbl_excluded_error_urls', __('Global URL Exclusions', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'excluded_error_urls', 'label' => __('Add one URL path or fragment per line. Requests containing these strings will bypass 404/403 error logging and all JavaScript challenges (Signature, Geo, and Endpoint).', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_show_admin_bar_menu', __( 'Admin Bar Menu', 'advanced-ip-blocker' ), [$this, 'switch_field_callback'], $page, 'advaipbl_general_settings_section', ['name'  => 'show_admin_bar_menu', 'label' => __( 'Show security menu in the WordPress admin bar', 'advanced-ip-blocker' )]);
     
+
+
 	add_settings_section('advaipbl_general_settings_section', null, null, $page);
  add_settings_field(
         'advaipbl_allow_telemetry', 
@@ -228,6 +230,27 @@ add_settings_field(
 
 // --- AIB COMMUNITY NETWORK SECTION ---
         add_settings_section('advaipbl_community_network_section', null, null, $page);
+
+        // --- V3 API Connection ---
+        add_settings_field(
+            'advaipbl_api_connection_status',
+            __('AIB Account Connection', 'advanced-ip-blocker'),
+            [$this, 'api_connection_status_callback'],
+            $page,
+            'advaipbl_community_network_section'
+        );
+
+        add_settings_field(
+            'advaipbl_api_token_v3', 
+            __('API Token', 'advanced-ip-blocker'), 
+            [$this, 'api_token_field_callback'], 
+            $page, 
+            'advaipbl_community_network_section', 
+            [
+                'name' => 'api_token_v3',
+                'description' => __('Connecting to the Advanced IP Blocker cloud network gives you access to the community blocklist and deep site scanning.', 'advanced-ip-blocker'),
+            ]
+        );
 
         add_settings_field(
             'advaipbl_enable_community_network', 
@@ -474,6 +497,12 @@ add_settings_field(
         ]
     );
 	add_settings_field('advaipbl_restrict_login_page', __( 'Whitelist Login Access', 'advanced-ip-blocker' ), [ $this, 'restrict_login_page_callback' ], $page, 'advaipbl_advanced_login_section');
+		
+	add_settings_field('advaipbl_login_restrict_countries', __( 'Whitelist Login Countries', 'advanced-ip-blocker' ), [ $this, 'geoblock_countries_callback' ], $page, 'advaipbl_advanced_login_section', [
+        'type' => 'login_restrict',
+        'description' => __('Select one or more countries that are allowed to access wp-login.php. If empty, all countries are allowed.', 'advanced-ip-blocker')
+    ]);
+	
     add_settings_section('advaipbl_advanced_xmlrpc_section', null, null, $page);	
 	add_settings_field('advaipbl_xmlrpc_protection_mode', __('XML-RPC Protection Mode', 'advanced-ip-blocker'), [$this, 'xmlrpc_protection_mode_callback'], $page, 'advaipbl_advanced_xmlrpc_section');
 	add_settings_field('advaipbl_duration_xmlrpc_block', __('XML-RPC Block Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_advanced_xmlrpc_section', ['name' => 'duration_xmlrpc_block', 'default' => 1440, 'description' => __('How long to block IPs that make suspicious XML-RPC requests. Set to 0 for a permanent block.', 'advanced-ip-blocker')]);
@@ -1020,7 +1049,7 @@ add_settings_field(
             'geolocation_provider', 'log_timezone', 'recaptcha_version', 'recaptcha_site_key', 'recaptcha_secret_key',
             'xmlrpc_protection_mode', 'geolocation_method', 'trusted_proxies', 'abuseipdb_api_key', 'abuseipdb_action',
 			'cf_api_token', 'cf_zone_id', 'community_blocking_action', 'scan_frequency', 'scan_notification_email',
-            'fim_alert_email'
+            'fim_alert_email', 'api_token_v3'
         ];
 
         foreach ($text_fields as $field) {
@@ -1042,6 +1071,24 @@ add_settings_field(
 }
         }
         
+        // V3 API Token Validation (only if changed manually)
+        if (isset($new_input['api_token_v3']) && $new_input['api_token_v3'] !== ($this->plugin->options['api_token_v3'] ?? '')) {
+            if (!empty($new_input['api_token_v3'])) {
+                $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $new_input['api_token_v3'],
+                        'Accept'        => 'application/json'
+                    ],
+                    'timeout' => 15
+                ]);
+                
+                if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                    add_settings_error('advaipbl_settings_messages', 'invalid_v3_token', __('Invalid AIB Cloud Network Token. Connection failed.', 'advanced-ip-blocker'), 'error');
+                    $new_input['api_token_v3'] = $this->plugin->options['api_token_v3'] ?? ''; // Revert to previous or empty
+                }
+            }
+        }
+
         if (isset($input['geoblock_countries'])) {
             $countries = (array) $input['geoblock_countries'];
             $all_country_codes = array_keys($this->plugin->get_country_list());
@@ -1057,10 +1104,21 @@ add_settings_field(
 		} else {
 			$new_input['geo_challenge_countries'] = [];
 		}
+
+        if (isset($input['login_restrict_countries'])) {
+            $countries = (array) $input['login_restrict_countries'];
+            $all_country_codes = array_keys($this->plugin->get_country_list());
+            $new_input['login_restrict_countries'] = array_values(array_intersect($countries, $all_country_codes));
+        } else {
+            $new_input['login_restrict_countries'] = [];
+        }
         
         if (isset($input['recaptcha_score_threshold'])) {
             $new_input['recaptcha_score_threshold'] = $this->plugin->sanitize_score_threshold($input['recaptcha_score_threshold']);
         }
+        
+        // Purge page caches when security settings are updated
+        $this->plugin->purge_all_page_caches();
         
         return $new_input;
     }
@@ -1408,6 +1466,110 @@ add_settings_field(
             echo '</p></div>';
         }
     }
+
+    /**
+     * Callback para mostrar el estado de la conexión con la API V3.
+     */
+    public function api_connection_status_callback() {
+        $token = $this->plugin->options['api_token_v3'] ?? '';
+        
+        if (empty($token)) {
+            echo '<span class="dashicons dashicons-dismiss" style="color: #d63638;"></span> <strong style="color: #d63638;">' . esc_html__('Not Connected', 'advanced-ip-blocker') . '</strong>';
+            echo '<p class="description">' . esc_html__('Get a Free API Key below to connect your site to the AIB Cloud Network.', 'advanced-ip-blocker') . '</p>';
+        } else {
+            echo '<div id="advaipbl-api-status-container">';
+            echo '<span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span> <strong style="color: #00a32a;">' . esc_html__('Connected', 'advanced-ip-blocker') . '</strong>';
+            
+            // Si tuviéramos el tipo de plan guardado, lo mostraríamos aquí. Por ahora, asumimos conectado.
+            echo ' <span class="advaipbl-badge advaipbl-badge-free" style="margin-left:5px;">' . esc_html__('AIB Cloud Network', 'advanced-ip-blocker') . '</span>';
+            
+            echo '<p class="description" style="margin-top:5px;">';
+            echo '<button type="button" class="button button-secondary button-small" id="advaipbl-verify-api-token">' . esc_html__('Verify Connection', 'advanced-ip-blocker') . '</button>';
+            echo '<span id="advaipbl-api-verification-result" style="margin-left: 8px;"></span>';
+            echo '</p>';
+            echo '</div>';
+        }
+    }
+
+    /**
+     * Callback específico para el campo del Token API con ofuscación.
+     */
+    public function api_token_field_callback($args) {
+        $name = $args['name'];
+        $value = isset($this->plugin->options[$name]) ? $this->plugin->options[$name] : '';
+        
+        // Ofuscar si existe
+        $display_val = $value;
+        if (!empty($value) && strlen($value) > 8) {
+            $display_val = substr($value, 0, 4) . str_repeat('•', 24) . substr($value, -4);
+        }
+
+        echo '<div style="display: flex; gap: 10px; position: relative; align-items: center;">';
+        
+        echo '<div style="display: flex; gap: 10px; max-width: 400px; position: relative; align-items: center;">';
+        
+        // Campo visible al usuario (puede estar ofuscado si ya hay valor)
+        echo '<input type="text" id="advaipbl_' . esc_attr($name) . '_display" class="regular-text" style="font-family: monospace;" ';
+        if (!empty($value)) {
+            echo 'value="' . esc_attr($display_val) . '" disabled';
+            echo '>';
+            // Campo oculto real que se enviará en el formulario POST sólo si no se edita
+            echo '<input type="hidden" name="' . esc_attr(ADVAIPBL_Main::OPTION_SETTINGS) . '[' . esc_attr($name) . ']" id="advaipbl_' . esc_attr($name) . '" value="' . esc_attr($value) . '">';
+            // Botón para editar
+            echo '<button type="button" class="button" id="advaipbl-edit-api-token" title="' . esc_attr__('Edit API Key', 'advanced-ip-blocker') . '"><span class="dashicons dashicons-edit" style="margin-top: 2px;"></span></button>';
+        } else {
+             // Si no hay valor, lo mostramos normal como input type="text" pero que envía
+            echo 'name="' . esc_attr(ADVAIPBL_Main::OPTION_SETTINGS) . '[' . esc_attr($name) . ']" id="advaipbl_' . esc_attr($name) . '" value="" placeholder="AIB_xxxxxxxxxxxxxxxxxxxxxxxxxx">';
+             // Botón mágico para generar clave
+            echo '<button type="button" class="button button-primary" id="advaipbl-get-api-token" title="' . esc_attr__('Get a Free VIP Key instantly', 'advanced-ip-blocker') . '">' . esc_html__('Get Free Key', 'advanced-ip-blocker') . '</button>';
+            echo '<span class="spinner" id="advaipbl-api-token-spinner" style="float:none; margin:0;"></span>';
+        }
+
+        echo '</div>';
+        
+        if (isset($args['description']) && empty($value)) {
+            echo '<p class="description" style="margin-top:5px;">' . wp_kses_post($args['description']) . '</p>';
+        } else if (!empty($value)) {
+            echo '<p class="description" style="margin-top:5px;">' . esc_html__('Your API key is hidden for security.', 'advanced-ip-blocker') . '</p>';
+        }
+
+        // Script para manejar la edición y la validación
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            $('#advaipbl-edit-api-token').on('click', function(e) {
+                e.preventDefault();
+                var $display = $('#advaipbl_<?php echo esc_js($name); ?>_display');
+                var $hidden = $('#advaipbl_<?php echo esc_js($name); ?>');
+                
+                // Convert display to a real input field connected to POST
+                $display.prop('disabled', false)
+                        .val('')
+                        .attr('name', '<?php echo esc_js(ADVAIPBL_Main::OPTION_SETTINGS); ?>[<?php echo esc_js($name); ?>]')
+                        .focus();
+                
+                // Remove hidden field and button
+                $hidden.remove();
+                $(this).remove();
+            });
+
+            // Validación simple del lado del cliente antes de enviar
+            $('form').on('submit', function() {
+                var apiTokenInput = $('input[name="<?php echo esc_js(ADVAIPBL_Main::OPTION_SETTINGS); ?>[<?php echo esc_js($name); ?>]"]');
+                if (apiTokenInput.length && !apiTokenInput.prop('disabled')) {
+                    var val = apiTokenInput.val().trim();
+                    if (val !== '' && !val.startsWith('AIB_')) {
+                        alert('<?php echo esc_js(__('Invalid API Key format. It should start with AIB_.', 'advanced-ip-blocker')); ?>');
+                        apiTokenInput.focus();
+                        return false;
+                    }
+                }
+                return true;
+            });
+        });
+        </script>
+        <?php
+    }
 	/**
  * Muestra el campo <select> para el modo de protección XML-RPC.
  */
@@ -1449,11 +1611,18 @@ public function xmlrpc_protection_mode_callback() {
     public function geoblock_countries_callback($args) {
         $type = $args['type'] ?? 'geoblock'; // Por defecto es geoblock para retrocompatibilidad
         
-        $option_name = ($type === 'geo_challenge') ? 'geo_challenge_countries' : 'geoblock_countries';
+        if ($type === 'geo_challenge') {
+            $option_name = 'geo_challenge_countries';
+            $placeholder_text = __('Search for a country to challenge...', 'advanced-ip-blocker');
+        } elseif ($type === 'login_restrict') {
+            $option_name = 'login_restrict_countries';
+            $placeholder_text = __('Search for an allowed country...', 'advanced-ip-blocker');
+        } else {
+            $option_name = 'geoblock_countries';
+            $placeholder_text = __('Search for a country to block...', 'advanced-ip-blocker');
+        }
+        
         $select_id = 'advaipbl_' . $option_name;
-        $placeholder_text = ($type === 'geo_challenge') 
-            ? __('Search for a country to challenge...', 'advanced-ip-blocker') 
-            : __('Search for a country to block...', 'advanced-ip-blocker');
 
         $selected_countries = $this->plugin->options[$option_name] ?? [];
         $all_countries     = $this->plugin->get_country_list();
@@ -1465,9 +1634,13 @@ public function xmlrpc_protection_mode_callback() {
                 </option>
             <?php endforeach; ?>
         </select>
-        <p class="description">
-            <?php esc_html_e( 'Select one or more countries. Type in the box to search.', 'advanced-ip-blocker' ); ?>
-        </p>
+        <?php if (isset($args['description'])) : ?>
+            <p class="description"><?php echo wp_kses_post($args['description']); ?></p>
+        <?php else : ?>
+            <p class="description">
+                <?php esc_html_e( 'Select one or more countries. Type in the box to search.', 'advanced-ip-blocker' ); ?>
+            </p>
+        <?php endif; ?>
         <?php
     }
 	public function clear_cache_button_callback() {

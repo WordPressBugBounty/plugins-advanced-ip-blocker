@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.8.9
+Stable tag: 8.9.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,6 +20,8 @@ A complete WordPress security firewall: blocks IPs, bots & countries. Includes a
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
+*   **(NEW) Whitelist Login Countries:** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, instantly blocking unauthorized foreign login attempts.
 *   **(IMPROVED) Bulk Import/Export for Blocked IPs & Whitelist:** Seamlessly import massive lists of IPs via CSV or manual entry. The system now features a bulletproof "Bulk Import" type, strict duration inheritance, and intelligent conflict resolution.
 *   **(NEW) Internal Security & Forensics:** A complete audit suite solely for WordPress. Track every sensitive event (plugin installs, settings changes, user logins) and monitor your critical files for unauthorized modifications with the integrated File Integrity Monitor.
 *   **(NEW) Activity Audit Log:** Gain complete visibility into what's happening on your site. Who deactivated a plugin? Who changed a setting? The Audit Log answers these questions with timestamped, immutable records.
@@ -223,206 +225,20 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.0 =
+*   **NEW MAJOR FEATURE:** AIB Cloud Network V3. We've completely overhauled our Community Defense Network infrastructure. The new API V3 introduces secure, individual API Keys for every connected site, drastically improving synchronization reliability, security telemetry, and overall network stability.
+*   **NEW FEATURE:** Whitelist Login Countries. A highly requested feature! You can now explicitly select which countries are allowed to access your WordPress login page (`wp-login.php`) and XML-RPC, automatically blocking all other nations.
+*   **ENHANCEMENT:** Upgraded the "Verify Connection" UI for the Cloud Network to provide instant, inline diagnostic feedback (success/error) without page reloads.
+*   **CRITICAL FIX:** Resolved an issue where verifying an API key could trigger local 404 block rules due to an incorrect HTTP request method (POST instead of GET).
+*   **ROBUSTNESS:** Improved plugin uninstallation logic. When using the "Delete All Data" option, the plugin now seamlessly unregisters the local API Key from the Central Server to keep your account clean for future reinstallations.
+*   **ROBUSTNESS:** Prevented the automatic AIB Network protection list from getting stuck on "Downloading..." if an API key fails to generate due to rate limiting on a fresh install.
+
 = 8.8.9 =
 *   **SECURITY UPDATE:** Fixed an issue where the "Export Template" feature was inadvertently including sensitive API keys (`cf_api_token`, `cf_zone_id`, `abuseipdb_api_key`) in the generated JSON. Templates are now completely clean of private tokens.
 *   **MAINTENANCE:** Cleaned up excessive developer comments in the frontend JS inclusion logic for better code readability.
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
-= 8.8.8 =
-*   **CRITICAL FIX:** Resolved an issue where IPs imported via the Bulk Import tool were not immediately synchronized with the Server-Level Firewall (`.htaccess`). Synchronization is now instantaneous and safely batched.
-*   **CRITICAL FIX:** Addressed a regression introduced in the `.htaccess` fix where Cloudflare Edge Firewalls stopped synchronizing imported IPs. Bulk Imports will now immediately trigger a background Cloudflare Sync Event to safely upload large IP batches without dropping connections.
-
-= 8.8.7 =
-*   **ENHANCEMENT:** Bulk Import overhaul. Imported IPs are now strictly categorized under a new `bulk_import` block type, fixing issues where imported blocks were permanently categorized as Manual blocks. 
-*   **ENHANCEMENT:** Streamlined the "Bulk Import" modal UI. Removed the redundant "Reason" field since all imports now securely force the "Bulk Import" reason programmatically to ensure filtering reliability.
-*   **UX/SECURITY:** Changed the default duration in the Bulk Import block modal from "Permanent" to "24 Hours". This is in line with strict security industry standards, preventing unmanageable boundless table growth from unintended permanent bans.
-*   **ROBUSTNESS:** Enhanced JavaScript handling in the Bulk Import modal to prevent caching issues from crashing the import button.
-
-= 8.8.6 =
-*   **SECURITY ENHANCEMENT:** Upgraded the Threat Intelligence synchronization engine. Client scanning endpoints now enforce an authenticated V2 handshake to prevent unauthorized harvesting of the vulnerability database.
-*   **OPTIMIZATION:** The AIB Community Network now fully offloads blocklist distribution to the Cloudflare Edge, dramatically improving sync speed and eliminating server load during large blocklist updates.
-
-= 8.8.5 =
-*   **CRITICAL FIX (AJAX/Editor Conflict):** Resolved a severe conflict where the "Attack Signature Engine" was incorrectly intercepting background AJAX requests (like `admin-ajax.php`), causing infinite loading loops in page builders (Elementor) and our own Security Dashboard. Standard AJAX and REST API requests are now safely excluded.
-*   **PERFORMANCE (Cloudflare Sync):** Implemented a "Memory Reconciliation" (Delta Sync) module for Cloudflare. The plugin now fetches active rules via a single API call and only pushes missing IPs (the delta) to Cloudflare, eliminating the `cURL error 28: Operation timed out` that occurred when syncing large databases on shared hosting. 
-
-= 8.8.4 =
-*   **CRITICAL FIX:** Resolved the "Spamhaus Drop List" automatic update failure. The cron job is now correctly registered and updating the list daily.
-*   **FIX:** Fixed a UI issue where the "Bulk Import" form in the Whitelist section was displaying inline instead of in a modal.
-
-= 8.8.3 =
-*   **NEW FEATURE:** "Impersonator Detection" (Fake Crawler Protection). Bots claiming to be Google/Bing are now verified via DNS. If they fail, they are flagged as "Impersonators" and blocked/logged.
-*   **NEW FEATURE:** Bulk Import/Export for IP Lists! Easily manage large IP whitelists via CSV/Text.
-*   **ENHANCEMENT:** Attack Signature Notifications. You can now configure the frequency (Instant, Daily, Weekly) and recipients for signature detection alerts.
-*   **FIX:** Resolved a critical issue where "Signature Flagged" events were missing from the Security Log filters.
-*   **FIX:** Fixed an incorrect log call in the login protection logic that caused PHP warnings.
-
-= 8.8.2 =
-*   **NEW FEATURE:** Granular Site Scanner settings. You can now enable/disable specific checks (SSL, Updates, PHP, WP, Debug) to tailor the scanner to your environment.
-*   **IMPROVEMENT:** The Site Scanner now respects user preferences and skips disabled checks in both manual and scheduled scans.
-*   **IMPROVEMENT:** Refined logic to prevent "skipped" checks from triggering false positive email alerts.
-*   **DEV:** Added `apply_filters('advaipbl_site_scanner_results')` for developer customization.
-
-
-= 8.8.1 =
-*   **CRITICAL FIX:** Resolved a PHP Fatal Error in the AbuseIPDB module that occurred when the API rate limit was exceeded.
-*   **COMPATIBILITY:** Fixed XML-RPC compatibility issues with external editors (like MarsEdit). Valid authenticated requests now correctly bypass 2FA and 404/403 Lockdown protections.
-*   **FIX:** Added missing event logging for "Signatures Flagged" in the Security Log.
-*   **I18N:** Added missing translator comments to signature flagging reason strings.
-
-= 8.8.0 =
-*   **MAJOR REFACTOR:** Complete architectural modernization. The plugin core has been refactored into modular "Managers", significantly improving stability, maintainability, and code organization.
-*   **PERFORMANCE:** JavaScript assets have been split into feature-specific modules (Admin, Rules, Logs), reducing the initial page load weight and improving admin panel responsiveness.
-*   **IMPROVEMENT:** Centralized Cron Manager. Background tasks are now handled by a dedicated controller, ensuring reliable scheduling and clean uninstallation of all events.
-*   **IMPROVEMENT:** Enhanced "Plan A" reliability for REST API protection. The User Enumeration blocking logic now respects both IP and User-Agent whitelists.
-*   **STABILITY:** Fixed various legacy bugs and race conditions identified during the code audit.
-
-= 8.7.5 =
-*   **CRITICAL FIX:** Improved database integrity checks. The update process now strictly verifies the existence of all critical tables (like Blocked IPs and Signatures) and re-creates them if missing. This resolves improper installation states where tables might be absent after a file-only update.
-*   **FIX:** Resolved an "Invalid rule data received" error when creating Advanced Rules with regex patterns. The JSON handling logic now correctly preserves escaped characters (backslashes).
-*   **FIX:** Addressed a false positive in the SSL DeepScan where cron/loopback requests could report SSL as critical. The scanner now verifies the site's configured URL protocol in addition to the current connection.
-
-= 8.7.4 =
-*   **NEW FEATURE:** Threat Intelligence Services (AIB Community & AbuseIPDB) now support the "JavaScript Challenge" action in addition to instant blocking. This allows you to verify suspicious traffic without blocking it outright, saving server resources.
-*   **NEW FEATURE:** Internal Security & Forensics (Audit Logs) now support Push Notifications (Webhooks). Get instant alerts on Slack/Discord when critical audit events occur.
-*   **FIX:** Resolved a synchronization issue in the "Block Duration" logic. The Blocked IPs table, Security Logs, and Notifications now consistently display the correct duration (e.g., 1440 mins) instead of defaulting to "Permanent" or showing discrepancies for Impersonation blocks.
-*   **FIX:** Fixed the "Bot Impersonation" logic to correctly register the configured "Threat Score" points (e.g., 100/100) in the IP Trust Log before executing the immediate block.
-*   **FIX:** Improved Unblock logic. Manually unblocking an IP (or using "Unblock All") now automatically removes it from the "Pending Reports" queue, preventing false positives from being sent to the Community Network.
-*   **Code Quality:** Addressed various PHPCS warnings, including a security improvement in output escaping logic.
-
-= 8.7.3 =
-*   **FEATURE:** Added search functionality to the "Blocked IPs" list, allowing admins to quickly find specific IPs or ranges.
-*   **FIX:** Resolved "Table doesn't exist" error in the Audit Log when the feature is inactive.
-*   **FIX:** Corrected "Array to string conversion" warning in Community Blocklist updates due to complex whitelist formats.
-*   **IMPROVEMENT:** Enhanced robustness of IP whitelisting logic during community feed synchronization.
-
-= 8.7.2 =
-*   **Fix (PHP 8.1+ Compatibility):** Resolved a deprecated warning ("passing null to parameter") in WordPress core. Updated the internal `status_header` hook usage to strict compliance.
-*   **Fix:** Resolved a PHP warning ("Undefined variable $type") that occurred when removing IPs from the whitelist via the admin interface.
-*   **Performance:** Optimized the Blocklist Generator. It now uses a "Fast Mode" to skip expensive DNS lookups during bulk generation, fixing execution timeouts on large lists.
-*   **Improvement:** Migrated the Cloudflare "Clear All Rules" operation to a background asynchronous task, preventing UI freezes.
-
-= 8.7.1 =
-*   **Performance:** Migrated the Cloudflare "Clear All" operation to a background process (Async). This ensures instant UI feedback and prevents PHP timeouts when clearing thousands of rules.
-*   **Critical Fix (Priority):** Resolved a logic error where the AbuseIPDB check (Priority 10) was ignoring Global URI Exclusions. Excluded URLs are now correctly bypassed before any API calls.
-*   **Fix:** The "Unblock All" button now correctly removes all plugin-managed rules (`[AIB]` tagged) from Cloudflare, fixing potential "phantom blocks" synchronization issues.
-*   **Maintenance:** Improved plugin deactivation/uninstall routines to ensure all scheduled background tasks are properly cleaned up.
-
-= 8.7 =
-*   **NEW MAJOR FEATURE: Internal Security & Forensics Suite.** A comprehensive auditing system that tracks user activity (Audit Log) and monitors file system integrity (FIM) to detect breaches or unauthorized changes.
-*   **NEW FEATURE: Activity Audit Log.** Records critical events like plugin changes, setting updates, and login activity. Includes a searchable UI and automated log rotation.
-*   **NEW FEATURE: File Integrity Monitor (FIM).** Automatically scans critical core and plugin files for unauthorized modifications. Alerts you instantly via email if a file hash changes.
-*   **NEW FEATURE: Deep Scan Email Reports.** Enhanced weekly security report now includes "Pending Updates" status and a summary of known vulnerabilities, keeping you informed without logging in.
-*   **Enhancement:** Added "Downloads History" to the Telemetry Dashboard card.
-*   **Enhancement:** Improved "Clear Audit Logs" reliability with AJAX handling.
-*   **Security Fix:** Fixed CSP header to correctly allow Stripe/Sift scripts only on the "About" page.
-*   **Fix:** Resolved a race condition in AbuseIPDB checks that could cause duplicate email notifications.
-*   **Fix:** Addressed various PHPCS and linting warnings for cleaner code.
-
-= 8.6.11 =
-*   **Critical Fix (ASN Whitelisting):** Corrected a validation issue where ASN Whitelist entries with comments (e.g., "AS32934 # Facebook") were failing the strict check. The logic now properly sanitizes the whitelist before validation.
-*   **Critical Fix (IPv6):** Fixed CIDR validation logic to correctly support 128-bit IPv6 ranges. Previously, it was incorrectly restricted to 32 bits, causing valid IPv6 ranges to be rejected.
-*   **Improvement (Geolocation):** Implemented a robust fallback mechanism. If the Local MaxMind Database lookup fails (or finds no data), the system now seamlessly attempts to fetch the data via the real-time API, ensuring critical ASN/Country checks don't fail silently.
-
-= 8.6.10 =
-*   **NEW FEATURE: Enhanced Lockdown Forensics.** Added detailed sampling for Distributed Lockdown events (404/403). Administrators can now see the exact URIs, timestamps, and user-agents of the requests that triggered a lockdown in the details popup.
-*   **Fix:** Resolved a PHP warning (`undefined variable $block_reason_code`) in the `monitor_threat_score` function, ensuring cleaner error logs.
-
-= 8.6.9 =
-*   **NEW FEATURE: Username Blocking.** Added "Username" as a new condition type for Advanced Rules. You can now create rules to Block, Challenge, or Score login attempts based on specific usernames (e.g., block "admin" or "test").
-*   **Enhanced Notifications:** Enabled Email and Push notifications for Distributed Lockdowns (404/403 errors), ensuring administrators are alerted when these automated defenses kick in.
-*   **Security Fix (Compliance):** Added strict direct file access protection to `advaipbl-loader.php`. Implemented a smart check to satisfy security scanners (Plugin Check) while maintaining Edge Mode compatibility.
-*   **Improvement (Logging):** Added "Endpoint Challenge" event logging. Challenges served by the 404/403 Lockdown system are now properly recorded in the Security Log for auditing.
-*   **Improvement (Smarter Scanning):** Enhanced theme detection logic in the Site Scanner to better identify active themes even when standard WordPress functions return incomplete data.
-*   **Improvement (Onboarding):** New installations now come with a default whitelist of safe ASNs (Cloudflare, Google, etc.) to prevent accidental blocking of critical infrastructure.
-
-= 8.6.8 =
-*   **NEW MAJOR FEATURE: Admin Bar Menu.** Added a comprehensive "Security" menu to the WordPress Admin Bar. Administrators can now quickly access settings, flush caches, view logs, and toggle "Panic Mode" from any page.
-*   **NEW FEATURE: Distributed Lockdown (403/404).** Introduced a smart defense mechanism that automatically locks down the site for an IP subnet or country if they trigger excessive 404 or 403 errors, protecting against distributed brute-force and resource probing.
-*   **Critical Fix (ASN Whitelisting):** Resolved a logic conflict that prevented API-based geolocation users from successfully whitelisting critical services like Stripe or Google via their ASN.
-*   **Bugfix:** Fixed a JavaScript error ("cannot read properties of undefined") on the Post Editor screen that could interrupt the "Add Tag" functionality.
-*   **Telemetry:** Enhanced telemetry to track the usage of the new Distributed Lockdown features.
-
-= 8.6.7 =
-*   **NEW MAJOR FEATURE: HTTP Security Headers.** Added a comprehensive manager to easily configure and enforce security headers (HSTS, X-Frame-Options, CSP, etc.) directly from the dashboard. This improves your site's security grade and protects users from browser-based attacks.
-*   **Enhancement:** Integrated the "Security Headers" menu into the Admin Bar for quick access.
-*   **Critical Fix (Advanced Rules):** Refined the "Allow" rule logic. Global Allow rules now correctly bypass subsequent IP checks (like AbuseIPDB), ensuring that whitelisted traffic is never blocked by external threat intelligence.
-*   **UX:** Added a direct help link to the Security Headers page.
-
-= 8.6.6 =
-*   **Critical Security Fix (Zero-Tolerance):** "Impersonation" events are now blocked instantly, bypassing the Threat Scoring system. This ensures that any bot pretending to be Google/Bing but failing DNS verification is stopped immediately, regardless of score settings.
-*   **Logic Refinement (The "Equilibrium" Fix):** Reordered the security check priority. The "Allow" Advanced Rules and IP Whitelists are now evaluated *before* the global blocklists (like Community Network). This allows administrators to create effective "bypass rules" for IPs that might be listed in global blacklists.
-*   **Documentation:** Added verified credits for AbuseIPDB and Wordfence Intelligence. Added context-aware help links for reCAPTCHA settings.
-*   **Code Quality:** Addressed strict PHPCS warnings (SQL preparation, Nonce verification, Output escaping) across the codebase for improved security and stability.
-
-= 8.6.5 =
-*   **Improvement: Enhanced the "Known Bot Verification" engine. Refined DNS validation logic to better handle specific SEO crawlers (like Ahrefs, MJ12bot) and IPv6 configurations, preventing false "Impersonation" blocks.
-*   **Fix: Resolved a DNS resolution edge case where hostnames with trailing dots could cause validation failures on some server environments.
-*   **Tweak: Updated the default list of User-Agents and WAF rules to include protection against modern scraper libraries (Scrapy, Go-http-client).
-
-= 8.6.4 =
-*   **Critical Fix (Performance): Resolved a bug where the "Community List Update" cron job could be scheduled multiple times, causing excessive background tasks. This update automatically cleans up duplicate events.
-*   **NEW FEATURE: Server Reputation Scanner. Added a tool in the "Site Scanner" tab to check if your server's IP address is blacklisted by Spamhaus or AbuseIPDB, helping you identify hosting-related issues.
-*   **Improvement: Optimized the cron scheduling logic to prevent future duplication of tasks.
-*   **Improvement: Enhanced the Site Scanner UI with clearer status indicators and action buttons.
-
-
-= 8.6.3 =
-*   **NEW MAJOR FEATURE: Site Health & Vulnerability Scanner. Added a comprehensive security audit tool. It checks for critical issues like outdated PHP, debug mode risks, and scans your plugins/themes against a database of 30,000+ known vulnerabilities.
-*   **Architecture Upgrade: Migrated the "Community Defense Network" IP list to a dedicated custom database table for extreme performance and scalability. This eliminates memory overhead even with thousands of blocked IPs.
-*   **Compatibility: Verified full compatibility with WordPress 6.9.
-*   **UI Enhancement: Added help icons and direct documentation links to advanced settings for easier configuration.
-*   **Improvement: The setup wizard now automatically enables the Server-Level Firewall (.htaccess) for stronger default protection.
-
-= 8.6.2 =
-*   **NEW MAJOR FEATURE: Community Defense Network (Beta). Launched our collaborative threat intelligence network. You can now opt-in to share anonymized attack reports and protect your site with a global blocklist generated from verified community data.
-*   **Enhancement: Increased default block duration to 24 hours (1440 mins) for stronger protection and better data quality for the community network.
-*   **Performance: Optimized the wp_options storage for the community blocklist to prevent autoloading, ensuring zero impact on site load time.
-*   **Security Hardening: Updated default WAF rules to include protection against Scrapy, Go-http-client, and common log/backup file scanners (.sql, .log).
-*   **Improvement: The "Clean Expired IPs" cron job now automatically syncs removals with Cloudflare and Htaccess, ensuring that temporary bans are lifted correctly across all firewalls.
-*   **Fix: Resolved a display issue where the "Settings" tab content could be malformed if certain options were disabled.
-
-= 8.6.1 =
-*   **NEW MAJOR FEATURE: Cloud Edge Defense. Introducing cloud-based blocking. Integrate seamlessly with Cloudflare to sync your "Manually Blocked" and "Permanent" IPs directly to the Cloudflare Firewall (WAF). This stops attackers at the network edge, reducing server load to zero.
-*   **NEW MAJOR FEATURE: Server-Level Firewall. Added a high-performance module that writes blocking rules and file hardening directives (wp-config.php, .git, etc.) directly to your .htaccess file. Includes automatic backups and dual-stack Apache support.
-*   **Critical Fix: Resolved a false positive issue affecting legitimate iOS users (iCloud Private Relay) and social media link previews, which were incorrectly flagged as "Bot Impersonators".
-*   **Enhancement: Completely redesigned the Settings experience with a new "Help Center" approach, providing direct links to documentation for complex features.
-*   **Enhancement: Updated the Setup Wizard to include Server-Level Firewall activation and better guidance for advanced integrations.
-*   **Performance: Optimized the IP blocking logic to handle bulk actions efficiently by updating external firewalls (Htaccess/Cloudflare) only once per batch.
-*   **Telemetría: Updated data points to track adoption of Cloudflare and Htaccess features.
-
-= 8.6.0 =
-*   **NEW MAJOR FEATURE: Server-Level Firewall (.htaccess).** Introducing the ultimate performance upgrade. You can now write blocking rules directly to your server's `.htaccess` file. This blocks threats before WordPress loads, saving massive server resources. Includes automatic backups, proxy awareness (`SetEnvIF`), and support for Apache 2.2/2.4.
-*   **Feature: File Hardening.** Easily block access to sensitive system files (`wp-config.php`, `readme.html`, etc.) at the server level.
-*   **Feature: Auto-Synchronization.** Automatically syncs your "Manually Blocked" and "Permanent" IPs from the database to the server firewall.
-*   **Feature: Temporary Block Offloading.** Optionally push temporary blocks (like 404 abusers or failed logins) to the server firewall for the duration of their ban.
-*   **Critical Fix: Bot Verification.** Resolved a false positive issue where legitimate iOS users (using iCloud Private Relay) or social media app browsers (Instagram/Facebook in-app) were being blocked as "Bot Impersonators". The verification logic has been refined to exclude social bots from strict DNS checks while maintaining security for search engine crawlers.
-*   **Enhancement:** Updated Telemetry receiver to track the adoption of the new firewall features.
-*   **UI/UX:** Integrated the new firewall controls into the main Settings tab for a streamlined experience.
-
-
-
 == Upgrade Notice ==
 
-= 8.8.9 =
-**SECURITY UPDATE:** Patches a vulnerability in the Settings exporter where the "Template (No API Keys)" file was accidentally leaking Cloudflare and AbuseIPDB API keys. Update immediately if you plan to export your configuration templates to share with others.
-
-= 8.8.8 =
-**CRITICAL UPDATE:** Fixes a `.htaccess` synchronization bug with the Bulk Import tool. Resolves a regression where Bulk Imports stopped pushing new blocks to Cloudflare. Update immediately to ensure imported IPs are actively blocking threats at both the server level and the cloud edge.
-
-= 8.8.7 =
-**FEATURE & UX UPDATE:** Overhauled the Bulk Import Blocked IPs functionality. Includes a new `bulk_import` filtering type and smarter, safer defaults (24 hours instead of Permanent).
-
-= 8.8.6 =
-**SECURITY UPDATE:** Introduces V2 authenticated synchronization for threat intelligence endpoints and shifts blocklist distribution to Cloudflare Edge. Recommended update for all users.
-
-= 8.8.5 =
-**CRITICAL UPDATE:** Fixes infinite loading conflicts with Elementor and background AJAX requests. Also resolves Cloudflare synchronization timeouts. Update immediately.
-
-= 8.8.4 =
-**CRITICAL UPDATE:** Fixes automatic Spamhaus updates and Bulk Import display issues. Update immediately.
-
-= 8.8.3 =
-**NEW FEATURES:** Impersonator Detection & Bulk Whitelist Import! Also fixes a critical issue with Security Log visibility and improves notification logic.
-= 8.8.2 =
-**FEATURE UPDATE:** Granular Site Scanner controls! You can now selectively enable/disable specific security checks (SSL, Updates, etc.) to prevent false positives.
+= 8.9.0 =
+**MAJOR UPDATE:** This release launches the AIB Cloud Network V3 and the powerful "Whitelist Login Countries" feature. Update immediately to connect to the new, more secure threat intelligence network infrastructure and take absolute control over your login page access.

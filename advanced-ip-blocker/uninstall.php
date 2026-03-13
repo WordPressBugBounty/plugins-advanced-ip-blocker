@@ -26,6 +26,21 @@ $settings_option = get_option( 'advaipbl_settings' );
 
 if ( ! empty( $settings_option['delete_data_on_uninstall'] ) && '1' === $settings_option['delete_data_on_uninstall'] ) {
 
+    // --- 0. UNREGISTER FROM CENTRAL SERVER ---
+    // Must be done before options are deleted from the database
+    $api_token = $settings_option['api_token_v3'] ?? '';
+    if (!empty($api_token)) {
+        wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/unregister', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
+                'Content-Type'  => 'application/json',
+                'Accept'        => 'application/json'
+            ],
+            'timeout' => 10,
+            'blocking' => false // No need to wait for response during uninstall
+        ]);
+    }
+
 	global $wpdb;
 
 	    // --- 1. Borrar Tablas Personalizadas ---
@@ -178,11 +193,11 @@ if ( ! empty( $settings_option['delete_data_on_uninstall'] ) && '1' === $setting
         delete_option( $option_name );
     }
 
-    // --- 3. Borrar Transients ---
+    // --- 4. Borrar Transients ---
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE `option_name` LIKE %s OR `option_name` LIKE %s", $wpdb->esc_like( '_transient_advaipbl_' ) . '%', $wpdb->esc_like( '_transient_timeout_advaipbl_' ) . '%' ) );
 
-    // --- 4. Borrar Metadatos de Usuario de 2FA ---
+    // --- 5. Borrar Metadatos de Usuario de 2FA ---
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE `meta_key` LIKE %s", $wpdb->esc_like( '_advaipbl_2fa_' ) . '%' ) );
     

@@ -51,6 +51,7 @@ class ADVAIPBL_Ajax_Handler {
         $this->plugin->desbloquear_ip($ip);
 
         if ($success) {
+            $this->plugin->purge_all_page_caches();
 			/* translators: %1$s: IP, %2$s: Username. */
             $this->plugin->log_event(sprintf(__('Threat score for IP %1$s was manually reset by %2$s.', 'advanced-ip-blocker'), $ip, $this->plugin->get_current_admin_username()), 'info');
             wp_send_json_success(['message' => __('Score reset and IP unblocked successfully.', 'advanced-ip-blocker')]);
@@ -290,6 +291,38 @@ class ADVAIPBL_Ajax_Handler {
             return; // Terminamos aquí para Cloudflare
         }
 
+        // --- Verificación del Token API V3 (Servidor Central AIB) ---
+        if ($provider === 'api_token_v3') {
+            if (empty($api_key)) {
+                wp_send_json_error(['message' => __('API Key is missing.', 'advanced-ip-blocker')]);
+            }
+
+            // Llamada al servidor central para verificar el token real
+            $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $api_key,
+                    'Accept'        => 'application/json'
+                ],
+                'timeout' => 10
+            ]);
+
+            if (is_wp_error($response)) {
+                wp_send_json_error(['message' => __('Connection failed: ', 'advanced-ip-blocker') . $response->get_error_message()]);
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+
+            if ($status_code === 200 && isset($data['status']) && in_array($data['status'], ['active', 'connected'], true)) {
+                wp_send_json_success(['message' => __('API Key is valid and active!', 'advanced-ip-blocker')]);
+            } else {
+                $error_msg = $data['message'] ?? __('Invalid or inactive API Key.', 'advanced-ip-blocker');
+                wp_send_json_error(['message' => $error_msg]);
+            }
+            return;
+        }
+
         // --- Lógica existente para Geolocalización ---
         $this->plugin->geolocation_manager->set_transient_api_key($provider, $api_key);
         $result = $this->plugin->geolocation_manager->fetch_location('8.8.8.8');
@@ -302,6 +335,33 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(['message' => $error_message]);
         }
     } 
+
+    /**
+     * AJAX action to get a free API Key from the Central Server automatically.
+     */
+    public function ajax_get_free_api_key() {
+        check_ajax_referer('advaipbl_verify_api_nonce', 'nonce'); // Usamos este nonce existente
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'advanced-ip-blocker')]);
+        }
+
+        $result = $this->plugin->community_manager->register_site();
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => __('Connection to Central Server failed: ', 'advanced-ip-blocker') . $result->get_error_message()]);
+        }
+
+        if (isset($result['api_token'])) {
+            wp_send_json_success([
+                'message' => __('API Key generated and saved successfully!', 'advanced-ip-blocker'),
+                'api_token_visual' => 'AIB_' . str_repeat('•', 24) . substr($result['api_token'], -4)
+            ]);
+        } else {
+            wp_send_json_error(['message' => __('Failed to generate API Key.', 'advanced-ip-blocker')]);
+        }
+    }
+
     /**
      * Callback de AJAX para gestionar la respuesta al aviso de telemetría.
      */
@@ -771,6 +831,10 @@ public function ajax_verify_abuseipdb_key() {
             }
         }
 
+        if ($imported_count > 0) {
+            $this->plugin->purge_all_page_caches();
+        }
+
         $message = sprintf(
             /* translators: 1: Number of imported IPs, 2: Number of skipped IPs. */
             __('Import complete. Imported: %1$d. Skipped/Invalid/Duplicate: %2$d.', 'advanced-ip-blocker'),
@@ -987,6 +1051,10 @@ public function ajax_verify_abuseipdb_key() {
 
         if ($imported_count > 0 && !empty($this->plugin->options['enable_htaccess_ip_blocking'])) {
             $this->plugin->htaccess_manager->update_htaccess();
+        }
+
+        if ($imported_count > 0) {
+            $this->plugin->purge_all_page_caches();
         }
 
         // Si Cloudflare está habilitado, desencadenamos una sincronización asíncrona casi inmediata.

@@ -94,6 +94,7 @@ class ADVAIPBL_Action_Handler {
             }
 
             if ($processed_count > 0) {
+                $this->plugin->purge_all_page_caches();
                 /* translators: %d: Number of entries. */
                 $message = sprintf(_n('%d entry has been unblocked.', '%d entries have been unblocked.', $processed_count, 'advanced-ip-blocker'), $processed_count);
             } else {
@@ -140,6 +141,7 @@ class ADVAIPBL_Action_Handler {
                     break;
                 case 'unblock_all':
                     $this->plugin->unblock_all_ips('Admin Action');
+                    $this->plugin->purge_all_page_caches();
                     $message = __('All blocked IPs have been successfully unblocked.', 'advanced-ip-blocker');
                     break;
                 case 'save_user_agents':
@@ -278,12 +280,14 @@ class ADVAIPBL_Action_Handler {
                                     $type = 'info';
                                 } else {
                                     $this->plugin->block_ip_instantly( $ip_or_range, 'manual', __('Manual Block', 'advanced-ip-blocker'), [], 'admin_action' );
+                                    $this->plugin->purge_all_page_caches();
                                     /* translators: %s: IP. */
 									$message = sprintf( __( 'Entry %s has been blocked.', 'advanced-ip-blocker' ), $ip_or_range );
                                 }
                                 break;
                             case 'remove_block':
                                 $this->plugin->desbloquear_ip($ip_or_range);
+                                $this->plugin->purge_all_page_caches();
 								/* translators: %s: IP. */
                                 $message = sprintf( __( 'IP %s unblocked from all lists.', 'advanced-ip-blocker' ), $ip_or_range );
                                 break;
@@ -445,6 +449,15 @@ public function handle_wizard_step_3() {
 	if ( isset( $_POST['activate_community_network'] ) && $_POST['activate_community_network'] === '1' ) {
         $options['enable_community_network'] = '1';  // Compartir (Join)
         $options['enable_community_blocking'] = '1'; // Bloquear (Protect)
+        
+        // Generar y registrar el API Token V3 automáticamente en nuevas instalaciones
+        if ( isset( $this->plugin->community_manager ) ) {
+            // Pasamos las opciones actualizadas a la memoria temporal de la clase Main antes de registrar
+            $this->plugin->options = $options;
+            $this->plugin->community_manager->register_site();
+            // Refrescamos las opciones desde la BD por si register_site las ha modificado directamente.
+            $options = get_option( ADVAIPBL_Main::OPTION_SETTINGS, [] );
+        }
     }
 	
     update_option( ADVAIPBL_Main::OPTION_SETTINGS, $options );

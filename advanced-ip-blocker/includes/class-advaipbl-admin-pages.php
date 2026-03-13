@@ -23,6 +23,8 @@ class ADVAIPBL_Admin_Pages {
         return;
     }
 
+    nocache_headers(); // Prevent caching on this admin page
+    
     // 1. DEFINIR LA ESTRUCTURA COMPLETA DEL MENÚ
     $menu_structure = [
         'dashboard' => [ 'title' => __('Dashboard', 'advanced-ip-blocker'), 'icon'  => 'dashicons-dashboard', 'sub_tabs' => [ 'main_dashboard' => __('Security Dashboard', 'advanced-ip-blocker'), 'status' => __('System Status', 'advanced-ip-blocker') ] ],

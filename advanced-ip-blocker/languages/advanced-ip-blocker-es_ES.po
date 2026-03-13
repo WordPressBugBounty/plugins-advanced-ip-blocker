@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-03-01 08:26+0100\n"
+"PO-Revision-Date: 2026-03-11 11:29+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -1589,6 +1589,48 @@ msgstr "Lista de bloqueo de ASN actualizada por %s."
 #: includes/class-advaipbl-main.php:3065
 msgid "ASN blocklist saved successfully."
 msgstr "Lista de bloqueo de ASN guardada exitosamente."
+
+#: includes/class-advaipbl-settings-manager.php:501
+msgid "Whitelist Login Countries"
+msgstr "Países de inicio de sesión en la lista blanca"
+
+#: includes/class-advaipbl-settings-manager.php:1210
+msgid ""
+"Select one or more countries that are allowed to access wp-login.php. If "
+"empty, all countries are allowed."
+msgstr ""
+"Seleccione uno o más países con permiso para acceder a wp-login.php. Si deja "
+"el campo vacío, se permite el acceso a todos los países."
+
+#: includes/class-advaipbl-settings-manager.php:1434
+msgid "AIB Account Connection"
+msgstr "Conexión de cuenta AIB"
+
+#: includes/class-advaipbl-settings-manager.php:1435
+msgid "Not Connected"
+msgstr "No Conectado"
+
+#: includes/class-advaipbl-settings-manager.php:1436
+msgid "Get a Free API Key below to connect your site to the AIB Cloud Network."
+msgstr ""
+"Obtenga una clave API gratuita a continuación para conectar su sitio a la "
+"red en la nube de AIB."
+
+#: includes/class-advaipbl-settings-manager.php:1437
+msgid "API Token"
+msgstr "API Token"
+
+#: includes/class-advaipbl-settings-manager.php:1438
+msgid "Get Free Key"
+msgstr "Obtener clave gratis"
+
+#: includes/class-advaipbl-settings-manager.php:1439
+msgid ""
+"Connecting to the Advanced IP Blocker cloud network gives you access to the "
+"community blocklist and deep site scanning."
+msgstr ""
+"Al conectarse a la red en la nube de Advanced IP Blocker, tendrá acceso a la "
+"lista de bloqueo de la comunidad y al escaneo profundo del sitio."
 
 #: includes/class-advaipbl-main.php:3078
 #, php-format
