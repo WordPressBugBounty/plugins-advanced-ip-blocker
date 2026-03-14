@@ -992,12 +992,10 @@ public function display_general_settings_tab() {
 
                     <div id="section-geolocation" class="advaipbl-settings-section">
                         <div class="advaipbl-card">
-                            <h2><?php esc_html_e('Geolocation Settings', 'advanced-ip-blocker'); ?></h2>
+                            <h2><?php esc_html_e('Geo-Security', 'advanced-ip-blocker'); ?></h2>
                             <table class="form-table">
                                 <?php do_settings_fields('advaipbl_settings_page', 'advaipbl_geolocation_section'); ?>
                             </table>
-                            <h3 id="sub-section-geochallenge" style="margin-top: 20px;"><?php esc_html_e('Geo-Challenge (Beta)', 'advanced-ip-blocker'); ?></h3>
-                            <table class="form-table" role="presentation"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_geochallenge_settings_section'); ?></table>
                         </div>
                     </div>
                     
@@ -1056,9 +1054,6 @@ public function display_general_settings_tab() {
                          <div class="advaipbl-card">
                             <h2><?php esc_html_e('Core Protection Modules', 'advanced-ip-blocker'); ?></h2>
                             <p><?php esc_html_e('These are proactive defenses that block threats based on known malicious patterns.', 'advanced-ip-blocker'); ?></p>
-                            
-                            <h3 id="sub-section-geoblocking" style="margin-top: 20px;"><?php esc_html_e('Geoblocking Protection', 'advanced-ip-blocker'); ?></h3>
-                            <table class="form-table" role="presentation"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_geoblocking_settings_section'); ?></table>
 
                             <h3 id="sub-section-honeypot" style="margin-top: 20px;"><?php esc_html_e('Honeypot Protection', 'advanced-ip-blocker'); ?></h3>
                             <table class="form-table"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_honeypot_settings_section'); ?></table>

@@ -303,40 +303,7 @@ add_settings_field(
             ]
         );
 		
-		    // --- Geo-Challenge Section ---
-    add_settings_section('advaipbl_geochallenge_settings_section', null, null, $page );
-    add_settings_field(
-        'advaipbl_enable_geo_challenge', 
-        __('Enable Geo-Challenge', 'advanced-ip-blocker'), 
-        [$this, 'switch_field_callback'], 
-        $page, 
-        'advaipbl_geochallenge_settings_section', 
-        [
-            'name' => 'enable_geo_challenge', 
-            'label' => __('Activate country-based JavaScript challenge.', 'advanced-ip-blocker'),
-            'description' => __('Instead of a hard block, this presents a quick, invisible JavaScript challenge... <br><strong>Note:</strong> If you use a page caching plugin (e.g., WP Rocket, WP Fastest Cache), you may need to exclude the challenge cookie <code>advaipbl_js_verified</code> from being cached to prevent issues.', 'advanced-ip-blocker')
-        ]
-    );
-    add_settings_field(
-        'advaipbl_geo_challenge_countries', 
-        __( 'Challenged Countries', 'advanced-ip-blocker' ), 
-        [ $this, 'geoblock_countries_callback' ], 
-        $page, 
-        'advaipbl_geochallenge_settings_section',
-        ['type' => 'geo_challenge']
-    );
-    add_settings_field(
-        'advaipbl_geo_challenge_cookie_duration', 
-        __( 'Access Duration (Hours)', 'advanced-ip-blocker' ), 
-        [ $this, 'text_field_callback' ], 
-        $page, 
-        'advaipbl_geochallenge_settings_section', 
-        [
-            'name' => 'geo_challenge_cookie_duration', 
-            'default' => 24, 
-            'description' => __( 'How long a visitor can access the site after passing the challenge. Set to 0 for the browser session only.', 'advanced-ip-blocker' )
-        ]
-    );
+
         
 
         
@@ -363,10 +330,46 @@ add_settings_field(
         // CACHE (siempre visible)
         add_settings_field('advaipbl_clear_location_cache_button', __('Geolocation Cache', 'advanced-ip-blocker'), [$this, 'clear_cache_button_callback'], $page, 'advaipbl_geolocation_section');
 
-    add_settings_section('advaipbl_geoblocking_settings_section', null, null, $page );
-    add_settings_field('advaipbl_enable_geoblocking', __('Enable Geoblocking', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_geoblocking_settings_section', ['name' => 'enable_geoblocking', 'label' => __('Activate country-based blocking.', 'advanced-ip-blocker'), 'description' => sprintf(__('Block access from entire countries. This feature requires a working Geolocation Provider to be configured above.', 'advanced-ip-blocker'))]);
-    add_settings_field('advaipbl_geoblock_countries', __( 'Blocked Countries', 'advanced-ip-blocker' ), [ $this, 'geoblock_countries_callback' ], $page, 'advaipbl_geoblocking_settings_section' );
-    add_settings_field('advaipbl_duration_geoblock', __( 'Geoblock Duration (min)', 'advanced-ip-blocker' ), [ $this, 'text_field_callback' ], $page, 'advaipbl_geoblocking_settings_section', ['name' => 'duration_geoblock', 'default' => 1440, 'description' => __( 'How long an IP from a blocked country will be blocked. Set to 0 for a permanent block.', 'advanced-ip-blocker' )]);
+    // --- Geoblocking Section ---
+    add_settings_field('advaipbl_geoblock_separator', '', [$this, 'geoblock_separator_callback'], $page, 'advaipbl_geolocation_section');
+    add_settings_field('advaipbl_enable_geoblocking', __('Enable Geoblocking', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_geolocation_section', ['name' => 'enable_geoblocking', 'label' => __('Activate country-based blocking.', 'advanced-ip-blocker'), 'description' => sprintf(__('Block access from entire countries. This feature requires a working Geolocation Provider to be configured above.', 'advanced-ip-blocker'))]);
+    add_settings_field('advaipbl_geoblock_countries', __( 'Blocked Countries', 'advanced-ip-blocker' ), [ $this, 'geoblock_countries_callback' ], $page, 'advaipbl_geolocation_section' );
+    add_settings_field('advaipbl_duration_geoblock', __( 'Geoblock Duration (min)', 'advanced-ip-blocker' ), [ $this, 'text_field_callback' ], $page, 'advaipbl_geolocation_section', ['name' => 'duration_geoblock', 'default' => 1440, 'description' => __( 'How long an IP from a blocked country will be blocked. Set to 0 for a permanent block.', 'advanced-ip-blocker' )]);
+    
+    // --- Geo-Challenge Section ---
+    add_settings_field('advaipbl_geochallenge_separator', '', [$this, 'geochallenge_separator_callback'], $page, 'advaipbl_geolocation_section');
+    add_settings_field(
+        'advaipbl_enable_geo_challenge', 
+        __('Enable Geo-Challenge', 'advanced-ip-blocker'), 
+        [$this, 'switch_field_callback'], 
+        $page, 
+        'advaipbl_geolocation_section', 
+        [
+            'name' => 'enable_geo_challenge', 
+            'label' => __('Activate country-based JavaScript challenge.', 'advanced-ip-blocker'),
+            'description' => __('Instead of a hard block, this presents a quick, invisible JavaScript challenge... <br><strong>Note:</strong> If you use a page caching plugin (e.g., WP Rocket, WP Fastest Cache), you may need to exclude the challenge cookie <code>advaipbl_js_verified</code> from being cached to prevent issues.', 'advanced-ip-blocker')
+        ]
+    );
+    add_settings_field(
+        'advaipbl_geo_challenge_countries', 
+        __( 'Challenged Countries', 'advanced-ip-blocker' ), 
+        [ $this, 'geoblock_countries_callback' ], 
+        $page, 
+        'advaipbl_geolocation_section',
+        ['type' => 'geo_challenge']
+    );
+    add_settings_field(
+        'advaipbl_geo_challenge_cookie_duration', 
+        __( 'Access Duration (Hours)', 'advanced-ip-blocker' ), 
+        [ $this, 'text_field_callback' ], 
+        $page, 
+        'advaipbl_geolocation_section', 
+        [
+            'name' => 'geo_challenge_cookie_duration', 
+            'default' => 24, 
+            'description' => __( 'How long a visitor can access the site after passing the challenge. Set to 0 for the browser session only.', 'advanced-ip-blocker' )
+        ]
+    );
     
     add_settings_section('advaipbl_honeypot_settings_section', null, null, $page);
     add_settings_field(
@@ -1976,6 +1979,16 @@ public function abuseipdb_action_callback() {
      */
     public function separator_callback() {
         echo '<hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">';
+    }
+
+    public function geoblock_separator_callback() {
+        echo '<hr style="margin: 30px 0 10px; border: 0; border-top: 1px solid #ddd;">';
+        echo '<h3 style="margin: 0; padding: 0;">' . esc_html__('Geoblocking Protections', 'advanced-ip-blocker') . '</h3>';
+    }
+
+    public function geochallenge_separator_callback() {
+        echo '<hr style="margin: 30px 0 10px; border: 0; border-top: 1px solid #ddd;">';
+        echo '<h3 id="sub-section-geochallenge" style="margin: 0; padding: 0;">' . esc_html__('Geo-Challenge (Beta)', 'advanced-ip-blocker') . '</h3>';
     }
 
 }

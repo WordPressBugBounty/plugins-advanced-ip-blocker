@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.0
+Stable tag: 8.9.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -225,6 +225,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.1 =
+*   **UX ENHANCEMENT:** Grouped "Geoblocking" and "Geo-Challenge" settings into a single, cohesive "Geo-Security" section to improve clarity and reduce confusion. Thank you to the community for this excellent suggestion!
+*   **CLARIFICATION:** Reordered geographic protections to display Geoblocking (hard blocks) before Geo-Challenge (soft blocks), ensuring users prioritize stricter regional protections first. 
+
 = 8.9.0 =
 *   **NEW MAJOR FEATURE:** AIB Cloud Network V3. We've completely overhauled our Community Defense Network infrastructure. The new API V3 introduces secure, individual API Keys for every connected site, drastically improving synchronization reliability, security telemetry, and overall network stability.
 *   **NEW FEATURE:** Whitelist Login Countries. A highly requested feature! You can now explicitly select which countries are allowed to access your WordPress login page (`wp-login.php`) and XML-RPC, automatically blocking all other nations.
@@ -239,6 +243,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
 == Upgrade Notice ==
+
+= 8.9.1 =
+**MINOR UPDATE:** A quick User Experience (UX) update that reorganizes the geographic security settings into a unified "Geo-Security" section, making configuration much more intuitive.
 
 = 8.9.0 =
 **MAJOR UPDATE:** This release launches the AIB Cloud Network V3 and the powerful "Whitelist Login Countries" feature. Update immediately to connect to the new, more secure threat intelligence network infrastructure and take absolute control over your login page access.
