@@ -1630,13 +1630,34 @@ public function xmlrpc_protection_mode_callback() {
         $selected_countries = $this->plugin->options[$option_name] ?? [];
         $all_countries     = $this->plugin->get_country_list();
         ?>
-        <select id="<?php echo esc_attr($select_id); ?>" name="advaipbl_settings[<?php echo esc_attr($option_name); ?>][]" class="advaipbl-country-select" multiple="multiple" style="width: 100%;" data-placeholder="<?php echo esc_attr($placeholder_text); ?>">
-            <?php foreach ( $all_countries as $code => $name ) : ?>
-                <option value="<?php echo esc_attr( $code ); ?>" <?php selected( in_array( $code, $selected_countries, true ) ); ?>>
-                    <?php echo esc_html( $name ); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
+        <div class="advaipbl-country-selector-wrapper" data-target="<?php echo esc_attr($select_id); ?>">
+            <select id="<?php echo esc_attr($select_id); ?>" name="advaipbl_settings[<?php echo esc_attr($option_name); ?>][]" class="advaipbl-country-select" multiple="multiple" style="width: 100%;" data-placeholder="<?php echo esc_attr($placeholder_text); ?>">
+                <?php foreach ( $all_countries as $code => $name ) : ?>
+                    <option value="<?php echo esc_attr( $code ); ?>" <?php selected( in_array( $code, $selected_countries, true ) ); ?>>
+                        <?php echo esc_html( $name ); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <div style="margin-top: 10px;">
+                <button type="button" class="button button-small advaipbl-toggle-raw-countries">
+                    <?php esc_html_e('Copy/Paste Raw Codes', 'advanced-ip-blocker'); ?>
+                </button>
+            </div>
+            <div class="advaipbl-raw-countries-container" style="display: none; margin-top: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ccd0d4;">
+                <p style="margin-top: 0;"><strong><?php esc_html_e('Raw Country Codes', 'advanced-ip-blocker'); ?></strong></p>
+                <p class="description" style="margin-bottom: 10px;"><?php esc_html_e('Paste a list of 2-letter country codes (e.g., US, CA, MX). Invalid codes will be safely ignored.', 'advanced-ip-blocker'); ?></p>
+                <textarea class="advaipbl-raw-countries-input large-text code" rows="4"></textarea>
+                <div style="margin-top: 10px; display: flex; align-items: center;">
+                    <button type="button" class="button button-primary advaipbl-apply-raw-countries">
+                        <?php esc_html_e('Apply to List', 'advanced-ip-blocker'); ?>
+                    </button>
+                    <button type="button" class="button button-secondary advaipbl-cancel-raw-countries" style="margin-left: 10px;">
+                        <?php esc_html_e('Cancel', 'advanced-ip-blocker'); ?>
+                    </button>
+                    <span class="advaipbl-raw-countries-feedback" style="margin-left: 15px; font-weight: 600;"></span>
+                </div>
+            </div>
+        </div>
         <?php if (isset($args['description'])) : ?>
             <p class="description"><?php echo wp_kses_post($args['description']); ?></p>
         <?php else : ?>

@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.1
+Stable tag: 8.9.2
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,6 +20,7 @@ A complete WordPress security firewall: blocks IPs, bots & countries. Includes a
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
 *   **(NEW) AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
 *   **(NEW) Whitelist Login Countries:** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, instantly blocking unauthorized foreign login attempts.
 *   **(IMPROVED) Bulk Import/Export for Blocked IPs & Whitelist:** Seamlessly import massive lists of IPs via CSV or manual entry. The system now features a bulletproof "Bulk Import" type, strict duration inheritance, and intelligent conflict resolution.
@@ -225,6 +226,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.2 =
+*   **NEW FEATURE:** Select2 Country Copy/Paste. You no longer have to manually select 50+ countries repeatedly on multi-site environments. A new hidden tool now lets you copy completely raw 2-letter codes from any source and paste them straight into Geoblocking, GeoChallenge, and Whitelist Login Country elements.
+*   **UX:** Added a clear warning to users that having intersecting rules between Geoblocking and Whitelist Login Countries leads to undefined behavior.
+
 = 8.9.1 =
 *   **UX ENHANCEMENT:** Grouped "Geoblocking" and "Geo-Challenge" settings into a single, cohesive "Geo-Security" section to improve clarity and reduce confusion. Thank you to the community for this excellent suggestion!
 *   **CLARIFICATION:** Reordered geographic protections to display Geoblocking (hard blocks) before Geo-Challenge (soft blocks), ensuring users prioritize stricter regional protections first. 
@@ -243,6 +248,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
 == Upgrade Notice ==
+
+= 8.9.2 =
+**NEW FEATURE UPDATE:** Introducing a seamless way to duplicate your 50+ country configurations! Update to 8.9.2 to instantly access the new Select2 Country Copy/Paste logic tool within the advanced Geoblocking features.
 
 = 8.9.1 =
 **MINOR UPDATE:** A quick User Experience (UX) update that reorganizes the geographic security settings into a unified "Geo-Security" section, making configuration much more intuitive.

@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.9.0\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7434,4 +7434,24 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "30 Days"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1631
+msgid "Copy/Paste Raw Codes"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1635
+msgid "Paste a list of 2-letter country codes..."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1638
+msgid "Apply to List"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1639
+msgid "Cancel"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1651
+msgid "Select one or more countries. Type in the box to search."
 msgstr ""

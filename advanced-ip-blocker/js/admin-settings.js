@@ -784,6 +784,78 @@ jQuery(document).ready(function ($) {
         }
     }
 
+    function initRawCountryEditor() {
+        $('body').on('click', '.advaipbl-toggle-raw-countries', function() {
+            const $wrapper = $(this).closest('.advaipbl-country-selector-wrapper');
+            const selectId = $wrapper.data('target');
+            const $select = $('#' + selectId);
+            const $container = $wrapper.find('.advaipbl-raw-countries-container');
+            const $textarea = $wrapper.find('.advaipbl-raw-countries-input');
+            const $feedback = $wrapper.find('.advaipbl-raw-countries-feedback');
+            
+            const currentSelected = $select.val() || [];
+            $textarea.val(currentSelected.join(', '));
+            $feedback.text('').css('color', '');
+            
+            $(this).hide();
+            $container.slideDown('fast');
+        });
+
+        $('body').on('click', '.advaipbl-cancel-raw-countries', function() {
+            const $wrapper = $(this).closest('.advaipbl-country-selector-wrapper');
+            $wrapper.find('.advaipbl-raw-countries-container').slideUp('fast', function() {
+                $wrapper.find('.advaipbl-toggle-raw-countries').show();
+            });
+        });
+
+        $('body').on('click', '.advaipbl-apply-raw-countries', function() {
+            const $wrapper = $(this).closest('.advaipbl-country-selector-wrapper');
+            const selectId = $wrapper.data('target');
+            const $select = $('#' + selectId);
+            const $textarea = $wrapper.find('.advaipbl-raw-countries-input');
+            const $feedback = $wrapper.find('.advaipbl-raw-countries-feedback');
+            
+            const rawText = $textarea.val().toUpperCase();
+            const matches = rawText.match(/\b[A-Z]{2}\b/g) || [];
+            
+            const validOptions = new Set();
+            $select.find('option').each(function() {
+                const val = $(this).val();
+                if (val) validOptions.add(val);
+            });
+            
+            const selectedCodes = [];
+            let invalidCount = 0;
+            
+            matches.forEach(code => {
+                if (validOptions.has(code)) {
+                    if (!selectedCodes.includes(code)) {
+                        selectedCodes.push(code);
+                    }
+                } else {
+                    invalidCount++;
+                }
+            });
+            
+            $select.val(selectedCodes).trigger('change');
+            if ($.fn.select2) {
+                $select.trigger('change.select2');
+            }
+            
+            let feedbackText = `Applied ${selectedCodes.length} codes.`;
+                
+            if (invalidCount > 0) {
+                feedbackText += ` (Ignored ${invalidCount} invalid)`;
+                $feedback.css('color', '#f56e28');
+            } else {
+                $feedback.css('color', '#00a32a');
+            }
+            
+            $feedback.text(feedbackText);
+            $textarea.val(selectedCodes.join(', '));
+        });
+    }
+
     // Initialize Settings Logic
     initGeolocationOptionsToggle();
     initSettingsSideNav();
@@ -803,6 +875,7 @@ jQuery(document).ready(function ($) {
     initFloatingSaveBar();
     initFIMActions();
     initCountrySelectors();
+    initRawCountryEditor();
     initWhitelistAjaxButton();
 
     function initWhitelistAjaxButton() {

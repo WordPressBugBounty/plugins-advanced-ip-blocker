@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-03-11 11:29+0100\n"
+"PO-Revision-Date: 2026-03-15 10:24+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -1771,6 +1771,7 @@ msgstr "Créditos y soporte"
 #: includes/class-advaipbl-main.php:3384 includes/class-advaipbl-main.php:3411
 #: includes/class-advaipbl-main.php
 #: includes/class-advaipbl-admin-pages.php:1493
+#: includes/class-advaipbl-settings-manager.php:1639
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -8173,6 +8174,22 @@ msgstr "7 Días"
 msgid "30 Days"
 msgstr "30 días"
 
+#: includes/class-advaipbl-settings-manager.php:1631
+msgid "Copy/Paste Raw Codes"
+msgstr "Copiar/Pegar Raw Codes"
+
+#: includes/class-advaipbl-settings-manager.php:1635
+msgid "Paste a list of 2-letter country codes..."
+msgstr "Pegue una lista de códigos de país de 2 letras..."
+
+#: includes/class-advaipbl-settings-manager.php:1638
+msgid "Apply to List"
+msgstr "Aplicar a la lista"
+
+#: includes/class-advaipbl-settings-manager.php:1651
+msgid "Select one or more countries. Type in the box to search."
+msgstr "Seleccione uno o más países. Escriba en el cuadro para buscar."
+
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"
 
@@ -8843,9 +8860,6 @@ msgstr "30 días"
 #~ "Este es un correo electrónico de prueba para confirmar que su sitio de "
 #~ "WordPress puede enviar notificaciones HTML desde el complemento Advanced "
 #~ "IP Blocker."
-
-#~ msgid "Apply Filters"
-#~ msgstr "Aplicar filtros"
 
 #, php-format
 #~ msgid ""
