@@ -116,7 +116,27 @@ class ADVAIPBL_Settings_Manager {
         );
 
 
+        // Automation & Trigger Rules
+        add_settings_field(
+            'advaipbl_scan_email_trigger',
+            __('Alert Trigger Rule', 'advanced-ip-blocker'),
+            [$this, 'select_field_callback'],
+            $page,
+            'advaipbl_scanner_settings_section',
+            [
+                'name' => 'scan_email_trigger',
+                'options' => [
+                    'any_issue' => __('Send email when ANY issue is found (Updates, Vulnerabilities, Env Errors)', 'advanced-ip-blocker'),
+                    'vulnerabilities_only' => __('Agency Mode: ONLY send email if Critical Vulnerabilities (CVEs) or Blacklists are detected. (Ignores standard updates)', 'advanced-ip-blocker'),
+                    'always' => __('Always send report, even if the site is completely clean.', 'advanced-ip-blocker')
+                ],
+                'default' => 'any_issue',
+                'label' => __('Choose when the automatic scan should notify you.', 'advanced-ip-blocker')
+            ]
+        );
+
         // Granular Scan Checks
+        add_settings_field('advaipbl_scan_check_vulnerabilities', __('Check Vulnerabilities (CVE)', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_scanner_settings_section', ['name' => 'scan_check_vulnerabilities', 'default' => '1', 'label' => __('Enable scanning active plugins and themes against the known vulnerabilities database.', 'advanced-ip-blocker')]);
         add_settings_field('advaipbl_scan_check_ssl', __('Check SSL Certificate', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_scanner_settings_section', ['name' => 'scan_check_ssl', 'default' => '1', 'label' => __('Enable SSL/TLS certificate validation.', 'advanced-ip-blocker')]);
         add_settings_field('advaipbl_scan_check_updates', __('Check Updates', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_scanner_settings_section', ['name' => 'scan_check_updates', 'default' => '1', 'label' => __('Enable core, plugin, and theme update checks.', 'advanced-ip-blocker')]);
         add_settings_field('advaipbl_scan_check_php', __('Check PHP Version', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_scanner_settings_section', ['name' => 'scan_check_php', 'default' => '1', 'label' => __('Enable PHP version compatibility checks.', 'advanced-ip-blocker')]);
@@ -1277,6 +1297,31 @@ add_settings_field(
             printf(
                 '<p class="description">%s</p>',
                 esc_html($args['label'])
+            );
+        }
+    }
+
+    public function select_field_callback($args){
+        $name = $args['name'];
+        $options_list = $args['options'] ?? [];
+        $default_val = $args['default'] ?? '';
+        $value = $this->plugin->options[$name] ?? $default_val;
+        
+        echo '<select name="' . esc_attr('advaipbl_settings[' . $name . ']') . '" id="advaipbl_' . esc_attr($name) . '">';
+        foreach ( $options_list as $key => $label ) {
+            printf(
+                '<option value="%1$s" %2$s>%3$s</option>',
+                esc_attr( $key ),
+                selected( $value, $key, false ),
+                esc_html( $label )
+            );
+        }
+        echo '</select>';
+        
+        if ( isset($args['label']) ) {
+            printf(
+                '<p class="description">%s</p>',
+                wp_kses_post($args['label'])
             );
         }
     }

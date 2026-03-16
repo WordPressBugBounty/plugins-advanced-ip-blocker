@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-03-15 10:24+0100\n"
+"PO-Revision-Date: 2026-03-15 12:37+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8189,6 +8189,47 @@ msgstr "Aplicar a la lista"
 #: includes/class-advaipbl-settings-manager.php:1651
 msgid "Select one or more countries. Type in the box to search."
 msgstr "Seleccione uno o más países. Escriba en el cuadro para buscar."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Alert Trigger Rule"
+msgstr "Regla de activación de alerta"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Send email when ANY issue is found (Updates, Vulnerabilities, Env Errors)"
+msgstr ""
+"Enviar correo electrónico cuando se detecte CUALQUIER problema "
+"(actualizaciones, vulnerabilidades, errores de entorno)."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Agency Mode: ONLY send email if Critical Vulnerabilities (CVEs) or "
+"Blacklists are detected. (Ignores standard updates)"
+msgstr ""
+"Modo Agencia: Solo se enviará un correo electrónico si se detectan "
+"vulnerabilidades críticas (CVE) o se incluyen elementos en listas negras. "
+"(Ignora las actualizaciones estándar)."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Always send report, even if the site is completely clean."
+msgstr ""
+"Envíe siempre el informe, incluso si el sitio está completamente limpio."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose when the automatic scan should notify you."
+msgstr "Elige cuándo debes recibir las notificaciones del análisis automático."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Check Vulnerabilities (CVE)"
+msgstr "Verificación de vulnerabilidades (CVE)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Enable scanning active plugins and themes against the known vulnerabilities "
+"database."
+msgstr ""
+"Habilita el análisis de los plugins y temas activos contra la base de datos "
+"de vulnerabilidades conocidas."
 
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"

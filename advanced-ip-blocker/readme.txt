@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.2
+Stable tag: 8.9.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -226,6 +226,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.3 =
+*   **NEW FEATURE:** DeepScan for Agencies. Granular control over email notifications. Choose when alerts are sent (e.g., only for critical vulnerabilities) to prevent notification fatigue.
+*   **ENHANCEMENT:** Added a dedicated toggle to independently enable or disable the vulnerability (CVE) check.
+
 = 8.9.2 =
 *   **NEW FEATURE:** Select2 Country Copy/Paste. You no longer have to manually select 50+ countries repeatedly on multi-site environments. A new hidden tool now lets you copy completely raw 2-letter codes from any source and paste them straight into Geoblocking, GeoChallenge, and Whitelist Login Country elements.
 *   **UX:** Added a clear warning to users that having intersecting rules between Geoblocking and Whitelist Login Countries leads to undefined behavior.
@@ -248,6 +252,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
 == Upgrade Notice ==
+
+= 8.9.3 =
+**NEW AGENCY FEATURES:** Introducing "DeepScan for Agencies". Gain granular control over vulnerability scans and email reports to eliminate notification fatigue.
 
 = 8.9.2 =
 **NEW FEATURE UPDATE:** Introducing a seamless way to duplicate your 50+ country configurations! Update to 8.9.2 to instantly access the new Select2 Country Copy/Paste logic tool within the advanced Geoblocking features.

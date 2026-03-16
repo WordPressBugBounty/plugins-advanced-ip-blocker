@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.9.2\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7454,4 +7454,32 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:1651
 msgid "Select one or more countries. Type in the box to search."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Alert Trigger Rule"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Send email when ANY issue is found (Updates, Vulnerabilities, Env Errors)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Agency Mode: ONLY send email if Critical Vulnerabilities (CVEs) or Blacklists are detected. (Ignores standard updates)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Always send report, even if the site is completely clean."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose when the automatic scan should notify you."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Check Vulnerabilities (CVE)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Enable scanning active plugins and themes against the known vulnerabilities database."
 msgstr ""

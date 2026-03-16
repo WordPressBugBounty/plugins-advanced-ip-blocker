@@ -213,6 +213,10 @@ class ADVAIPBL_Site_Scanner {
      * @return array
      */
     public function check_vulnerabilities_via_api() {
+        if ( isset($this->plugin->options['scan_check_vulnerabilities']) && $this->plugin->options['scan_check_vulnerabilities'] === '0' ) {
+            return ['status' => 'skipped', 'count' => 0, 'details' => [], 'message' => __('Skipped by settings.', 'advanced-ip-blocker')];
+        }
+
         if ( ! function_exists( 'get_plugins' ) ) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
@@ -414,27 +418,45 @@ class ADVAIPBL_Site_Scanner {
         // 2. Conditional Sending Logic (DeepScan Automation)
         // If it's NOT a manual scan, we only send the report if there are issues.
         if ( ! $is_manual ) {
-            $is_clean = true;
-
-            // Check Updates
-            if ($local_scan['updates']['status'] !== 'good' && $local_scan['updates']['status'] !== 'skipped') $is_clean = false;
+            $trigger = $this->plugin->options['scan_email_trigger'] ?? 'any_issue';
             
-            // Check Environment Health
-            if ($local_scan['php']['status'] !== 'good' && $local_scan['php']['status'] !== 'skipped') $is_clean = false;
-            if ($local_scan['wordpress']['status'] !== 'good' && $local_scan['wordpress']['status'] !== 'skipped') $is_clean = false;
-            if ($local_scan['ssl']['status'] !== 'good' && $local_scan['ssl']['status'] !== 'skipped') $is_clean = false;
-            if ($local_scan['debug_mode']['status'] !== 'good' && $local_scan['debug_mode']['status'] !== 'skipped') $is_clean = false;
+            $has_vuln_or_critical = false;
+            $has_any_issue = false;
 
-            // Check Server Reputation
-            if ($server_rep['status'] === 'blacklisted' || $server_rep['status'] === 'error') $is_clean = false;
-
-            // Check Vulnerabilities
-            if ($vulns['status'] !== 'clean') $is_clean = false;
-
-            // If everything is clean, we skip the email.
-            if ($is_clean) {
-                return;
+            // Evaluate Vulnerabilities & Blacklists (Agency triggers)
+            if ($vulns['status'] === 'vulnerable' || $vulns['status'] === 'error') {
+                $has_vuln_or_critical = true;
             }
+            if ($server_rep['status'] === 'blacklisted' || $server_rep['status'] === 'error') {
+                $has_vuln_or_critical = true;
+            }
+            
+            // Evaluate Environment Criticals (also severe enough for agency alert)
+            if ($local_scan['php']['status'] === 'critical' || $local_scan['wordpress']['status'] === 'critical' || $local_scan['debug_mode']['status'] === 'critical' || $local_scan['ssl']['status'] === 'critical') {
+                 $has_vuln_or_critical = true;
+            }
+
+            // Evaluate general issues
+            if ($has_vuln_or_critical) {
+                $has_any_issue = true;
+            } else {
+                 if ($local_scan['updates']['status'] !== 'good' && $local_scan['updates']['status'] !== 'skipped') $has_any_issue = true;
+                 if ($local_scan['php']['status'] !== 'good' && $local_scan['php']['status'] !== 'skipped') $has_any_issue = true;
+                 if ($local_scan['wordpress']['status'] !== 'good' && $local_scan['wordpress']['status'] !== 'skipped') $has_any_issue = true;
+                 if ($local_scan['ssl']['status'] !== 'good' && $local_scan['ssl']['status'] !== 'skipped') $has_any_issue = true;
+                 if ($local_scan['debug_mode']['status'] !== 'good' && $local_scan['debug_mode']['status'] !== 'skipped') $has_any_issue = true;
+            }
+
+            // Apply Trigger Rules
+            if ($trigger === 'vulnerabilities_only' && !$has_vuln_or_critical) {
+                return; // Agency mode: silent unless strictly critical
+            }
+            
+            if ($trigger === 'any_issue' && !$has_any_issue) {
+                return; // Standard mode: silent if 100% clean
+            }
+            
+            // if $trigger === 'always', we proceed regardless
         }
 
         // 3. Prepare Data for Email
