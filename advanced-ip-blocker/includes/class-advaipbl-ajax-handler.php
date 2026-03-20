@@ -353,6 +353,9 @@ class ADVAIPBL_Ajax_Handler {
         }
 
         if (isset($result['api_token'])) {
+            // Trigger an immediate sync so the blocklist and stats update to V3 levels instantly.
+            $this->plugin->community_manager->update_list();
+
             wp_send_json_success([
                 'message' => __('API Key generated and saved successfully!', 'advanced-ip-blocker'),
                 'api_token_visual' => 'AIB_' . str_repeat('•', 24) . substr($result['api_token'], -4)

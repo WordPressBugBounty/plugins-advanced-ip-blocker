@@ -4984,7 +4984,22 @@ public function admin_menu() {
         remove_all_actions( 'all_admin_notices' );
     }
 
-        public function display_admin_notice() {
+    public function display_admin_notice() {
+        // --- DECAY STRATEGY (v8.9.4+) ---
+        // Notice about AIB Network falling back to degraded tier
+        if (get_option('advaipbl_network_degraded')) {
+            echo '<div class="notice notice-warning is-dismissible"><p>';
+            printf(
+                wp_kses(
+                    /* translators: %s: URL to the plugin settings page. */
+                    __('<strong>Advanced IP Blocker:</strong> You are receiving a limited community threat feed (50,000 IPs). To increase your protection level to 100,000+ IPs, please go to the plugin settings and <a href="%s">Register the AIB Network Integration</a>.', 'advanced-ip-blocker'),
+                    array('strong' => array(), 'a' => array('href' => array()))
+                ),
+                esc_url(admin_url('admin.php?page=advaipbl_settings_page-settings&sub-tab=threat_intelligence#advaipbl-community-network-card'))
+            );
+            echo '</p></div>';
+        }
+
         // Primero, llamamos a la función que decide si mostrar el aviso de telemetría.
         $this->display_telemetry_notice();
 

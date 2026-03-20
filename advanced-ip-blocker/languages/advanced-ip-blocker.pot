@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.9.3\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7482,4 +7482,8 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
 msgid "Enable scanning active plugins and themes against the known vulnerabilities database."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:4994
+msgid "<strong>Advanced IP Blocker:</strong> You are receiving a limited community threat feed (50,000 IPs). To increase your protection level to 100,000+ IPs, please go to the plugin settings and <a href=\"%s\">Register the AIB Network Integration</a>."
 msgstr ""

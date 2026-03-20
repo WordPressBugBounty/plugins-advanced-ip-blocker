@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.3
+Stable tag: 8.9.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -226,6 +226,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.4 =
+*   **CRITICAL FIX:** Resolved an issue where the Site Health & Vulnerability Scanner could fail to download the latest threat definitions due to Wordfence API V2 deprecation. Successfully migrated to the Wordfence V3 API with secure authentication. 
+*   **ENHANCEMENT:** Introduced an intelligent Cloud Network API decay strategy. The community threat feed now gracefully drops to a limited subset (50,000 IPs) for unauthenticated legacy clients while providing a clear admin notice.
+*   **UX IMPROVEMENT:** Fixed a frontend glitch where generating a new AIB Cloud Network API key would leave the button stuck on a "Generating..." loop. The UI now updates instantly to "Connected" without requiring a page reload.
+*   **UX IMPROVEMENT:** Deep-linking within the settings panel has been refined. System notices urging AIB Network Registration now correctly scroll the user directly to the relevant configuration card.
+
 = 8.9.3 =
 *   **NEW FEATURE:** DeepScan for Agencies. Granular control over email notifications. Choose when alerts are sent (e.g., only for critical vulnerabilities) to prevent notification fatigue.
 *   **ENHANCEMENT:** Added a dedicated toggle to independently enable or disable the vulnerability (CVE) check.
@@ -252,6 +258,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
 == Upgrade Notice ==
+
+= 8.9.4 =
+**SECURITY & UX UPDATE:** Essential fix for the Vulnerability Scanner to restore automated threat definition downloads via the new Wordfence V3 API. Also includes major UX improvements to the AIB Community Network registration flow. Update recommended.
 
 = 8.9.3 =
 **NEW AGENCY FEATURES:** Introducing "DeepScan for Agencies". Gain granular control over vulnerability scans and email reports to eliminate notification fatigue.

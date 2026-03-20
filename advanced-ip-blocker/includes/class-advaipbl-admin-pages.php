@@ -1018,8 +1018,7 @@ public function display_general_settings_tab() {
                                 <?php do_settings_fields('advaipbl_settings_page', 'advaipbl_abuseipdb_section'); ?>
                             </table>
                         </div>
-                        
-                        <div class="advaipbl-card">
+                        <div id="advaipbl-community-network-card" class="advaipbl-card">
                             <h3><?php esc_html_e('AIB Community Defense Network (Beta)', 'advanced-ip-blocker'); ?></h3>
                             
                             <?php if ( ! empty( $this->plugin->options['enable_community_blocking'] ) ) : ?>

@@ -632,12 +632,13 @@ jQuery(document).ready(function ($) {
                         <input type="hidden" name="advaipbl_settings[api_token_v3]" id="advaipbl_api_token_v3" value="${response.data.api_token}">
                         <button type="button" class="button" id="advaipbl-edit-api-token" title="Edit API Key"><span class="dashicons dashicons-edit" style="margin-top: 2px;"></span></button>
                     `;
-                        // Recargar suavemente para asegurar que todo WordPress capte el Token V3 en backend sin error
-                        // Eliminado reload automático para no perder el token sin guardar.
-                        // setTimeout(() => window.location.reload(), 2000);
+                        // Recargar suavemente para asegurar que todo WordPress se actualice (ahora es seguro porque el PHP guarda el token y sincroniza la lista)
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2500);
                         
-                        // En su lugar, actualizamos el texto de validación también
-                        $('#advaipbl-api-verification-result').html('<span style="color: green;">' + (adminData.text.api_key_generated || 'API Key Generated!') + '</span>');
+                        // Actualizamos el texto de validación para avisar del reload
+                        $('#advaipbl-api-verification-result').html('<span style="color: green;">' + (adminData.text.api_key_generated || 'API Key Generated!') + ' Sincronizando y recargando...</span>');
                         
                         // Localizar el indicador de estado de la red AIB y cambiarlo a activo visualmente
                         var $statusIndicator = $('.advaipbl-status-indicator');
@@ -655,6 +656,10 @@ jQuery(document).ready(function ($) {
                              // Si hay un texto de 'No Conectado' previo en la tabla, podríamos querer ocultarlo
                              $card.find('td:contains("Not Connected"), td:contains("No Conectado")').html('<span style="color:green; font-weight:bold;">' + (adminData.text.connected || 'Connected') + '</span>');
                         }
+                        
+                        // Insert the generated input elements and replace the button
+                        $button.parent().html(newHtml);
+                        $spinner.removeClass('is-active');
                     } else {
                         showAdminNotice('Error: ' + response.data.message, 'error');
                         $button.prop('disabled', false).text(originalText);
