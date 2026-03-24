@@ -67,6 +67,12 @@ class ADVAIPBL_Geolocation_Manager {
     private function fetch_location_from_api( $ip ) {
         $main_instance = ADVAIPBL_Main::get_instance();
         $provider = $main_instance->options['geolocation_provider'] ?? 'ip-api.com';
+
+        // Check Circuit Breaker (Global API Timeout)
+        if ( get_transient( 'advaipbl_geo_api_down_' . $provider ) ) {
+            return ['error' => true, 'error_message' => 'API is temporarily unreachable (Circuit Breaker Active)'];
+        }
+
         $api_key_transient = get_transient('advaipbl_transient_api_key_' . $provider);
         $api_key = $api_key_transient ?: ($main_instance->options['api_key_' . str_replace('.', '', $provider)] ?? '');
 
@@ -97,9 +103,12 @@ class ADVAIPBL_Geolocation_Manager {
                 return ['error' => true, 'error_message' => 'Invalid provider configured.'];
         }
 
-        $response = wp_remote_get($url, ['timeout' => 10]);
+        // Limit timeout to 3 seconds instead of 10 to prevent hanging the whole site
+        $response = wp_remote_get($url, ['timeout' => 3]);
 
         if (is_wp_error($response)) {
+            // Activate Circuit Breaker for 5 minutes if there's a connection error
+            set_transient( 'advaipbl_geo_api_down_' . $provider, true, 5 * MINUTE_IN_SECONDS );
             return ['error' => true, 'error_message' => $response->get_error_message()];
         }
 
@@ -107,6 +116,8 @@ class ADVAIPBL_Geolocation_Manager {
         $data = json_decode($body, true);
 
         if (!$data) {
+            // Activate Circuit Breaker for 5 minutes on malformed response
+            set_transient( 'advaipbl_geo_api_down_' . $provider, true, 5 * MINUTE_IN_SECONDS );
             return ['error' => true, 'error_message' => 'Invalid response from API.'];
         }
         

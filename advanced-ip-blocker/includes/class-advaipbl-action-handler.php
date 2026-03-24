@@ -350,6 +350,14 @@ public function handle_wizard_step_1() {
         $this->plugin->add_to_whitelist_and_unblock( $server_ip, __( 'Server IP (added by setup wizard)', 'advanced-ip-blocker' ) );
     }
 
+    if ( isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+        $options = get_option( ADVAIPBL_Main::OPTION_SETTINGS, [] );
+        $options['trusted_proxies'] = "AS13335\nAS209242\n" . ( $options['trusted_proxies'] ?? '' );
+        $proxies_list = array_unique( array_filter( array_map( 'trim', explode( "\n", $options['trusted_proxies'] ) ) ) );
+        $options['trusted_proxies'] = implode( "\n", $proxies_list );
+        update_option( ADVAIPBL_Main::OPTION_SETTINGS, $options );
+    }
+
     // Redirigir al siguiente paso
     wp_safe_redirect( admin_url( 'admin.php?page=advaipbl-setup-wizard&step=2' ) );
     exit;
@@ -375,7 +383,9 @@ public function handle_wizard_step_2() {
             $existing_uas = get_option( ADVAIPBL_Main::OPTION_BLOCKED_UAS, [] );
             $merged_uas = array_unique( array_merge( $existing_uas, $default_uas ) );
             update_option( ADVAIPBL_Main::OPTION_BLOCKED_UAS, $merged_uas );
-        }
+    } else {
+        $options['enable_user_agent_blocking'] = '0';
+    }
 
     // Activar Honeypot si está marcado
     if ( isset( $_POST['activate_honeypot_rules'] ) && $_POST['activate_honeypot_rules'] === '1' ) {
@@ -384,7 +394,16 @@ public function handle_wizard_step_2() {
             $existing_honeypots = get_option( ADVAIPBL_Main::OPTION_HONEYPOT_URLS, [] );
             $merged_honeypots = array_unique( array_merge( $existing_honeypots, $default_honeypots ) );
             update_option( ADVAIPBL_Main::OPTION_HONEYPOT_URLS, $merged_honeypots );
-        }
+    } else {
+        $options['enable_honeypot_blocking'] = '0';
+    }
+
+    // Activar XML-RPC Smart Protection si está marcado
+    if ( isset( $_POST['activate_xmlrpc_smart'] ) && $_POST['activate_xmlrpc_smart'] === '1' ) {
+        $options['enable_xmlrpc_protection'] = 'smart';
+    } else {
+        $options['enable_xmlrpc_protection'] = '0';
+    }
 
     update_option( ADVAIPBL_Main::OPTION_SETTINGS, $options );
 
@@ -409,6 +428,7 @@ public function handle_wizard_step_3() {
 	if ( isset( $_POST['activate_htaccess'] ) && $_POST['activate_htaccess'] === '1' ) {
         $options['enable_htaccess_write'] = '1';
         $options['enable_htaccess_ip_blocking'] = '1';
+        $options['enable_htaccess_all_ips'] = '1';
         $options['htaccess_protect_system_files'] = '1';
         $options['htaccess_protect_wp_config'] = '1';
         $options['htaccess_protect_readme'] = '1';
@@ -431,10 +451,14 @@ public function handle_wizard_step_3() {
         $existing_waf_rules = empty(trim($existing_waf_rules_raw)) ? [] : array_filter(array_map('trim', explode("\n", $existing_waf_rules_raw)));
         $merged_rules = array_unique( array_merge( $existing_waf_rules, $default_waf_rules ) );
         update_option( ADVAIPBL_Main::OPTION_WAF_RULES, implode("\n", $merged_rules) );
+    } else {
+        $options['enable_waf'] = '0';
     }
 
     if ( isset( $_POST['activate_rate_limiting'] ) && $_POST['activate_rate_limiting'] === '1' ) {
         $options['rate_limiting_enable'] = '1';
+    } else {
+        $options['rate_limiting_enable'] = '0';
     }
 	
 	if ( isset( $_POST['activate_spamhaus'] ) && $_POST['activate_spamhaus'] === '1' ) {
@@ -444,6 +468,8 @@ public function handle_wizard_step_3() {
         if (!wp_next_scheduled('advaipbl_update_spamhaus_list_event')) {
              wp_schedule_single_event(time() + 10, 'advaipbl_update_spamhaus_list_event');
         }
+    } else {
+        $options['enable_spamhaus_asn'] = '0';
     }
 	
 	if ( isset( $_POST['activate_community_network'] ) && $_POST['activate_community_network'] === '1' ) {
@@ -457,7 +483,13 @@ public function handle_wizard_step_3() {
             $this->plugin->community_manager->register_site();
             // Refrescamos las opciones desde la BD por si register_site las ha modificado directamente.
             $options = get_option( ADVAIPBL_Main::OPTION_SETTINGS, [] );
+            
+            // Descargar la lista de IPs instantáneamente (100k+ list)
+            $this->plugin->community_manager->update_list();
         }
+    } else {
+        $options['enable_community_network'] = '0';
+        $options['enable_community_blocking'] = '0';
     }
 	
     update_option( ADVAIPBL_Main::OPTION_SETTINGS, $options );
@@ -482,6 +514,8 @@ public function handle_wizard_step_4() {
 
     if ( isset( $_POST['activate_threat_scoring'] ) && $_POST['activate_threat_scoring'] === '1' ) {
         $options['enable_threat_scoring'] = '1';
+    } else {
+        $options['enable_threat_scoring'] = '0';
     }
 
     update_option( ADVAIPBL_Main::OPTION_SETTINGS, $options );

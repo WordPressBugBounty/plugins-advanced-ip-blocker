@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.4
+Stable tag: 8.9.5
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -226,6 +226,13 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.5 =
+*   **NEW SETUP WIZARD:** Redesigned the onboarding experience with "Zero Friction". Automatic proxy detection for Cloudflare (`HTTP_CF_CONNECTING_IP`) is now included, securing accurate visitor IP identification instantly.
+*   **ENHANCEMENT:** Proactive AIB Network V3 Activation. Upon user consent, the wizard seamlessly registers your API Key and bulk downloads the latest active threat list (100k+ IPs) in the background with clear progress indicators, avoiding any disruption.
+*   **SECURITY HARDENING:** XML-RPC settings are now set to "Smart Protection" by default, improving the security posture out-of-the-box.
+*   **TRANSPARENCY:** Included detailed privacy notes regarding the usage of MaxMind versus `ip-api.com` for local geolocation databases.
+*   **UX IMPROVEMENT:** The "Blocked Countries" Select2 dropdown now hides already selected regions natively, vastly improving usability for multi-site and complex configurations.
+
 = 8.9.4 =
 *   **CRITICAL FIX:** Resolved an issue where the Site Health & Vulnerability Scanner could fail to download the latest threat definitions due to Wordfence API V2 deprecation. Successfully migrated to the Wordfence V3 API with secure authentication. 
 *   **ENHANCEMENT:** Introduced an intelligent Cloud Network API decay strategy. The community threat feed now gracefully drops to a limited subset (50,000 IPs) for unauthenticated legacy clients while providing a clear admin notice.
@@ -258,6 +265,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
 == Upgrade Notice ==
+
+= 8.9.5 =
+**ZERO FRICTION ONBOARDING & UX UPGRADE:** The Setup Wizard has been overhauled! Version 8.9.5 introduces automated proxy detection, seamless background threat list downloading, and a heavily requested fix to the Geolocation Select2 UI. We highly recommend upgrading to streamline your initial security configuration.
 
 = 8.9.4 =
 **SECURITY & UX UPDATE:** Essential fix for the Vulnerability Scanner to restore automated threat definition downloads via the new Wordfence V3 API. Also includes major UX improvements to the AIB Community Network registration flow. Update recommended.

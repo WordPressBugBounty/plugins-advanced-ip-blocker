@@ -2918,12 +2918,23 @@ public function render_import_export_controls_callback() {
                 <?php
                     $admin_ip = $this->plugin->get_client_ip();
                     $server_ip = $this->plugin->get_server_ip();
+                    $is_cloudflare = isset($_SERVER['HTTP_CF_CONNECTING_IP']);
                 ?>
 
                 <div class="advaipbl-wizard-ips">
                     <p><strong><?php esc_html_e( 'Your IP Address:', 'advanced-ip-blocker' ); ?></strong> <code><?php echo esc_html($admin_ip ?: 'Could not detect'); ?></code></p>
                     <p><strong><?php esc_html_e( 'Server IP Address:', 'advanced-ip-blocker' ); ?></strong> <code><?php echo esc_html($server_ip ?: 'Could not detect'); ?></code></p>
                 </div>
+
+                <?php if ($is_cloudflare): ?>
+                    <div class="notice notice-success inline" style="margin-top: 15px;">
+                        <p><strong><?php esc_html_e( 'Cloudflare Detected!', 'advanced-ip-blocker' ); ?></strong> <?php esc_html_e( 'We noticed you are using Cloudflare. We will automatically configure the correct IP detection settings to prevent false blocks.', 'advanced-ip-blocker' ); ?></p>
+                    </div>
+                <?php else: ?>
+                    <div class="notice notice-info inline" style="margin-top: 15px;">
+                        <p><strong><?php esc_html_e( 'Using a Proxy/CDN?', 'advanced-ip-blocker' ); ?></strong> <?php esc_html_e( 'If your traffic goes through proxies like Sucuri or AWS ELB, you must configure Trusted Proxies in the Settings tab later to avoid blocking yourself.', 'advanced-ip-blocker' ); ?></p>
+                    </div>
+                <?php endif; ?>
 
                 <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                     <input type="hidden" name="action" value="advaipbl_wizard_step_1">
@@ -2966,6 +2977,15 @@ public function render_import_export_controls_callback() {
                                 </div>
                             </label>
                         </div>
+                        <div class="wizard-option-item">
+                            <label>
+                                <input type="checkbox" name="activate_xmlrpc_smart" value="1" checked>
+                                <div>
+                                    <strong><?php esc_html_e( 'Enable Smart XML-RPC Protection', 'advanced-ip-blocker' ); ?></strong>
+                                    <p class="description"><?php esc_html_e( '(Recommended) Blocks brute-force attacks on xmlrpc.php while allowing legitimate services like Jetpack to function.', 'advanced-ip-blocker' ); ?></p>
+                                </div>
+                            </label>
+                        </div>
                         
                     </div>
                     <p class="submit">
@@ -2980,7 +3000,7 @@ public function render_import_export_controls_callback() {
                 ?>
                 <h2><?php esc_html_e( 'Step 3: Activate Proactive Defenses', 'advanced-ip-blocker' ); ?></h2>
                 <p><?php esc_html_e( 'Now let\'s enable the firewall to protect your site from more advanced attacks like SQL injection and prevent server overload from aggressive bots.', 'advanced-ip-blocker' ); ?></p>
-                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                <form id="advaipbl-wizard-step3-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                     <input type="hidden" name="action" value="advaipbl_wizard_step_3">
                     <?php wp_nonce_field( 'advaipbl_wizard_step_3_nonce' ); ?>
                     <div class="advaipbl-wizard-options">
@@ -3021,7 +3041,7 @@ public function render_import_export_controls_callback() {
                                 </div>
                             </label>
                         </div>
-						<div class="wizard-option-item">
+                        <div class="wizard-option-item">
                             <label>
                                 <input type="checkbox" name="activate_community_network" value="1" checked>
                                 <div>
@@ -3032,6 +3052,11 @@ public function render_import_export_controls_callback() {
                         </div>
                         
                     </div>
+                    
+                    <div class="notice notice-info inline" style="margin-top: 15px;">
+                        <p><strong><?php esc_html_e( 'Geolocation Note:', 'advanced-ip-blocker' ); ?></strong> <?php esc_html_e( 'Powered by ip-api.com for zero-setup convenience. For maximum privacy and local performance, we recommend switching to the MaxMind Local Database in the settings after completing this wizard.', 'advanced-ip-blocker' ); ?></p>
+                    </div>
+
                     <p class="submit">
                         <button type="submit" name="submit" class="button button-primary button-hero"><?php esc_html_e( 'Activate Proactive Defenses', 'advanced-ip-blocker' ); ?></button>
                     </p>
@@ -3109,7 +3134,7 @@ public function render_import_export_controls_callback() {
                         <?php esc_html_e( 'Go to Dashboard', 'advanced-ip-blocker' ); ?>
                     </a>
                 </div>
-            </div>>
+            </div>
 
             <?php
         }

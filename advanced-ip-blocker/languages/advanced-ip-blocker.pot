@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.9.4\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.5\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7486,4 +7486,40 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php:4994
 msgid "<strong>Advanced IP Blocker:</strong> You are receiving a limited community threat feed (50,000 IPs). To increase your protection level to 100,000+ IPs, please go to the plugin settings and <a href=\"%s\">Register the AIB Network Integration</a>."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Cloudflare Detected!"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "We noticed you are using Cloudflare. We will automatically configure the correct IP detection settings to prevent false blocks."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Using a Proxy/CDN?"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "If your traffic goes through proxies like Sucuri or AWS ELB, you must configure Trusted Proxies in the Settings tab later to avoid blocking yourself."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enable Smart XML-RPC Protection"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "(Recommended) Blocks brute-force attacks on xmlrpc.php while allowing legitimate services like Jetpack to function."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Geolocation Note:"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Powered by ip-api.com for zero-setup convenience. For maximum privacy and local performance, we recommend switching to the MaxMind Local Database in the settings after completing this wizard."
+msgstr ""
+
+#: js/admin-settings.js
+msgid "Activating & Downloading Threat List..."
 msgstr ""

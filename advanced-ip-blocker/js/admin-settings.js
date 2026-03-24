@@ -918,6 +918,25 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    function initWizardEnhancements() {
+        $('#advaipbl-wizard-step3-form').on('submit', function() {
+            var $form = $(this);
+            var $btn = $form.find('button[type="submit"]');
+            var $checkbox = $form.find('input[name="activate_community_network"]');
+            
+            // Only protect if they are indeed enabling the network
+            if ($checkbox.is(':checked')) {
+                // If the user already clicked, don't submit again
+                if ($btn.prop('disabled')) {
+                    return false;
+                }
+                var activeText = (adminData.text && adminData.text.verifying_api) ? adminData.text.verifying_api : 'Activating & Downloading Threat List...';
+                $btn.prop('disabled', true).text(activeText);
+            }
+        });
+    }
+
+    initWizardEnhancements();
     initWhitelistAjaxButton();
 
 });

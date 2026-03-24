@@ -186,6 +186,9 @@ if ( ! empty( $settings_option['delete_data_on_uninstall'] ) && '1' === $setting
         
         // Security Headers
         'advaipbl_security_headers', // Added from SQL dump
+        
+        // System Flags
+        'advaipbl_flush_firewalls_needed',
     ];
     
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
@@ -247,7 +250,9 @@ $cron_hooks = [
     'advaipbl_cloudflare_cleanup_event',
     // Added from SQL dump
     'advaipbl_update_community_list_event',
-    'advaipbl_community_report_event_v2'
+    'advaipbl_community_report_event_v2',
+    'advaipbl_cloudflare_sync_event',
+    'advaipbl_clear_expired_blocks_event'
 ];
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 foreach ($cron_hooks as $hook) {

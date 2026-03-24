@@ -3,7 +3,7 @@
 Plugin Name: Advanced IP Blocker
 Plugin URI: https://advaipbl.com/
 Description: Your complete WordPress security firewall. Blocks IPs, bots & countries. Includes an intelligent WAF, Threat Scoring, and Two-Factor Authentication.
-Version: 8.9.4
+Version: 8.9.5
 Author: IniLerm
 Author URI: https://advaipbl.com/
 Text Domain: advanced-ip-blocker
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ADVAIPBL_VERSION', '8.9.4' );
+define( 'ADVAIPBL_VERSION', '8.9.5' );
 define( 'ADVAIPBL_PLUGIN_FILE', __FILE__ );
 
 if (!defined('ADVAIPBL_PLUGIN_PATH')) {
@@ -117,8 +117,8 @@ function advaipbl_register_cli_commands() {
 add_action( 'plugins_loaded', 'advaipbl_register_cli_commands', 20 );
 
 function advaipbl_activate_plugin() {
-    $instance = ADVAIPBL_Main::get_instance();
-    $instance->setup_database_tables();
+    // Ejecutar rutinas completas de activación (tablas BD, ajustes por defecto, transients)
+    ADVAIPBL_Main::activate_plugin();
     
     // Disparar el asistente SOLO en instalaciones nuevas.
     if ( false === get_option( 'advaipbl_version_installed' ) ) {
@@ -128,9 +128,8 @@ function advaipbl_activate_plugin() {
     // Actualizar/establecer la versión instalada.
     update_option( 'advaipbl_version_installed', ADVAIPBL_VERSION );
 	
-    $instance->resync_block_transients();
-    
-    // Programar crons inmediatamente
+    // Programar crons inmediatamente a través del manager
+    $instance = ADVAIPBL_Main::get_instance();
     if ( isset( $instance->cron_manager ) ) {
         $instance->cron_manager->schedule_jobs();
     }

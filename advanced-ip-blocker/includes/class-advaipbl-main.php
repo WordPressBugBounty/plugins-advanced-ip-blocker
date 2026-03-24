@@ -4623,10 +4623,9 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'api_key_ipinfocom' => '', 'api_key_ip_apicom' => '', 'geolocation_method' => 'api',
         'maxmind_license_key' => '',
 		
-		'enable_community_network' => '1', // Por defecto 0 hasta que el usuario acepte
+		'enable_community_network' => '0', // Por defecto 0 hasta que el usuario acepte o complete el Wizard
 		
 		// AIB Community Network
-        'enable_community_network' => '1',
         'enable_community_blocking' => '1',
         'community_blocking_action' => 'block',
 		'duration_aib_network' => 1440,

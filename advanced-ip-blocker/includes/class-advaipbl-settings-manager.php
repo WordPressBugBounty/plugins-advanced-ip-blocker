@@ -991,12 +991,20 @@ add_settings_field(
         $new_input = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
         
         $defaults = $this->plugin->get_default_settings();
+        // Base starting point is the EXISTING settings. This prevents wiping tabs that weren't submitted.
+        $existing_options = get_option( ADVAIPBL_Main::OPTION_SETTINGS, [] );
+        if ( ! is_array( $existing_options ) ) {
+            $existing_options = [];
+        }
+        $new_input = $existing_options;
         
         $numeric_fields = [
-            'duration_geoblock', 'duration_waf', 'duration_rate_limit', 'rate_limiting_limit', 'rate_limiting_window', 
-            'duration_xmlrpc_block', 'duration_asn', 'log_retention_days', 'threshold_404', 'duration_404', 'transient_expiration_404',
-            'threshold_403', 'duration_403', 'transient_expiration_403', 'threshold_login',
-            'duration_login', 'transient_expiration_login', 'duration_honeypot', 'duration_user_agent',
+            'threshold_404', 'duration_404', 'transient_expiration_404', 
+            'threshold_403', 'duration_403', 'transient_expiration_403',
+            'threshold_login', 'duration_login', 'transient_expiration_login',
+            'duration_geoblock', 'duration_honeypot', 'duration_user_agent', 'duration_waf', 'duration_rate_limit',
+            'rate_limiting_limit', 'rate_limiting_window', 'duration_asn', 'duration_xmlrpc_block',
+            'rows_per_page', 'log_retention_days',
             'threat_score_threshold', 'duration_threat_score', 'score_404', 'score_403', 'score_login',
             'score_user_agent', 'score_waf', 'score_honeypot', 'score_asn', 'score_impersonation',
             'score_decay_points', 'score_decay_frequency',
@@ -1008,7 +1016,6 @@ add_settings_field(
             'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network'
         ];
         foreach ($numeric_fields as $field) {
-            // Si el campo existe en el input, lo actualizamos. Si no, el valor antiguo se mantiene.
             if (isset($input[$field])) {
                 $new_input[$field] = absint($input[$field]);
             }
@@ -1053,8 +1060,12 @@ add_settings_field(
         ];
         
         foreach ($checkbox_fields as $field) {
-            // Para checkboxes, si existen en el input, es '1'. Si no, es '0'.
-            $new_input[$field] = (isset($input[$field]) && $input[$field] === '1') ? '1' : '0';
+            // Dado que hemos inyectado un input oculto, SIEMPRE recibiremos '0' o '1' si la pestaña fue enviada.
+            // Si el campo fue enviado en $input (0 o 1), actualizamos $new_input.
+            // Si no fue enviado en $input en absoluto (es decir, pertenece a OTRA pestaña no enviada), conservamos el valor previo en $new_input.
+            if (isset($input[$field])) {
+                $new_input[$field] = ( $input[$field] === '1' ) ? '1' : '0';
+            }
         }
       
         // Campos de array y texto, que siempre deberían estar presentes en el formulario.
@@ -1235,10 +1246,13 @@ add_settings_field(
         $id_attr = isset($args['id']) ? 'id="' . esc_attr($args['id']) . '"' : 'advaipbl_switch_' . esc_attr($args['name']);
         
         $html = sprintf(
-            '<label for="%s" class="advaipbl-switch">
+            '<!-- HIDDEN FALLBACK FOR WP SETTINGS API -->
+             <input type="hidden" name="%s" value="0" />
+             <label for="%s" class="advaipbl-switch">
                 <input type="checkbox" name="%s" id="%s" value="1" %s />
                 <span class="advaipbl-slider"></span>
             </label>',
+            esc_attr( 'advaipbl_settings[' . $args['name'] . ']' ),
             esc_attr( $id_attr ),
             esc_attr( 'advaipbl_settings[' . $args['name'] . ']' ),
             esc_attr( $id_attr ),

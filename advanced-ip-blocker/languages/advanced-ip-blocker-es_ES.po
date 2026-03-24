@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-03-19 10:36+0100\n"
+"PO-Revision-Date: 2026-03-23 12:01+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8242,6 +8242,62 @@ msgstr ""
 "de la comunidad limitado (50.000 IP). Para aumentar su nivel de protección a "
 "más de 100.000 IP, vaya a la configuración del plugin y <a "
 "href=\"%s\">Registre AIB Network Integration</a>."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Cloudflare Detected!"
+msgstr "¡Cloudflare detectado!"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"We noticed you are using Cloudflare. We will automatically configure the "
+"correct IP detection settings to prevent false blocks."
+msgstr ""
+"Hemos detectado que utilizas Cloudflare. Configuraremos automáticamente los "
+"ajustes de detección de IP para evitar bloqueos erróneos."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Using a Proxy/CDN?"
+msgstr "¿Utilizas un proxy/CDN?"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"If your traffic goes through proxies like Sucuri or AWS ELB, you must "
+"configure Trusted Proxies in the Settings tab later to avoid blocking "
+"yourself."
+msgstr ""
+"Si su tráfico pasa por servidores proxy como Sucuri o AWS ELB, deberá "
+"configurar los Proxies de confianza en la pestaña Configuración más adelante "
+"para evitar bloqueos."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enable Smart XML-RPC Protection"
+msgstr "Habilitar la protección inteligente de XML-RPC"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"(Recommended) Blocks brute-force attacks on xmlrpc.php while allowing "
+"legitimate services like Jetpack to function."
+msgstr ""
+"(Recomendado) Bloquea los ataques de fuerza bruta en xmlrpc.php, al tiempo "
+"que permite que funcionen servicios legítimos como Jetpack."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Geolocation Note:"
+msgstr "Nota de geolocalización:"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Powered by ip-api.com for zero-setup convenience. For maximum privacy and "
+"local performance, we recommend switching to the MaxMind Local Database in "
+"the settings after completing this wizard."
+msgstr ""
+"Con tecnología de ip-api.com para una configuración sencilla. Para obtener "
+"la máxima privacidad y rendimiento local, recomendamos cambiar a la base de "
+"datos local de MaxMind en la configuración tras completar este asistente."
+
+#: js/admin-settings.js
+msgid "Activating & Downloading Threat List..."
+msgstr "Activando y descargando la lista de amenazas..."
 
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"
