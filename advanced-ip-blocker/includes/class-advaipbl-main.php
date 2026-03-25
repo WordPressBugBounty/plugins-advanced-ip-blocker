@@ -1887,10 +1887,15 @@ public function get_blocked_endpoints_count() {
     }
  
     public function detect_http_error_status($status_header, $code) {
-	if ($this->request_is_asn_whitelisted) { return $status_header; }	
-    if ($this->error_handled_this_request || is_admin()) {
-        return $status_header;
-    }
+        $uri = $this->get_current_request_uri();
+        if ( empty($uri) || php_sapi_name() === 'cli' || defined('WP_CLI') ) {
+            return $status_header;
+        }
+
+        if ($this->request_is_asn_whitelisted) { return $status_header; }	
+        if ($this->error_handled_this_request || is_admin()) {
+            return $status_header;
+        }
 
     if ($this->is_request_uri_excluded()) {
     return $status_header;
