@@ -193,7 +193,33 @@ class ADVAIPBL_Htaccess_Manager {
                 $rules[] = '    Deny from ' . $ip;
             }
             $rules[] = '</IfModule>';
-        } elseif ( empty($rules) ) {
+        }
+
+        // 3. Security Headers
+        $security_headers = get_option('advaipbl_security_headers');
+        if ( is_array($security_headers) ) {
+            $header_rules = [];
+            foreach ($security_headers as $key => $header) {
+                if (!empty($header['enabled']) && !empty($header['name']) && !empty($header['value'])) {
+                    if ($key === 'hsts') {
+                        $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . trim($header['value']) . '" env=HTTPS';
+                    } elseif ($key === 'server_header' && trim($header['value']) === 'remove') {
+                        $header_rules[] = '    Header unset Server';
+                    } else {
+                        $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . trim($header['value']) . '"';
+                    }
+                }
+            }
+            if (!empty($header_rules)) {
+                $rules[] = '';
+                $rules[] = '# Security Headers';
+                $rules[] = '<IfModule mod_headers.c>';
+                $rules = array_merge($rules, $header_rules);
+                $rules[] = '</IfModule>';
+            }
+        }
+
+        if ( empty($rules) ) {
              return "# No active rules selected in Advanced IP Blocker settings.";
         }
 

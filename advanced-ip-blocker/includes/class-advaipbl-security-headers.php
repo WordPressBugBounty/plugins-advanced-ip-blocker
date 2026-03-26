@@ -14,6 +14,13 @@ class ADVAIPBL_Security_Headers {
         $this->plugin = $plugin;
         add_action('send_headers', [$this, 'add_security_headers']);
         add_action('admin_init', [$this, 'register_settings']);
+        add_action('update_option_' . self::OPTION_NAME, [$this, 'sync_htaccess']);
+    }
+
+    public function sync_htaccess() {
+        if (isset($this->plugin->htaccess_manager)) {
+            $this->plugin->htaccess_manager->update_htaccess();
+        }
     }
 
     public function add_security_headers() {
@@ -116,8 +123,8 @@ class ADVAIPBL_Security_Headers {
         </h2>
         <p><?php esc_html_e('Manage the HTTP Security Headers sent by your website to improve browser-side security.', 'advanced-ip-blocker'); ?></p>
         
-        <div class="notice notice-info inline">
-            <p><?php esc_html_e('Note: These headers are sent via PHP. If you have similar headers configured in your .htaccess file, they might work together or override each other depending on your server configuration. If unsure, checking your headers at securityheaders.com after saving is recommended.', 'advanced-ip-blocker'); ?></p>
+        <div class="notice notice-success inline">
+            <p><?php esc_html_e('These security headers are automatically synchronized with your .htaccess file (providing comprehensive full-site protection, including static files) and are also sent via PHP as a fallback if your server does not support .htaccess.', 'advanced-ip-blocker'); ?></p>
         </div>
         
         <form action="options.php" method="post">

@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.9.6\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.7\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7522,4 +7522,8 @@ msgstr ""
 
 #: js/admin-settings.js
 msgid "Activating & Downloading Threat List..."
+msgstr ""
+
+#: includes/class-advaipbl-security-headers.php:127
+msgid "These security headers are automatically synchronized with your .htaccess file (providing comprehensive full-site protection, including static files) and are also sent via PHP as a fallback if your server does not support .htaccess."
 msgstr ""
