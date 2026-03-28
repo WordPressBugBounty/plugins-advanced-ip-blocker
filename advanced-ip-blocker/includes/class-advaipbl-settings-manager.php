@@ -1123,6 +1123,14 @@ add_settings_field(
             }
         }
 
+        // Trigger immediate MaxMind download if key is manually changed/added
+        if (isset($new_input['maxmind_license_key']) && $new_input['maxmind_license_key'] !== ($this->plugin->options['maxmind_license_key'] ?? '')) {
+            if (!empty($new_input['maxmind_license_key'])) {
+                wp_clear_scheduled_hook('advaipbl_update_geoip_db_event');
+                wp_schedule_event(time() + 60, 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
+            }
+        }
+
         if (isset($input['geoblock_countries'])) {
             $countries = (array) $input['geoblock_countries'];
             $all_country_codes = array_keys($this->plugin->get_country_list());

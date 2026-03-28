@@ -135,7 +135,8 @@ class ADVAIPBL_Cron_Manager {
         }
         
         if (!wp_next_scheduled('advaipbl_update_geoip_db_event')) {
-            wp_schedule_event(time() + wp_rand(0, 12 * HOUR_IN_SECONDS), 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
+            // Se programa la primera descarga más rápido (1 a 5 minutos) en lugar de 12 horas.
+            wp_schedule_event(time() + wp_rand(60, 300), 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
         }
 
         // 7. Clear Expired Blocks (Hourly)

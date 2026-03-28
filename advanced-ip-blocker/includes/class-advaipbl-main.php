@@ -2263,7 +2263,6 @@ return $status_header;
     }
 
 	public function run_all_block_checks() {
-		if ($this->is_request_uri_excluded()) { return; }
 		if ($this->request_is_asn_whitelisted) { return; }
 
         $ip = $this->get_client_ip();
@@ -2280,6 +2279,9 @@ return $status_header;
             $this->access_denied_page(__('403 - Access Denied', 'advanced-ip-blocker'), $this->get_block_message('generic'));
             exit;
         }
+
+        // Apply Global URL Exclusions AFTER hard security blocks (Rules Engine and Active DB Blocks)
+        if ($this->is_request_uri_excluded()) { return; }
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {
             return;
@@ -5986,6 +5988,14 @@ public function handle_import_settings() {
                      $type = 'success';
 					 /* translators: %s: Admin Username. */
                      $this->log_event( sprintf( 'Plugin settings successfully imported by %s.', $this->get_current_admin_username() ), 'warning' );
+
+                     // Check if maxmind key was imported and reschedule cron to run almost instantly (1 minute).
+                     $imported_settings = get_option(self::OPTION_SETTINGS, []);
+                     if (!empty($imported_settings['maxmind_license_key'])) {
+                         wp_clear_scheduled_hook('advaipbl_update_geoip_db_event');
+                         wp_schedule_event(time() + 60, 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
+                     }
+
                 } else {
                      $message = __( 'Error: The imported file did not contain any valid settings for this plugin.', 'advanced-ip-blocker' );
                      $type = 'error';
@@ -6788,7 +6798,7 @@ public function handle_import_settings() {
 
     foreach ($excluded_list as $excluded_item) {
 
-        if (!empty($excluded_item) && strpos($current_url, $excluded_item) !== false) {
+        if (!empty($excluded_item) && stripos($current_url, $excluded_item) !== false) {
             return true;
         }
     }

@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.7
+Stable tag: 8.9.8
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -226,6 +226,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.8 =
+*   **ENHANCEMENT:** Accelerated the initial download of the MaxMind Geolocation databases. On fresh installations or JSON backup restorations, the background cron job now triggers within 1 to 5 minutes instead of waiting for up to 12 hours, ensuring rapid deployment of geo-protections.
+*   **SECURITY HARDENING:** Hardened the "Global URL Exclusions" logic. Excluded URLs no longer bypass absolute security barriers, meaning banned IPs (via Manual Blocks or Advanced Rules) are strictly denied entry even on excluded endpoints.
+*   **BUG FIX:** Resolved a case-sensitivity issue in Global URL Exclusions (`strpos` to `stripos`), ensuring mixed-case API webhooks and endpoints are accurately matched and bypassed.
+*   **SECURITY AUDIT:** Verified and validated the File Integrity Monitoring (FIM) engine's hash comparison algorithm and event triggering logic for ultimate forensic reliability.
+
 = 8.9.7 =
 *   **NEW MAJOR ENHANCEMENT - Native Server Security Headers:** The HTTP Security Headers protection module has been completely rebuilt to integrate natively with your server's `.htaccess` file (using Apache's `mod_headers`). Previously, headers were only injected via PHP, leaving static assets unprotected. Now, Advanced IP Blocker writes these security policies directly to Apache, ensuring bulletproof, full-site coverage (images, CSS, JS, etc.) with zero performance overhead.
 *   **CRITICAL BUG FIX (Server Header Disclosure):** Removing the `Server` header via PHP `header_remove()` is impossible on Apache due to execution order. The new `.htaccess` native integration perfectly strips the `Server` header (`Header unset Server`), properly obfuscating your server technology from attackers and security scanners.
@@ -274,6 +280,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **MAINTENANCE:** Analyzed and ensured that the background Cloudflare Sync task (`advaipbl_cloudflare_sync_event`) schedules properly.
 
 == Upgrade Notice ==
+
+= 8.9.8 =
+**SECURITY & EXCLUSIONS UPDATE:** This release fortifies the Global URL Exclusions feature, guaranteeing that manually blocked IPs and Custom Rules are strictly enforced on excluded endpoints. Also resolves case-sensitivity matching issues for complex APIs. Update recommended.
 
 = 8.9.7 =
 **NATIVE .HTACCESS SECURITY HEADERS:** The Security Headers feature now integrates directly with your server's `.htaccess` file. This massive upgrade extends your security policies to protect static assets (images, CSS) and perfectly fixes the "Server" header obfuscation bug that PHP could not solve. Ensure your server has `mod_headers` active for maximum benefit.
