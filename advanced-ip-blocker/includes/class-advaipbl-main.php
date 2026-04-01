@@ -220,6 +220,8 @@ private function __construct() {
         // Ejecutar chequeo de base de datos muy temprano en init
         add_action('init', [$this, 'check_database_version'], -9999);
 
+        // Intercepción global y obligatoria para todos los JS Challenges (evita orfandad en módulos de bloqueo avanzados)
+        add_action('init', [$this->js_challenge_manager, 'verify_submission'], -999);
 		add_action('init', [$this, 'is_visitor_asn_whitelisted'], -100);
 		add_action('init', [$this, 'verify_known_bots'], -99);
 		add_action('init', [$this, 'check_ip_with_abuseipdb'], 10);

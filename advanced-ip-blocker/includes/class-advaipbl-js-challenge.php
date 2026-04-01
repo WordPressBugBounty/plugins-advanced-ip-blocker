@@ -147,7 +147,8 @@ class ADVAIPBL_JS_Challenge {
         $num1   = wp_rand(1, 9);
         $num2   = wp_rand(1, 9);
         $answer = $num1 + $num2;
-        $token  = wp_generate_password(32, false);
+        // Fix for Object Cache sensitivity bugs: force strictly lowercase alphanumeric tokens
+        $token  = bin2hex(random_bytes(16));
         
         set_transient('advaipbl_challenge_' . $token, $answer, 120);
         
