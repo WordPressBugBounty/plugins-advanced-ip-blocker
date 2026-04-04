@@ -1019,12 +1019,10 @@ public function ajax_verify_abuseipdb_key() {
             }
 
             // Check if actively blocked (expires_at is 0 OR expires_at > current_time)
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $exists = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table_name} WHERE ip_range = %s AND (expires_at = 0 OR expires_at > %d)", 
-                $ip_or_range, 
-                $current_time
-            ));
+            $query = "SELECT COUNT(*) FROM {$table_name} WHERE ip_range = %s AND (expires_at = 0 OR expires_at > %d)";
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $exists = $wpdb->get_var($wpdb->prepare($query, $ip_or_range, $current_time));
+            // phpcs:enable
             
             if ($exists) {
                 $skipped_count++;

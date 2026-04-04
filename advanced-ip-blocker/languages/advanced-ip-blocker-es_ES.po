@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-03-26 13:00+0100\n"
+"PO-Revision-Date: 2026-04-04 09:46+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8311,6 +8311,82 @@ msgstr ""
 "sitio, incluidos los archivos estáticos) y también se envían a través de PHP "
 "como alternativa si su servidor no admite .htaccess."
 
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge Mode"
+msgstr "Modo desafío"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Managed (Human interaction required)"
+msgstr "Gestionado (se requiere interacción humana)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Automatic (Transparent execution)"
+msgstr "Automático (Ejecución transparente)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a 404 Lockdown."
+msgstr ""
+"Elige el tipo de desafío JS que se implementará durante un bloqueo por error "
+"404."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a 403 Lockdown."
+msgstr ""
+"Elige el tipo de desafío JS que se implementará durante un bloqueo por error "
+"403."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during an XML-RPC Lockdown."
+msgstr ""
+"Elige el tipo de desafío JS que se implementará durante un bloqueo por error "
+"XML-RPC Lockdown."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a Login Lockdown."
+msgstr ""
+"Elige el tipo de desafío JS que se implementará durante un bloqueo por error "
+"Login Lockdown."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Choose the type of JS challenge to serve when defending against distributed "
+"attacks."
+msgstr ""
+"Seleccione el tipo de desafío JS que se utilizará para defenderse de ataques "
+"distribuidos."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a Geo-Challenge."
+msgstr "Elige el tipo de desafío JS que se presentará durante un Geo-Desafío."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Managed / Checkbox)"
+msgstr "Desafío (Gestionado / Checkbox)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Automatic / Transparent)"
+msgstr "Desafío (Automático / Transparente)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Managed)"
+msgstr "Desafío (gestionado)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Automatic)"
+msgstr "Desafío (Automático)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Challenge with JavaScript (Managed)"
+msgstr "Desafío con JavaScript (Administrado)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Challenge with JavaScript (Automatic)"
+msgstr "Desafío con JavaScript (Automático)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "For the Dashboard map tiles."
+msgstr "Para los mosaicos del mapa del Dashboard."
+
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"
 
@@ -8340,9 +8416,6 @@ msgstr ""
 #~ msgstr ""
 #~ "La protección del User-Agent está actualmente <strong>%1$s</strong>. "
 #~ "Puede cambiarla en <a href=\"%2$s\">Ajustes</a>"
-
-#~ msgid "Automated Protection"
-#~ msgstr "Protección automatizada"
 
 #, php-format
 #~ msgid "IP %1$s manually blocked via WP-CLI. Reason: %2$s"

@@ -59,7 +59,7 @@ private function sanitize_rule(array $rule_data) {
     }
     $sanitized_rule['name'] = isset($rule_data['name']) ? sanitize_text_field($rule_data['name']) : 'Untitled Rule';
 
-    $allowed_actions = ['block', 'challenge', 'score', 'allow'];
+    $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'score', 'allow'];
     $sanitized_rule['action'] = isset($rule_data['action']) && in_array($rule_data['action'], $allowed_actions, true) ? $rule_data['action'] : 'block';
 
     $sanitized_rule['action_params'] = [];
@@ -157,6 +157,12 @@ private function sanitize_rule(array $rule_data) {
         if (isset($rule['id']) && $rule['id'] === $rule_id) {
             // Aseguramos que el ID no se sobrescriba con uno nuevo del sanitizador.
             $sanitized_rule['id'] = $rule_id;
+            
+            // Si la regla no ha cambiado en absoluto, devolvemos true para evitar el falso error de update_option.
+            if ($rules[$index] === $sanitized_rule) {
+                return true;
+            }
+            
             $rules[$index] = $sanitized_rule;
             $rule_found = true;
             break;
@@ -164,7 +170,10 @@ private function sanitize_rule(array $rule_data) {
     }
 
     if ($rule_found) {
-        return $this->save_rules($rules);
+        $this->save_rules($rules);
+        // Devolvemos true siempre que la regla se encontrara y procesara, 
+        // porque save_rules (update_option) puede devolver false si un array subyacente se serializa igual.
+        return true;
     }
 
     return false;
@@ -380,14 +389,16 @@ private function execute_action($rule, $ip) {
             return true; // block_ip_instantly ya hace exit()
 
         case 'challenge':
+        case 'challenge_automatic':
             $this->plugin->log_specific_error(
                 'advanced_rule', // Usamos el tipo base y el nivel lo diferencia
                 $ip,
                 $log_data,
                 'warning' // Nivel 'warning' porque no es un bloqueo, es un desafío
             );
-            $this->plugin->js_challenge_manager->serve_challenge('advanced_rule');
-            return true; // serve_js_challenge ya hace exit()
+            $mode = ($action === 'challenge_automatic') ? 'automatic' : 'managed';
+            $this->plugin->js_challenge_manager->serve_challenge('advanced_rule', $mode);
+            return true; // serve_challenge ya hace exit()
 
         case 'score':
             $points = isset($params['points']) ? (int)$params['points'] : 10;

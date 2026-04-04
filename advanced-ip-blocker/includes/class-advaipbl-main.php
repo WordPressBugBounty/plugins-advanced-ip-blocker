@@ -817,7 +817,8 @@ public function verify_known_bots() {
             );
             
             // 2. Luego, servimos el desafío.
-            $this->js_challenge_manager->serve_challenge('signature');
+            $mode = $this->options['signature_challenge_mode'] ?? 'managed';
+            $this->js_challenge_manager->serve_challenge('signature', $mode);
         }
     }
 	
@@ -867,7 +868,9 @@ public function verify_known_bots() {
                     ], 
                     'warning'
                 );
-                $this->js_challenge_manager->serve_challenge('geo_challenge');
+                
+                $mode = $this->options['geo_challenge_mode'] ?? 'managed';
+                $this->js_challenge_manager->serve_challenge('geo_challenge', $mode);
             }
         }
     }
@@ -1946,7 +1949,8 @@ public function get_blocked_endpoints_count() {
                  // Pass (Human verified previously)
              } else {
                  $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '404', 'reason' => '404 Lockdown Mode Active', 'uri' => $this->get_current_request_uri()], 'warning');
-                 $this->js_challenge_manager->serve_challenge('404_lockdown');
+                 $mode = $this->options['lockdown_404_challenge_mode'] ?? 'managed';
+                 $this->js_challenge_manager->serve_challenge('404_lockdown', $mode);
                  exit;
              }
         }
@@ -1976,7 +1980,8 @@ public function get_blocked_endpoints_count() {
                  // Pass
              } else {
                  $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '403', 'reason' => '403 Lockdown Mode Active', 'uri' => $this->get_current_request_uri()], 'warning');
-                 $this->js_challenge_manager->serve_challenge('403_lockdown');
+                 $mode = $this->options['lockdown_403_challenge_mode'] ?? 'managed';
+                 $this->js_challenge_manager->serve_challenge('403_lockdown', $mode);
                  exit;
              }
         }
@@ -2302,7 +2307,8 @@ return $status_header;
                 
                 if (!$is_trusted_service) {
                     $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => 'xmlrpc.php', 'reason' => 'XML-RPC Lockdown Mode Active', 'uri' => $request_uri], 'warning');
-                    $this->js_challenge_manager->serve_challenge('endpoint');
+                    $mode = $this->options['xmlrpc_lockdown_challenge_mode'] ?? 'managed';
+                    $this->js_challenge_manager->serve_challenge('endpoint', $mode);
                 }
             }
         }
@@ -2370,14 +2376,15 @@ return $status_header;
                 'uri' => $this->get_current_request_uri()
             ];
 
-            if ($action === 'challenge') {
+            if (strpos($action, 'challenge') !== false) {
                 // Check if user has already passed the challenge
                 if ((isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') || get_transient('advaipbl_grace_pass_' . md5($ip))) {
                     return;
                 }
                 
                 $this->log_specific_error('aib_network_challenge', $ip, $log_data, 'warning');
-                $this->js_challenge_manager->serve_challenge('aib_network');
+                $mode = ($action === 'challenge_automatic') ? 'automatic' : 'managed';
+                $this->js_challenge_manager->serve_challenge('aib_network', $mode);
             } else {
                 // Bloqueo
                 $reason = __('Blocked by AIB Community Network (Global Threat).', 'advanced-ip-blocker');
@@ -7090,7 +7097,8 @@ public function handle_import_settings() {
            $this->reporter_manager->queue_report( $ip, $report_type, ['uri' => $request_uri] );
        }
 
-       $this->js_challenge_manager->serve_challenge('endpoint');
+       $mode = $this->options[$endpoint_key . '_lockdown_challenge_mode'] ?? 'managed';
+       $this->js_challenge_manager->serve_challenge('endpoint', $mode);
             }
         }
     }
@@ -7205,10 +7213,12 @@ public function check_ip_with_abuseipdb() {
             'uri'         => $this->get_current_request_uri()
         ];
 
-        if ($action_to_take === 'challenge') {
-            // Si la acción es 'challenge', registramos el evento y mostramos el desafío.
+        if (strpos($action_to_take, 'challenge') !== false) {
+            // Si la acción es 'challenge' o 'challenge_automatic', registramos el evento y mostramos el desafío.
             $this->log_specific_error('abuseipdb_challenge', $ip, $log_data, 'warning');
-            $this->js_challenge_manager->serve_challenge('abuseipdb'); // El tipo es importante para un futuro manejo
+            
+            $mode = ($action_to_take === 'challenge_automatic') ? 'automatic' : 'managed';
+            $this->js_challenge_manager->serve_challenge('abuseipdb', $mode); // El tipo y modo son importantes
         } else {
             // Si no, procedemos con el bloqueo como antes.
             $reason = sprintf(

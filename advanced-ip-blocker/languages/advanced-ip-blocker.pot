@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.9.9\n"
+"Project-Id-Version: Advanced IP Blocker 8.9.10\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7526,4 +7526,68 @@ msgstr ""
 
 #: includes/class-advaipbl-security-headers.php:127
 msgid "These security headers are automatically synchronized with your .htaccess file (providing comprehensive full-site protection, including static files) and are also sent via PHP as a fallback if your server does not support .htaccess."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge Mode"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Managed (Human interaction required)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Automatic (Transparent execution)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a 404 Lockdown."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a 403 Lockdown."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during an XML-RPC Lockdown."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a Login Lockdown."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve when defending against distributed attacks."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during a Geo-Challenge."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Managed / Checkbox)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Automatic / Transparent)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Managed)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Challenge (Automatic)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Challenge with JavaScript (Managed)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Challenge with JavaScript (Automatic)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "For the Dashboard map tiles."
 msgstr ""

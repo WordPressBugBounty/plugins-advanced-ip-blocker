@@ -167,9 +167,8 @@ class ADVAIPBL_Community_Manager {
         
         // Usamos una consulta preparada muy ligera
         // Al ser Primary Key, MySQL responde instantáneamente
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $exists = $wpdb->get_var($wpdb->prepare(
-
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             "SELECT 1 FROM {$table_name} WHERE ip = %s LIMIT 1",
             $ip
         ));

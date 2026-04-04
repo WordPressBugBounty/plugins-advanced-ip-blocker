@@ -58,8 +58,26 @@ class ADVAIPBL_JS_Challenge {
 
         $ip = $this->plugin->get_client_ip();
 
+        // Sanitizar el modo reportado
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $mode_reported = sanitize_key($_POST['_advaipbl_challenge_mode'] ?? 'managed');
+
         // Verification check
+        $is_valid = false;
         if ($correct_answer !== false && $response === (int) $correct_answer) {
+            // Si el cliente reporta que es un challenge 'managed', verificamos el checkbox
+            if ($mode_reported === 'managed') {
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                if (isset($_POST['human_check'])) {
+                    $is_valid = true;
+                }
+            } else {
+                // Automático
+                $is_valid = true;
+            }
+        }
+
+        if ($is_valid) {
             
             set_transient('advaipbl_grace_pass_' . md5($ip), true, 15);
             
@@ -112,8 +130,9 @@ class ADVAIPBL_JS_Challenge {
      * Muestra la página del desafío JavaScript, optimizada para seguridad, UX y responsividad.
      *
      * @param string $challenge_type Un identificador para el desafío (ej. 'signature', 'geo_challenge').
+     * @param string $challenge_mode El modo del desafío ('managed' o 'automatic').
      */
-    public function serve_challenge($challenge_type) {
+    public function serve_challenge($challenge_type, $challenge_mode = 'managed') {
             // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
         if (!defined('DONOTCACHEPAGE')) define('DONOTCACHEPAGE', true);
         if (headers_sent()) { return; }
@@ -165,7 +184,7 @@ class ADVAIPBL_JS_Challenge {
         $site_title         = get_bloginfo('name', 'display');
         $page_title         = esc_html__('Verifying your connection...', 'advanced-ip-blocker');
         $main_heading       = esc_html__('Security Check Required', 'advanced-ip-blocker'); 
-        $main_text          = esc_html__('To proceed, please prove you are human. This verification protects the website from automated attacks.', 'advanced-ip-blocker');
+        
         $timer_text         = esc_html__('Time remaining: ', 'advanced-ip-blocker');
         $noscript_text      = esc_html__('Please enable JavaScript to continue.', 'advanced-ip-blocker');
         $button_text        = esc_html__('Verify and Continue', 'advanced-ip-blocker');
@@ -173,29 +192,55 @@ class ADVAIPBL_JS_Challenge {
         $expired_heading    = esc_html__('Session Expired', 'advanced-ip-blocker');
         $expired_message    = esc_html__('The security challenge has expired. Click the button below to get a new challenge.', 'advanced-ip-blocker');
         $reload_button_text = esc_html__('Start New Challenge', 'advanced-ip-blocker');
-
-        $js_script = "<script>
-            const TIMEOUT_SECONDS = 120;
-            document.getElementById('js_response').value = {$num1} + {$num2};
-            let timeRemaining = TIMEOUT_SECONDS;
-            function updateTimer() {
-                const timerElement = document.getElementById('challenge_timer');
-                if (timerElement) { timerElement.textContent = timeRemaining; }
-                if (timeRemaining <= 0) {
-                    document.getElementById('challenge_interaction').style.display = 'none';
-                    document.getElementById('challenge_expired').style.display = 'block';
-                    document.getElementById('challenge_spinner').style.display = 'none';
-                    return;
+        
+        if ($challenge_mode === 'automatic') {
+            $main_text = esc_html__('Please wait while we verify your connection. This process is automatic and protects the website from automated attacks.', 'advanced-ip-blocker');
+            $js_script = "<script>
+                document.getElementById('js_response').value = {$num1} + {$num2};
+                setTimeout(function(){ 
+                    document.getElementById('challenge_form').submit();
+                }, 2500);
+            </script>";
+            
+            $form_content = '
+                <div id="challenge_spinner"></div>
+                <!-- Automatic Mode: No checkbox rendered -->
+            ';
+        } else {
+            // Managed mode
+            $main_text = esc_html__('To proceed, please prove you are human. This verification protects the website from automated attacks.', 'advanced-ip-blocker');
+            $js_script = "<script>
+                const TIMEOUT_SECONDS = 120;
+                document.getElementById('js_response').value = {$num1} + {$num2};
+                let timeRemaining = TIMEOUT_SECONDS;
+                function updateTimer() {
+                    const timerElement = document.getElementById('challenge_timer');
+                    if (timerElement) { timerElement.textContent = timeRemaining; }
+                    if (timeRemaining <= 0) {
+                        document.getElementById('challenge_interaction').style.display = 'none';
+                        document.getElementById('challenge_expired').style.display = 'block';
+                        document.getElementById('challenge_spinner').style.display = 'none';
+                        return;
+                    }
+                    timeRemaining--;
+                    setTimeout(updateTimer, 1000);
                 }
-                timeRemaining--;
-                setTimeout(updateTimer, 1000);
-            }
-            setTimeout(function(){ 
-                document.getElementById('challenge_spinner').style.display = 'none';
-                document.getElementById('challenge_interaction').style.display = 'flex';
-                updateTimer();
-            }, 1500);
-        </script>";
+                setTimeout(function(){ 
+                    document.getElementById('challenge_spinner').style.display = 'none';
+                    document.getElementById('challenge_interaction').style.display = 'flex';
+                    updateTimer();
+                }, 1500);
+            </script>";
+            
+            $form_content = '
+                <div id="challenge_spinner"></div>
+                <div id="challenge_interaction" style="display:none;">
+                    <label><input type="checkbox" name="human_check" required> ' . $checkbox_label . '</label>
+                    <button type="submit">' . $button_text . '</button>
+                    <div id="challenge_timer_container">' . $timer_text . '<span id="challenge_timer">120</span>s</div>
+                </div>
+            ';
+        }
 
         $html = '<!DOCTYPE html>
 <html lang="en">
@@ -239,13 +284,9 @@ p.branding a:hover{text-decoration:underline;}
             <input type="hidden" name="_advaipbl_js_token" value="' . esc_attr($token) . '">
             <input type="hidden" name="_advaipbl_js_response" id="js_response">
             <input type="hidden" name="_advaipbl_challenge_type" value="' . esc_attr($challenge_type) . '">    
+            <input type="hidden" name="_advaipbl_challenge_mode" value="' . esc_attr($challenge_mode) . '"> 
             
-            <div id="challenge_spinner"></div>
-            <div id="challenge_interaction" style="display:none;">
-                <label><input type="checkbox" name="human_check" required> ' . $checkbox_label . '</label>
-                <button type="submit">' . $button_text . '</button>
-                <div id="challenge_timer_container">' . $timer_text . '<span id="challenge_timer">120</span>s</div>
-            </div>
+            ' . $form_content . '
         </form>
 
         <div id="challenge_expired">

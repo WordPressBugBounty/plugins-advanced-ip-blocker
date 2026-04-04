@@ -379,6 +379,18 @@ add_settings_field(
         ['type' => 'geo_challenge']
     );
     add_settings_field(
+        'advaipbl_geo_challenge_mode', 
+        __( 'Challenge Mode', 'advanced-ip-blocker' ), 
+        [ $this, 'challenge_mode_callback' ], 
+        $page, 
+        'advaipbl_geolocation_section', 
+        [
+            'name' => 'geo_challenge_mode', 
+            'default' => 'managed', 
+            'description' => __( 'Automatic (Transparent) vs Managed (User must interact).', 'advanced-ip-blocker' )
+        ]
+    );
+    add_settings_field(
         'advaipbl_geo_challenge_cookie_duration', 
         __( 'Access Duration (Hours)', 'advanced-ip-blocker' ), 
         [ $this, 'text_field_callback' ], 
@@ -466,6 +478,7 @@ add_settings_field(
     add_settings_field('advaipbl_lockdown_404_ip_threshold', __('Lockdown Trigger: Min Unique IPs', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_404_settings_section', ['name' => 'lockdown_404_ip_threshold', 'default' => 5, 'description' => __('...originating from at least this many unique IPs...', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_lockdown_404_window', __('Lockdown Trigger: Time Window', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_404_settings_section', ['name' => 'lockdown_404_window', 'default' => 10, 'description' => __('...within this many minutes.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_lockdown_404_duration', __('Lockdown Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_404_settings_section', ['name' => 'lockdown_404_duration', 'default' => 60, 'description' => __('How long the Lockdown Mode stays active.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_lockdown_404_challenge_mode', __('Challenge Mode', 'advanced-ip-blocker'), [$this, 'challenge_mode_callback'], $page, 'advaipbl_404_settings_section', ['name' => 'lockdown_404_challenge_mode', 'description' => __('Choose the type of JS challenge to serve during a 404 Lockdown.', 'advanced-ip-blocker')]);
     
     // Separator
     add_settings_field('advaipbl_404_separator', '', [$this, 'separator_callback'], $page, 'advaipbl_404_settings_section');
@@ -484,6 +497,7 @@ add_settings_field(
     add_settings_field('advaipbl_lockdown_403_ip_threshold', __('Lockdown Trigger: Min Unique IPs', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_403_settings_section', ['name' => 'lockdown_403_ip_threshold', 'default' => 5, 'description' => __('...originating from at least this many unique IPs...', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_lockdown_403_window', __('Lockdown Trigger: Time Window', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_403_settings_section', ['name' => 'lockdown_403_window', 'default' => 10, 'description' => __('...within this many minutes.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_lockdown_403_duration', __('Lockdown Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_403_settings_section', ['name' => 'lockdown_403_duration', 'default' => 60, 'description' => __('How long the Lockdown Mode stays active.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_lockdown_403_challenge_mode', __('Challenge Mode', 'advanced-ip-blocker'), [$this, 'challenge_mode_callback'], $page, 'advaipbl_403_settings_section', ['name' => 'lockdown_403_challenge_mode', 'description' => __('Choose the type of JS challenge to serve during a 403 Lockdown.', 'advanced-ip-blocker')]);
 
     // Separator
     add_settings_field('advaipbl_403_separator', '', [$this, 'separator_callback'], $page, 'advaipbl_403_settings_section');
@@ -580,6 +594,17 @@ add_settings_field(
             'description' => __( 'How long the lockdown mode will remain active (in minutes).', 'advanced-ip-blocker' )
         ]
     );
+    add_settings_field(
+        'advaipbl_xmlrpc_lockdown_challenge_mode',
+        __( 'Challenge Mode', 'advanced-ip-blocker' ),
+        [$this, 'challenge_mode_callback'],
+        $page,
+        'advaipbl_advanced_xmlrpc_protection_section',
+        [
+            'name'  => 'xmlrpc_lockdown_challenge_mode',
+            'description' => __( 'Choose the type of JS challenge to serve to non-whitelisted XML-RPC traffic during lockdown.', 'advanced-ip-blocker' )
+        ]
+    );
 	add_settings_section('advaipbl_login_lockdown_section', null, null, $page);
 	add_settings_field(
             'advaipbl_enable_login_lockdown',
@@ -639,6 +664,17 @@ add_settings_field(
                 'name'  => 'login_lockdown_duration',
                 'default' => 60,
                 'description' => __( 'How long the lockdown mode will remain active (in minutes).', 'advanced-ip-blocker' )
+            ]
+        );
+        add_settings_field(
+            'advaipbl_login_lockdown_challenge_mode',
+            __( 'Challenge Mode', 'advanced-ip-blocker' ),
+            [$this, 'challenge_mode_callback'],
+            $page,
+            'advaipbl_login_lockdown_section',
+            [
+                'name'  => 'login_lockdown_challenge_mode',
+                'description' => __( 'Choose the type of JS challenge to serve during a Login Page Lockdown.', 'advanced-ip-blocker' )
             ]
         );
     add_settings_section('advaipbl_recaptcha_section', null, null, $page);
@@ -896,6 +932,11 @@ add_settings_field(
         'description' => __('<strong>Enable this to activate protection.</strong> When a request matches a known malicious signature, the plugin will present a JavaScript challenge to filter out bots. <br><strong>Note:</strong> If you use a page caching plugin, you may need to exclude the <code>advaipbl_js_verified</code> cookie from being cached.', 'advanced-ip-blocker')
     ]);
 
+    add_settings_field('advaipbl_signature_challenge_mode', __('Challenge Mode', 'advanced-ip-blocker'), [$this, 'challenge_mode_callback'], $page, 'advaipbl_signature_engine_section', [
+        'name' => 'signature_challenge_mode',
+        'description' => __('Choose the type of JS challenge to serve when defending against distributed attacks.', 'advanced-ip-blocker')
+    ]);
+
     add_settings_field('advaipbl_signature_ip_threshold', __('Signature IP Threshold', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_signature_engine_section', [
         'name' => 'signature_ip_threshold',
         'default' => 5,
@@ -1083,7 +1124,9 @@ add_settings_field(
             'geolocation_provider', 'log_timezone', 'recaptcha_version', 'recaptcha_site_key', 'recaptcha_secret_key',
             'xmlrpc_protection_mode', 'geolocation_method', 'trusted_proxies', 'abuseipdb_api_key', 'abuseipdb_action',
 			'cf_api_token', 'cf_zone_id', 'community_blocking_action', 'scan_frequency', 'scan_notification_email',
-            'fim_alert_email', 'api_token_v3'
+            'fim_alert_email', 'api_token_v3',
+            'geo_challenge_mode', 'lockdown_404_challenge_mode', 'lockdown_403_challenge_mode', 
+            'xmlrpc_lockdown_challenge_mode', 'login_lockdown_challenge_mode', 'signature_challenge_mode'
         ];
 
         foreach ($text_fields as $field) {
@@ -2017,7 +2060,8 @@ public function sanitize_waf_rules($input) {
         
         printf('<select name="advaipbl_settings[%s]">', esc_attr($name));
         printf('<option value="block" %s>%s</option>', selected($current_action, 'block', false), esc_html__('Block IP Instantly (Recommended)', 'advanced-ip-blocker'));
-        printf('<option value="challenge" %s>%s</option>', selected($current_action, 'challenge', false), esc_html__('Challenge with JavaScript', 'advanced-ip-blocker'));
+        printf('<option value="challenge" %s>%s</option>', selected($current_action, 'challenge', false), esc_html__('Challenge (Managed / Checkbox)', 'advanced-ip-blocker'));
+        printf('<option value="challenge_automatic" %s>%s</option>', selected($current_action, 'challenge_automatic', false), esc_html__('Challenge (Automatic / Transparent)', 'advanced-ip-blocker'));
         echo '</select>';
 
         if ( ! empty( $args['description'] ) ) {
@@ -2038,11 +2082,29 @@ public function abuseipdb_action_callback() {
     ?>
     <select name="advaipbl_settings[abuseipdb_action]">
         <option value="block" <?php selected($current_action, 'block'); ?>><?php esc_html_e('Block IP Instantly (Recommended)', 'advanced-ip-blocker'); ?></option>
-        <option value="challenge" <?php selected($current_action, 'challenge'); ?>><?php esc_html_e('Challenge with JavaScript', 'advanced-ip-blocker'); ?></option>
+        <option value="challenge" <?php selected($current_action, 'challenge'); ?>><?php esc_html_e('Challenge (Managed)', 'advanced-ip-blocker'); ?></option>
+        <option value="challenge_automatic" <?php selected($current_action, 'challenge_automatic'); ?>><?php esc_html_e('Challenge (Automatic)', 'advanced-ip-blocker'); ?></option>
     </select>
     <p class="description"><?php esc_html_e('Choose whether to block high-risk IPs immediately or to present them with a JavaScript challenge to filter out bots and reduce false positives.', 'advanced-ip-blocker'); ?></p>
     <?php
 }
+
+    /**
+     * Callback for challenge mode dropdown.
+     */
+    public function challenge_mode_callback($args) {
+        $name = $args['name'];
+        $current_mode = $this->plugin->options[$name] ?? 'managed';
+        
+        printf('<select name="advaipbl_settings[%s]">', esc_attr($name));
+        printf('<option value="managed" %s>%s</option>', selected($current_mode, 'managed', false), esc_html__('Managed (Human interaction required)', 'advanced-ip-blocker'));
+        printf('<option value="automatic" %s>%s</option>', selected($current_mode, 'automatic', false), esc_html__('Automatic (Transparent execution)', 'advanced-ip-blocker'));
+        echo '</select>';
+
+        if ( ! empty( $args['description'] ) ) {
+            echo '<p class="description">' . wp_kses_post( $args['description'] ) . '</p>';
+        }
+    }
 
 /**
      * Helper para generar el icono de ayuda si existe una URL.

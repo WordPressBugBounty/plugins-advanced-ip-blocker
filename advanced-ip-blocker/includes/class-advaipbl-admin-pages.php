@@ -475,11 +475,10 @@ public function display_asn_blocking_tab() {
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $items = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$table_name} ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d",
-            $per_page, $offset
-        ), ARRAY_A);
+        $query = "SELECT * FROM {$table_name} ORDER BY " . esc_sql($orderby) . " " . esc_sql($order) . " LIMIT %d OFFSET %d";
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $items = $wpdb->get_results($wpdb->prepare($query, $per_page, $offset), ARRAY_A);
+        // phpcs:enable
         ?>
 
         <h2><?php esc_html_e('Blocked Attack Signatures', 'advanced-ip-blocker'); ?></h2>
@@ -2516,6 +2515,7 @@ wp advaipbl spamhaus-update
                     <li><a href="https://www.maxmind.com" target="_blank" rel="noopener">MaxMind GeoLite2</a> - <?php esc_html_e('For local database geolocation.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://www.spamhaus.org/drop/" target="_blank" rel="noopener">Spamhaus ASN DROP List</a> - <?php esc_html_e('For automated blocking of malicious networks.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a>, <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet.js</a> & <a href="https://github.com/Leaflet/Leaflet.markercluster" target="_blank" rel="noopener">Leaflet.markercluster</a> - <?php esc_html_e('For the interactive Security Dashboard.', 'advanced-ip-blocker'); ?></li>
+                    <li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> &amp; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> - <?php esc_html_e('For the Dashboard map tiles.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://github.com/RobThree/TwoFactorAuth" target="_blank" rel="noopener">RobThree/TwoFactorAuth</a> - <?php esc_html_e('The core library powering our 2FA functionality.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://select2.org/" target="_blank" rel="noopener">Select2</a> - <?php esc_html_e('For the user-friendly country selector.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://www.abuseipdb.com/" target="_blank" rel="noopener">AbuseIPDB</a> - <?php esc_html_e('For crowdsourced IP reputation checking.', 'advanced-ip-blocker'); ?></li>
@@ -3265,9 +3265,10 @@ $status_parts[] = sprintf(
                             <th scope="row"><label for="advaipbl-rule-action"><?php esc_html_e('Action', 'advanced-ip-blocker'); ?></label></th>
                             <td>
                                 <select id="advaipbl-rule-action">
-								    <option value="allow"><?php esc_html_e('Allow (Bypass Security)', 'advanced-ip-blocker'); ?></option>
+                                    <option value="allow"><?php esc_html_e('Allow (Bypass Security)', 'advanced-ip-blocker'); ?></option>
                                     <option value="block"><?php esc_html_e('Block', 'advanced-ip-blocker'); ?></option>
-                                    <option value="challenge"><?php esc_html_e('Challenge with JavaScript', 'advanced-ip-blocker'); ?></option>
+                                    <option value="challenge"><?php esc_html_e('Challenge with JavaScript (Managed)', 'advanced-ip-blocker'); ?></option>
+                                    <option value="challenge_automatic"><?php esc_html_e('Challenge with JavaScript (Automatic)', 'advanced-ip-blocker'); ?></option>
                                     <option value="score"><?php esc_html_e('Add Threat Score', 'advanced-ip-blocker'); ?></option>									
                                 </select>
                             </td>

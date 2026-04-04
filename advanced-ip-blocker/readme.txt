@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.9
+Stable tag: 8.9.10
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,6 +20,7 @@ A complete WordPress security firewall: blocks IPs, bots & countries. Includes a
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
 *   **(NEW) Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
 *   **(NEW) AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
 *   **(NEW) Whitelist Login Countries:** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, instantly blocking unauthorized foreign login attempts.
@@ -124,6 +125,10 @@ This is a critical security feature that prevents IP spoofing. If your site is b
 **Geoblocking** is a hard block. It shows a "403 Access Denied" page to visitors from selected countries.
 **Geo-Challenge** is a soft block. It shows a quick, automated JavaScript test to visitors from selected countries. Legitimate humans pass instantly, while most bots are stopped. This is useful for regions you are suspicious of but do not want to block entirely. You can, for example, block Country A and challenge Country B. You can configure it in `Security > Settings > Core Protections`.
 
+= What is the difference between Automatic and Managed JS Challenge Modes? =
+**Automatic (Transparent execution):** The plugin runs a silent Proof-of-Work (PoW) mathematical challenge in the background. If the visitor's browser solves it within 5 seconds, they are automatically redirected to their destination without needing to click anything. Great for a frictionless user experience.
+**Managed (Human interaction required):** The visitor must manually click a checkbox ("I am human") and optionally wait a few seconds. This mode is the ultimate defense against advanced headless browsers and intelligent bots that can solve mathematical scripts but cannot simulate human mouse interactions.
+
 = How do I solve issues with the JavaScript challenge and caching plugins? =
 The JavaScript challenge (used by Geo-Challenge, Signature Engine, and Endpoint Lockdown) requires dynamic content. Aggressive page caching can interfere with it. If you experience issues (like a challenge loop or a "Verification failed" error), you must configure your caching plugin (e.g., WP Rocket, WP Fastest Cache, LiteSpeed Cache) to **NOT** cache pages for visitors who do not have the `advaipbl_js_verified` cookie. Most caching plugins have a setting like "Never cache pages that use this cookie."
 
@@ -226,6 +231,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.10 =
+*   **NEW MAJOR FEATURE:** Granular JS Challenge Modes. You can now toggle the JS challenge between 'Managed' (checkbox interaction) and 'Automatic' (transparent PoW script) on a per-module basis.
+*   **ENHANCEMENT:** Added 'Challenge Mode' selectors to Geo-Challenge, AbuseIPDB, AIB Community Network, Endpoint Lockdowns (404, 403, XML-RPC, Login) and the Attack Signature Engine.
+*   **ENHANCEMENT:** Advanced Rules Engine natively supports the new `challenge_automatic` action, giving you ultimate control over how specific custom subsets of traffic are challenged.
+*   **ENHANCEMENT:** Added missing map attributions to the Credits tab and switched Dashboard tiles to CARTO Positron for better aesthetics and robustness against strict OpenStreetMap limits.
+
 = 8.9.9 =
 *   **SECURITY HARDENING / JS CHALLENGE:** Implemented a global interception hook for JS Challenges, ensuring that challenges triggered by Advanced Rules are flawlessly processed and verified even if other security modules are disabled.
 *   **CRITICAL FIX:** Resolved a case-sensitivity issue with the challenge token generation. The token is now strictly lowercase hexadecimal, ensuring 100% compatibility with strict Object Cache systems (like Redis or Memcached) and preventing "Verification failed" errors for legitimate users.
@@ -245,40 +256,7 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **BUG FIX:** Fixed a rare edge-case during fresh installations where the Setup Wizard could accidentally overwrite the plugin's default configuration (such as Logging state and HTML Block Messages) if the database initialization was delayed.
 *   **UX IMPROVEMENT:** During the Setup Wizard, if the user agrees to activate the Server-Level Firewall (.htaccess), the "Include Temporary Blocks" performance feature is now automatically enabled by default for maximum server offloading.
 
-= 8.9.5 =
-*   **NEW SETUP WIZARD:** Redesigned the onboarding experience with "Zero Friction". Automatic proxy detection for Cloudflare (`HTTP_CF_CONNECTING_IP`) is now included, securing accurate visitor IP identification instantly.
-*   **ENHANCEMENT:** Proactive AIB Network V3 Activation. Upon user consent, the wizard seamlessly registers your API Key and bulk downloads the latest active threat list (100k+ IPs) in the background with clear progress indicators, avoiding any disruption.
-*   **SECURITY HARDENING:** XML-RPC settings are now set to "Smart Protection" by default, improving the security posture out-of-the-box.
-*   **TRANSPARENCY:** Included detailed privacy notes regarding the usage of MaxMind versus `ip-api.com` for local geolocation databases.
-*   **UX IMPROVEMENT:** The "Blocked Countries" Select2 dropdown now hides already selected regions natively, vastly improving usability for multi-site and complex configurations.
-
-= 8.9.4 =
-*   **CRITICAL FIX:** Resolved an issue where the Site Health & Vulnerability Scanner could fail to download the latest threat definitions due to Wordfence API V2 deprecation. Successfully migrated to the Wordfence V3 API with secure authentication. 
-*   **ENHANCEMENT:** Introduced an intelligent Cloud Network API decay strategy. The community threat feed now gracefully drops to a limited subset (50,000 IPs) for unauthenticated legacy clients while providing a clear admin notice.
-*   **UX IMPROVEMENT:** Fixed a frontend glitch where generating a new AIB Cloud Network API key would leave the button stuck on a "Generating..." loop. The UI now updates instantly to "Connected" without requiring a page reload.
-*   **UX IMPROVEMENT:** Deep-linking within the settings panel has been refined. System notices urging AIB Network Registration now correctly scroll the user directly to the relevant configuration card.
-
-= 8.9.3 =
-*   **NEW FEATURE:** DeepScan for Agencies. Granular control over email notifications. Choose when alerts are sent (e.g., only for critical vulnerabilities) to prevent notification fatigue.
-*   **ENHANCEMENT:** Added a dedicated toggle to independently enable or disable the vulnerability (CVE) check.
-
-= 8.9.2 =
-*   **NEW FEATURE:** Select2 Country Copy/Paste. You no longer have to manually select 50+ countries repeatedly on multi-site environments. A new hidden tool now lets you copy completely raw 2-letter codes from any source and paste them straight into Geoblocking, GeoChallenge, and Whitelist Login Country elements.
-*   **UX:** Added a clear warning to users that having intersecting rules between Geoblocking and Whitelist Login Countries leads to undefined behavior.
-
-= 8.9.1 =
-*   **UX ENHANCEMENT:** Grouped "Geoblocking" and "Geo-Challenge" settings into a single, cohesive "Geo-Security" section to improve clarity and reduce confusion. Thank you to the community for this excellent suggestion!
-*   **CLARIFICATION:** Reordered geographic protections to display Geoblocking (hard blocks) before Geo-Challenge (soft blocks), ensuring users prioritize stricter regional protections first. 
-
-= 8.9.0 =
-*   **NEW MAJOR FEATURE:** AIB Cloud Network V3. We've completely overhauled our Community Defense Network infrastructure. The new API V3 introduces secure, individual API Keys for every connected site, drastically improving synchronization reliability, security telemetry, and overall network stability.
-*   **NEW FEATURE:** Whitelist Login Countries. A highly requested feature! You can now explicitly select which countries are allowed to access your WordPress login page (`wp-login.php`) and XML-RPC, automatically blocking all other nations.
-*   **ENHANCEMENT:** Upgraded the "Verify Connection" UI for the Cloud Network to provide instant, inline diagnostic feedback (success/error) without page reloads.
-*   **CRITICAL FIX:** Resolved an issue where verifying an API key could trigger local 404 block rules due to an incorrect HTTP request method (POST instead of GET).
-*   **ROBUSTNESS:** Improved plugin uninstallation logic. When using the "Delete All Data" option, the plugin now seamlessly unregisters the local API Key from the Central Server to keep your account clean for future reinstallations.
-*   **ROBUSTNESS:** Prevented the automatic AIB Network protection list from getting stuck on "Downloading..." if an API key fails to generate due to rate limiting on a fresh install.
-
 == Upgrade Notice ==
 
-= 8.9.9 =
-**JS CHALLENGE & OBJECT CACHE FIX:** This release fixes critical bugs related to the JS Challenge not verifying correctly on sites using strict Object Caching (Redis/Memcached) and ensures challenges triggered by Advanced Rules are processed globally. Update highly recommended to prevent false positives and locked actions.
+= 8.9.10 =
+**GRANULAR JS CHALLENGE MODES:** Version 8.9.10 introduces the highly anticipated Automatic Challenge mode! Check your Geo-Security and core module settings to switch from 'Managed' to 'Automatic' for a seamless user experience.

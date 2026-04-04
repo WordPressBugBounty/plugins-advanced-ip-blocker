@@ -55,19 +55,19 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        $results = $wpdb->get_results(
-    $wpdb->prepare(
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        "SELECT log_type, COUNT(*) as count
-         FROM {$table_name}
-         WHERE level IN ('critical', 'warning') AND log_type != 'general' AND timestamp >= %s
-         GROUP BY log_type
-         ORDER BY count DESC",
-         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $date_after
-    ),
-    ARRAY_A
-);
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT log_type, COUNT(*) as count
+                 FROM {$table_name}
+                 WHERE level IN ('critical', 'warning') AND log_type != 'general' AND timestamp >= %s
+                 GROUP BY log_type
+                 ORDER BY count DESC",
+                $date_after
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable
         
         $stats = ['total' => 0, 'by_type' => []];
         if ($results) {
@@ -89,19 +89,19 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        $results = $wpdb->get_results(
-    $wpdb->prepare(
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        "SELECT DATE(timestamp) as day, COUNT(*) as count
-         FROM {$table_name}
-         WHERE level IN ('critical', 'warning') AND log_type != 'general' AND timestamp >= %s
-         GROUP BY day
-         ORDER BY day ASC",
-         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $date_after
-    ),
-    ARRAY_A
-);
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT DATE(timestamp) as day, COUNT(*) as count
+                 FROM {$table_name}
+                 WHERE level IN ('critical', 'warning') AND log_type != 'general' AND timestamp >= %s
+                 GROUP BY day
+                 ORDER BY day ASC",
+                $date_after
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable
 
         // Rellenar los días sin eventos para un gráfico continuo.
         $timeline = [];
@@ -129,20 +129,21 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        return $wpdb->get_results(
-    $wpdb->prepare(
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        "SELECT ip, COUNT(*) as count
-         FROM {$table_name}
-         WHERE level IN ('critical', 'warning') AND log_type != 'general' AND ip NOT IN ('127.0.0.1', '::1') AND timestamp >= %s
-         GROUP BY ip
-         ORDER BY count DESC
-         LIMIT 8",
-         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $date_after
-    ),
-    ARRAY_A
-);
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT ip, COUNT(*) as count
+                 FROM {$table_name}
+                 WHERE level IN ('critical', 'warning') AND log_type != 'general' AND ip NOT IN ('127.0.0.1', '::1') AND timestamp >= %s
+                 GROUP BY ip
+                 ORDER BY count DESC
+                 LIMIT 8",
+                $date_after
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable
+        return $results;
     }
 
     /**
@@ -154,25 +155,26 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        return $wpdb->get_results(
-    $wpdb->prepare(
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        "SELECT JSON_UNQUOTE(JSON_EXTRACT(details, '$.country')) as country, 
-                JSON_UNQUOTE(JSON_EXTRACT(details, '$.country_code')) as country_code, 
-                COUNT(*) as count
-         FROM {$table_name}
-         WHERE level IN ('critical', 'warning')
-           AND log_type != 'general'
-           AND timestamp >= %s 
-           AND JSON_UNQUOTE(JSON_EXTRACT(details, '$.country_code')) IS NOT NULL
-         GROUP BY country_code, country
-         ORDER BY count DESC
-         LIMIT 8",
-         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $date_after
-    ),
-    ARRAY_A
-);
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT JSON_UNQUOTE(JSON_EXTRACT(details, '$.country')) as country, 
+                        JSON_UNQUOTE(JSON_EXTRACT(details, '$.country_code')) as country_code, 
+                        COUNT(*) as count
+                 FROM {$table_name}
+                 WHERE level IN ('critical', 'warning')
+                   AND log_type != 'general'
+                   AND timestamp >= %s 
+                   AND JSON_UNQUOTE(JSON_EXTRACT(details, '$.country_code')) IS NOT NULL
+                 GROUP BY country_code, country
+                 ORDER BY count DESC
+                 LIMIT 8",
+                $date_after
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable
+        return $results;
     }
 
     /**
@@ -186,19 +188,19 @@ class ADVAIPBL_Dashboard_Manager {
 
         $spamhaus_asns = get_option('advaipbl_spamhaus_asn_list', []);
         
-        $blocked_count = $wpdb->get_var(
-    $wpdb->prepare(
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        "SELECT COUNT(DISTINCT ip)
-         FROM {$table_name}
-         WHERE log_type = 'asn'
-           AND details LIKE %s
-           AND timestamp >= %s",
-           // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        '%"source":"Spamhaus"%',
-        $date_after
-    )
-);
+        $blocked_count = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(DISTINCT ip)
+                 FROM {$table_name}
+                 WHERE log_type = 'asn'
+                   AND details LIKE %s
+                   AND timestamp >= %s",
+                '%"source":"Spamhaus"%',
+                $date_after
+            )
+        );
+        // phpcs:enable
 
         return [
             'list_count'    => count($spamhaus_asns),
