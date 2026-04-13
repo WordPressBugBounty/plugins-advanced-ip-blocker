@@ -2169,6 +2169,7 @@ public function display_general_log_tab() {
         $order = isset($_GET['order']) && in_array(strtolower($_GET['order']), ['asc', 'desc'], true) ? strtolower(sanitize_key($_GET['order'])) : 'desc';
         $current_page = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
         $per_page = isset($_GET['advaipbl_per_page']) ? absint($_GET['advaipbl_per_page']) : 20;
+        $hide_community = isset($_GET['hide_community']) && $_GET['hide_community'] === '1';
         // phpcs:enable
 
         global $wpdb;
@@ -2193,6 +2194,9 @@ public function display_general_log_tab() {
             $search_like = '%' . $wpdb->esc_like($search_term) . '%';
             $where_clauses[] = $wpdb->prepare("(ip LIKE %s OR details LIKE %s OR message LIKE %s)", $search_like, $search_like, $search_like);
         }
+        if ($is_unified_log && $hide_community && $current_filter !== 'aib_network') {
+            $where_clauses[] = "log_type != 'aib_network'";
+        }
         
         $where_sql = implode(' AND ', $where_clauses);
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -2211,12 +2215,16 @@ public function display_general_log_tab() {
                 <input type="hidden" name="page" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_REQUEST['page'] ?? '' ) ) ); ?>"><input type="hidden" name="tab" value="logs"><input type="hidden" name="sub-tab" value="<?php echo esc_attr($current_sub_tab); ?>">
                 <?php $this->plugin->render_per_page_selector( $per_page ); ?>
                 <?php if ($is_unified_log) : ?>
-                    <select id="advaipbl-log-filter" name="filter_log_type" class="advaipbl-log-filter">
+                    <select id="advaipbl-log-filter" name="filter_log_type" class="advaipbl-log-filter" style="vertical-align: middle;">
                         <option value="all" <?php selected($current_filter, 'all'); ?>><?php esc_html_e('All Security Events', 'advanced-ip-blocker'); ?></option>
                         <?php $block_type_definitions = $this->plugin->get_all_block_type_definitions(); foreach ($log_types as $type) : $label = $block_type_definitions[$type]['label'] ?? ucwords(str_replace('_', ' ', $type)); ?>
                             <option value="<?php echo esc_attr($type); ?>" <?php selected($current_filter, $type); ?>><?php echo esc_html($label); ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <label style="margin-right: 10px; display: inline-flex; align-items: center; cursor: pointer; vertical-align: middle; height: 30px;">
+                        <input type="checkbox" name="hide_community" value="1" <?php checked($hide_community, true); ?> onchange="this.form.submit()">
+                        <span style="margin-left: 6px; font-weight: 500;"><?php esc_html_e('Hide Community Blocks', 'advanced-ip-blocker'); ?></span>
+                    </label>
                 <?php endif; ?>
                 <input type="search" name="s" value="<?php echo esc_attr($search_term); ?>" placeholder="<?php esc_attr_e( 'Search by IP, etc.', 'advanced-ip-blocker' ); ?>"><input type="submit" class="button" value="<?php esc_html_e('Search / Filter', 'advanced-ip-blocker'); ?>">
             </form>

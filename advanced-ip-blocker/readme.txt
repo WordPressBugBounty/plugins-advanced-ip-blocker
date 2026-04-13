@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, country block, brute force, block ip, rate limit, 2fa, two-factor
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.10
+Stable tag: 8.9.11
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -231,6 +231,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.9.11 =
+*   **ENHANCEMENT:** Introduced a powerful quick filter in the Security Logs dashboard, allowing administrators to hide the massive volume of automated 'AIB Community Blocks' with a single click. This helps focus exclusively on localized site attacks.
+*   **ENHANCEMENT:** Upgraded the AIB Community Network's logging resilience. The plugin now uses a smart transient-based cooldown (1 hour) for connection errors, preventing localized DNS or network issues from flooding the General Logs.
+*   **ENHANCEMENT:** Elevated General Logs depth by tracking the start and completion status of manual GeoIP Database updates requested via the dashboard button.
+*   **ENHANCEMENT:** Added comprehensive connection logging for the AIB Community Network Key Verification helper. All connection phases (success, missing key, API rejections, and Network fallbacks) are now meticulously tracked in the General Logs.
+*   **SECURITY HARDENING:** Hardened the Central Server Telemetry receiver logic by explicitly filtering out private and loopback IPs (RFC 1918) to prevent local development environments from polluting the Global Threat intelligence pool.
+
+
 = 8.9.10 =
 *   **NEW MAJOR FEATURE:** Granular JS Challenge Modes. You can now toggle the JS challenge between 'Managed' (checkbox interaction) and 'Automatic' (transparent PoW script) on a per-module basis.
 *   **ENHANCEMENT:** Added 'Challenge Mode' selectors to Geo-Challenge, AbuseIPDB, AIB Community Network, Endpoint Lockdowns (404, 403, XML-RPC, Login) and the Attack Signature Engine.
@@ -251,12 +259,7 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **NEW MAJOR ENHANCEMENT - Native Server Security Headers:** The HTTP Security Headers protection module has been completely rebuilt to integrate natively with your server's `.htaccess` file (using Apache's `mod_headers`). Previously, headers were only injected via PHP, leaving static assets unprotected. Now, Advanced IP Blocker writes these security policies directly to Apache, ensuring bulletproof, full-site coverage (images, CSS, JS, etc.) with zero performance overhead.
 *   **CRITICAL BUG FIX (Server Header Disclosure):** Removing the `Server` header via PHP `header_remove()` is impossible on Apache due to execution order. The new `.htaccess` native integration perfectly strips the `Server` header (`Header unset Server`), properly obfuscating your server technology from attackers and security scanners.
 
-= 8.9.6 =
-*   **CRITICAL FIX:** Resolved an issue where server-level CLI tasks (like background cron jobs) were incorrectly logged as `403` attacks with empty IPs and empty User-Agents. The plugin's error listener now gracefully ignores Command Line Executions and requests with empty URIs, completely eliminating these "ghost" false positives from your security dashboard.
-*   **BUG FIX:** Fixed a rare edge-case during fresh installations where the Setup Wizard could accidentally overwrite the plugin's default configuration (such as Logging state and HTML Block Messages) if the database initialization was delayed.
-*   **UX IMPROVEMENT:** During the Setup Wizard, if the user agrees to activate the Server-Level Firewall (.htaccess), the "Include Temporary Blocks" performance feature is now automatically enabled by default for maximum server offloading.
-
 == Upgrade Notice ==
 
-= 8.9.10 =
-**GRANULAR JS CHALLENGE MODES:** Version 8.9.10 introduces the highly anticipated Automatic Challenge mode! Check your Geo-Security and core module settings to switch from 'Managed' to 'Automatic' for a seamless user experience.
+= 8.9.11 =
+**ENHANCED LOGGING & UI:** Version 8.9.11 brings important quality of life improvements. You can now effortlessly hide Community Network blocks from your Security Logs directly from the dashboard, and backend telemetry connection errors are now intelligently throttled to keep your General Logs pristine.

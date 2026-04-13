@@ -39,7 +39,10 @@ class ADVAIPBL_Community_Manager {
                 $use_v3 = true;
             } else {
                 $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . $status_code;
-                $this->plugin->log_event('AIB Network Sync: V3 failed (' . $error_msg . '), falling back to V2.', 'warning');
+                if (!get_transient('advaipbl_community_api_error_cooldown_v3')) {
+                    $this->plugin->log_event('AIB Network Sync: V3 failed (' . $error_msg . '), falling back to V2.', 'warning');
+                    set_transient('advaipbl_community_api_error_cooldown_v3', true, HOUR_IN_SECONDS);
+                }
             }
         }
 
@@ -51,7 +54,10 @@ class ADVAIPBL_Community_Manager {
 
             if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
                 $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($response);
-                $this->plugin->log_event('AIB Network list download failed completely. Reason: ' . $error_msg, 'error');
+                if (!get_transient('advaipbl_community_api_error_cooldown_v2')) {
+                    $this->plugin->log_event('AIB Network list download failed completely. Reason: ' . $error_msg, 'error');
+                    set_transient('advaipbl_community_api_error_cooldown_v2', true, HOUR_IN_SECONDS);
+                }
                 
                 // Actualizar timestamp para no reintentar de inmediato
                 update_option(ADVAIPBL_Main::OPTION_COMMUNITY_SYNC_TIME, time());
@@ -62,7 +68,10 @@ class ADVAIPBL_Community_Manager {
 
         // Process the downloaded data
         if (!$feed_data) {
-            $this->plugin->log_event('AIB Network list download failed: No data received from V3 or V2.', 'error');
+            if (!get_transient('advaipbl_community_api_error_cooldown_nodata')) {
+                $this->plugin->log_event('AIB Network list download failed: No data received from V3 or V2.', 'error');
+                set_transient('advaipbl_community_api_error_cooldown_nodata', true, HOUR_IN_SECONDS);
+            }
             return false;
         }
 

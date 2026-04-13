@@ -294,6 +294,7 @@ class ADVAIPBL_Ajax_Handler {
         // --- Verificación del Token API V3 (Servidor Central AIB) ---
         if ($provider === 'api_token_v3') {
             if (empty($api_key)) {
+                $this->plugin->log_event('AIB Network connection failed: API Key is missing.', 'error');
                 wp_send_json_error(['message' => __('API Key is missing.', 'advanced-ip-blocker')]);
             }
 
@@ -307,6 +308,7 @@ class ADVAIPBL_Ajax_Handler {
             ]);
 
             if (is_wp_error($response)) {
+                $this->plugin->log_event('AIB Network connection failed: ' . $response->get_error_message(), 'error');
                 wp_send_json_error(['message' => __('Connection failed: ', 'advanced-ip-blocker') . $response->get_error_message()]);
             }
 
@@ -315,9 +317,11 @@ class ADVAIPBL_Ajax_Handler {
             $data = json_decode($body, true);
 
             if ($status_code === 200 && isset($data['status']) && in_array($data['status'], ['active', 'connected'], true)) {
+                $this->plugin->log_event('AIB Network connection verified successfully. API Key is active.', 'info');
                 wp_send_json_success(['message' => __('API Key is valid and active!', 'advanced-ip-blocker')]);
             } else {
                 $error_msg = $data['message'] ?? __('Invalid or inactive API Key.', 'advanced-ip-blocker');
+                $this->plugin->log_event('AIB Network connection failed: ' . $error_msg, 'error');
                 wp_send_json_error(['message' => $error_msg]);
             }
             return;
@@ -465,11 +469,14 @@ class ADVAIPBL_Ajax_Handler {
         // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
         set_time_limit(300);
 
+        $this->plugin->log_event('Starting manual GeoIP database update from Dashboard.', 'info');
         $result = $this->plugin->geoip_manager->download_and_unpack_databases();
         
         if ( $result['success'] ) {
+            $this->plugin->log_event('Manual GeoIP database update completed successfully.', 'info');
             wp_send_json_success( ['message' => $result['message']] );
         } else {
+            $this->plugin->log_event('Manual GeoIP database update failed: ' . $result['message'], 'error');
             wp_send_json_error( ['message' => $result['message']] );
         }
     }
