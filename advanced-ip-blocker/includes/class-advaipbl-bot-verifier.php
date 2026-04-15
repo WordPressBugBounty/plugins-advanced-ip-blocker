@@ -46,17 +46,16 @@ class ADVAIPBL_Bot_Verifier {
             'linkedinbot'         => '.linkedin.com',
             'pinterestbot'        => '.pinterest.com',
 
-            // --- Herramientas SEO/Análisis ---
-            // Ahrefs usa .com y .net
-            'ahrefsbot'           => ['.ahrefs.com', '.ahrefs.net'],
-            'semrushbot'          => ['.semrush.com', '.semrush.net'],
-            'mj12bot'             => '.mj12bot.com',
-            'dotbot'              => '.opensiteexplorer.org',
-            
+            // --- IA Generativa y Comerciales Modernos ---
+            'chatgpt-user'        => '.outbound-customer.openai.com',
+            'oai/openai'          => '.outbound-customer.openai.com',
+            'gptbot'              => '.outbound-customer.openai.com',
+            'amazonbot'           => ['.amazonbot.amazon.com', '.crawl.amazonbot.amazon.com'],
+
             // --- Otros Bots de Confianza ---
             'yahoo! slurp'        => '.yahoo.com',
             'yahoofaqbot'         => '.yahoo.com',
-            'petalbot'            => '.aspiegel.com',
+            'petalbot'            => ['.aspiegel.com', '.petalsearch.com'],
         ];
 
         $is_known_bot = false;
@@ -111,19 +110,8 @@ class ADVAIPBL_Bot_Verifier {
             return false;
         }
         
-        // EXCEPCIÓN: Si es Ahrefs, Semrush o Apple (que usan infraestructuras complejas o rotas a veces),
-        // confiamos en el Reverse DNS y nos saltamos el Forward DNS para evitar falsos positivos.
-        // Google y Bing deben seguir pasando la doble verificación.
-        $relaxed_validation_domains = ['.ahrefs.com', '.ahrefs.net', '.semrush.com', '.semrush.net', '.apple.com', '.icloud.com', '.applebot.apple.com'];
-        
-        foreach ($expected_domains as $domain) {
-            if (in_array($domain, $relaxed_validation_domains, true)) {
-                return true; // Confiamos en el PTR
-            }
-        }
-        
-        // Paso 3: Obtener la IP del hostname (Forward DNS - A Record)
-        // Solo para Google, Bing, Yandex, etc.
+        // Paso 3: Obtener la IP del hostname (Forward DNS - A Record).
+        // Obligatorio para asegurar que el PTR no ha sido falsificado por un atacante en su servidor (DNS Spoofing).
         $resolved_ips = gethostbynamel($hostname);
         
         if ($resolved_ips === false || empty($resolved_ips)) {
@@ -147,10 +135,10 @@ class ADVAIPBL_Bot_Verifier {
             'Applebot'      => '.applebot.apple.com',
             'baiduspider'   => '.baidu.com',
             'yahoofaqbot'   => '.yahoo.com',
-            'ahrefsbot'     => '.ahrefs.com',
-            'semrushbot'    => '.semrush.com',
-            'mj12bot'       => '.mj12bot.com',
-            'dotbot'        => '.opensiteexplorer.org',
+            'chatgpt-user'  => '.outbound-customer.openai.com',
+            'oai/openai'    => '.outbound-customer.openai.com',
+            'gptbot'        => '.outbound-customer.openai.com',
+            'amazonbot'     => '.amazonbot.amazon.com',
         ];
 
         foreach ($known_bots as $ua_keyword => $domain) {

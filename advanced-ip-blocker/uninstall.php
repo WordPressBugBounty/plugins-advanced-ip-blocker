@@ -28,11 +28,11 @@ if ( ! empty( $settings_option['delete_data_on_uninstall'] ) && '1' === $setting
 
     // --- 0. UNREGISTER FROM CENTRAL SERVER ---
     // Must be done before options are deleted from the database
-    $api_token = $settings_option['api_token_v3'] ?? '';
-    if (!empty($api_token)) {
+    $advaipbl_api_token = $settings_option['api_token_v3'] ?? '';
+    if (!empty($advaipbl_api_token)) {
         wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/unregister', [
             'headers' => [
-                'Authorization' => 'Bearer ' . $api_token,
+                'Authorization' => 'Bearer ' . $advaipbl_api_token,
                 'Content-Type'  => 'application/json',
                 'Accept'        => 'application/json'
             ],

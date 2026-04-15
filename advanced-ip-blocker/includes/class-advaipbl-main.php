@@ -232,7 +232,6 @@ private function __construct() {
         add_action('init', [$this, 'check_for_malicious_signature'], -1);
         add_action('init', [$this, 'check_for_geo_challenge'], -1);
         add_action('init', [$this, 'run_all_block_checks'], 0);
-        add_action('init', [$this, 'scanner_ping_endpoint'], 1);	
         add_action('init', [$this, 'log_wp_cron_execution'], 1);
         add_action('init', [$this->rate_limit_manager, 'check_request_rate'], -1); 
         add_action('init', [$this, 'add_admin_ip_to_whitelist_on_first_run']);
@@ -516,75 +515,10 @@ private function __construct() {
             }
         }
 
-        // Combinamos la lista interna (hardcoded) con la del usuario.
-        $trusted_signature_hashes = array_merge([
-            // --- Jetpack / WordPress.com ---
-            'd455b0a2f262bd4daa891c5109feafce12e1307e2c759ffaae7da211463e8446',
-            // --- Google Services (Googlebot, AdsBot, etc.) ---
-            '9706d557e15672071207bb8a9281929cf8ebae2effc969efaa4c02b6ecd25827',
-            'c2d7bb6e8ffaa95be56128bbb44628bd870fb64a86259225b0ec9548b4a95e43',
-            'c81b74779fe9a063ad540c69ba17f62208bd7f030f1bce0ac6d8037f51888420',
-            '60f72d589709b1cd58f984ceffd68898edea65d331a517b52cba3d333da61732',
-            'dac6b4a4bb17c443e168393e1063cbc8f8366b09c7b75f0b32dd49726743cd85',
-            '6da42ede39fb3d22b9b80bc190f22340a81b3f8e6dc4a2a454d954646131cb71',
-            '76682a743fcec2df6aae7ce7d278d9a234e7827f1f8b0f1bdab5618592bb0414',
-            'd11373aa8cb33763f7d14f52d4495c0b6fbe4ba1f78604867b1545c092a43f87',
-            'fa5da9a69d6ef080920638100bf53c535e7343125249045130f3be22f0e7f37',
-            '175b7f0266cc41089a497ad33dc60a0498ed47d41025c3a1dd3a51491535c1be',
-            '6b7b1ee32414fd118f3be0888f0b46b228ff02fa2dbf08e83855aeb990d75e18',
-            'fb9c076e52d4afa4511c481a090108b5bb4510d0e675c08da7bcfdc89a796fa0',	
-            // --- Facebook / Meta Crawler ---
-            '831c290f9b8e5047055e08320c196a9e70555f6555a7f382b1befaae68b13059',            
-			'caa9f66174999f31250b227609717cc785530ffde6a325180ad2acaabb441722',
-			'f28c08c87db78fc72feed997490034a94adfa7048062213013c0f9504fc4f23a',
-			'0af2ea30ffd71fe4ad6cb65a27dc2785efbbcedbbf5695749868920b416508b2',
-            // --- BingBot / Microsoft ---
-            'eb596d705f64c69d53d48abebd43bac8d9fdf5d0d2baa5ba6fbf75b87510c8be',
-			'c9f80e720084bba5a49d312a3575363d270fa3cd5a236bf97b23d85459c34478',
-            '29f52bf75f09d138232d626a8c73fb9888fafdd50ab3c0c44c0652d7f7260e01',
-			// --- Applebot ---
-			'52b0598a19b0426786f053928e92d576e7835f22ce3bbd3ef63372f844c75980',
-			'93048d042e680c7add19592884caeb684e57195acbe5fbe93d82d369b4e1e3a6',
-            // --- AhrefsBot ---
-            'df88e81ab810ad131aeb9a2217dab49328ce84ab3fcf410118dea55058552571',
-			'1d3a3b731b9c7607c0d6eb0e3cd9798ee8dc42682530062ae981f795170bfcaf',
-			'5fa6ae3a3cc89216d8731c9be1009b6cdb08923098e0a9632d6d004e5dd90afd',
-            'e5df7bf69927bf260b85ee76a6a6e6d8a53a9f92a6ddabffce15c5e224730716',          
-            // --- Babbar Crawler ---
-            '93b9822843c48732de0743dc76818d5f154b013db126d2fcf1b992f9255ef0a9',
-			'322e854629560b8cde97321f0ebf36a743e191343de0bc3452da60782d198ea7',			
-            // --- PetalBot Crawler ---
-			'ca6e21ce33e83043585425efcbab5301b9883823a10398870a0c99376f9ace24',
-            '7d106ba8946c804cdd085f101a4624958b02ebd97e729d61c008d4cdee969cc7',		
-			// --- HubSpot Crawler ---
-			'29eb3a1ba269b9e25f8e17bfbb435a17d713728cb9517aa5460717c2b5fce622',
-			'19c2029fc8a0f5570cd7e76cb753f59754cc030d3f0809703639184e737cfb5e',
-			// --- YandexBot Crawler ---
-			'06305ec342fcb037a73ca0745e33542547384618f128e3cfb1cb760a76ee4325',
-			'b884864ffbd62435980ce3e79d22d2f06fa6d6ae1f714016d179a2ef4ef3085c',
-			// --- AmazonProductDiscovery Crawler ---
-			'58bc871b23551ec8e03c5cfd743accb5add82d0d414960e67f12a38fe73c4c32',
-			'15c81a56f544780993d34ffd7c615640ff27e0f5bf0011675c838f7e9a18a075',
-			// --- OpenAI ---
-			'13d8b8022f757f9d9b2879cf0aaa8a7e68ead1a221c9c51dac3c5f5c937a1277',
-            // --- Otros Crawlers Legítimos (identificados genéricamente) ---
-            '4357e810006cbcca85538dcbf2dfbedbb402d81783942c19ef2fd2bcf36cac30',
-            '022d8938605fb7ace7bf0b8065024ac4b7c1a1cd0a30b102b52e1294b7d72add',
-            '11e72d8146bdcbf3a53517d240284f9a1d1293573f2445f01bbbf334a211fa11',
-            '4f8ca18d80d3d9011bd62d4e3ecd2525d2df4ac020b02c2dc9f830b138b0446d',
-            '7a292aeecb714d9b6b488308dbe4e7045b4648dfee6d8d8fdbd0035ee40a9f58',
-            '96cf4186d7adc3da7338031aad4265e9c4fe60d83c02d4d0dcbfa570ad557ecf',
-            '9ce22068e218c8bee0c7c91dbd4827682f60c53dc8d20a85e2f60a2b307ad239',
-            'a02e355c79010c8c3ac7a05a209f39b68216112b729774cfe8e7f929232832a5',
-            'c08feb2c6c0d36215e6e9c30fa1e6b4705473631f6549dbec3677040606f28aa',
-            'c5364e70a5108b71ef91dbdc2914864534116b92cf368c41cd86ebead67d0af1',
-            'd05bf96e94cac639887a3492b728a953da8c26d06ab980bb0ab4194d2d945ff7',
-            // --- CookieYesbot/ ---
-            '65372b51ff23921d541d9df2a93c2e503497b53f01dc2574649ddfd62ef7e234',
-			'6c4778800f4ee0f037147bf27108d100a23e7e085635c10c08b5be7edadafebc',			
-        ], $user_whitelisted_hashes);
-
-        $trusted_signature_hashes = apply_filters('advaipbl_trusted_signature_hashes', $trusted_signature_hashes);
+        // Ya no mantenemos firmas hardcoded debido a la fragilidad y rotación continua (Crawler Spoofing y cambios de versión).
+        // Los bots buenos legítimos (Google, Bing, etc.) ya han sido excluidos más arriba mediante ASN y rDNS.
+        // Aquí solo aplicamos las firmas "custom" añadidas bajo la responsabilidad del usuario.
+        $trusted_signature_hashes = apply_filters('advaipbl_trusted_signature_hashes', $user_whitelisted_hashes);
 
         if (in_array($signature_hash, $trusted_signature_hashes, true)) {
             return;
@@ -631,8 +565,10 @@ private function __construct() {
     public function purge_all_page_caches() {
         // LiteSpeed Cache
         if (has_action('litespeed_purge_all')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
             do_action('litespeed_purge_all');
         } elseif (defined('LSCWP_V')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
             do_action('litespeed_purge_all_hook'); 
         }
 
@@ -668,6 +604,7 @@ private function __construct() {
         
         // Kinsta Cache
         if (class_exists('Kinsta\Cache')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
             do_action('kinsta_purge_edge_cache');
         }
         
@@ -6834,6 +6771,7 @@ public function handle_import_settings() {
     public function get_request_method() {
         static $request_method = null;
         if (is_null($request_method)) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $request_method_raw = isset($_SERVER['REQUEST_METHOD']) ? wp_unslash($_SERVER['REQUEST_METHOD']) : 'GET';
             $request_method = sanitize_text_field($request_method_raw);
         }
@@ -7125,12 +7063,15 @@ public function maybe_redirect_to_wizard() {
         
         // Evitar bucles infinitos en servidores con Object Caches muy lentos (ej. LiteSpeed)
         // comprobando si YA estamos en la ruta de destino.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $is_already_on_wizard = ( isset( $_GET['page'] ) && $_GET['page'] === 'advaipbl-setup-wizard' );
         
         delete_option( 'advaipbl_run_setup_wizard' ); 
         
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if ( $is_already_on_wizard || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['activate-multi'] ) ) {
             // Si es activación masiva, volvemos a poner para mostrar mensaje.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             if ( isset( $_GET['activate-multi'] ) ) {
                 add_option( 'advaipbl_run_setup_wizard', true );
             }
@@ -7363,54 +7304,6 @@ public function check_ip_with_abuseipdb() {
          ));
     }
 
-public function scanner_ping_endpoint() {
-    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-    if (isset($_GET['advaipbl-ping']) && $_GET['advaipbl-ping'] === '1') {
-        
-        $encoded_ips = [
-            'ODIuMTY1LjgzLjEzMg==',
-            'MjAwMTo4ZDg6NWZmOjVmOjgyOjE2NTo4MzoxMzI=',
-            'NDUuNzMuMTgzLjE0NA==',
-            'MTc2LjEyMS4xMDkuMTIy',
-            'NDUuMzkuMjAyLjE5NA==',
-            'OTMuMTE1LjIwMC4xNTk=',
-            'OTMuMTE1LjIwMC4xNTg=',
-            'OTMuMTE1LjIwMC4xNTc=',
-            'OTMuMTE1LjIwMC4xNTY=',
-            'OTMuMTE1LjIwMC4xNTU=',
-        ];
-        $encoded_user_agent = 'QUlCLVNjYW5uZXItSW50ZXJuYWwtUGluZy8xLjA=';        
-        $allowed_ips = array_map('base64_decode', $encoded_ips);
-        $expected_user_agent = base64_decode($encoded_user_agent);
-        
-        $visitor_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
-        $request_user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
-
-        if (in_array($visitor_ip, $allowed_ips, true) && hash_equals($expected_user_agent, $request_user_agent)) {
-
-            if (!headers_sent()) {
-                header('Content-Type: application/json');
-            }
-            echo wp_json_encode(['version' => ADVAIPBL_VERSION]);
-        } else {
-
-            $this->log_event(
-                'Unauthorized ping attempt denied.',
-                'warning',
-                [
-                    'ip' => $this->get_client_ip(),
-                    'user_agent' => $request_user_agent
-                ]
-            );
-            if (!headers_sent()) {
-                header('HTTP/1.1 403 Forbidden');
-            }
-            echo 'Access Denied';
-        }
-        
-        exit;
-    }
-}
 
     /**
      * Ejecuta el envío de reportes a la API central.
