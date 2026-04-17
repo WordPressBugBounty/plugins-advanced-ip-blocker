@@ -349,6 +349,8 @@ private function __construct() {
         add_action('wp_ajax_advaipbl_delete_advanced_rule', [$this->ajax_handler, 'ajax_delete_advanced_rule']);
 		add_action('wp_ajax_advaipbl_reorder_rules', [$this->ajax_handler, 'ajax_reorder_advanced_rules']);
 		add_action('wp_ajax_advaipbl_bulk_delete_advanced_rules', [$this->ajax_handler, 'ajax_bulk_delete_advanced_rules']);
+        add_action('wp_ajax_advaipbl_export_advanced_rules', [$this->ajax_handler, 'ajax_export_advanced_rules']);
+        add_action('wp_ajax_advaipbl_import_advanced_rules', [$this->ajax_handler, 'ajax_import_advanced_rules']);
         add_action('wp_ajax_advaipbl_verify_abuseipdb_key', [$this->ajax_handler, 'ajax_verify_abuseipdb_key']);
 		add_action('wp_ajax_advaipbl_bulk_import_whitelist', [$this->ajax_handler, 'ajax_bulk_import_whitelist']);
         add_action('wp_ajax_advaipbl_bulk_export_whitelist', [$this->ajax_handler, 'ajax_bulk_export_whitelist']);
@@ -1730,6 +1732,8 @@ public function get_blocked_endpoints_count() {
                     'delete_rule_nonce' => wp_create_nonce('advaipbl_delete_rule_nonce'),
 					'bulk_delete_rules_nonce' => wp_create_nonce('advaipbl_bulk_delete_rules_nonce'),
 					'reorder_rules_nonce' => wp_create_nonce('advaipbl_reorder_rules_nonce'),
+                    'export_adv_rules_nonce' => wp_create_nonce('advaipbl_export_adv_rules_nonce'),
+                    'import_adv_rules_nonce' => wp_create_nonce('advaipbl_import_adv_rules_nonce'),
 					'verify_abuseipdb' => wp_create_nonce('advaipbl_verify_abuseipdb_nonce'),
                     'run_fim_scan' => wp_create_nonce('advaipbl_run_fim_scan_nonce'),
                     'bulk_import_nonce' => wp_create_nonce('advaipbl_bulk_import_whitelist_nonce'),
@@ -1784,6 +1788,9 @@ public function get_blocked_endpoints_count() {
                     'bulk_delete_rules_confirm_button' => __( 'Yes, Delete Selected', 'advanced-ip-blocker' ),
 					'no_advanced_rules' => __( 'No advanced rules have been created yet.', 'advanced-ip-blocker' ),
                     'could_not_load_rules' => __( 'Could not load rules.', 'advanced-ip-blocker' ),
+                    'import_rules_process' => __( 'Importing rules...', 'advanced-ip-blocker' ),
+                    'export_rules_process' => __( 'Generating export file...', 'advanced-ip-blocker' ),
+                    'invalid_json_format' => __( 'Invalid JSON format. Please ensure the file or pasted code is a valid Advanced Rules export.', 'advanced-ip-blocker' ),
 					
                     'scan_clean_title' => __('No known vulnerabilities found!', 'advanced-ip-blocker'),
                     'scan_clean_desc'  => __('Your plugins appear secure.', 'advanced-ip-blocker'),

@@ -440,6 +440,98 @@ jQuery(document).ready(function ($) {
         }
 
         $('#advaipbl-add-new-rule-btn').on('click', function () { modal.find('.advaipbl-modal-title').text('Add New Rule'); $('#advaipbl-rule-id').val(''); $('#advaipbl-rule-name').val(''); conditionsContainer.empty(); addConditionRow(); updateActionParams(); modal.show(); });
+        
+        $('#advaipbl-export-rules-btn').on('click', function () {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.html('<span class="dashicons dashicons-update" style="animation: rotation 2s infinite linear;"></span> ' + (adminData.text.export_rules_process || 'Generating export file...')).prop('disabled', true);
+            
+            $.post(ajaxurl, {
+                action: 'advaipbl_export_advanced_rules',
+                nonce: adminData.nonces.export_adv_rules_nonce
+            }).done(function (response) {
+                if (response.success && response.data.payload) {
+                    const blob = new Blob([JSON.stringify(response.data.payload, null, 4)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = response.data.filename || 'advanced_rules.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    showAdminNotice(response.data.message || 'Export failed', 'error');
+                }
+            }).fail(function () {
+                showAdminNotice(adminData.text.ajax_error || 'Ajax Error.', 'error');
+            }).always(function () {
+                btn.html(originalHtml).prop('disabled', false);
+            });
+        });
+
+        const importModal = $('#advaipbl-import-rules-modal');
+        $('#advaipbl-import-rules-btn').on('click', function () {
+            $('#advaipbl-import-rules-file').val('');
+            $('#advaipbl-import-rules-json').val('');
+            $('#advaipbl-import-rules-feedback').hide();
+            importModal.show();
+        });
+
+        $('#advaipbl-import-rules-file').on('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#advaipbl-import-rules-json').val(e.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        $('#advaipbl-process-import-rules-btn').on('click', function() {
+            const btn = $(this);
+            const feedback = $('#advaipbl-import-rules-feedback');
+            const jsonPayload = $('#advaipbl-import-rules-json').val().trim();
+            
+            if (!jsonPayload) {
+                feedback.text(adminData.text.invalid_json_format || 'Invalid JSON').css('color', 'red').show();
+                return;
+            }
+
+            try {
+                JSON.parse(jsonPayload);
+            } catch(e) {
+                feedback.text(adminData.text.invalid_json_format || 'Invalid JSON format').css('color', 'red').show();
+                return;
+            }
+
+            btn.prop('disabled', true);
+            feedback.text(adminData.text.import_rules_process || 'Importing rules...').css('color', '#0073aa').show();
+
+            $.post(ajaxurl, {
+                action: 'advaipbl_import_advanced_rules',
+                nonce: adminData.nonces.import_adv_rules_nonce,
+                json_payload: jsonPayload
+            }).done(function (response) {
+                if (response.success) {
+                    feedback.text(response.data.message).css('color', 'green');
+                    setTimeout(() => { 
+                        importModal.hide(); 
+                        loadRules(1); 
+                        showAdminNotice(response.data.message, 'success');
+                    }, 1500);
+                } else {
+                    feedback.text(response.data.message).css('color', 'red');
+                }
+            }).fail(function () {
+                feedback.text(adminData.text.ajax_error || 'Ajax Error.').css('color', 'red');
+            }).always(function () {
+                btn.prop('disabled', false);
+            });
+        });
+
+        importModal.on('click', '.advaipbl-modal-cancel', function () { importModal.hide(); });
         modal.on('click', '.advaipbl-modal-cancel', function () { modal.hide(); });
         conditionsContainer.on('change', '.condition-type', function () { const row = $(this).closest('.advaipbl-condition-row'); updateOperatorDropdown(row); updateValueInput(row); });
         conditionsContainer.on('click', '.remove-condition', function () { $(this).closest('.advaipbl-condition-row').remove(); });

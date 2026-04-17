@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.9.12
+Stable tag: 8.10.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,6 +20,7 @@ A complete WordPress security firewall: blocks IPs, bots & countries. Includes a
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
 *   **(NEW) Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
 *   **(NEW) Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
 *   **(NEW) AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
@@ -231,6 +232,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.0 =
+*   **NEW MAJOR FEATURE:** Advanced Rules Import/Export. Site administrators and agencies can now securely migrate their custom firewall rules between sites via a robust JSON package.
+*   **ENHANCEMENT:** The new Import/Export bridge uses local browser Blob building, eliminating server-side temporary files, and includes structural hashing deduplication to prevent rules from being accidentally duplicated on recurrent imports.
+*   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
+
 = 8.9.12 =
 *   **SECURITY HARDENING:** Comprehensively audited the plugin against strict WordPress Coding Standards (WPCS). Refactored global variables in the edge loader and uninstaller with unified prefixes to eliminate any risks of global namespace collisions with other plugins.
 *   **SECURITY HARDENING:** Perfected PluginCheck compliance by enforcing explicit sanitization logic and nonce checking on superglobals (e.g., `REQUEST_METHOD` and internal routing flags) to prevent potential security leaks.
@@ -265,6 +271,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **CRITICAL BUG FIX (Server Header Disclosure):** Removing the `Server` header via PHP `header_remove()` is impossible on Apache due to execution order. The new `.htaccess` native integration perfectly strips the `Server` header (`Header unset Server`), properly obfuscating your server technology from attackers and security scanners.
 
 == Upgrade Notice ==
+
+= 8.10.0 =
+**NEW AGENCY TOOLS:** You can now instantly export and import all of your Advanced Rules in one click, drastically speeding up security configuration deployment across multiple WordPress sites.
 
 = 8.9.12 =
 **SECURITY & COMPLIANCE UPDATE:** This release brings the plugin to 100% compliance with strict WordPress Coding Standards (WPCS) and the PluginCheck utility. Global variables have been prefixed and database calls explicitly annotated. An essential update for maximum compatibility and security stability.

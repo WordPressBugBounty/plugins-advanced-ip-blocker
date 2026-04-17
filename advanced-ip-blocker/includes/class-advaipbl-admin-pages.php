@@ -3233,11 +3233,39 @@ $status_parts[] = sprintf(
 
     </div>
     </div>
-    <button id="advaipbl-add-new-rule-btn" class="button button-primary" style="margin-top: 15px;">
-        <span class="dashicons dashicons-plus-alt"></span>
-        <?php esc_html_e('Add New Rule', 'advanced-ip-blocker'); ?>
-    </button>
+    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+        <button id="advaipbl-add-new-rule-btn" class="button button-primary">
+            <span class="dashicons dashicons-plus-alt"></span>
+            <?php esc_html_e('Add New Rule', 'advanced-ip-blocker'); ?>
+        </button>
+        <button id="advaipbl-export-rules-btn" class="button button-secondary">
+            <span class="dashicons dashicons-download"></span>
+            <?php esc_html_e('Export Rules', 'advanced-ip-blocker'); ?>
+        </button>
+        <button id="advaipbl-import-rules-btn" class="button button-secondary">
+            <span class="dashicons dashicons-upload"></span>
+            <?php esc_html_e('Import Rules', 'advanced-ip-blocker'); ?>
+        </button>
+    </div>
 </div>
+
+    <div id="advaipbl-import-rules-modal" class="advaipbl-modal-overlay" style="display: none;">
+        <div class="advaipbl-modal-content" style="max-width: 600px;">
+            <h3 class="advaipbl-modal-title"><?php esc_html_e('Import Advanced Rules', 'advanced-ip-blocker'); ?></h3>
+            <div class="advaipbl-modal-body">
+                <p><?php esc_html_e('Select an exported .json file or paste the JSON code below. Imported rules will be added to your existing list.', 'advanced-ip-blocker'); ?></p>
+                <div style="margin-bottom: 15px;">
+                     <input type="file" id="advaipbl-import-rules-file" accept=".json" style="max-width: 100%;">
+                </div>
+                <textarea id="advaipbl-import-rules-json" rows="10" class="large-text code" style="width: 100%;" placeholder='{"_advaipbl_export":true,"rules":[...]}'></textarea>
+                <div id="advaipbl-import-rules-feedback" style="margin-top: 10px; font-weight: bold; display: none;"></div>
+            </div>
+            <div class="advaipbl-modal-footer">
+                <button type="button" id="advaipbl-process-import-rules-btn" class="button button-primary"><?php esc_html_e('Import Rules', 'advanced-ip-blocker'); ?></button>
+                <button type="button" class="button advaipbl-modal-cancel"><?php esc_html_e('Cancel', 'advanced-ip-blocker'); ?></button>
+            </div>
+        </div>
+    </div>
 
 
     <div id="advaipbl-rule-builder-modal" class="advaipbl-modal-overlay" style="display: none;">

@@ -1121,5 +1121,138 @@ public function ajax_verify_abuseipdb_key() {
 
         wp_send_json_success(['file_url' => $data_uri, 'filename' => $filename]);
     }
+    /**
+     * AJAX callback for Exporting Advanced Rules securely.
+     */
+    public function ajax_export_advanced_rules() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+        check_ajax_referer('advaipbl_export_adv_rules_nonce', 'nonce');
+
+        $rules = $this->plugin->rules_engine->get_rules();
+        if (empty($rules)) {
+            wp_send_json_error(['message' => __('No rules exist to export.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+
+        $export_payload = [
+            '_advaipbl_export' => true,
+            'export_version' => '1.0',
+            'generated_at' => current_time('mysql'),
+            'source_site' => site_url(),
+            'rules' => $rules
+        ];
+
+        // We return the raw JSON payload and the suggested filename.
+        // Javascript will generate a Blob and trigger the download on the client side.
+        wp_send_json_success([
+            'payload' => $export_payload,
+            'filename' => 'aib-advanced-rules-export-' . gmdate('Y-m-d') . '.json'
+        ]);
+        wp_die();
+    }
+
+    /**
+     * AJAX callback for Importing Advanced Rules securely.
+     */
+    public function ajax_import_advanced_rules() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+        check_ajax_referer('advaipbl_import_adv_rules_nonce', 'nonce');
+
+        // We receive JSON as a raw string to prevent slashes escaping issues.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+        $raw_json = isset($_POST['json_payload']) ? trim(wp_unslash($_POST['json_payload'])) : '';
+        
+        if (empty($raw_json)) {
+            wp_send_json_error(['message' => __('No payload provided.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+
+        $parsed_data = json_decode($raw_json, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($parsed_data)) {
+            wp_send_json_error(['message' => __('Invalid JSON syntax.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+
+        // Schema Verification
+        if (empty($parsed_data['_advaipbl_export']) || $parsed_data['_advaipbl_export'] !== true || empty($parsed_data['rules']) || !is_array($parsed_data['rules'])) {
+            wp_send_json_error(['message' => __('JSON validation failed: This file is not a valid Advanced Rules export.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+
+        $imported_count = 0;
+        $ignored_count = 0;
+        $skipped_count = 0; // Para contar las duplicadas
+
+        $existing_rules = $this->plugin->rules_engine->get_rules();
+
+        foreach ($parsed_data['rules'] as $rule) {
+            // Generamos un hash de la estructura de la regla entrante (ignorando el ID, que puede variar)
+            $incoming_hash = md5(json_encode([
+                'name' => $rule['name'] ?? '',
+                'action' => $rule['action'] ?? '',
+                'conditions' => $rule['conditions'] ?? []
+            ]));
+
+            $is_duplicate = false;
+            foreach ($existing_rules as $existing_rule) {
+                $existing_hash = md5(json_encode([
+                    'name' => $existing_rule['name'] ?? '',
+                    'action' => $existing_rule['action'] ?? '',
+                    'conditions' => $existing_rule['conditions'] ?? []
+                ]));
+
+                if ($incoming_hash === $existing_hash) {
+                    $is_duplicate = true;
+                    break;
+                }
+            }
+
+            if ($is_duplicate) {
+                $skipped_count++;
+                continue; // Saltamos esta regla, ya existe exactamente igual
+            }
+
+            // Strip any existing ID to prevent overriding current site rules
+            unset($rule['id']);
+            
+            // Re-route into the engine which intrinsically handles deep sanitization and unique ID allocation
+            $saved_rule = $this->plugin->rules_engine->add_rule($rule);
+            
+            if ($saved_rule) {
+                $imported_count++;
+                // Actualizamos el array local para que si la persona importó 2 reglas iguales juntas, 
+                // la segunda no pase el filtro tampoco.
+                $existing_rules[] = $saved_rule;
+            } else {
+                $ignored_count++;
+            }
+        }
+
+        if ($imported_count > 0 || $skipped_count > 0) {
+            $msg = [];
+            if ($imported_count > 0) {
+                /* translators: %d: Number of imported rules. */
+                $msg[] = sprintf(__('Imported %d new rules.', 'advanced-ip-blocker'), $imported_count);
+            }
+            if ($skipped_count > 0) {
+                /* translators: %d: Number of skipped rules. */
+                $msg[] = sprintf(__('Skipped %d duplicate rules.', 'advanced-ip-blocker'), $skipped_count);
+            }
+            if ($ignored_count > 0) {
+                /* translators: %d: Number of invalid rules. */
+                $msg[] = sprintf(__('Ignored %d invalid rules.', 'advanced-ip-blocker'), $ignored_count);
+            }
+            wp_send_json_success(['message' => implode(' ', $msg)]);
+        } else {
+            wp_send_json_error(['message' => __('Failed to import. No valid or new rules were found.', 'advanced-ip-blocker')]);
+        }
+        wp_die();
+    }
 
 }
