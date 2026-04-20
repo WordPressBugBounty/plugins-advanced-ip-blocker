@@ -82,7 +82,6 @@ class ADVAIPBL_Community_Manager {
             return false;
         }
         
-        // --- DECAY STRATEGY (v8.9.4+) ---
         // Check if the received feed is degraded (V1/V2 limit)
         if (isset($data['status']) && $data['status'] === 'degraded') {
             update_option('advaipbl_network_degraded', true);

@@ -2,15 +2,15 @@
 Contributors: inilerm
 Author URI: https://advaipbl.com/
 Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
-Tags: security, firewall, waf, ip blocker, 2fa
+Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.0
+Stable tag: 8.10.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A complete WordPress security firewall: blocks IPs, bots & countries. Includes an intelligent WAF, Threat Scoring, Geo-Challenge, and 2FA.
+A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Includes an intelligent WAF, Threat Scoring, Geo-Challenge, and 2FA.
 
 == Description ==
 
@@ -232,51 +232,20 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.1 =
+*   **Fixed:** 2FA interim-login behaviour. Prevents the WordPress dashboard from loading inside the small session-expiration modal after a successful two-factor authentication.
+*   **Improved:** Expanded Google reCAPTCHA protection support to third-party custom login forms (WooCommerce, BuddyPress, Ultimate Member, and frontend `wp_login_form()` implementations) without breaking unhookable themes.
+*   **Fixed:** Minor PHPCS code standards warnings and improved query performance on 2FA list tables.
+
 = 8.10.0 =
 *   **NEW MAJOR FEATURE:** Advanced Rules Import/Export. Site administrators and agencies can now securely migrate their custom firewall rules between sites via a robust JSON package.
 *   **ENHANCEMENT:** The new Import/Export bridge uses local browser Blob building, eliminating server-side temporary files, and includes structural hashing deduplication to prevent rules from being accidentally duplicated on recurrent imports.
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
-= 8.9.12 =
-*   **SECURITY HARDENING:** Comprehensively audited the plugin against strict WordPress Coding Standards (WPCS). Refactored global variables in the edge loader and uninstaller with unified prefixes to eliminate any risks of global namespace collisions with other plugins.
-*   **SECURITY HARDENING:** Perfected PluginCheck compliance by enforcing explicit sanitization logic and nonce checking on superglobals (e.g., `REQUEST_METHOD` and internal routing flags) to prevent potential security leaks.
-*   **ENHANCEMENT:** Resolved all remaining PluginCheck database warnings. Applied strict, surgically targeted `phpcs:ignore` exception annotations to legitimate Direct Database Queries (`$wpdb`) and third-party caching hooks, fully satisfying automated code quality controls without sacrificing edge-firewall execution performance or backward compatibility.
-
-= 8.9.11 =
-*   **ENHANCEMENT:** Introduced a powerful quick filter in the Security Logs dashboard, allowing administrators to hide the massive volume of automated 'AIB Community Blocks' with a single click. This helps focus exclusively on localized site attacks.
-*   **ENHANCEMENT:** Upgraded the AIB Community Network's logging resilience. The plugin now uses a smart transient-based cooldown (1 hour) for connection errors, preventing localized DNS or network issues from flooding the General Logs.
-*   **ENHANCEMENT:** Elevated General Logs depth by tracking the start and completion status of manual GeoIP Database updates requested via the dashboard button.
-*   **ENHANCEMENT:** Added comprehensive connection logging for the AIB Community Network Key Verification helper. All connection phases (success, missing key, API rejections, and Network fallbacks) are now meticulously tracked in the General Logs.
-*   **SECURITY HARDENING:** Hardened the Central Server Telemetry receiver logic by explicitly filtering out private and loopback IPs (RFC 1918) to prevent local development environments from polluting the Global Threat intelligence pool.
-
-
-= 8.9.10 =
-*   **NEW MAJOR FEATURE:** Granular JS Challenge Modes. You can now toggle the JS challenge between 'Managed' (checkbox interaction) and 'Automatic' (transparent PoW script) on a per-module basis.
-*   **ENHANCEMENT:** Added 'Challenge Mode' selectors to Geo-Challenge, AbuseIPDB, AIB Community Network, Endpoint Lockdowns (404, 403, XML-RPC, Login) and the Attack Signature Engine.
-*   **ENHANCEMENT:** Advanced Rules Engine natively supports the new `challenge_automatic` action, giving you ultimate control over how specific custom subsets of traffic are challenged.
-*   **ENHANCEMENT:** Added missing map attributions to the Credits tab and switched Dashboard tiles to CARTO Positron for better aesthetics and robustness against strict OpenStreetMap limits.
-
-= 8.9.9 =
-*   **SECURITY HARDENING / JS CHALLENGE:** Implemented a global interception hook for JS Challenges, ensuring that challenges triggered by Advanced Rules are flawlessly processed and verified even if other security modules are disabled.
-*   **CRITICAL FIX:** Resolved a case-sensitivity issue with the challenge token generation. The token is now strictly lowercase hexadecimal, ensuring 100% compatibility with strict Object Cache systems (like Redis or Memcached) and preventing "Verification failed" errors for legitimate users.
-
-= 8.9.8 =
-*   **ENHANCEMENT:** Accelerated the initial download of the MaxMind Geolocation databases. On fresh installations or JSON backup restorations, the background cron job now triggers within 1 to 5 minutes instead of waiting for up to 12 hours, ensuring rapid deployment of geo-protections.
-*   **SECURITY HARDENING:** Hardened the "Global URL Exclusions" logic. Excluded URLs no longer bypass absolute security barriers, meaning banned IPs (via Manual Blocks or Advanced Rules) are strictly denied entry even on excluded endpoints.
-*   **BUG FIX:** Resolved a case-sensitivity issue in Global URL Exclusions (`strpos` to `stripos`), ensuring mixed-case API webhooks and endpoints are accurately matched and bypassed.
-*   **SECURITY AUDIT:** Verified and validated the File Integrity Monitoring (FIM) engine's hash comparison algorithm and event triggering logic for ultimate forensic reliability.
-
-= 8.9.7 =
-*   **NEW MAJOR ENHANCEMENT - Native Server Security Headers:** The HTTP Security Headers protection module has been completely rebuilt to integrate natively with your server's `.htaccess` file (using Apache's `mod_headers`). Previously, headers were only injected via PHP, leaving static assets unprotected. Now, Advanced IP Blocker writes these security policies directly to Apache, ensuring bulletproof, full-site coverage (images, CSS, JS, etc.) with zero performance overhead.
-*   **CRITICAL BUG FIX (Server Header Disclosure):** Removing the `Server` header via PHP `header_remove()` is impossible on Apache due to execution order. The new `.htaccess` native integration perfectly strips the `Server` header (`Header unset Server`), properly obfuscating your server technology from attackers and security scanners.
-
 == Upgrade Notice ==
+
+= 8.10.1 =
+**CRUCIAL FIX** for administrators experiencing UI glitches during session expiration when using 2FA. Also includes broader, universally compatible reCAPTCHA support for frontend login portals.
 
 = 8.10.0 =
 **NEW AGENCY TOOLS:** You can now instantly export and import all of your Advanced Rules in one click, drastically speeding up security configuration deployment across multiple WordPress sites.
-
-= 8.9.12 =
-**SECURITY & COMPLIANCE UPDATE:** This release brings the plugin to 100% compliance with strict WordPress Coding Standards (WPCS) and the PluginCheck utility. Global variables have been prefixed and database calls explicitly annotated. An essential update for maximum compatibility and security stability.
-
-= 8.9.11 =
-**ENHANCED LOGGING & UI:** Version 8.9.11 brings important quality of life improvements. You can now hide Community Network blocks from your Security Logs and backend telemetry connection errors are intelligently throttled.

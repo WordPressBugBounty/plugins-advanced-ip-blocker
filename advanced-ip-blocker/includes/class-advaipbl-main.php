@@ -364,8 +364,22 @@ private function __construct() {
         }
         
         if ( !empty($this->options['recaptcha_enable']) && '1' === $this->options['recaptcha_enable'] && !empty($this->options['recaptcha_site_key']) && !empty($this->options['recaptcha_secret_key']) ) {
+            // Frontend & Backend Script Registration
             add_action('login_enqueue_scripts', array($this, 'enqueue_recaptcha_script'));
+            add_action('wp_enqueue_scripts', array($this, 'enqueue_recaptcha_script'));
+            
+            // Standard WordPress Forms
             add_action('login_form', array($this, 'display_recaptcha_field'));
+            add_action('register_form', array($this, 'display_recaptcha_field'));
+            add_action('lostpassword_form', array($this, 'display_recaptcha_field'));
+            
+            // Third-Party Custom Forms
+            add_action('woocommerce_login_form', array($this, 'display_recaptcha_field'));
+            add_action('woocommerce_register_form', array($this, 'display_recaptcha_field'));
+            add_action('woocommerce_lostpassword_form', array($this, 'display_recaptcha_field'));
+            add_action('um_after_login_fields', array($this, 'display_recaptcha_field'));
+            add_action('bp_sidebar_login_form', array($this, 'display_recaptcha_field'));
+
             add_filter('authenticate', array($this, 'validate_recaptcha_response'), 20, 3);
         }
     }
@@ -995,6 +1009,11 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
      * Enqueues the Google reCAPTCHA API script on the login page.
      */
       public function enqueue_recaptcha_script() {
+    // No encolar si el usuario ya está conectado
+    if ( function_exists('is_user_logged_in') && is_user_logged_in() ) {
+        return;
+    }
+
     $version = $this->options['recaptcha_version'] ?? 'v3';
     $site_key = $this->options['recaptcha_site_key'] ?? '';
 
@@ -1014,7 +1033,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
         'google-recaptcha',
         $script_url,
         array(),
-        null,
+        null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
         true
     );
 }
@@ -1103,6 +1122,10 @@ public function display_recaptcha_field() {
     $site_key = $this->options['recaptcha_site_key'] ?? '';
     $version = $this->options['recaptcha_version'] ?? 'v3';
     
+    // Hidden marker to indicate our hook fired and rendered the field.
+    // This allows intelligent bypassing of non-standard frontend forms.
+    echo '<input type="hidden" name="advaipbl_recaptcha_rendered" value="1">';
+    
     if ('v2' === $version) {
         echo '<div class="g-recaptcha" data-sitekey="' . esc_attr($site_key) . '" style="margin-bottom: 15px;"></div>';
     } else {
@@ -1147,6 +1170,19 @@ public function validate_recaptcha_response($user, $username, $password) {
     // FIX: XML-RPC requests cannot perform reCAPTCHA validation (no JS).
     // Allow them to bypass this check to prevent infinite authentication loops.
     if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
+        return $user;
+    }
+
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $is_wp_login = ( isset( $GLOBALS['pagenow'] ) && $GLOBALS['pagenow'] === 'wp-login.php' ) ||
+                   ( isset( $_SERVER['PHP_SELF'] ) && strpos( sanitize_text_field( wp_unslash( $_SERVER['PHP_SELF'] ) ), 'wp-login.php' ) !== false );
+    
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $is_recaptcha_rendered = isset( $_POST['advaipbl_recaptcha_rendered'] );
+
+    // If we are not on the native login page, and our rendering hooks didn't fire for this custom form,
+    // we bypass validation to prevent locking out legitimate users using unhookable custom themes.
+    if ( ! $is_wp_login && ! $is_recaptcha_rendered ) {
         return $user;
     }
 
@@ -2713,9 +2749,8 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $table_audit = $wpdb->prefix . 'advaipbl_activity_log';
         $table_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $table_missing = ($wpdb->get_var("SHOW TABLES LIKE '$table_audit'") != $table_audit) 
-                      || ($wpdb->get_var("SHOW TABLES LIKE '$table_blocked'") != $table_blocked);
+        $table_missing = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_audit ) ) !== $table_audit ) // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                      || ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_blocked ) ) !== $table_blocked ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
         if ( version_compare($current_db_version, ADVAIPBL_DB_VERSION, '<') || $table_missing ) {
             // 1. Crear/Actualizar tablas (incluida la nueva community_ips y activity_log)
@@ -2740,7 +2775,6 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         // --- Migraciones de nueva generación basadas en Plugin Version ---
         if ( version_compare($installed_plugin_ver, ADVAIPBL_VERSION, '<') ) {
             
-            // Migración a 8.9.0: Auto-Generar Token V3
             if ( version_compare($installed_plugin_ver, '8.9.0', '<') && $installed_plugin_ver !== '0.0.0' ) {
                 $this->auto_migrate_v3_token();
             }
@@ -4944,8 +4978,6 @@ public function admin_menu() {
     }
 
     public function display_admin_notice() {
-        // --- DECAY STRATEGY (v8.9.4+) ---
-        // Notice about AIB Network falling back to degraded tier
         if (get_option('advaipbl_network_degraded')) {
             echo '<div class="notice notice-warning is-dismissible"><p>';
             printf(
@@ -5353,7 +5385,10 @@ private function get_first_public_ip_from_string($ip_string) {
 	 * @return float The sanitized score, clamped between 0.1 and 1.0.
 	 */
 	public function sanitize_score_threshold($input) {
-    $score = (float) $input;
+    // Reemplazamos la coma por punto para dar soporte robusto a formatos numéricos europeos (ej. 0,5 -> 0.5)
+    $input_string = str_replace(',', '.', (string) $input);
+    $score = (float) $input_string;
+    
     if ($score < 0.1) { return 0.1; }
     if ($score > 1.0) { return 1.0; }
     return $score;
@@ -6102,6 +6137,29 @@ public function handle_import_settings() {
         }
         if ( $is_valid ) {
             wp_set_auth_cookie( $user->ID, isset( $_POST['rememberme'] ) );
+            
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            if ( isset( $_POST['interim-login'] ) && '1' === $_POST['interim-login'] ) {
+                $message = '<p class="message">' . __( 'You have logged in successfully.', 'advanced-ip-blocker' ) . '</p>';
+                login_header( '', $message );
+                ?>
+                </div>
+                <?php
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+                $close_text = apply_filters( 'login_interim_close_text', __( 'Close', 'advanced-ip-blocker' ) );
+                ?>
+                <p class="interim-login-success">
+                    <a href="#" onclick="window.parent.wp.authCheck.close(); return false;"><?php echo esc_html( $close_text ); ?></a>
+                </p>
+                <?php
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+                do_action( 'login_form_interim_success' );
+                ?>
+                </body></html>
+                <?php
+                exit;
+            }
+            
             $redirect_to = (isset( $_REQUEST['redirect_to'] ) && !empty($_REQUEST['redirect_to'])) ? sanitize_text_field(wp_unslash( $_REQUEST['redirect_to'] )) : admin_url();
             wp_safe_redirect( $redirect_to );
             exit;
@@ -6112,12 +6170,17 @@ public function handle_import_settings() {
                 : __( '<strong>ERROR</strong>: The verification code is incorrect.', 'advanced-ip-blocker' );
             setcookie( 'advaipbl_login_error', $error_message, time() + 30, COOKIEPATH, COOKIE_DOMAIN );
             
-            $redirect_url = add_query_arg([
+            $args = [
                 'action' => $error_action_redirect,
                 'user_id' => $user->ID,
                 'wp_auth_nonce' => wp_create_nonce( 'advaipbl-2fa-interim-' . $user->ID ),
                 'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
-            ], site_url( 'wp-login.php', 'login' ) );
+            ];
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            if ( isset( $_POST['interim-login'] ) && '1' === $_POST['interim-login'] ) {
+                $args['interim-login'] = '1';
+            }
+            $redirect_url = add_query_arg( $args, site_url( 'wp-login.php', 'login' ) );
             wp_safe_redirect( $redirect_url );
             exit;
         }
@@ -6153,7 +6216,7 @@ public function handle_import_settings() {
         
         // Si el usuario tiene 2FA configurado, le redirigimos al paso 2.
         if ( $user_has_2fa_setup ) {
-            $redirect_url = add_query_arg([
+            $args = [
                 'action' => 'advaipbl_validate_2fa',
                 'user_id' => $user->ID,
                 'wp_auth_nonce' => wp_create_nonce( 'advaipbl-2fa-interim-' . $user->ID ),
@@ -6161,7 +6224,12 @@ public function handle_import_settings() {
                 'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
                 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 'rememberme' => isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : '',
-            ], site_url( 'wp-login.php', 'login' ) );
+            ];
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            if ( isset( $_REQUEST['interim-login'] ) && '1' === $_REQUEST['interim-login'] ) {
+                $args['interim-login'] = '1';
+            }
+            $redirect_url = add_query_arg( $args, site_url( 'wp-login.php', 'login' ) );
             wp_safe_redirect( $redirect_url );
             exit;
         }
@@ -6211,20 +6279,29 @@ public function handle_import_settings() {
             <input type="hidden" name="redirect_to" value="<?php echo esc_attr( isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '' ); ?>" />
             <input type="hidden" name="rememberme" value="<?php echo esc_attr( isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : '' ); ?>" />
             <input type="hidden" name="advaipbl_2fa_login_step" value="2" />
+            <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+            <?php if ( isset( $_REQUEST['interim-login'] ) && '1' === $_REQUEST['interim-login'] ) : ?>
+                <input type="hidden" name="interim-login" value="1" />
+            <?php endif; ?>
             <?php wp_nonce_field( 'advaipbl-2fa-verify-' . $user_id ); ?>
             <p class="submit">
                 <input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="<?php esc_attr_e( 'Verify', 'advanced-ip-blocker' ); ?>" />
             </p>
         </form>
 		<div style="margin-top: 16px; padding: 0 24px;">
-            <p style="text-align: center;">
                 <a href="<?php
-                    echo esc_url( add_query_arg([
+                    $args = [
                         'action' => 'advaipbl_validate_2fa_backup',
                         'user_id' => $user_id,
                         'wp_auth_nonce' => $nonce,
+                        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                         'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
-                    ], site_url( 'wp-login.php', 'login' ) ) );
+                    ];
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                    if ( isset( $_REQUEST['interim-login'] ) && '1' === $_REQUEST['interim-login'] ) {
+                        $args['interim-login'] = '1';
+                    }
+                    echo esc_url( add_query_arg( $args, site_url( 'wp-login.php', 'login' ) ) );
                 ?>">
                     <?php esc_html_e( 'Use a recovery code', 'advanced-ip-blocker' ); ?>
                 </a>
@@ -6270,6 +6347,10 @@ public function handle_import_settings() {
             <input type="hidden" name="redirect_to" value="<?php echo esc_attr( isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '' ); ?>" />
             <input type="hidden" name="rememberme" value="<?php echo esc_attr( isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : '' ); ?>" />
             <input type="hidden" name="advaipbl_2fa_login_step" value="backup" />
+            <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+            <?php if ( isset( $_REQUEST['interim-login'] ) && '1' === $_REQUEST['interim-login'] ) : ?>
+                <input type="hidden" name="interim-login" value="1" />
+            <?php endif; ?>
             <?php wp_nonce_field( 'advaipbl-2fa-verify-backup-' . $user_id ); ?>
             <p class="submit">
                 <input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="<?php esc_attr_e( 'Verify', 'advanced-ip-blocker' ); ?>" />
@@ -6278,12 +6359,18 @@ public function handle_import_settings() {
         <div style="margin-top: 16px; padding: 0 24px;">
             <p style="text-align: center;">
                 <a href="<?php
-                    echo esc_url( add_query_arg([
+                    $args = [
                         'action' => 'advaipbl_validate_2fa',
                         'user_id' => $user_id,
                         'wp_auth_nonce' => $nonce,
+                        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                         'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
-                    ], site_url( 'wp-login.php', 'login' ) ) );
+                    ];
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                    if ( isset( $_REQUEST['interim-login'] ) && '1' === $_REQUEST['interim-login'] ) {
+                        $args['interim-login'] = '1';
+                    }
+                    echo esc_url( add_query_arg( $args, site_url( 'wp-login.php', 'login' ) ) );
                 ?>">
                     <?php esc_html_e( 'Use an authenticator app code', 'advanced-ip-blocker' ); ?>
                 </a>

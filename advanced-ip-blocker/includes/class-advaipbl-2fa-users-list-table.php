@@ -204,9 +204,8 @@ class ADVAIPBL_2FA_Users_List_Table extends WP_List_Table {
         $total_users = count_users()['total_users'];
         
         // Contar usuarios con 2FA activo
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
         $active_users_count = count( get_users([
-            'meta_key' => ADVAIPBL_2fa_Manager::META_ENABLED_AT,
+            'meta_key' => ADVAIPBL_2fa_Manager::META_ENABLED_AT, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
             'meta_compare' => 'EXISTS',
             'fields' => 'ID',
         ]) );
