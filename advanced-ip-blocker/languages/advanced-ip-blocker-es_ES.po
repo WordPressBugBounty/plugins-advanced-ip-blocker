@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-04-13 09:05+0200\n"
+"PO-Revision-Date: 2026-04-22 12:43+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8390,6 +8390,85 @@ msgstr "Desafío con JavaScript (Automático)"
 #: includes/class-advaipbl-admin-pages.php
 msgid "For the Dashboard map tiles."
 msgstr "Para los mosaicos del mapa del Dashboard."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Import Advanced Rules"
+msgstr "Importar reglas avanzadas"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Select an exported .json file or paste the JSON code below. Imported rules "
+"will be added to your existing list."
+msgstr ""
+"Seleccione un archivo .json exportado o pegue el código JSON a continuación. "
+"Las reglas importadas se añadirán a su lista existente."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Export Rules"
+msgstr "Reglas de exportación"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Import Rules"
+msgstr "Reglas de importación"
+
+#: includes/class-advaipbl-main.php
+msgid "Generating export file..."
+msgstr "Generando archivo de exportación..."
+
+#: includes/class-advaipbl-main.php
+msgid "Importing rules..."
+msgstr "Importando reglas..."
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"Invalid JSON format. Please ensure the file or pasted code is a valid "
+"Advanced Rules export."
+msgstr ""
+"Formato JSON no válido. Asegúrese de que el archivo o el código pegado sea "
+"una exportación válida de Reglas avanzadas."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "No rules exist to export."
+msgstr "No existen reglas para exportar."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "No payload provided."
+msgstr "No se ha proporcionado ninguna carga útil."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Invalid JSON syntax."
+msgstr "Sintaxis JSON no válida."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "JSON validation failed: This file is not a valid Advanced Rules export."
+msgstr ""
+"Falló la validación JSON: Este archivo no es una exportación válida de "
+"reglas avanzadas."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Imported %d new rules."
+msgstr "Se importaron %d nuevas reglas."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Skipped %d duplicate rules."
+msgstr "Se omitieron %d reglas duplicadas."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Ignored %d invalid rules."
+msgstr "Se ignoraron %d reglas no válidas."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Failed to import. No valid or new rules were found."
+msgstr "Error al importar. No se encontraron reglas válidas ni nuevas."
+
+#: includes/class-advaipbl-main.php:2100
+msgid "Unknown Location"
+msgstr "Unknown Location"
+
+#: includes/class-advaipbl-main.php:3375
+#, php-format
+msgid "Login blocked by Location Whitelist from: %s"
+msgstr "Inicio de sesión bloqueado por la lista blanca de ubicación desde: %s"
 
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"

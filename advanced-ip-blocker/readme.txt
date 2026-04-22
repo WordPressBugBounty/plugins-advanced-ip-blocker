@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.1
+Stable tag: 8.10.2
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.2 =
+*   **Improved:** "Whitelist Login Countries" restrictions are now explicitly detailed in the Security Logs, displaying the precise country and reason instead of a generic 403 error.
+*   **Fixed:** Improved geolocation fallback handling by adding a localizable "Unknown Location" string for IPs lacking country data, avoiding log confusion.
+*   **Fixed:** Refined the internal security logging architecture to completely eliminate duplicate entries during early request terminations (e.g., login blocks).
+
 = 8.10.1 =
 *   **Fixed:** 2FA interim-login behaviour. Prevents the WordPress dashboard from loading inside the small session-expiration modal after a successful two-factor authentication.
 *   **Improved:** Expanded Google reCAPTCHA protection support to third-party custom login forms (WooCommerce, BuddyPress, Ultimate Member, and frontend `wp_login_form()` implementations) without breaking unhookable themes.
@@ -243,6 +248,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.2 =
+**MAINTENANCE UPDATE:** Substantially improves the accuracy and readability of Security Logs for Login Geoblocking and includes minor translation refinements. No configuration changes required.
 
 = 8.10.1 =
 **CRUCIAL FIX** for administrators experiencing UI glitches during session expiration when using 2FA. Also includes broader, universally compatible reCAPTCHA support for frontend login portals.

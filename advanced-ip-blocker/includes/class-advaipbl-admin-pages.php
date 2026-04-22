@@ -1860,7 +1860,7 @@ public function display_general_settings_tab() {
 			'aib_network', 'aib_network_challenge',
             'signature_challenge', 'signature_flagged',
             'endpoint_challenge', 'geo_challenge', 'impersonation',
-            'advanced_rule'
+            'advanced_rule', 'login_geoblock'
         ];
         $this->display_log_table_generic($security_log_types, ['critical', 'warning']);
     }
@@ -2371,6 +2371,12 @@ public function display_general_log_tab() {
                             case 'endpoint_challenge':
                                 $reason = $details['reason'] ?? $entry['message'];
                                 $detail_display = '<strong>' . esc_html($reason) . '</strong>';
+                                if (!empty($uri)) {
+                                    $detail_display .= '<br><small>' . $uri . '</small>';
+                                }
+                                break;
+                            case 'login_geoblock':
+                                $detail_display = '<strong>' . esc_html($entry['message']) . '</strong>';
                                 if (!empty($uri)) {
                                     $detail_display .= '<br><small>' . $uri . '</small>';
                                 }

@@ -2096,7 +2096,13 @@ return $status_header;
             if ( empty($country_code) || ! in_array( $country_code, $this->options['login_restrict_countries'], true ) ) {
                 
                 /* translators: 1: The IP address, 2: The Country Code */
-                $this->log_event( sprintf( __( 'Login access denied due to Geo-Blocking restrictions for IP %1$s (%2$s)', 'advanced-ip-blocker' ), $client_ip, empty($country_code) ? 'Unknown' : $country_code ), 'warning', ['ip' => $client_ip] );
+                $this->log_specific_error( 'login_geoblock', $client_ip, [
+                    'country' => $location['country'] ?? ($country_code ?: __('Unknown Location', 'advanced-ip-blocker')),
+                    'action'  => 'Whitelist Login Countries restriction',
+                ], 'warning' );
+                
+                // Prevent duplicate generic 403 error from global error handler
+                $this->error_handled_this_request = true;
                 
                 // Show a generic access denied message
                 wp_die(
@@ -3365,6 +3371,8 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
 		case 'honeypot': $message = sprintf(__('Honeypot URL accessed: %s', 'advanced-ip-blocker'), $details['url'] ?? 'N/A'); break;
         /* translators: %s: Country. */
 		case 'geoblock': $message = sprintf(__('Blocked access from country: %s', 'advanced-ip-blocker'), $details['country'] ?? 'N/A'); break;
+        /* translators: %s: Country. */
+		case 'login_geoblock': $message = sprintf(__('Login blocked by Location Whitelist from: %s', 'advanced-ip-blocker'), $details['country'] ?? 'N/A'); break;
         /* translators: %s: User-Agent. */
 		case 'user_agent': $message = sprintf(__('Blocked due to User-Agent match: %s', 'advanced-ip-blocker'), $details['user_agent'] ?? 'N/A'); break;        
         case 'threat_score': $message = $details['_reason'] ?? __('Threat score threshold exceeded', 'advanced-ip-blocker'); break;
@@ -5198,6 +5206,10 @@ private function get_first_public_ip_from_string($ip_string) {
             ],
 			'geo_challenge' => [
                 'label'         => __('Geo-Challenge', 'advanced-ip-blocker'),
+                'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
+            ],
+            'login_geoblock' => [
+                'label'         => __('Login Geoblock', 'advanced-ip-blocker'),
                 'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
             ],
             'honeypot' => [
