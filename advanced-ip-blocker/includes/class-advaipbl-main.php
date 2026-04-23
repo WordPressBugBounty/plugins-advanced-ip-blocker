@@ -6683,11 +6683,19 @@ public function handle_import_settings() {
          isset($this->options['geolocation_method']) && $this->options['geolocation_method'] === 'local_db' &&
          !empty($this->options['maxmind_license_key']) && $this->geoip_manager
      ) {
-         // Increase limits for large file download/extraction
+         // Increase limits safely for large file download/extraction without constraining powerful servers
          // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
          if (function_exists('set_time_limit')) { @set_time_limit(300); }
-         // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
-         @ini_set('memory_limit', '256M');
+         
+         $current_memory = @ini_get('memory_limit');
+         if ($current_memory && $current_memory !== '-1') {
+             $current_bytes = wp_convert_hr_to_bytes($current_memory);
+             $target_bytes  = wp_convert_hr_to_bytes('512M');
+             if ($current_bytes < $target_bytes) {
+                 // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
+                 @ini_set('memory_limit', '512M');
+             }
+         }
          
          $this->log_event('Starting scheduled GeoIP database update.', 'info');
          $result = $this->geoip_manager->download_and_unpack_databases();

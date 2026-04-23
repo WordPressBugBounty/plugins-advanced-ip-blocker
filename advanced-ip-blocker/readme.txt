@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.2
+Stable tag: 8.10.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.3 =
+*   **Fixed:** Resolved a fatal out-of-memory error that could occur during the automated MaxMind GeoIP database CRON update on heavy WordPress installations by implementing dynamic memory scaling up to 512MB limit gracefully.
+
 = 8.10.2 =
 *   **Improved:** "Whitelist Login Countries" restrictions are now explicitly detailed in the Security Logs, displaying the precise country and reason instead of a generic 403 error.
 *   **Fixed:** Improved geolocation fallback handling by adding a localizable "Unknown Location" string for IPs lacking country data, avoiding log confusion.
@@ -248,6 +251,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.3 =
+**MAINTENANCE UPDATE:** Ensures perfectly stable automated MaxMind database updates via CRON by dynamically optimizing memory allocation. No configuration changes required.
 
 = 8.10.2 =
 **MAINTENANCE UPDATE:** Substantially improves the accuracy and readability of Security Logs for Login Geoblocking and includes minor translation refinements. No configuration changes required.
