@@ -47,14 +47,9 @@ class ADVAIPBL_JS_Challenge {
     public function verify_challenge($cookie_name, $cookie_duration) {
         // Sanitize input
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
-        $token = sanitize_key($_POST['_advaipbl_js_token'] ?? '');
+        $token = sanitize_text_field(wp_unslash($_POST['_advaipbl_js_token'] ?? ''));
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $response = (int) sanitize_text_field(wp_unslash($_POST['_advaipbl_js_response'] ?? 0));
-        $transient_key = 'advaipbl_challenge_' . $token;
-
-        // Fetch and immediately delete the transient for single-use security
-        $correct_answer = get_transient($transient_key);
-        delete_transient($transient_key); // Ensures the token is used only once
 
         $ip = $this->plugin->get_client_ip();
 
@@ -63,8 +58,33 @@ class ADVAIPBL_JS_Challenge {
         $mode_reported = sanitize_key($_POST['_advaipbl_challenge_mode'] ?? 'managed');
 
         // Verification check
-        $is_valid = false;
-        if ($correct_answer !== false && $response === (int) $correct_answer) {
+        $is_valid       = false;
+        $correct_answer = null;
+
+        // Decode HMAC Token (Stateless Verification)
+        if (!empty($token)) {
+            $decoded = base64_decode(strtr($token, '-_', '+/'));
+            if ($decoded !== false && strpos($decoded, '::') !== false) {
+                list($payload, $signature) = explode('::', $decoded, 2);
+                
+                $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
+                $expected_signature = hash_hmac('sha256', $payload, $salt);
+                
+                if (hash_equals($expected_signature, $signature)) {
+                    $parts = explode('|', $payload);
+                    if (count($parts) === 2) {
+                        $parsed_answer = (int) $parts[0];
+                        $expiration    = (int) $parts[1];
+                        
+                        if (time() <= $expiration) {
+                            $correct_answer = $parsed_answer;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($correct_answer !== null && $response === $correct_answer) {
             // Si el cliente reporta que es un challenge 'managed', verificamos el checkbox
             if ($mode_reported === 'managed') {
                 // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -166,10 +186,14 @@ class ADVAIPBL_JS_Challenge {
         $num1   = wp_rand(1, 9);
         $num2   = wp_rand(1, 9);
         $answer = $num1 + $num2;
-        // Fix for Object Cache sensitivity bugs: force strictly lowercase alphanumeric tokens
-        $token  = bin2hex(random_bytes(16));
-        
-        set_transient('advaipbl_challenge_' . $token, $answer, 120);
+        // Stateless verification token (HMAC) to bypass Cache and Database limitations
+        $expiration = time() + 120;
+        $payload    = $answer . '|' . $expiration;
+        $salt       = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
+        $signature  = hash_hmac('sha256', $payload, $salt);
+        $token_raw  = $payload . '::' . $signature;
+        // URL-safe Base64
+        $token      = strtr(base64_encode($token_raw), '+/', '-_');
         
         status_header(503);
         header('Content-Type: text/html; charset=utf-8');
@@ -196,9 +220,16 @@ class ADVAIPBL_JS_Challenge {
         if ($challenge_mode === 'automatic') {
             $main_text = esc_html__('Please wait while we verify your connection. This process is automatic and protects the website from automated attacks.', 'advanced-ip-blocker');
             $js_script = "<script>
+                let isSubmitting = false;
                 document.getElementById('js_response').value = {$num1} + {$num2};
+                document.getElementById('challenge_form').addEventListener('submit', function(e) {
+                    if (isSubmitting) { e.preventDefault(); return false; }
+                    isSubmitting = true;
+                });
                 setTimeout(function(){ 
-                    document.getElementById('challenge_form').submit();
+                    if (!isSubmitting) {
+                        document.getElementById('challenge_form').submit();
+                    }
                 }, 2500);
             </script>";
             
@@ -210,8 +241,17 @@ class ADVAIPBL_JS_Challenge {
             // Managed mode
             $main_text = esc_html__('To proceed, please prove you are human. This verification protects the website from automated attacks.', 'advanced-ip-blocker');
             $js_script = "<script>
+                let isSubmitting = false;
                 const TIMEOUT_SECONDS = 120;
                 document.getElementById('js_response').value = {$num1} + {$num2};
+                
+                document.getElementById('challenge_form').addEventListener('submit', function(e) {
+                    if (isSubmitting) { e.preventDefault(); return false; }
+                    isSubmitting = true;
+                    var btn = document.getElementById('submit_btn');
+                    if (btn) btn.disabled = true;
+                });
+                
                 let timeRemaining = TIMEOUT_SECONDS;
                 function updateTimer() {
                     const timerElement = document.getElementById('challenge_timer');
@@ -236,7 +276,7 @@ class ADVAIPBL_JS_Challenge {
                 <div id="challenge_spinner"></div>
                 <div id="challenge_interaction" style="display:none;">
                     <label><input type="checkbox" name="human_check" required> ' . $checkbox_label . '</label>
-                    <button type="submit">' . $button_text . '</button>
+                    <button type="submit" id="submit_btn">' . $button_text . '</button>
                     <div id="challenge_timer_container">' . $timer_text . '<span id="challenge_timer">120</span>s</div>
                 </div>
             ';

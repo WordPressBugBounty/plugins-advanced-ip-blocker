@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.3
+Stable tag: 8.10.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.4 =
+*   **Major Refactor:** The JavaScript Challenge engine has been completely redesigned to be fully "Stateless" using secure cryptographic HMAC tokens. 
+*   **Fixed:** Resolves infinite redirect loops and "Verification failed" errors that occurred when strict caching layers (Cloudflare, LiteSpeed, WP Fastest Cache) cached the challenge HTML page or when Object Caching mechanisms (Redis/Memcached) experienced synchronization lag.
+*   **Improved:** Implemented strict anti-double-click logic in the frontend JS challenge scripts to prevent race conditions and double-POST submissions on touch devices or slow connections.
+*   **Performance:** Entirely eliminated database queries (`wp_options` transients) during JS challenge issuance and verification, protecting your database during DDoS events.
+
 = 8.10.3 =
 *   **Fixed:** Resolved a fatal out-of-memory error that could occur during the automated MaxMind GeoIP database CRON update on heavy WordPress installations by implementing dynamic memory scaling up to 512MB limit gracefully.
 
@@ -251,6 +257,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.4 =
+**CRITICAL FIX:** Solves all "Verification failed" and infinite loop errors related to the JS Challenge in heavily cached environments by migrating to a rapid stateless cryptographic verification system.
 
 = 8.10.3 =
 **MAINTENANCE UPDATE:** Ensures perfectly stable automated MaxMind database updates via CRON by dynamically optimizing memory allocation. No configuration changes required.
