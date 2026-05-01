@@ -201,12 +201,14 @@ class ADVAIPBL_Htaccess_Manager {
             $header_rules = [];
             foreach ($security_headers as $key => $header) {
                 if (!empty($header['enabled']) && !empty($header['name']) && !empty($header['value'])) {
+                    // Escape double quotes to prevent breaking the Apache Header directive syntax
+                    $safe_value = str_replace('"', '\"', trim($header['value']));
                     if ($key === 'hsts') {
-                        $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . trim($header['value']) . '" env=HTTPS';
+                        $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . $safe_value . '" env=HTTPS';
                     } elseif ($key === 'server_header' && trim($header['value']) === 'remove') {
                         $header_rules[] = '    Header unset Server';
                     } else {
-                        $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . trim($header['value']) . '"';
+                        $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . $safe_value . '"';
                     }
                 }
             }

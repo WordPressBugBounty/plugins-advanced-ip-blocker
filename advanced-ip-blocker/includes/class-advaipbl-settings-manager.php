@@ -431,7 +431,8 @@ add_settings_field(
     [
         'name' => 'enable_bot_verification',
         'label' => __('Enable reverse DNS verification for known crawlers (e.g., Googlebot, Bingbot).', 'advanced-ip-blocker'),
-        'description' => __('This prevents attackers from bypassing rules by faking their User-Agent. If an IP claims to be Googlebot but fails verification, it will be treated as a threat.', 'advanced-ip-blocker')
+        'description' => __('This prevents attackers from bypassing rules by faking their User-Agent. If an IP claims to be Googlebot but fails verification, it will be treated as a threat.', 'advanced-ip-blocker'),
+        'help_url' => 'https://advaipbl.com/verify-known-bots-rdns-guide/'
     ]
 );
 

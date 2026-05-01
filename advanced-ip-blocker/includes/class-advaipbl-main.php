@@ -684,7 +684,10 @@ public function verify_known_bots() {
                  $ip, 
                  $points_impersonation, 
                  'impersonation', 
-                 ['user_agent' => $user_agent]
+                 [
+                     'impersonated_user_agent' => $user_agent,
+                     'uri'                     => $this->get_current_request_uri()
+                 ]
              );
 
              // Usar Duración

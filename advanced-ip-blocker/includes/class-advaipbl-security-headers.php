@@ -90,7 +90,14 @@ class ADVAIPBL_Security_Headers {
 
     private function sanitize_csp($value) {
         // Strip tags but allow quotes, semicolons, etc.
-        return wp_strip_all_tags($value);
+        $value = wp_strip_all_tags($value);
+        // Remove line breaks (copy/paste issue) to prevent .htaccess 500 errors
+        $value = str_replace(["\r", "\n"], ' ', $value);
+        // Replace double quotes with single quotes to prevent breaking .htaccess string wrapping
+        $value = str_replace('"', "'", $value);
+        // Compress multiple spaces into one
+        $value = preg_replace('/\s+/', ' ', $value);
+        return trim($value);
     }
 
     public function display_settings_tab() {

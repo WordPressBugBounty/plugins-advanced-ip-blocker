@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.4
+Stable tag: 8.10.5
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.5 =
+*   **Security/Stability:** Hardened the Security Headers module with strict sanitization for Content-Security-Policy inputs. The system now automatically purifies copy/pasted policies by stripping invisible line breaks and safely escaping double quotes, completely eliminating the risk of 500 Internal Server Errors when generating `.htaccess` rules.
+*   **Fixed:** Resolved a display bug in the "IP Trust Log & Status" popup where details (Impersonated UA and URI) for "Impersonated" events were showing as "N/A".
+
 = 8.10.4 =
 *   **Major Refactor:** The JavaScript Challenge engine has been completely redesigned to be fully "Stateless" using secure cryptographic HMAC tokens. 
 *   **Fixed:** Resolves infinite redirect loops and "Verification failed" errors that occurred when strict caching layers (Cloudflare, LiteSpeed, WP Fastest Cache) cached the challenge HTML page or when Object Caching mechanisms (Redis/Memcached) experienced synchronization lag.
@@ -258,17 +262,5 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.10.4 =
-**CRITICAL FIX:** Solves all "Verification failed" and infinite loop errors related to the JS Challenge in heavily cached environments by migrating to a rapid stateless cryptographic verification system.
-
-= 8.10.3 =
-**MAINTENANCE UPDATE:** Ensures perfectly stable automated MaxMind database updates via CRON by dynamically optimizing memory allocation. No configuration changes required.
-
-= 8.10.2 =
-**MAINTENANCE UPDATE:** Substantially improves the accuracy and readability of Security Logs for Login Geoblocking and includes minor translation refinements. No configuration changes required.
-
-= 8.10.1 =
-**CRUCIAL FIX** for administrators experiencing UI glitches during session expiration when using 2FA. Also includes broader, universally compatible reCAPTCHA support for frontend login portals.
-
-= 8.10.0 =
-**NEW AGENCY TOOLS:** You can now instantly export and import all of your Advanced Rules in one click, drastically speeding up security configuration deployment across multiple WordPress sites.
+= 8.10.5 =
+**MAINTENANCE & STABILITY UPDATE:** Hardens the Security Headers module to prevent 500 Internal Server Errors caused by malformed CSP inputs, and fixes a minor visual bug in the Threat Score history logs.

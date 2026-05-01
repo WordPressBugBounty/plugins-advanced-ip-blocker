@@ -130,7 +130,7 @@ jQuery(document).ready(function ($) {
                                         detailsText = `User: <strong>${escapeHtml(ev.details.username)}</strong>`;
                                         break;
                                     case 'impersonation':
-                                        detailsText = `Impersonated UA: <strong>${escapeHtml(ev.details.impersonated_user_agent)}</strong><br><small>URI: ${uri}</small>`;
+                                        detailsText = `Impersonated UA: <strong>${escapeHtml(ev.details.impersonated_user_agent || ev.details.user_agent)}</strong><br><small>URI: ${uri}</small>`;
                                         break;
                                     case 'honeypot':
                                     case '404':
