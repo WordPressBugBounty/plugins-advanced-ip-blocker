@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-04-22 12:43+0200\n"
+"PO-Revision-Date: 2026-05-06 13:16+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8469,6 +8469,25 @@ msgstr "Unknown Location"
 #, php-format
 msgid "Login blocked by Location Whitelist from: %s"
 msgstr "Inicio de sesión bloqueado por la lista blanca de ubicación desde: %s"
+
+#: includes/class-advaipbl-settings-manager.php:439
+msgid "Verify AI Bots (CIDR)"
+msgstr "Verificar bots de IA (CIDR)"
+
+#: includes/class-advaipbl-settings-manager.php:445
+msgid "Enable IP CIDR verification for AI crawlers (e.g., OpenAI, ChatGPT)."
+msgstr ""
+"Habilitar la verificación de IP CIDR para rastreadores de IA (por ejemplo, "
+"OpenAI, ChatGPT)."
+
+#: includes/class-advaipbl-settings-manager.php:446
+msgid ""
+"Downloads official JSON IP lists from AI providers to verify their crawlers "
+"reliably, bypassing rDNS limitations."
+msgstr ""
+"Descarga listas oficiales de direcciones IP en formato JSON de proveedores "
+"de IA para verificar sus rastreadores de forma fiable, sorteando las "
+"limitaciones de rDNS."
 
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"

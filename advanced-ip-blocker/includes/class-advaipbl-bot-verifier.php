@@ -74,8 +74,26 @@ class ADVAIPBL_Bot_Verifier {
             return false;
         }
 
-        // Ahora realizamos la verificación de DNS
-        $is_verified = $this->verify_dns($ip, $expected_domains);
+        $is_ai_bot = false;
+        if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'applebot'])) {
+            $is_ai_bot = true;
+        }
+
+        // Si es un bot de IA y la opción está activa, verificamos por CIDR en lugar de DNS
+        if ($is_ai_bot && !empty($this->plugin->options['enable_ai_bot_verification']) && $this->plugin->options['enable_ai_bot_verification'] === '1') {
+            if (!get_transient('advaipbl_ai_bot_ips_cached')) {
+                $this->fetch_and_cache_ai_lists();
+            }
+            $is_verified = $this->verify_ai_ip($ip, $ua_keyword);
+            
+            // Fallback a DNS si la lista CIDR está vacía por algún error de API
+            if (!$is_verified && empty(get_option('advaipbl_ai_bot_ips', []))) {
+                $is_verified = $this->verify_dns($ip, $expected_domains);
+            }
+        } else {
+            // Ahora realizamos la verificación de DNS clásica
+            $is_verified = $this->verify_dns($ip, $expected_domains);
+        }
 
         self::$verified_cache[$ip] = $is_verified;
 
@@ -146,6 +164,70 @@ class ADVAIPBL_Bot_Verifier {
                 return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * Descarga y cachea las listas oficiales de IPs de bots de IA.
+     */
+    public function fetch_and_cache_ai_lists() {
+        $endpoints = [
+            'gptbot' => 'https://openai.com/gptbot.json',
+            'searchbot' => 'https://openai.com/searchbot.json',
+            'chatgpt-user' => 'https://openai.com/chatgpt-user.json',
+            'applebot' => 'https://search.developer.apple.com/applebot.json'
+        ];
+
+        $all_cidrs = [];
+        foreach ($endpoints as $bot => $url) {
+            $response = wp_remote_get($url, ['timeout' => 5]);
+            if (!is_wp_error($response)) {
+                $body = wp_remote_retrieve_body($response);
+                $data = json_decode($body, true);
+                if (is_array($data) && !empty($data['prefixes'])) {
+                    foreach ($data['prefixes'] as $prefix) {
+                        if (!empty($prefix['ipv4Prefix'])) {
+                            $all_cidrs[$bot][] = $prefix['ipv4Prefix'];
+                        }
+                        if (!empty($prefix['ipv6Prefix'])) {
+                            $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!empty($all_cidrs)) {
+            update_option('advaipbl_ai_bot_ips', $all_cidrs, false);
+            set_transient('advaipbl_ai_bot_ips_cached', true, DAY_IN_SECONDS);
+        }
+    }
+
+    /**
+     * Verifica si la IP pertenece a la lista CIDR del bot de IA.
+     */
+    private function verify_ai_ip($ip, $ua_keyword) {
+        $ai_ips = get_option('advaipbl_ai_bot_ips', []);
+        
+        $bot_key = '';
+        if ($ua_keyword === 'gptbot' || $ua_keyword === 'oai/openai') {
+            $bot_key = 'gptbot';
+        } elseif ($ua_keyword === 'chatgpt-user') {
+            $bot_key = 'chatgpt-user';
+        } elseif ($ua_keyword === 'applebot') {
+            $bot_key = 'applebot';
+        }
+
+        if (empty($bot_key) || empty($ai_ips[$bot_key])) {
+            return false;
+        }
+
+        foreach ($ai_ips[$bot_key] as $cidr) {
+            if ($this->plugin->is_ip_in_range($ip, $cidr)) {
+                return true;
+            }
+        }
+
         return false;
     }
 }

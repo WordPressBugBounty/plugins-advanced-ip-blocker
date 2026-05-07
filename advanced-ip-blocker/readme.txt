@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.5
+Stable tag: 8.10.6
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.6 =
+*   **NEW SECURITY FEATURE:** AI Bot Verification (CIDR). Introduces a new security layer that downloads and caches official IP ranges (JSON format) directly from major AI providers like OpenAI and Apple.
+*   **IMPROVED:** Significantly enhances accuracy by verifying crawlers mathematically via CIDR instead of relying on unpredictable Reverse DNS lookups that often fail on public cloud infrastructure.
+*   **ADDED:** Settings toggle to quickly enable/disable the new "Verify AI Bots (CIDR)" functionality.
+
 = 8.10.5 =
 *   **Security/Stability:** Hardened the Security Headers module with strict sanitization for Content-Security-Policy inputs. The system now automatically purifies copy/pasted policies by stripping invisible line breaks and safely escaping double quotes, completely eliminating the risk of 500 Internal Server Errors when generating `.htaccess` rules.
 *   **Fixed:** Resolved a display bug in the "IP Trust Log & Status" popup where details (Impersonated UA and URI) for "Impersonated" events were showing as "N/A".
@@ -261,6 +266,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.6 =
+**SECURITY ENHANCEMENT:** Adds native support for mathematically verifying AI crawlers (like OpenAI and Applebot) via their official IP JSON lists, completely eliminating false positive blocks caused by rDNS timeouts or AWS infrastructure quirks.
 
 = 8.10.5 =
 **MAINTENANCE & STABILITY UPDATE:** Hardens the Security Headers module to prevent 500 Internal Server Errors caused by malformed CSP inputs, and fixes a minor visual bug in the Threat Score history logs.

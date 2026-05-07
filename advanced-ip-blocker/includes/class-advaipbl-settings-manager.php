@@ -435,6 +435,19 @@ add_settings_field(
         'help_url' => 'https://advaipbl.com/verify-known-bots-rdns-guide/'
     ]
 );
+    
+    add_settings_field(
+        'advaipbl_enable_ai_bot_verification',
+        __('Verify AI Bots (CIDR)', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_user_agent_settings_section',
+        [
+            'name' => 'enable_ai_bot_verification',
+            'label' => __('Enable IP CIDR verification for AI crawlers (e.g., OpenAI, ChatGPT).', 'advanced-ip-blocker'),
+            'description' => __('Downloads official JSON IP lists from AI providers to verify their crawlers reliably, bypassing rDNS limitations.', 'advanced-ip-blocker'),
+        ]
+    );
 
     add_settings_section('advaipbl_asn_protection_section', __('ASN Protection', 'advanced-ip-blocker'), null, $page);
     add_settings_field(
@@ -1083,7 +1096,7 @@ add_settings_field(
             'enable_404_lockdown',
             'enable_403_lockdown',
             'enable_geo_challenge',
-			'enable_bot_verification',
+			'enable_bot_verification', 'enable_ai_bot_verification',
 			'enable_community_blocking',
 			'enable_abuseipdb',
 			'enable_community_network',
