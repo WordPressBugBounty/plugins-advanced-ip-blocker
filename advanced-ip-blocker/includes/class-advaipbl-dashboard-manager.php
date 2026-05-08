@@ -237,6 +237,7 @@ class ADVAIPBL_Dashboard_Manager {
             '404_lockdown'  => !empty($options['enable_404_lockdown']),
             '403_lockdown'  => !empty($options['enable_403_lockdown']),
 			'bot_verification'   => !empty($options['enable_bot_verification']),
+            'ai_bot_verification'=> isset($options['enable_ai_bot_verification']) ? !empty($options['enable_ai_bot_verification']) : true,
             'geo_challenge'      => !empty($options['enable_geo_challenge']),
             'abuseipdb'          => !empty($options['enable_abuseipdb']),
             'activity_audit'     => !empty($options['enable_audit_log']),

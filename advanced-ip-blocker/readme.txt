@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.6
+Stable tag: 8.10.7
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.7 =
+*   **Improved:** AI Bot Verification is now enabled by default for all existing users to maximize protection out-of-the-box.
+*   **Improved:** Updated the System Status dashboard card and internal Telemetry engine to natively report AI Bot Verification feature adoption.
+
 = 8.10.6 =
 *   **NEW SECURITY FEATURE:** AI Bot Verification (CIDR). Introduces a new security layer that downloads and caches official IP ranges (JSON format) directly from major AI providers like OpenAI and Apple.
 *   **IMPROVED:** Significantly enhances accuracy by verifying crawlers mathematically via CIDR instead of relying on unpredictable Reverse DNS lookups that often fail on public cloud infrastructure.
@@ -266,6 +270,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.7 =
+**MAINTENANCE UPDATE:** Automatically enables AI Bot Verification by default for existing users to ensure immediate protection against crawlers without manual configuration. Updates internal dashboard components.
 
 = 8.10.6 =
 **SECURITY ENHANCEMENT:** Adds native support for mathematically verifying AI crawlers (like OpenAI and Applebot) via their official IP JSON lists, completely eliminating false positive blocks caused by rDNS timeouts or AWS infrastructure quirks.

@@ -95,6 +95,7 @@ jQuery(document).ready(function ($) {
             '403_blocking': '403 Error Blocking',
             'login_blocking': 'Failed Login Blocking',
             'bot_verification': 'Verify Known Bots',
+            'ai_bot_verification': 'Verify AI Bots (CIDR)',
             'geo_challenge': 'Geo Challenge',
             'abuseipdb': 'AbuseIPDB Protection',
             'activity_audit': 'Activity Audit Log',

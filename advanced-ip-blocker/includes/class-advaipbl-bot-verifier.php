@@ -80,7 +80,9 @@ class ADVAIPBL_Bot_Verifier {
         }
 
         // Si es un bot de IA y la opción está activa, verificamos por CIDR en lugar de DNS
-        if ($is_ai_bot && !empty($this->plugin->options['enable_ai_bot_verification']) && $this->plugin->options['enable_ai_bot_verification'] === '1') {
+        // (Activado por defecto si no está definido para usuarios existentes)
+        $ai_bot_enabled = isset($this->plugin->options['enable_ai_bot_verification']) ? $this->plugin->options['enable_ai_bot_verification'] : '1';
+        if ($is_ai_bot && $ai_bot_enabled === '1') {
             if (!get_transient('advaipbl_ai_bot_ips_cached')) {
                 $this->fetch_and_cache_ai_lists();
             }
