@@ -219,12 +219,20 @@ jQuery(document).ready(function ($) {
             }).done(function (response) {
                 if (response.success && response.data.details) {
                     const details = response.data.details;
+                    
+                    const escapeHtml = (text) => {
+                        if (!text) return 'N/A';
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    };
+                    
                     let detailsHtml = '<h4>Signature Components:</h4><ul class="signature-components">';
-                    detailsHtml += `<li><strong>User-Agent:</strong> <code>${details.sample_user_agent || 'N/A'}</code></li>`;
+                    detailsHtml += `<li><strong>User-Agent:</strong> <code>${escapeHtml(details.sample_user_agent)}</code></li>`;
 
                     if (details.sample_headers) {
                         for (const [key, value] of Object.entries(details.sample_headers)) {
-                            detailsHtml += `<li><strong>${key}:</strong> <code>${value}</code></li>`;
+                            detailsHtml += `<li><strong>${escapeHtml(key)}:</strong> <code>${escapeHtml(value)}</code></li>`;
                         }
                     }
                     detailsHtml += '</ul>';
@@ -232,13 +240,13 @@ jQuery(document).ready(function ($) {
                     detailsHtml += '<h4>Attack Evidence (last 15 entries):</h4><table class="widefat"><thead><tr><th>IP Hash (Anonymous)</th><th>Target URI</th><th>Time</th><th>Notes</th></tr></thead><tbody>';
                     if (details.evidence && details.evidence.length > 0) {
                         details.evidence.forEach(function (ev) {
-                            const ipHashShort = ev.ip_hash.substring(0, 12) + '...';
+                            const ipHashShort = escapeHtml(ev.ip_hash).substring(0, 12) + '...';
                             const timeAgo = new Date(ev.timestamp * 1000).toLocaleString();
                             let notesCell = '-';
                             if (ev.is_impersonator == 1) {
                                 notesCell = '<strong style="color: red;">Impersonator</strong>';
                             }
-                            detailsHtml += `<tr><td><code title="${ev.ip_hash}">${ipHashShort}</code></td><td>${ev.request_uri}</td><td>${timeAgo}</td><td>${notesCell}</td></tr>`;
+                            detailsHtml += `<tr><td><code title="${escapeHtml(ev.ip_hash)}">${ipHashShort}</code></td><td>${escapeHtml(ev.request_uri)}</td><td>${escapeHtml(timeAgo)}</td><td>${notesCell}</td></tr>`;
                         });
                     } else {
                         detailsHtml += '<tr><td colspan="3">No evidence found.</td></tr>';
