@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-05-06 13:16+0200\n"
+"PO-Revision-Date: 2026-05-13 12:12+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -5130,7 +5130,7 @@ msgstr ""
 msgid "Installed"
 msgstr "Instalado"
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-admin-pages.php
 msgid "Not Found"
 msgstr "No encontrado"
 
@@ -8488,6 +8488,102 @@ msgstr ""
 "Descarga listas oficiales de direcciones IP en formato JSON de proveedores "
 "de IA para verificar sus rastreadores de forma fiable, sorteando las "
 "limitaciones de rDNS."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Last WP-Cron IP"
+msgstr "Última IP de WP-Cron"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "(Local Server)"
+msgstr "(Servidor local)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "(External Service)"
+msgstr "(Servicio externo)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WP-Cron Service IP (added from Status page)"
+msgstr "Dirección IP del servicio WP-Cron (añadida desde la página de estado)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not recorded yet. Wait for the next cron execution."
+msgstr "Aún no se ha registrado. Espere a la siguiente ejecución de cron."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Sucuri WAF"
+msgstr "Sucuri WAF"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "AWS CloudFront"
+msgstr "AWS CloudFront"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Quic.cloud (LiteSpeed)"
+msgstr "Quic.cloud (LiteSpeed)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Fastly"
+msgstr "Fastly"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Ezoic"
+msgstr "Ezoic"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "IPv6 Support"
+msgstr "Soporte IPv6"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enabled & Active"
+msgstr "Habilitado y activo"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enabled (Not currently in use by you/server)"
+msgstr "Habilitado (actualmente no está siendo utilizado por you/server)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not Supported by PHP"
+msgstr "No compatible con PHP"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Core File Permissions"
+msgstr "Permisos de archivos principales"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Writable"
+msgstr "Writable"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Read-Only"
+msgstr "Read-Only"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Time Synchronization"
+msgstr "Sincronización horaria"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Server Time (UTC):"
+msgstr "Hora del servidor (UTC):"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WordPress Time (Local):"
+msgstr "Hora de WordPress (local):"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Timezone offset: %s hours."
+msgstr "Diferencia horaria: %s horas."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WP-Cron Status"
+msgstr "Estado de WP-Cron"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Disabled (Using external/system cron)"
+msgstr "Deshabilitado (usando cron externo / del sistema)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enabled (Default)"
+msgstr "Habilitado (predeterminado)"
 
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"

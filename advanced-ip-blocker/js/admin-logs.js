@@ -237,19 +237,31 @@ jQuery(document).ready(function ($) {
                     }
                     detailsHtml += '</ul>';
 
-                    detailsHtml += '<h4>Attack Evidence (last 15 entries):</h4><table class="widefat"><thead><tr><th>IP Hash (Anonymous)</th><th>Target URI</th><th>Time</th><th>Notes</th></tr></thead><tbody>';
+                    detailsHtml += '<h4>Attack Evidence (last 15 entries):</h4><table class="widefat"><thead><tr><th>IP Hash (Anonymous)</th><th>Target URI</th><th>Time</th><th>Flags</th></tr></thead><tbody>';
                     if (details.evidence && details.evidence.length > 0) {
                         details.evidence.forEach(function (ev) {
                             const ipHashShort = escapeHtml(ev.ip_hash).substring(0, 12) + '...';
                             const timeAgo = new Date(ev.timestamp * 1000).toLocaleString();
-                            let notesCell = '-';
+                            let tags = [];
                             if (ev.is_impersonator == 1) {
-                                notesCell = '<strong style="color: red;">Impersonator</strong>';
+                                tags.push('<span style="background-color: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-weight: 600; margin-right: 4px; white-space: nowrap;">Impersonator</span>');
                             }
+                            if (ev.request_uri && ev.request_uri.indexOf('xmlrpc.php') !== -1) {
+                                tags.push('<span style="background-color: #e0e7ff; color: #4f46e5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-weight: 600; margin-right: 4px; white-space: nowrap;">XML-RPC</span>');
+                            }
+                            if (ev.request_uri && ev.request_uri.indexOf('wp-login.php') !== -1) {
+                                tags.push('<span style="background-color: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-weight: 600; margin-right: 4px; white-space: nowrap;">Login</span>');
+                            }
+                            const honeypots = ['.env', 'wp-config', '.git', 'phpunit', 'phpinfo', 'eval-stdin'];
+                            if (ev.request_uri && honeypots.some(hp => ev.request_uri.indexOf(hp) !== -1)) {
+                                tags.push('<span style="background-color: #fce7f3; color: #db2777; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-weight: 600; margin-right: 4px; white-space: nowrap;">Honeypot</span>');
+                            }
+                            
+                            let notesCell = tags.length > 0 ? tags.join('') : '-';
                             detailsHtml += `<tr><td><code title="${escapeHtml(ev.ip_hash)}">${ipHashShort}</code></td><td>${escapeHtml(ev.request_uri)}</td><td>${escapeHtml(timeAgo)}</td><td>${notesCell}</td></tr>`;
                         });
                     } else {
-                        detailsHtml += '<tr><td colspan="3">No evidence found.</td></tr>';
+                        detailsHtml += '<tr><td colspan="4">No evidence found.</td></tr>';
                     }
                     detailsHtml += '</tbody></table>';
 

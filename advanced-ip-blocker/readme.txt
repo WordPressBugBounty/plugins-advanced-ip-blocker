@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, ip/Country/ASN blocker, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.8
+Stable tag: 8.10.9
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.9 =
+*   **Enhanced:** Major improvements to the Status & Debug dashboard. Added WP-Cron IP tracking to identify external cron triggers, expanded CDN detection (Sucuri, CloudFront, Fastly, Ezoic, LiteSpeed), and introduced deep server diagnostics including IPv6 support, core file permission checks, and Server vs WordPress timezone synchronization monitoring.
+
 = 8.10.8 =
 *   **SECURITY PATCH:** Fixed a Stored Cross-Site Scripting (XSS) vulnerability in the Signature Engine's "Blocked Signatures" details modal. Malicious payloads injected into HTTP headers (like `Referer` or `User-Agent`) are now safely escaped before rendering in the administrative dashboard.
 *   **Improved:** AI Bot Verification is now enabled by default for all existing users to maximize protection out-of-the-box.
@@ -271,6 +274,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.9 =
+**ENHANCEMENT:** Significantly upgrades the "Status & Debug" tab. Now features WP-Cron execution tracking, extensive CDN/Proxy detection, and deeper environment diagnostics (IPv6, file permissions, timezone offsets) to help you troubleshoot server configurations faster.
 
 = 8.10.8 =
 **CRITICAL SECURITY UPDATE:** Patches a Stored XSS vulnerability in the Signature Engine admin UI. All users must upgrade immediately to secure their dashboards against malicious HTTP header payloads. Automatically enables AI Bot Verification by default for existing users to ensure immediate protection against crawlers without manual configuration. Updates internal dashboard components.

@@ -2608,6 +2608,30 @@ wp advaipbl spamhaus-update
                                 <p class="description"><?php esc_html_e( 'This is the public IP of your web server. It is highly recommended to whitelist this IP.', 'advanced-ip-blocker' ); ?></p>
                             </td>
                         </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e( 'Last WP-Cron IP', 'advanced-ip-blocker' ); ?></th>
+                            <td>
+                                <?php
+                                $last_cron_ip = get_option('advaipbl_last_cron_ip');
+                                if ( $last_cron_ip ) {
+                                    echo '<code>' . esc_html( $last_cron_ip ) . '</code>';
+                                    if ( $last_cron_ip === $server_ip || $last_cron_ip === '127.0.0.1' || $last_cron_ip === '::1' ) {
+                                        echo '<span class="description" style="margin-left:10px;">' . esc_html__( '(Local Server)', 'advanced-ip-blocker' ) . '</span>';
+                                    } else {
+                                        echo '<span class="description" style="margin-left:10px; color: #f59e0b;">' . esc_html__( '(External Service)', 'advanced-ip-blocker' ) . '</span>';
+                                        
+                                        if ( $this->plugin->is_whitelisted( $last_cron_ip ) ) {
+                                            echo '<span class="advaipbl-status-icon success" title="' . esc_attr__( 'This IP is on the whitelist.', 'advanced-ip-blocker' ) . '">✔</span>';
+                                        } else {
+                                            echo '<br><button class="button button-secondary advaipbl-add-whitelist-ajax" data-ip="' . esc_attr( $last_cron_ip ) . '" data-detail="' . esc_attr__( 'WP-Cron Service IP (added from Status page)', 'advanced-ip-blocker' ) . '" style="margin-top: 5px;">' . esc_html__( 'Add to Whitelist', 'advanced-ip-blocker' ) . '</button>';
+                                        }
+                                    }
+                                } else {
+                                    echo '<span style="color: #50575e;">' . esc_html__( 'Not recorded yet. Wait for the next cron execution.', 'advanced-ip-blocker' ) . '</span>';
+                                }
+                                ?>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -2624,6 +2648,13 @@ wp advaipbl spamhaus-update
                                 $status_color = 'black';
                                 $cf_detected_raw = isset($_SERVER['HTTP_CF_RAY']);
                                 
+                                // Additional CDN checks
+                                $sucuri_detected = isset($_SERVER['HTTP_X_SUCURI_CLIENTIP']);
+                                $cloudfront_detected = isset($_SERVER['HTTP_X_AMZ_CF_ID']);
+                                $quic_detected = isset($_SERVER['HTTP_QC_POP']) || isset($_SERVER['HTTP_X_QC_IP']);
+                                $fastly_detected = isset($_SERVER['HTTP_FASTLY_CLIENT_IP']);
+                                $ezoic_detected = isset($_SERVER['HTTP_X_EZOIC_CDN']) || isset($_SERVER['HTTP_X_MIDDLETON_IP']);
+                                
                                 // Detección de "Proxy Transparente"
                                 $is_transparent_proxy = false;
                                 $cf_connecting_ip = isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_CONNECTING_IP'])) : '';
@@ -2639,9 +2670,20 @@ wp advaipbl spamhaus-update
                                     // Caso 1: Detectado y De Confianza (o Transparente)
                                     $status_color = 'green';
                                     
-                                    // Si es transparente, forzamos el nombre correcto
                                     if ( $is_transparent_proxy ) {
                                         $cdn_service = __( 'Cloudflare (Transparent / Server-Module)', 'advanced-ip-blocker' );
+                                    } elseif ( $cf_detected_raw ) {
+                                        $cdn_service = __( 'Cloudflare', 'advanced-ip-blocker' );
+                                    } elseif ( $sucuri_detected ) {
+                                        $cdn_service = __( 'Sucuri WAF', 'advanced-ip-blocker' );
+                                    } elseif ( $cloudfront_detected ) {
+                                        $cdn_service = __( 'AWS CloudFront', 'advanced-ip-blocker' );
+                                    } elseif ( $quic_detected ) {
+                                        $cdn_service = __( 'Quic.cloud (LiteSpeed)', 'advanced-ip-blocker' );
+                                    } elseif ( $fastly_detected ) {
+                                        $cdn_service = __( 'Fastly', 'advanced-ip-blocker' );
+                                    } elseif ( $ezoic_detected ) {
+                                        $cdn_service = __( 'Ezoic', 'advanced-ip-blocker' );
                                     } else {
                                         $cdn_service = $ip_data['cdn_info']['provider'] ?? __( 'Generic Proxy / Load Balancer', 'advanced-ip-blocker' );
                                     }
@@ -2737,11 +2779,42 @@ wp advaipbl spamhaus-update
                 <td><?php echo esc_html( PHP_OS ); ?></td>
             </tr>
             <tr>
+                <th scope="row"><?php esc_html_e( 'IPv6 Support', 'advanced-ip-blocker' ); ?></th>
+                <td>
+                    <?php
+                    $ipv6_supported = defined('AF_INET6');
+                    $is_using_ipv6 = strpos($client_ip, ':') !== false || strpos($server_ip, ':') !== false;
+                    
+                    if ($ipv6_supported && $is_using_ipv6) {
+                        echo '<span style="color: green; font-weight: bold;">' . esc_html__( 'Enabled & Active', 'advanced-ip-blocker' ) . '</span>';
+                    } elseif ($ipv6_supported) {
+                        echo '<span style="color: #f59e0b; font-weight: bold;">' . esc_html__( 'Enabled (Not currently in use by you/server)', 'advanced-ip-blocker' ) . '</span>';
+                    } else {
+                        echo '<span style="color: #d63638; font-weight: bold;">' . esc_html__( 'Not Supported by PHP', 'advanced-ip-blocker' ) . '</span>';
+                    }
+                    ?>
+                </td>
+            </tr>
+            <tr>
                 <th scope="row"><?php esc_html_e( 'Outbound Connection Test', 'advanced-ip-blocker' ); ?></th>
                 <td>
                     <button id="advaipbl-test-connection-btn" class="button"><?php esc_html_e( 'Run Test', 'advanced-ip-blocker' ); ?></button>
                     <span id="advaipbl-test-connection-result" style="margin-left: 10px;"></span>
                     <p class="description"><?php esc_html_e( 'Tests if your server can make external HTTPS calls, required for some geolocation APIs and the server IP detection.', 'advanced-ip-blocker' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php esc_html_e( 'Core File Permissions', 'advanced-ip-blocker' ); ?></th>
+                <td>
+                    <?php
+                    $htaccess_file = get_home_path() . '.htaccess';
+                    $wpconfig_file = ABSPATH . 'wp-config.php';
+                    
+                    $htaccess_status = file_exists($htaccess_file) ? (wp_is_writable($htaccess_file) ? '<span style="color: green;">' . esc_html__('Writable', 'advanced-ip-blocker') . '</span>' : '<span style="color: #d63638;">' . esc_html__('Read-Only', 'advanced-ip-blocker') . '</span>') : esc_html__('Not Found', 'advanced-ip-blocker');
+                    $wpconfig_status = file_exists($wpconfig_file) ? (wp_is_writable($wpconfig_file) ? '<span style="color: green;">' . esc_html__('Writable', 'advanced-ip-blocker') . '</span>' : '<span style="color: #d63638;">' . esc_html__('Read-Only', 'advanced-ip-blocker') . '</span>') : esc_html__('Not Found', 'advanced-ip-blocker');
+                    ?>
+                    <strong>.htaccess:</strong> <?php echo wp_kses_post($htaccess_status); ?><br>
+                    <strong>wp-config.php:</strong> <?php echo wp_kses_post($wpconfig_status); ?>
                 </td>
             </tr>
         </tbody>
@@ -2755,6 +2828,32 @@ wp advaipbl spamhaus-update
                         <tr>
                             <th scope="row"><?php esc_html_e( 'WordPress Version', 'advanced-ip-blocker' ); ?></th>
                             <td><?php echo esc_html( get_bloginfo( 'version' ) ); ?></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e( 'Time Synchronization', 'advanced-ip-blocker' ); ?></th>
+                            <td>
+                                <strong><?php esc_html_e('Server Time (UTC):', 'advanced-ip-blocker'); ?></strong> <code><?php echo esc_html(gmdate('Y-m-d H:i:s')); ?></code><br>
+                                <strong><?php esc_html_e('WordPress Time (Local):', 'advanced-ip-blocker'); ?></strong> <code><?php echo esc_html(current_time('mysql')); ?></code>
+                                <?php
+                                $offset_hours = get_option('gmt_offset');
+                                ?>
+                                <p class="description">
+                                    <?php 
+                                    /* translators: %s: Timezone offset in hours */
+                                    printf(esc_html__('Timezone offset: %s hours.', 'advanced-ip-blocker'), esc_html(sprintf('%+d', $offset_hours))); 
+                                    ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e( 'WP-Cron Status', 'advanced-ip-blocker' ); ?></th>
+                            <td>
+                                <?php if ( defined('DISABLE_WP_CRON') && DISABLE_WP_CRON ) : ?>
+                                    <span style="color: #f59e0b; font-weight: bold;"><?php esc_html_e( 'Disabled (Using external/system cron)', 'advanced-ip-blocker' ); ?></span>
+                                <?php else : ?>
+                                    <span style="color: green; font-weight: bold;"><?php esc_html_e( 'Enabled (Default)', 'advanced-ip-blocker' ); ?></span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row"><?php esc_html_e( 'Debug Mode (WP_DEBUG)', 'advanced-ip-blocker' ); ?></th>

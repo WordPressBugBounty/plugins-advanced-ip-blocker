@@ -956,6 +956,11 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
         if ( $is_doing_cron || $is_cron_url ) {
             $ip = $this->get_client_ip();
             
+            $last_cron_ip = get_option('advaipbl_last_cron_ip');
+            if ( $last_cron_ip !== $ip ) {
+                update_option('advaipbl_last_cron_ip', $ip, false);
+            }
+            
             $transient_key = 'advaipbl_cron_log_lock_' . md5($ip);
             if ( false !== get_transient($transient_key) ) {
                 return;

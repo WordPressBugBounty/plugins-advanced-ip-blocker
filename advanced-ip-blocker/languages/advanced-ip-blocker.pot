@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.10.8\n"
+"Project-Id-Version: Advanced IP Blocker 8.10.9\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7675,4 +7675,104 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:446
 msgid "Downloads official JSON IP lists from AI providers to verify their crawlers reliably, bypassing rDNS limitations."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Last WP-Cron IP"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "(Local Server)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "(External Service)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WP-Cron Service IP (added from Status page)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not recorded yet. Wait for the next cron execution."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Sucuri WAF"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "AWS CloudFront"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Quic.cloud (LiteSpeed)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Fastly"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Ezoic"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "IPv6 Support"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enabled & Active"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enabled (Not currently in use by you/server)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not Supported by PHP"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Core File Permissions"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Writable"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Read-Only"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not Found"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Time Synchronization"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Server Time (UTC):"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WordPress Time (Local):"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Timezone offset: %s hours."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WP-Cron Status"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Disabled (Using external/system cron)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enabled (Default)"
 msgstr ""
