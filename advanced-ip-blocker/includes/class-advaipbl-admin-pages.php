@@ -2568,7 +2568,7 @@ wp advaipbl spamhaus-update
                         <tr>
                             <th scope="row"><?php esc_html_e( 'Your Detected IP Address', 'advanced-ip-blocker' ); ?></th>
                             <td>
-                                <code><?php echo esc_html( $client_ip ); ?></code>
+                                <code><?php echo esc_html( $client_ip ); ?></code> <button type="button" class="button button-small" onclick="navigator.clipboard.writeText('<?php echo esc_js( $client_ip ); ?>'); this.innerText='<?php esc_attr_e( 'Copied!', 'advanced-ip-blocker' ); ?>'; setTimeout(() => this.innerText='<?php esc_attr_e( 'Copy', 'advanced-ip-blocker' ); ?>', 2000);" style="margin-left:5px; vertical-align: middle; padding: 0 5px; min-height: 24px; line-height: 22px; font-size: 11px;" title="<?php esc_attr_e( 'Copy IP', 'advanced-ip-blocker' ); ?>"><?php esc_html_e( 'Copy', 'advanced-ip-blocker' ); ?></button>
                                 <?php
                                 // Comprobamos si la IP del admin está en la whitelist.
                                 if ( $this->plugin->is_whitelisted( $client_ip ) ) {
@@ -2592,7 +2592,7 @@ wp advaipbl spamhaus-update
                             <td>
                                 <?php
                                 if ( $server_ip ) {
-                                    echo '<code>' . esc_html( $server_ip ) . '</code>';
+                                    echo '<code>' . esc_html( $server_ip ) . '</code> <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(\'' . esc_js( $server_ip ) . '\'); this.innerText=\'' . esc_attr__( 'Copied!', 'advanced-ip-blocker' ) . '\'; setTimeout(() => this.innerText=\'' . esc_attr__( 'Copy', 'advanced-ip-blocker' ) . '\', 2000);" style="margin-left:5px; vertical-align: middle; padding: 0 5px; min-height: 24px; line-height: 22px; font-size: 11px;" title="' . esc_attr__( 'Copy IP', 'advanced-ip-blocker' ) . '">' . esc_html__( 'Copy', 'advanced-ip-blocker' ) . '</button>';
                                     // Comprobamos si la IP del servidor está en la whitelist.
                                     if ( $this->plugin->is_whitelisted( $server_ip ) ) {
                                         /* translators: A status icon indicating success. */
@@ -2614,7 +2614,7 @@ wp advaipbl spamhaus-update
                                 <?php
                                 $last_cron_ip = get_option('advaipbl_last_cron_ip');
                                 if ( $last_cron_ip ) {
-                                    echo '<code>' . esc_html( $last_cron_ip ) . '</code>';
+                                    echo '<code>' . esc_html( $last_cron_ip ) . '</code> <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(\'' . esc_js( $last_cron_ip ) . '\'); this.innerText=\'' . esc_attr__( 'Copied!', 'advanced-ip-blocker' ) . '\'; setTimeout(() => this.innerText=\'' . esc_attr__( 'Copy', 'advanced-ip-blocker' ) . '\', 2000);" style="margin-left:5px; vertical-align: middle; padding: 0 5px; min-height: 24px; line-height: 22px; font-size: 11px;" title="' . esc_attr__( 'Copy IP', 'advanced-ip-blocker' ) . '">' . esc_html__( 'Copy', 'advanced-ip-blocker' ) . '</button>';
                                     if ( $last_cron_ip === $server_ip || $last_cron_ip === '127.0.0.1' || $last_cron_ip === '::1' ) {
                                         echo '<span class="description" style="margin-left:10px;">' . esc_html__( '(Local Server)', 'advanced-ip-blocker' ) . '</span>';
                                     } else {
@@ -2782,8 +2782,9 @@ wp advaipbl spamhaus-update
                 <th scope="row"><?php esc_html_e( 'IPv6 Support', 'advanced-ip-blocker' ); ?></th>
                 <td>
                     <?php
-                    $ipv6_supported = defined('AF_INET6');
-                    $is_using_ipv6 = strpos($client_ip, ':') !== false || strpos($server_ip, ':') !== false;
+                    $ipv6_supported = defined('AF_INET6') || (function_exists('inet_pton') && @inet_pton('::1') !== false);
+                    $last_cron_ip_check = get_option('advaipbl_last_cron_ip');
+                    $is_using_ipv6 = strpos($client_ip, ':') !== false || strpos((string)$server_ip, ':') !== false || ($last_cron_ip_check && strpos($last_cron_ip_check, ':') !== false);
                     
                     if ($ipv6_supported && $is_using_ipv6) {
                         echo '<span style="color: green; font-weight: bold;">' . esc_html__( 'Enabled & Active', 'advanced-ip-blocker' ) . '</span>';

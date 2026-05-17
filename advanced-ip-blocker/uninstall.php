@@ -24,7 +24,7 @@ function advaipbl_uninstall_recursive_rmdir( $dir ) {
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 $settings_option = get_option( 'advaipbl_settings' );
 
-if ( ! empty( $settings_option['delete_data_on_uninstall'] ) && '1' === $settings_option['delete_data_on_uninstall'] ) {
+if ( ! empty( $settings_option['delete_data_on_uninstall'] ) ) {
 
     // --- 0. UNREGISTER FROM CENTRAL SERVER ---
     // Must be done before options are deleted from the database
@@ -252,7 +252,9 @@ $cron_hooks = [
     'advaipbl_update_community_list_event',
     'advaipbl_community_report_event_v2',
     'advaipbl_cloudflare_sync_event',
-    'advaipbl_clear_expired_blocks_event'
+    'advaipbl_clear_expired_blocks_event',
+    'advaipbl_update_ai_bot_lists_event',
+    'advaipbl_send_signature_summary_email'
 ];
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 foreach ($cron_hooks as $hook) {

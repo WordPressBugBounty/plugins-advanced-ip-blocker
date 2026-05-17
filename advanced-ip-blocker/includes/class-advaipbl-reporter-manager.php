@@ -41,6 +41,23 @@ class ADVAIPBL_Reporter_Manager {
             return;
         }
 
+        // Zero-Trust: Filtrado rápido de IPs y ASNs de infraestructura crítica (Cloudflare, Google, etc)
+        $critical_ips = ['1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4', '9.9.9.9', '149.112.112.112', '208.67.222.222', '208.67.220.220'];
+        if (in_array($ip, $critical_ips, true)) {
+            return;
+        }
+
+        if (isset($this->plugin->geoip_manager)) {
+            $geo_info = $this->plugin->geoip_manager->lookup_ip($ip);
+            if ($geo_info && !empty($geo_info['as'])) {
+                $asn_code = strtoupper(strtok($geo_info['as'], ' '));
+                $critical_asns = ['AS13335', 'AS209242', 'AS15169', 'AS396982', 'AS30036', 'AS16509', 'AS394562', 'AS17012'];
+                if (in_array($asn_code, $critical_asns, true)) {
+                    return;
+                }
+            }
+        }
+
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_pending_reports';
 

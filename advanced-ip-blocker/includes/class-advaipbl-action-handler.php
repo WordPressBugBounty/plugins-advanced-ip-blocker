@@ -484,8 +484,10 @@ public function handle_wizard_step_3() {
             // Refrescamos las opciones desde la BD por si register_site las ha modificado directamente.
             $options = get_option( ADVAIPBL_Main::OPTION_SETTINGS, [] );
             
-            // Descargar la lista de IPs instantáneamente (100k+ list)
-            $this->plugin->community_manager->update_list();
+            // Descargar la lista de IPs en segundo plano para evitar timeouts en el Wizard
+            if (!wp_next_scheduled('advaipbl_update_community_list_event')) {
+                 wp_schedule_single_event(time() + 10, 'advaipbl_update_community_list_event');
+            }
         }
     } else {
         $options['enable_community_network'] = '0';
