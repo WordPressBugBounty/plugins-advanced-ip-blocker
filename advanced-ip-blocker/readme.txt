@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 6.7
 Tested up to: 6.9
-Stable tag: 8.10.10
+Stable tag: 8.10.11
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -232,6 +232,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.11 =
+* Security: Prevented user enumeration via the Lost Password form by forcing a successful message simulation for non-existent users.
+* Fix: Resolved a fatal error (`Call to undefined method stdClass::lookup_ip()`) that occurred when reporting threats on sites not using the local MaxMind database.
+
 = 8.10.10 =
 * Security: Implemented a "Zero-Trust" infrastructure allowlist for the AIB Community Network, preventing critical global IPs (Cloudflare, Google, AWS) from being erroneously reported or blocked, whilst dramatically reducing central server load.
 * Fix: Resolved a false positive in the Status & Debug tab where IPv6 support was incorrectly reported as disabled if the PHP sockets extension was missing.
@@ -279,6 +283,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.11 =
+**SECURITY & HOTFIX:** Patches a potential user enumeration vulnerability on the Lost Password form, and fixes a fatal error (`stdClass::lookup_ip()`) triggered on some server configurations without the MaxMind DB installed.
 
 = 8.10.10 =
 **SECURITY & UX UPDATE:** Introduces a "Zero-Trust" infrastructure allowlist for the global threat network to prevent accidental blocking of critical cloud infrastructure (Cloudflare, AWS, etc.). Resolves a false positive in the Status dashboard regarding IPv6 support when the PHP sockets extension is disabled, and accurately reports IPv6 status for WP-Cron triggers. It also introduces quick "Copy to Clipboard" buttons for detected IP addresses to improve administrative workflow.

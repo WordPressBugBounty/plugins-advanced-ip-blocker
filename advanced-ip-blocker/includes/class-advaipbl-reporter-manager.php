@@ -47,7 +47,7 @@ class ADVAIPBL_Reporter_Manager {
             return;
         }
 
-        if (isset($this->plugin->geoip_manager)) {
+        if (isset($this->plugin->geoip_manager) && method_exists($this->plugin->geoip_manager, 'lookup_ip')) {
             $geo_info = $this->plugin->geoip_manager->lookup_ip($ip);
             if ($geo_info && !empty($geo_info['as'])) {
                 $asn_code = strtoupper(strtok($geo_info['as'], ' '));

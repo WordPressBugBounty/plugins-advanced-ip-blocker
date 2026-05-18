@@ -265,6 +265,7 @@ private function __construct() {
         add_filter('rest_endpoints', [ $this, 'disable_rest_api_user_endpoints' ] );
 		add_filter('oembed_response_data', [$this, 'prevent_user_enumeration_via_oembed'], 99, 4);
 		add_filter('authenticate', [$this, 'prevent_login_hinting'], 99, 1);
+        add_action('lostpassword_post', [$this, 'prevent_lostpassword_hinting']);
         add_action('rest_api_init', [$this, 'register_live_feed_api_endpoint']);
         add_action('rest_api_init', function() {
             register_rest_route('advaipbl/v1', '/live-feed-nonce', [
@@ -6663,9 +6664,27 @@ public function handle_import_settings() {
                 __( '<strong>ERROR</strong>: Your login details are incorrect. Please try again.', 'advanced-ip-blocker' )
             );
         }
-
-        // Si no es un error de los que queremos ocultar (ej. el de 2FA), lo dejamos pasar.
         return $user;
+    }
+
+    /**
+     * Previene el "login hinting" en el formulario de contraseña perdida simulando un envío exitoso
+     * si el usuario introduce un correo que no existe.
+     *
+     * @param WP_Error $errors El objeto de error.
+     */
+    public function prevent_lostpassword_hinting( $errors ) {
+        if ( empty( $this->options['prevent_login_hinting'] ) || '1' !== $this->options['prevent_login_hinting'] ) {
+            return;
+        }
+
+        if ( is_wp_error( $errors ) ) {
+            if ( $errors->get_error_message( 'invalid_email' ) || $errors->get_error_message( 'invalidcombo' ) ) {
+                // Forzamos una redirección simulando éxito para evitar la enumeración.
+                wp_safe_redirect( wp_login_url() . '?checkemail=confirm' );
+                exit;
+            }
+        }
     }
 		
 	    /**
