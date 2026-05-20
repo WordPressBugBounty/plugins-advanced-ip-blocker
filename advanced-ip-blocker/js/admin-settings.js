@@ -377,36 +377,7 @@ jQuery(document).ready(function ($) {
         });
     }
 
-    /**
-    * Maneja los clics en el aviso de consentimiento de telemetría.
-    */
-    function initTelemetryNotice() {
-        $(document).on('click', '#advaipbl-allow-telemetry, #advaipbl-dismiss-telemetry-notice', function (e) {
-            e.preventDefault();
-            const $button = $(this);
-            const $notice = $button.closest('.advaipbl-telemetry-notice');
-            const action = $button.attr('id') === 'advaipbl-allow-telemetry' ? 'allow' : 'dismiss';
 
-            $notice.css('opacity', '0.5');
-
-            $.post(ajaxurl, {
-                action: 'advaipbl_handle_telemetry_notice',
-                nonce: adminData.nonces.telemetry,
-                telemetry_action: action
-            })
-                .done(function (response) {
-                    if (response.success) {
-                        $notice.fadeOut('slow', function () { $(this).remove(); });
-                        if (action === 'allow') {
-                            const $checkbox = $('input[name="advaipbl_settings[allow_telemetry]"]');
-                            if ($checkbox.length) {
-                                $checkbox.prop('checked', true);
-                            }
-                        }
-                    }
-                });
-        });
-    }
 
     /**
      * Maneja la lógica de la sección 2FA en la página de perfil de usuario.
@@ -873,8 +844,8 @@ jQuery(document).ready(function ($) {
     $('#advaipbl_recaptcha_version').on('change', toggleRecaptchaV3Options);
     initConnectionTest();
 
+
     initExportLogic();
-    initTelemetryNotice();
     initTwoFactorAuthProfile();
     initApiVerification();
     initFloatingSaveBar();

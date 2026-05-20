@@ -1025,7 +1025,7 @@ public function display_general_settings_tab() {
                                     <span class="dashicons dashicons-cloud-saved" style="color: #2271b1; vertical-align: middle;"></span>
                                     <strong><?php esc_html_e('Protection Active:', 'advanced-ip-blocker'); ?></strong> 
                                     <?php 
-                                    if ( $list_count > 0 ) {
+                                    if ( $list_count > 0 && $last_update > 0 ) {
                                         printf(
                                             wp_kses(
                                                 /* translators: 1: Number of IPs, 2: Time since last update. */
@@ -1034,6 +1034,14 @@ public function display_general_settings_tab() {
                                             ),
                                             '<strong>' . esc_html( number_format_i18n( $list_count ) ) . '</strong>',
                                             esc_html( human_time_diff( $last_update ) )
+                                        );
+                                    } elseif ( $list_count > 0 ) {
+                                        printf(
+                                            wp_kses(
+                                                __( 'Blocking %1$s known malicious IPs. Waiting for sync...', 'advanced-ip-blocker' ),
+                                                [ 'strong' => [] ]
+                                            ),
+                                            '<strong>' . esc_html( number_format_i18n( $list_count ) ) . '</strong>'
                                         );
                                     } else {
                                         esc_html_e('Waiting for initial download...', 'advanced-ip-blocker');

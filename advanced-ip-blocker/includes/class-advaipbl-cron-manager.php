@@ -135,9 +135,13 @@ class ADVAIPBL_Cron_Manager {
             wp_clear_scheduled_hook('advaipbl_update_geoip_db_event');
         }
         
-        if (!wp_next_scheduled('advaipbl_update_geoip_db_event')) {
-            // Se programa la primera descarga más rápido (1 a 5 minutos) en lugar de 12 horas.
-            wp_schedule_event(time() + wp_rand(60, 300), 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
+        if ( !empty($this->plugin->options['maxmind_license_key']) ) {
+            if (!wp_next_scheduled('advaipbl_update_geoip_db_event')) {
+                // Se programa la primera descarga más rápido (1 a 5 minutos) en lugar de 12 horas.
+                wp_schedule_event(time() + wp_rand(60, 300), 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
+            }
+        } else {
+            wp_clear_scheduled_hook('advaipbl_update_geoip_db_event');
         }
 
         // 7. Clear Expired Blocks (Hourly)

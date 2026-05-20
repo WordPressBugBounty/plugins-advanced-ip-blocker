@@ -4,8 +4,8 @@ Author URI: https://advaipbl.com/
 Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 6.7
-Tested up to: 6.9
-Stable tag: 8.10.11
+Tested up to: 7.0
+Stable tag: 8.10.12
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -36,7 +36,6 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 *   **HTTP Security Headers.** Easily configure essential security headers like HSTS, X-Frame-Options, and Permissions-Policy to harden your site against clickjacking, sniffing, and other browser-based attacks. Includes a "Report-Only" mode for CSP.
 *   **Site Health & Vulnerability Scanner. Audit your WordPress environment instantly. Detects outdated plugins, insecure PHP versions, and checks your installed plugins against a database of 30,000+ known vulnerabilities.
 *   **PERFORMANCE BOOST: High-Speed Community Database. Migrated the "Community Defense Network" blocklist to a dedicated, indexed database table. This allows checking thousands of malicious IPs in microseconds with zero impact on site memory usage.
-*   **WordPress 6.9 Ready. Fully tested and compatible with the latest WordPress core update.
 *   **Community Defense Network. Join forces with other WordPress admins. The plugin now shares anonymous attack data to build a global, real-time blocklist of verified threats. Protect your site with community-powered intelligence.
 *   **Auto-Cleaning Logic. Smart expiration handling ensures your blocklists stay fresh and performant, automatically removing stale IPs from both the database and external firewalls (Cloudflare/.htaccess).
 *   **Cloud Edge Defense (Cloudflare). Connect your site directly to Cloudflare's global network. Automatically sync your blocklists to the cloud to stop attackers before they reach your server. Zero server load protection.
@@ -232,6 +231,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.12 =
+* Compatibility: Fully tested and certified for WordPress 7.0.
+* Security/Enhancement: Enhanced the "Prevent Login Hinting" module to explicitly intercept invalid usernames during password recovery, fully neutralizing sophisticated enumeration bots that attempt to bypass email checks.
+* Enhancement: Removed the restriction preventing private/reserved IPs (like `::1` or `127.0.0.1`) from being added to the Login Whitelist, allowing seamless local development and intranet testing.
+* Fix: Resolved a display bug where the Community Defense Network incorrectly showed "Updated 56 years ago" on fresh installations before the first synchronization.
+* Fix: Prevented the MaxMind GeoIP update cron from being scheduled unconditionally if a license key is not configured, saving server resources.
+* Fix: Ensured the Telemetry Notice "Allow & Continue" button works seamlessly across all plugin tabs, not just the main dashboard.
+
 = 8.10.11 =
 * Security: Prevented user enumeration via the Lost Password form by forcing a successful message simulation for non-existent users.
 * Fix: Resolved a fatal error (`Call to undefined method stdClass::lookup_ip()`) that occurred when reporting threats on sites not using the local MaxMind database.
@@ -284,8 +291,5 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.10.11 =
-**SECURITY & HOTFIX:** Patches a potential user enumeration vulnerability on the Lost Password form, and fixes a fatal error (`stdClass::lookup_ip()`) triggered on some server configurations without the MaxMind DB installed.
-
-= 8.10.10 =
-**SECURITY & UX UPDATE:** Introduces a "Zero-Trust" infrastructure allowlist for the global threat network to prevent accidental blocking of critical cloud infrastructure (Cloudflare, AWS, etc.). Resolves a false positive in the Status dashboard regarding IPv6 support when the PHP sockets extension is disabled, and accurately reports IPv6 status for WP-Cron triggers. It also introduces quick "Copy to Clipboard" buttons for detected IP addresses to improve administrative workflow.
+= 8.10.12 =
+**SECURITY & COMPATIBILITY UPDATE:** Certified for WordPress 7.0! Fully neutralizes advanced username enumeration bots on the Lost Password form, optimizes background cron jobs to save server resources, and enables seamless localhost/intranet development by allowing private IPv4/IPv6 addresses in the strict Login Whitelist.

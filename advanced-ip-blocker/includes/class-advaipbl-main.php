@@ -2469,10 +2469,11 @@ return $status_header;
         }
     } 
 
-    public function is_whitelisted($ip) {		
-    if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-        return false; // No es una IP pública válida, no puede estar en la whitelist.
-    }
+    public function is_whitelisted($ip) {
+        // Quitamos la restricción de NO_PRIV_RANGE para permitir whitelisting en localhost (::1, 127.0.0.1) o intranets.
+        if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+            return false;
+        }
 
     $whitelist = get_option( self::OPTION_WHITELIST, [] );
     if ( empty( $whitelist ) ) {
@@ -4796,9 +4797,14 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         wp_schedule_event( time(), 'daily', 'advaipbl_purge_old_logs_event' );
     }
 	
-	if ( ! wp_next_scheduled( 'advaipbl_update_geoip_db_event' ) ) {
-         wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'advaipbl_update_geoip_db_event' );
-     }
+	$options = get_option( self::OPTION_SETTINGS, [] );
+	if ( ! empty( $options['maxmind_license_key'] ) ) {
+        if ( ! wp_next_scheduled( 'advaipbl_update_geoip_db_event' ) ) {
+             wp_schedule_event( time() + HOUR_IN_SECONDS, 'advaipbl_3_days', 'advaipbl_update_geoip_db_event' );
+        }
+    } else {
+        wp_clear_scheduled_hook( 'advaipbl_update_geoip_db_event' );
+    }
 	if ( ! wp_next_scheduled( 'advaipbl_cleanup_expired_cache_event' ) ) {
          wp_schedule_event( time(), 'daily', 'advaipbl_cleanup_expired_cache_event' );
      } 
@@ -6679,10 +6685,28 @@ public function handle_import_settings() {
         }
 
         if ( is_wp_error( $errors ) ) {
-            if ( $errors->get_error_message( 'invalid_email' ) || $errors->get_error_message( 'invalidcombo' ) ) {
-                // Forzamos una redirección simulando éxito para evitar la enumeración.
+            // Permitimos el error de campo vacío
+            if ( $errors->get_error_message( 'empty_username' ) ) {
+                return;
+            }
+
+            // Si es un correo inválido (WP lo añade antes del hook)
+            if ( $errors->get_error_message( 'invalid_email' ) ) {
                 wp_safe_redirect( wp_login_url() . '?checkemail=confirm' );
                 exit;
+            }
+
+            // WP añade el error de usuario inválido ('invalidcombo') DESPUÉS de este hook.
+            // Por tanto, debemos verificar manualmente si el usuario introducido existe.
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            if ( ! empty( $_POST['user_login'] ) ) {
+                $login = trim( wp_unslash( $_POST['user_login'] ) );
+                $user_data = strpos( $login, '@' ) ? get_user_by( 'email', $login ) : get_user_by( 'login', $login );
+                
+                if ( ! $user_data ) {
+                    wp_safe_redirect( wp_login_url() . '?checkemail=confirm' );
+                    exit;
+                }
             }
         }
     }
