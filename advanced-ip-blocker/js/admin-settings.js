@@ -853,6 +853,22 @@ jQuery(document).ready(function ($) {
     initCountrySelectors();
     initRawCountryEditor();
     initWhitelistAjaxButton();
+    initRevokeVipButton();
+
+    function initRevokeVipButton() {
+        $('#advaipbl-revoke-vip-passes-btn').on('click', function(e) {
+            e.preventDefault();
+            const href = $(this).attr('href');
+            showConfirmModal({
+                title: adminData.text.revoke_vip_title || 'Revoke All VIP Passes',
+                message: adminData.text.revoke_vip_confirm || 'Are you sure you want to revoke all VIP passes? Every user will be forced to solve the JS Challenge again.',
+                confirmText: adminData.text.revoke_vip_btn || 'Yes, Revoke All',
+                onConfirm: function() {
+                    window.location.href = href;
+                }
+            });
+        });
+    }
 
     function initWhitelistAjaxButton() {
         $('body').on('click', '.advaipbl-add-whitelist-ajax', function (e) {

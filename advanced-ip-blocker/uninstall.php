@@ -137,6 +137,8 @@ if ( ! empty( $settings_option['delete_data_on_uninstall'] ) ) {
         'advaipbl_spamhaus_asn_list',
         'advaipbl_spamhaus_last_update',
         'advaipbl_spamhaus_drop_list', // Added missed option
+        'advaipbl_ai_bot_ips',
+        'advaipbl_last_cron_ip',
         
         // Community Network
         'advaipbl_community_blocklist',
@@ -183,6 +185,7 @@ if ( ! empty( $settings_option['delete_data_on_uninstall'] ) ) {
         
         // Internal Security
         'advaipbl_fim_baseline_hashes',
+        'advaipbl_vip_salt_modifier',
         
         // Security Headers
         'advaipbl_security_headers', // Added from SQL dump

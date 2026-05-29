@@ -28,7 +28,7 @@ class ADVAIPBL_Bot_Verifier {
             // --- Motores de Búsqueda Principales (Alta Confianza) ---
             'googlebot'         => ['.googlebot.com', '.google.com'],
             'google.com/bot'    => '.google.com',
-            'adsbot-google'     => '.googlebot.com',
+            'adsbot-google'     => ['.googlebot.com', '.google.com'],
             'bingbot'           => '.search.msn.com',
             'adidxbot'          => '.search.msn.com',
             // Yandex usa .ru, .com y .net
@@ -50,6 +50,7 @@ class ADVAIPBL_Bot_Verifier {
             'chatgpt-user'        => '.outbound-customer.openai.com',
             'oai/openai'          => '.outbound-customer.openai.com',
             'gptbot'              => '.outbound-customer.openai.com',
+            'searchbot'           => '.outbound-customer.openai.com',
             'amazonbot'           => ['.amazonbot.amazon.com', '.crawl.amazonbot.amazon.com'],
 
             // --- Otros Bots de Confianza ---
@@ -75,7 +76,7 @@ class ADVAIPBL_Bot_Verifier {
         }
 
         $is_ai_bot = false;
-        if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'applebot'])) {
+        if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'searchbot', 'applebot'])) {
             $is_ai_bot = true;
         }
 
@@ -149,6 +150,7 @@ class ADVAIPBL_Bot_Verifier {
         $known_bots = [
             'googlebot'     => '.googlebot.com',
             'google.com/bot'=> '.google.com',
+            'adsbot-google' => '.google.com',
             'bingbot'       => '.search.msn.com',
             'yandexbot'     => '.yandex.com',
             'duckduckbot'   => '.duckduckgo.com',
@@ -158,6 +160,7 @@ class ADVAIPBL_Bot_Verifier {
             'chatgpt-user'  => '.outbound-customer.openai.com',
             'oai/openai'    => '.outbound-customer.openai.com',
             'gptbot'        => '.outbound-customer.openai.com',
+            'searchbot'     => '.outbound-customer.openai.com',
             'amazonbot'     => '.amazonbot.amazon.com',
         ];
 
@@ -214,6 +217,8 @@ class ADVAIPBL_Bot_Verifier {
         $bot_key = '';
         if ($ua_keyword === 'gptbot' || $ua_keyword === 'oai/openai') {
             $bot_key = 'gptbot';
+        } elseif ($ua_keyword === 'searchbot') {
+            $bot_key = 'searchbot';
         } elseif ($ua_keyword === 'chatgpt-user') {
             $bot_key = 'chatgpt-user';
         } elseif ($ua_keyword === 'applebot') {

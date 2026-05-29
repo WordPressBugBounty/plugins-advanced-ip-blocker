@@ -222,7 +222,7 @@ public function evaluate() {
         return false;
     }
 	
-	if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+	if ($this->plugin->js_challenge_manager->is_vip_pass_valid()) {
         return false;
     }
 

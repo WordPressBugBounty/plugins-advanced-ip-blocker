@@ -1018,7 +1018,7 @@ public function display_general_settings_tab() {
                             </table>
                         </div>
                         <div id="advaipbl-community-network-card" class="advaipbl-card">
-                            <h3><?php esc_html_e('AIB Community Defense Network (Beta)', 'advanced-ip-blocker'); ?></h3>
+                            <h3><?php esc_html_e('AIB Community Defense Network', 'advanced-ip-blocker'); ?></h3>
                             
                             <?php if ( ! empty( $this->plugin->options['enable_community_blocking'] ) ) : ?>
                                 <div class="advaipbl-status-indicator" style="margin-bottom: 15px; padding: 10px; background: #f0f6fc; border: 1px solid #cce5ff; border-radius: 4px;">
@@ -1038,6 +1038,7 @@ public function display_general_settings_tab() {
                                     } elseif ( $list_count > 0 ) {
                                         printf(
                                             wp_kses(
+											    /* translators: Number of IPs */
                                                 __( 'Blocking %1$s known malicious IPs. Waiting for sync...', 'advanced-ip-blocker' ),
                                                 [ 'strong' => [] ]
                                             ),
@@ -1105,7 +1106,7 @@ public function display_general_settings_tab() {
                             <h3 style="margin-top: 20px;"><?php esc_html_e('Advanced Login Protection', 'advanced-ip-blocker'); ?></h3>
                             <table class="form-table"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_advanced_login_section'); ?></table>
 
-                            <h3 id="sub-section-login-lockdown" style="margin-top: 20px;"><?php esc_html_e('Login Page Lockdown Mode (Beta)', 'advanced-ip-blocker'); ?></h3>
+                            <h3 id="sub-section-login-lockdown" style="margin-top: 20px;"><?php esc_html_e('Login Page Lockdown Mode', 'advanced-ip-blocker'); ?></h3>
                             <table class="form-table"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_login_lockdown_section'); ?></table>
 
                             <h3 style="margin-top: 20px;"><?php esc_html_e('Advanced XML-RPC Protection', 'advanced-ip-blocker'); ?></h3>
@@ -1123,7 +1124,7 @@ public function display_general_settings_tab() {
 
                     <div id="section-signature_engine" class="advaipbl-settings-section">
                         <div class="advaipbl-card">
-                            <h2><?php esc_html_e('Attack Signature Engine (Beta)', 'advanced-ip-blocker'); ?></h2>
+                            <h2><?php esc_html_e('Attack Signature Engine', 'advanced-ip-blocker'); ?></h2>
                             <p><?php esc_html_e('This is an advanced defense system to detect and stop distributed attacks (botnets) by analyzing request patterns rather than individual IPs.', 'advanced-ip-blocker'); ?></p>
                             <table class="form-table"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_signature_engine_section'); ?></table>
                         </div>
@@ -1473,7 +1474,7 @@ public function display_general_settings_tab() {
                     <?php foreach ($definitions as $type => $def) : ?>
                         <?php
                         // Solo mostramos en el filtro los tipos que realmente generan un bloqueo persistente en la tabla.
-                        $is_persistent_block = ($type === 'manual' || $type === 'bulk_import' || $type === 'advanced_rule' || !empty($def['duration_key']));
+                        $is_persistent_block = ($type === 'manual' || $type === 'advanced_rule' || !empty($def['duration_key']));
                         if ( ! $is_persistent_block ) continue;
                         ?>
                         <option value="<?php echo esc_attr($type); ?>" <?php selected($filter_type, $type); ?>><?php echo esc_html($def['label']); ?></option>

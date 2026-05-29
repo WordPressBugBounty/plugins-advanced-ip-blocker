@@ -39,7 +39,10 @@ class ADVAIPBL_Settings_Manager {
     add_settings_field('advaipbl_custom_block_message', __('Block Message', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'custom_block_message', 'label' => __('Message for blocked users. Leave blank for default messages.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_excluded_error_urls', __('Global URL Exclusions', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'excluded_error_urls', 'label' => __('Add one URL path or fragment per line. Requests containing these strings will bypass 404/403 error logging and all JavaScript challenges (Signature, Geo, and Endpoint).', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_show_admin_bar_menu', __( 'Admin Bar Menu', 'advanced-ip-blocker' ), [$this, 'switch_field_callback'], $page, 'advaipbl_general_settings_section', ['name'  => 'show_admin_bar_menu', 'label' => __( 'Show security menu in the WordPress admin bar', 'advanced-ip-blocker' )]);
+    add_settings_field('advaipbl_global_challenge_cookie_duration', __( 'Global Challenge Duration (Hours)', 'advanced-ip-blocker' ), [$this, 'text_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'global_challenge_cookie_duration', 'default' => 4, 'description' => __( 'How long a visitor can access the site after passing a JS challenge (e.g. from Lockdowns, Login Page, XML-RPC or Advanced Rules). Set to 0 for the browser session only.', 'advanced-ip-blocker' )]);
+    add_settings_field('advaipbl_revoke_vip_passes_button', __('Global VIP Revocation', 'advanced-ip-blocker'), [$this, 'revoke_vip_passes_button_callback'], $page, 'advaipbl_general_settings_section');
     
+
 
 
 	add_settings_section('advaipbl_general_settings_section', null, null, $page);
@@ -367,7 +370,7 @@ add_settings_field(
         [
             'name' => 'enable_geo_challenge', 
             'label' => __('Activate country-based JavaScript challenge.', 'advanced-ip-blocker'),
-            'description' => __('Instead of a hard block, this presents a quick, invisible JavaScript challenge... <br><strong>Note:</strong> If you use a page caching plugin (e.g., WP Rocket, WP Fastest Cache), you may need to exclude the challenge cookie <code>advaipbl_js_verified</code> from being cached to prevent issues.', 'advanced-ip-blocker')
+            'description' => __('Instead of a hard block, this presents a quick, invisible JavaScript challenge...', 'advanced-ip-blocker')
         ]
     );
     add_settings_field(
@@ -390,18 +393,7 @@ add_settings_field(
             'description' => __( 'Automatic (Transparent) vs Managed (User must interact).', 'advanced-ip-blocker' )
         ]
     );
-    add_settings_field(
-        'advaipbl_geo_challenge_cookie_duration', 
-        __( 'Access Duration (Hours)', 'advanced-ip-blocker' ), 
-        [ $this, 'text_field_callback' ], 
-        $page, 
-        'advaipbl_geolocation_section', 
-        [
-            'name' => 'geo_challenge_cookie_duration', 
-            'default' => 24, 
-            'description' => __( 'How long a visitor can access the site after passing the challenge. Set to 0 for the browser session only.', 'advanced-ip-blocker' )
-        ]
-    );
+
     
     add_settings_section('advaipbl_honeypot_settings_section', null, null, $page);
     add_settings_field(
@@ -562,7 +554,7 @@ add_settings_field(
 	add_settings_section('advaipbl_advanced_xmlrpc_protection_section', null, null, $page);	
     add_settings_field(
         'advaipbl_enable_xmlrpc_lockdown',
-        __( 'XML-RPC Lockdown Mode (Beta)', 'advanced-ip-blocker' ),
+        __( 'XML-RPC Lockdown Mode', 'advanced-ip-blocker' ),
         [$this, 'switch_field_callback'],
         $page,
         'advaipbl_advanced_xmlrpc_protection_section',
@@ -622,7 +614,7 @@ add_settings_field(
 	add_settings_section('advaipbl_login_lockdown_section', null, null, $page);
 	add_settings_field(
             'advaipbl_enable_login_lockdown',
-            __( 'Login Page Lockdown Mode (Beta)', 'advanced-ip-blocker' ),
+            __( 'Login Page Lockdown Mode', 'advanced-ip-blocker' ),
             [$this, 'switch_field_callback'],
             $page,
             'advaipbl_login_lockdown_section',
@@ -943,7 +935,7 @@ add_settings_field(
     add_settings_field('advaipbl_enable_signature_blocking', __('Enable Signature Blocking', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_signature_engine_section', [
         'name' => 'enable_signature_blocking',
         'label' => __('Activate blocking based on malicious signatures.', 'advanced-ip-blocker'),
-        'description' => __('<strong>Enable this to activate protection.</strong> When a request matches a known malicious signature, the plugin will present a JavaScript challenge to filter out bots. <br><strong>Note:</strong> If you use a page caching plugin, you may need to exclude the <code>advaipbl_js_verified</code> cookie from being cached.', 'advanced-ip-blocker')
+        'description' => __('<strong>Enable this to activate protection.</strong> When a request matches a known malicious signature, the plugin will present a JavaScript challenge to filter out bots.', 'advanced-ip-blocker')
     ]);
 
     add_settings_field('advaipbl_signature_challenge_mode', __('Challenge Mode', 'advanced-ip-blocker'), [$this, 'challenge_mode_callback'], $page, 'advaipbl_signature_engine_section', [
@@ -1068,7 +1060,7 @@ add_settings_field(
             'login_lockdown_event_threshold', 'login_lockdown_ip_threshold', 'login_lockdown_window', 'login_lockdown_duration',
             'lockdown_404_event_threshold', 'lockdown_404_ip_threshold', 'lockdown_404_window', 'lockdown_404_duration',
             'lockdown_403_event_threshold', 'lockdown_403_ip_threshold', 'lockdown_403_window', 'lockdown_403_duration',
-            'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network'
+            'global_challenge_cookie_duration', 'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network'
         ];
         foreach ($numeric_fields as $field) {
             if (isset($input[$field])) {
@@ -1804,6 +1796,22 @@ public function xmlrpc_protection_mode_callback() {
         <?php
     }
 	
+    /**
+     * Renders the "Revoke VIP Passes" button on the settings page.
+     */
+    public function revoke_vip_passes_button_callback() {
+        $nonce_url = wp_nonce_url(
+            admin_url( 'admin-post.php?action=advaipbl_revoke_vip_passes_action' ),
+            'advaipbl_revoke_vip_passes_nonce'
+        );
+        ?>
+        <a href="<?php echo esc_url($nonce_url); ?>" id="advaipbl-revoke-vip-passes-btn" class="button button-secondary"><?php esc_html_e('Revoke All VIP Passes', 'advanced-ip-blocker'); ?></a>
+        <p class="description">
+            <?php esc_html_e('Invalidates all currently active JS Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations.', 'advanced-ip-blocker'); ?>
+        </p>
+        <?php
+    }
+	
 	/**
      * Renders the "Send Test Email" button on the settings page.
      */
@@ -2152,7 +2160,7 @@ public function abuseipdb_action_callback() {
 
     public function geochallenge_separator_callback() {
         echo '<hr style="margin: 30px 0 10px; border: 0; border-top: 1px solid #ddd;">';
-        echo '<h3 id="sub-section-geochallenge" style="margin: 0; padding: 0;">' . esc_html__('Geo-Challenge (Beta)', 'advanced-ip-blocker') . '</h3>';
+        echo '<h3 id="sub-section-geochallenge" style="margin: 0; padding: 0;">' . esc_html__('Geo-Challenge', 'advanced-ip-blocker') . '</h3>';
     }
 
 }

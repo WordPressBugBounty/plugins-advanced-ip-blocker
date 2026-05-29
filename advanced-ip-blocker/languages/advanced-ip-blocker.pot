@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.10.12\n"
+"Project-Id-Version: Advanced IP Blocker 8.10.13\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -3781,7 +3781,7 @@ msgid "How long a malicious signature will remain active in the blocklist before
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Attack Signature Engine (Beta)"
+msgid "Attack Signature Engine"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -3860,15 +3860,15 @@ msgid "Signature Challenge"
 msgstr ""
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Logging (Beta)"
+msgid "Signature Logging"
 msgstr ""
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Analysis (Beta)"
+msgid "Signature Analysis"
 msgstr ""
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Blocking (Beta)"
+msgid "Signature Blocking"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -3940,7 +3940,7 @@ msgid "How often (in hours) to run the decay process. The score of an IP will on
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Attack Signature Engine (Beta)"
+msgid "Attack Signature Engine"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4135,15 +4135,15 @@ msgid "Manage Signatures"
 msgstr ""
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Logging (Beta)"
+msgid "Signature Logging"
 msgstr ""
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Analysis (Beta)"
+msgid "Signature Analysis"
 msgstr ""
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Blocking (Beta)"
+msgid "Signature Blocking"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4797,7 +4797,7 @@ msgid "View Security Log"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "XML-RPC Lockdown Mode (Beta)"
+msgid "XML-RPC Lockdown Mode"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -5047,7 +5047,7 @@ msgid "Could not retrieve lockdown details."
 msgstr ""
 
 #: includes/class-advaipbl-main.php:1218
-msgid "Login Page Lockdown Mode (Beta)"
+msgid "Login Page Lockdown Mode"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:1223
@@ -5262,7 +5262,7 @@ msgid "Enter one IP, CIDR range, or ASN per line. Use # for comments. <strong>Ex
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Geo-Challenge (Beta)"
+msgid "Geo-Challenge"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -5335,7 +5335,7 @@ msgid "Are you sure you want to remove the selected %d entries from the whitelis
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Instead of a hard block, this presents a quick, invisible JavaScript challenge... <br><strong>Note:</strong> If you use a page caching plugin (e.g., WP Rocket, WP Fastest Cache), you may need to exclude the challenge cookie <code>advaipbl_js_verified</code> from being cached to prevent issues."
+msgid "Instead of a hard block, this presents a quick, invisible JavaScript challenge..."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -6401,7 +6401,7 @@ msgid "Proactively checks visitor IP reputation against a global crowdsourced da
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
-msgid "AIB Community Defense Network (Beta)"
+msgid "AIB Community Defense Network"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
@@ -7775,4 +7775,32 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "Enabled (Default)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:43
+msgid "Global Challenge Duration (Hours)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:43
+msgid "How long a visitor can access the site after passing a JS challenge (e.g. from Lockdowns, Login Page, XML-RPC or Advanced Rules). Set to 0 for the browser session only."
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "Revoke All VIP Passes"
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "Are you sure you want to revoke all VIP passes? Every user will be forced to solve the JS Challenge again."
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "Yes, Revoke All"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Global VIP Revocation"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Invalidates all currently active JS Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations."
 msgstr ""

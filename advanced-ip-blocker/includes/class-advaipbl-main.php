@@ -336,6 +336,7 @@ private function __construct() {
 			add_action('wp_ajax_advaipbl_get_lockdown_details', [$this->ajax_handler, 'ajax_get_lockdown_details']);
             add_action('admin_post_advaipbl_import_settings', [ $this, 'handle_import_settings' ] );
             add_action('admin_post_advaipbl_clear_location_cache_action', [$this, 'handle_clear_cache_action']);
+            add_action('admin_post_advaipbl_revoke_vip_passes_action', [$this, 'handle_revoke_vip_passes_action']);
             add_action('admin_post_advaipbl_send_test_email', [ $this, 'handle_send_test_email' ] );
             add_action('admin_post_advaipbl_send_test_push', [ $this, 'handle_send_test_push' ] );
             add_action('admin_post_advaipbl_run_manual_scan', [ $this, 'handle_run_manual_scan' ] );
@@ -652,7 +653,23 @@ public function verify_known_bots() {
 
     if ($is_verified) {
         // -- ÉXITO: Es un bot legítimo --
-        // Verificar si el usuario quiere bloquearlo explícitamente
+        
+        // Verificar si el usuario quiere bloquearlo explícitamente por IP
+        if ( $this->is_visitor_actively_blocked() ) {
+            return; // Bloqueado por IP manual/activa
+        }
+
+        // Verificar si el usuario quiere bloquearlo explícitamente por ASN
+        if (!empty($this->options['enable_spamhaus_asn']) || !empty($this->options['enable_manual_asn'])) {
+            $provider = $this->options['geolocation_provider'] ?? '';
+            if (in_array($provider, ['ip-api.com', 'ipinfo.io'], true)) {
+                if ($this->asn_manager->check_asn_block($ip)) {
+                    return; // Bloqueado por ASN manual/Spamhaus
+                }
+            }
+        }
+
+        // Verificar si el usuario quiere bloquearlo explícitamente por User-Agent
             $blocked_uas = get_option('advaipbl_blocked_user_agents', []);
             foreach ($blocked_uas as $blocked_ua) {
                 // Eliminar comentarios
@@ -736,10 +753,12 @@ public function verify_known_bots() {
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_js_token'])) {
-    // Parámetros para el desafío de firmas: cookie 'advaipbl_js_verified', duración 4 horas.
-    $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', 4 * HOUR_IN_SECONDS);
-}
-        if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+            // Parámetros para el desafío de firmas: cookie 'advaipbl_js_verified', duración global o 4 horas.
+            $global_duration_hours = (int)($this->options['global_challenge_cookie_duration'] ?? 4);
+            $duration_seconds = ($global_duration_hours > 0) ? $global_duration_hours * HOUR_IN_SECONDS : 0;
+            $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', $duration_seconds);
+        }
+        if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
         }
         
@@ -790,11 +809,11 @@ public function verify_known_bots() {
         }
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_challenge_type']) && $_POST['_advaipbl_challenge_type'] === 'geo_challenge') {
-            $duration_hours = (int)($this->options['geo_challenge_cookie_duration'] ?? 24);
+            $duration_hours = (int)($this->options['global_challenge_cookie_duration'] ?? 4);
             $duration_seconds = ($duration_hours > 0) ? $duration_hours * HOUR_IN_SECONDS : 0;
             $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', $duration_seconds);
         }
-        if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+        if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
         }
         
@@ -1475,6 +1494,25 @@ public function get_blocked_endpoints_count() {
         exit;
     }
 
+    public function handle_revoke_vip_passes_action() {
+        if (!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'advaipbl_revoke_vip_passes_nonce')) {
+            wp_die('Invalid nonce.');
+        }
+        if (!current_user_can('manage_options')) {
+            wp_die('Permission denied.');
+        }
+        
+        // Generate new salt modifier
+        update_option('advaipbl_vip_salt_modifier', wp_generate_password(24, true, true));
+        
+        /* translators: %s: Admin username. */
+        $this->log_event( sprintf( __( 'All JS Challenge VIP passes were manually revoked globally by %s.', 'advanced-ip-blocker' ), $this->get_current_admin_username() ), 'warning' );
+        
+        set_transient('advaipbl_admin_notice', ['message' => __('All VIP passes have been successfully revoked. Everyone will be required to pass the JS Challenge again.', 'advanced-ip-blocker'), 'type' => 'success'], 30);
+        
+        wp_safe_redirect(wp_get_referer());
+        exit;
+    }
 
 	
 	 /**
@@ -1807,6 +1845,12 @@ public function get_blocked_endpoints_count() {
                     'verify_api_button'        => __( 'Verify', 'advanced-ip-blocker' ),
                     'verifying_api'            => __( 'Verifying...', 'advanced-ip-blocker' ),
                     'enter_api_key'            => __( 'Please enter an API key.', 'advanced-ip-blocker' ),
+                    
+                    /* VIP Passes Revocation Modal */
+                    'revoke_vip_title'         => __( 'Revoke All VIP Passes', 'advanced-ip-blocker' ),
+                    'revoke_vip_confirm'       => __( 'Are you sure you want to revoke all VIP passes? Every user will be forced to solve the JS Challenge again.', 'advanced-ip-blocker' ),
+                    'revoke_vip_btn'           => __( 'Yes, Revoke All', 'advanced-ip-blocker' ),
+                    
                     'ajax_error'               => __( 'AJAX error. Check browser console.', 'advanced-ip-blocker' ),
                     'missing_detail'           => __( 'Please provide a reason/detail for these IPs (Required).', 'advanced-ip-blocker' ),
                     'discard_title'            => __( 'Discard Changes?', 'advanced-ip-blocker' ),
@@ -1920,7 +1964,7 @@ public function get_blocked_endpoints_count() {
         // Si la opción está activada, verificamos si es humano antes de procesar el error 404.
         if (!empty($this->options['enable_404_challenge'])) {
              // Si ya está verificado, pasamos (y se registrará como un 404 normal de humano).
-             if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+             if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Humano confirmado. Dejamos que el flujo continúe hacia handle_error('404') abajo.
              } else {
                  // No está verificado. Servimos el desafío e interrumpimos la ejecución.
@@ -1934,7 +1978,7 @@ public function get_blocked_endpoints_count() {
     if (!empty($this->options['enable_404_lockdown'])) {
         // 1. Check if Lockdown is currently ACTIVE
         if ($this->is_lockdown_active_for_type('404')) {
-             if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+             if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass (Human verified previously)
              } else {
                  $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '404', 'reason' => '404 Lockdown Mode Active', 'uri' => $this->get_current_request_uri()], 'warning');
@@ -1953,7 +1997,7 @@ public function get_blocked_endpoints_count() {
     
     // --- SMART 403 CHALLENGE ---
     if (!empty($this->options['enable_403_challenge'])) {
-             if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+             if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass
              } else {
                  $this->js_challenge_manager->serve_challenge('403_challenge');
@@ -1965,7 +2009,7 @@ public function get_blocked_endpoints_count() {
     if (!empty($this->options['enable_403_lockdown'])) {
         // 1. Check if Lockdown is currently ACTIVE
         if ($this->is_lockdown_active_for_type('403')) {
-             if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+             if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass
              } else {
                  $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '403', 'reason' => '403 Lockdown Mode Active', 'uri' => $this->get_current_request_uri()], 'warning');
@@ -2373,7 +2417,7 @@ return $status_header;
 
             if (strpos($action, 'challenge') !== false) {
                 // Check if user has already passed the challenge
-                if ((isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') || get_transient('advaipbl_grace_pass_' . md5($ip))) {
+                if (($this->js_challenge_manager->is_vip_pass_valid()) || get_transient('advaipbl_grace_pass_' . md5($ip))) {
                     return;
                 }
                 
@@ -5247,7 +5291,7 @@ private function get_first_public_ip_from_string($ip_string) {
                 'uses_transient'=> false // No necesita transient, se comprueba siempre
             ],
             'bulk_import' => [
-                'label'         => __('Bulk Import', 'advanced-ip-blocker'),
+                'label'         => __('Bulk Imported', 'advanced-ip-blocker'),
                 'option_key'    => null, // Managed just like manual blocks, but conceptually separated.
                 'duration_key'  => null,
                 'uses_transient'=> false
@@ -5969,8 +6013,23 @@ public function handle_import_settings() {
                 foreach ( $settings_to_import as $key => $value ) {
                     // Importar solo opciones que empiecen con nuestro prefijo
                     if (strpos($key, 'advaipbl_') === 0) {
-                        update_option( $key, $value );
-                        $imported_options_count++;
+                        // Protegemos el estado interno del servidor destino (versión, criptografía, timestamps)
+                        $skip_import_keys = [
+                            'advaipbl_db_version',
+                            'advaipbl_version_installed',
+                            'advaipbl_vip_salt_modifier',
+                            'advaipbl_fim_baseline_hashes',
+                            'advaipbl_last_cron_ip',
+                            'advaipbl_autoload_version',
+                            'advaipbl_spamhaus_last_update',
+                            'advaipbl_community_last_update',
+                            'advaipbl_flush_firewalls_needed'
+                        ];
+                        
+                        if (!in_array($key, $skip_import_keys, true)) {
+                            update_option( $key, $value );
+                            $imported_options_count++;
+                        }
                     } 
                     // Lógica especial para la tabla de IPs
                     elseif ($key === 'blocked_ips_table' && is_array($value)) {
@@ -6700,7 +6759,8 @@ public function handle_import_settings() {
             // Por tanto, debemos verificar manualmente si el usuario introducido existe.
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
             if ( ! empty( $_POST['user_login'] ) ) {
-                $login = trim( wp_unslash( $_POST['user_login'] ) );
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $login = sanitize_user( wp_unslash( $_POST['user_login'] ) );
                 $user_data = strpos( $login, '@' ) ? get_user_by( 'email', $login ) : get_user_by( 'login', $login );
                 
                 if ( ! $user_data ) {
@@ -7143,12 +7203,13 @@ public function handle_import_settings() {
         // Procesa la respuesta del desafío si es para este tipo.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_challenge_type']) && $_POST['_advaipbl_challenge_type'] === 'endpoint') {
-            // Un pase de 1 hora es suficiente para un endpoint crítico.
-            $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', 1 * HOUR_IN_SECONDS);
+            $duration_hours = (int)($this->options['global_challenge_cookie_duration'] ?? 4);
+            $duration_seconds = ($duration_hours > 0) ? $duration_hours * HOUR_IN_SECONDS : 0;
+            $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', $duration_seconds);
         }
 
         // Si ya está verificado, no hacer nada.
-        if (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') {
+        if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
         }        
         
@@ -7299,7 +7360,7 @@ public function check_ip_with_abuseipdb() {
 
     $ip = $this->get_client_ip();
 
-    if ($this->request_is_asn_whitelisted || (isset($_COOKIE['advaipbl_js_verified']) && $_COOKIE['advaipbl_js_verified'] === '1') || get_transient('advaipbl_grace_pass_' . md5($ip))) {
+    if ($this->request_is_asn_whitelisted || ($this->js_challenge_manager->is_vip_pass_valid()) || get_transient('advaipbl_grace_pass_' . md5($ip))) {
         return;
     }
     if ($this->is_whitelisted($ip)) {

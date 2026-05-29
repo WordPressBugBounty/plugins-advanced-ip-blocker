@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-05-13 12:12+0200\n"
+"PO-Revision-Date: 2026-05-29 10:48+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -4340,8 +4340,8 @@ msgstr ""
 "antes de que expire automáticamente."
 
 #: includes/class-advaipbl-main.php
-msgid "Attack Signature Engine (Beta)"
-msgstr "Motor de firmas de ataque (Beta)"
+msgid "Attack Signature Engine"
+msgstr "Motor de firmas de ataque"
 
 #: includes/class-advaipbl-main.php
 msgid ""
@@ -4455,16 +4455,16 @@ msgid "Signature Challenge"
 msgstr "Desafío de firma"
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Logging (Beta)"
-msgstr "Registro de firmas (Beta)"
+msgid "Signature Logging"
+msgstr "Registro de firma"
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Analysis (Beta)"
-msgstr "Análisis de firmas (Beta)"
+msgid "Signature Analysis"
+msgstr "Análisis de firma"
 
 #: js/advaipbl-dashboard.js
-msgid "Signature Blocking (Beta)"
-msgstr "Bloqueo de firmas (Beta)"
+msgid "Signature Blocking"
+msgstr "Bloqueo de firmas"
 
 #: includes/class-advaipbl-main.php
 msgid "[%s] Security Alert: New Attack Signature Identified"
@@ -5271,8 +5271,8 @@ msgid "View Security Log"
 msgstr "Ver registro de seguridad"
 
 #: includes/class-advaipbl-main.php
-msgid "XML-RPC Lockdown Mode (Beta)"
-msgstr "Modo de bloqueo de XML-RPC (Beta)"
+msgid "XML-RPC Lockdown Mode"
+msgstr "Modo de bloqueo de XML-RPC"
 
 #: includes/class-advaipbl-main.php
 msgid "Enable automated protection against distributed XML-RPC attacks."
@@ -5452,8 +5452,8 @@ msgid "Could not retrieve lockdown details."
 msgstr "No se pudieron recuperar los detalles del lockdown."
 
 #: includes/class-advaipbl-main.php:1218
-msgid "Login Page Lockdown Mode (Beta)"
-msgstr "Lockdown Mode (Beta) de la página de inicio de sesión"
+msgid "Login Page Lockdown Mode"
+msgstr "Lockdown Mode de la página de inicio de sesión"
 
 #: includes/class-advaipbl-main.php:1223
 msgid "Enable automated protection against distributed brute-force attacks."
@@ -5736,8 +5736,8 @@ msgstr ""
 "Server<br>192.168.0.1<br># Nginx Proxy<br>127.0.0.1</code>"
 
 #: includes/class-advaipbl-main.php
-msgid "Geo-Challenge (Beta)"
-msgstr "Desafío geográfico (Beta)"
+msgid "Geo-Challenge"
+msgstr "Desafío geográfico"
 
 #: includes/class-advaipbl-main.php
 msgid "Enable Geo-Challenge"
@@ -5822,16 +5822,10 @@ msgstr ""
 #: includes/class-advaipbl-main.php
 msgid ""
 "Instead of a hard block, this presents a quick, invisible JavaScript "
-"challenge... <br><strong>Note:</strong> If you use a page caching plugin "
-"(e.g., WP Rocket, WP Fastest Cache), you may need to exclude the challenge "
-"cookie <code>advaipbl_js_verified</code> from being cached to prevent issues."
+"challenge..."
 msgstr ""
-"En lugar de un bloqueo duro, esto presenta un desafío de JavaScript rápido e "
-"invisible... <br><strong>Nota:</strong> Si usa un complemento de "
-"almacenamiento en caché de páginas (por ejemplo, WP Rocket, WP Fastest "
-"Cache), es posible que deba excluir la cookie de desafío "
-"<code>advaipbl_js_verified</code> del almacenamiento en caché para evitar "
-"problemas."
+"En lugar de un bloqueo rígido, esto presenta un desafío rápido e invisible "
+"de JavaScript..."
 
 #: includes/class-advaipbl-main.php
 msgid "Verifying your connection..."
@@ -7112,8 +7106,8 @@ msgstr ""
 "los actores maliciosos en su primera solicitud."
 
 #: includes/class-advaipbl-settings-manager.php
-msgid "AIB Community Defense Network (Beta)"
-msgstr "Red de Defensa Comunitaria de la AIB (Beta)"
+msgid "AIB Community Defense Network"
+msgstr "Red de Defensa Comunitaria AIB"
 
 #: includes/class-advaipbl-settings-manager.php
 msgid ""
@@ -8584,6 +8578,74 @@ msgstr "Deshabilitado (usando cron externo / del sistema)"
 #: includes/class-advaipbl-admin-pages.php
 msgid "Enabled (Default)"
 msgstr "Habilitado (predeterminado)"
+
+#: includes/class-advaipbl-settings-manager.php:43
+msgid "Global Challenge Duration (Hours)"
+msgstr "Duración del desafío global (horas)"
+
+#: includes/class-advaipbl-settings-manager.php:43
+msgid ""
+"How long a visitor can access the site after passing a JS challenge (e.g. "
+"from Lockdowns, Login Page, XML-RPC or Advanced Rules). Set to 0 for the "
+"browser session only."
+msgstr ""
+"Duración del acceso al sitio para un visitante tras superar una verificación "
+"de JavaScript (por ejemplo, mediante bloqueos, página de inicio de sesión, "
+"XML-RPC o reglas avanzadas). Establecer en 0 solo para la sesión del "
+"navegador."
+
+#: includes/class-advaipbl-main.php
+msgid "Revoke All VIP Passes"
+msgstr "Revocar todos los pases VIP"
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"Are you sure you want to revoke all VIP passes? Every user will be forced to "
+"solve the JS Challenge again."
+msgstr ""
+"¿Estás seguro de que quieres revocar todos los pases VIP? Todos los usuarios "
+"se verán obligados a resolver el desafío JS nuevamente."
+
+#: includes/class-advaipbl-main.php
+msgid "Yes, Revoke All"
+msgstr "Sí, revocar todo"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Global VIP Revocation"
+msgstr "Revocación VIP global"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Invalidates all currently active JS Challenge VIP passes globally. Use this "
+"\"Panic Button\" if you suspect a bypass or if you just changed your "
+"challenge configurations."
+msgstr ""
+"Invalida globalmente todos los pases VIP de JS Challenge activos. Usa este "
+"\"Botón de pánico\" si sospechas que se ha intentado eludir la seguridad o "
+"si acabas de modificar la configuración del desafío."
+
+#~ msgid "Signature Logging (Beta)"
+#~ msgstr "Registro de firmas (Beta)"
+
+#~ msgid "Signature Analysis (Beta)"
+#~ msgstr "Análisis de firmas (Beta)"
+
+#~ msgid ""
+#~ "Instead of a hard block, this presents a quick, invisible JavaScript "
+#~ "challenge... <br><strong>Note:</strong> If you use a page caching plugin "
+#~ "(e.g., WP Rocket, WP Fastest Cache), you may need to exclude the "
+#~ "challenge cookie <code>advaipbl_js_verified</code> from being cached to "
+#~ "prevent issues."
+#~ msgstr ""
+#~ "En lugar de un bloqueo duro, esto presenta un desafío de JavaScript "
+#~ "rápido e invisible... <br><strong>Nota:</strong> Si usa un complemento de "
+#~ "almacenamiento en caché de páginas (por ejemplo, WP Rocket, WP Fastest "
+#~ "Cache), es posible que deba excluir la cookie de desafío "
+#~ "<code>advaipbl_js_verified</code> del almacenamiento en caché para evitar "
+#~ "problemas."
+
+#~ msgid "AIB Community Defense Network (Beta)"
+#~ msgstr "Red de Defensa Comunitaria de la AIB (Beta)"
 
 #~ msgid "Installed Themes Analysis"
 #~ msgstr "Análisis de temas instalados"

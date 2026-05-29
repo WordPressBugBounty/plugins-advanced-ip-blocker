@@ -26,16 +26,59 @@ class ADVAIPBL_JS_Challenge {
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $challenge_type = sanitize_key($_POST['_advaipbl_challenge_type'] ?? 'signature');
-        $cookie_duration = 4 * HOUR_IN_SECONDS; // Default
+        
+        $global_duration_hours = (int)($this->plugin->options['global_challenge_cookie_duration'] ?? 4);
+        $cookie_duration = ($global_duration_hours > 0) ? $global_duration_hours * HOUR_IN_SECONDS : 0;
 
         if ($challenge_type === 'geo_challenge') {
             $duration_hours = (int)($this->plugin->options['geo_challenge_cookie_duration'] ?? 24);
             $cookie_duration = ($duration_hours > 0) ? $duration_hours * HOUR_IN_SECONDS : 0;
-        } elseif ($challenge_type === 'endpoint') {
-            $cookie_duration = 1 * HOUR_IN_SECONDS;
         }
 
         $this->verify_challenge('advaipbl_js_verified', $cookie_duration);
+    }
+
+    /**
+     * Valida un Pase VIP criptografico (Cookie HMAC)
+     * @param string $ip
+     * @return bool
+     */
+    public function is_vip_pass_valid($ip = null) {
+        if (!$ip) {
+            $ip = $this->plugin->get_client_ip();
+        }
+        
+        $cookie_name = 'advaipbl_js_verified';
+        if (!isset($_COOKIE[$cookie_name])) {
+            return false;
+        }
+        
+        $cookie_value = sanitize_text_field(wp_unslash($_COOKIE[$cookie_name]));
+        
+        // Rechazar cookies antiguas tipo '1' por seguridad (fuerza un nuevo desafio)
+        if ($cookie_value === '1') {
+            return false;
+        }
+        
+        $decoded = base64_decode($cookie_value);
+        if ($decoded === false || strpos($decoded, '|') === false) {
+            return false;
+        }
+        
+        list($expiration, $signature) = explode('|', $decoded, 2);
+        
+        // Check si ha expirado (0 = sesion)
+        if ((int)$expiration !== 0 && time() > (int)$expiration) {
+            return false;
+        }
+        
+        // Verificar firma
+        $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
+        $modifier = get_option('advaipbl_vip_salt_modifier', '');
+        
+        $expected_signature = hash_hmac('sha256', $ip . $expiration, $salt . $modifier);
+        
+        return hash_equals($expected_signature, $signature);
     }
 
     /**
@@ -100,12 +143,17 @@ class ADVAIPBL_JS_Challenge {
         if ($is_valid) {
             
             set_transient('advaipbl_grace_pass_' . md5($ip), true, 15);
-            
-            $expiration = ($cookie_duration > 0) ? time() + $cookie_duration : 0;
+                   $expiration = ($cookie_duration > 0) ? time() + $cookie_duration : 0;
             $request_uri = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'] ?? ''));
 
+            // Generar Pase VIP HMAC
+            $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
+            $modifier = get_option('advaipbl_vip_salt_modifier', '');
+            $signature = hash_hmac('sha256', $ip . $expiration, $salt . $modifier);
+            $cookie_value = base64_encode($expiration . '|' . $signature);
+
             if (defined('ADVAIPBL_EDGE_MODE') && ADVAIPBL_EDGE_MODE) {
-                // En Edge Mode, limpiamos el buffer y usamos una redirección de PHP nativa.
+                // En Edge Mode, limpiamos el buffer y usamos una redireccin de PHP nativa.
                 if (ob_get_level()) {
                     ob_end_clean();
                 }
@@ -118,14 +166,14 @@ class ADVAIPBL_JS_Challenge {
                     'httponly' => true,
                     'samesite' => 'Lax'
                 ];
-                setcookie($cookie_name, '1', $cookie_options);
+                setcookie($cookie_name, $cookie_value, $cookie_options);
                 
                 wp_safe_redirect($request_uri, 303);
                 exit;
 
             } else {
                 // En modo normal de WordPress, usamos las funciones de WordPress.
-                setcookie($cookie_name, '1', $expiration, '/', defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '', is_ssl(), true);
+                setcookie($cookie_name, $cookie_value, $expiration, '/', defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '', is_ssl(), true);
                 wp_safe_redirect($request_uri);
                 exit;
             }
@@ -187,7 +235,7 @@ class ADVAIPBL_JS_Challenge {
         $num2   = wp_rand(1, 9);
         $answer = $num1 + $num2;
         // Stateless verification token (HMAC) to bypass Cache and Database limitations
-        $expiration = time() + 120;
+        $expiration = time() + 300;
         $payload    = $answer . '|' . $expiration;
         $salt       = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
         $signature  = hash_hmac('sha256', $payload, $salt);

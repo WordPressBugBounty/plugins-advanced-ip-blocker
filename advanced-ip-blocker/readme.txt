@@ -5,7 +5,7 @@ Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 6.7
 Tested up to: 7.0
-Stable tag: 8.10.12
+Stable tag: 8.10.13
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -231,6 +231,13 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.13 =
+* Security: Completely redesigned the JS Challenge engine to use stateless cryptographic HMAC tokens, eliminating cookie forgery vulnerabilities and database overload during DDoS attacks.
+* Enhancement: Added a global "Panic Button" (Revoke All VIP Passes) to instantly invalidate all active JS challenge sessions worldwide.
+* Fix: Resolved a race condition causing false "JS challenge verification failed" errors for real users on slow networks by extending the token grace period.
+* Fix: Removed hardcoded 1-hour limits in Login & XML-RPC Lockdowns. All modules now fully respect the "Global Challenge Duration" setting.
+* Enhancement: Updated Bot Verifier to support new AdsBot-Google proxy domains (`.google.com`), preventing false 403 errors.
+
 = 8.10.12 =
 * Compatibility: Fully tested and certified for WordPress 7.0.
 * Security/Enhancement: Enhanced the "Prevent Login Hinting" module to explicitly intercept invalid usernames during password recovery, fully neutralizing sophisticated enumeration bots that attempt to bypass email checks.
@@ -291,5 +298,5 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.10.12 =
-**SECURITY & COMPATIBILITY UPDATE:** Certified for WordPress 7.0! Fully neutralizes advanced username enumeration bots on the Lost Password form, optimizes background cron jobs to save server resources, and enables seamless localhost/intranet development by allowing private IPv4/IPv6 addresses in the strict Login Whitelist.
+= 8.10.13 =
+**SECURITY UPDATE:** Eliminates JS challenge cookie forgery with new HMAC VIP passes. Adds global VIP revocation. Resolves false positives on slow networks. Login/XML-RPC Lockdowns now respect Global Duration. Improves Google bot verification.
