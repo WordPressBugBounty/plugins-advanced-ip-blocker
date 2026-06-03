@@ -24,6 +24,12 @@ class ADVAIPBL_JS_Challenge {
             return;
         }
 
+        // Si la IP goza de inmunidad global (Bot legítimo, ASN en lista blanca, IP en lista blanca o Regla Avanzada ALLOW), 
+        // ignoramos el submission del challenge fallido o caducado y le dejamos pasar.
+        if ( !empty($this->plugin->request_is_asn_whitelisted) || $this->plugin->is_whitelisted($this->plugin->get_client_ip()) || !empty($this->plugin->is_advanced_rule_allowed) ) {
+            return;
+        }
+
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $challenge_type = sanitize_key($_POST['_advaipbl_challenge_type'] ?? 'signature');
         

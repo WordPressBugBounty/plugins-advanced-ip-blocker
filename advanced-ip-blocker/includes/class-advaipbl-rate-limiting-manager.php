@@ -32,6 +32,10 @@ class ADVAIPBL_Rate_Limiting_Manager {
         if ($this->main_class->is_whitelisted($ip)) {
             return;
         }
+
+        if (!empty($this->main_class->request_is_asn_whitelisted) || !empty($this->main_class->is_advanced_rule_allowed)) {
+            return;
+        }
         
         $options = $this->main_class->options;
         $limit  = (int) ($options['rate_limiting_limit'] ?? 120);

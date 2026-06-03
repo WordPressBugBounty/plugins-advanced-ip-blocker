@@ -3,9 +3,10 @@ Contributors: inilerm
 Author URI: https://advaipbl.com/
 Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, geoblocking, 2fa
-Requires at least: 6.7
+Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 8.10.13
+Tested up to ClassicPress: 2.x
+Stable tag: 8.10.14
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -230,6 +231,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 20. The new AbuseIPDB Api manager.
 
 == Changelog ==
+
+= 8.10.14 =
+* Compatibility: Added official support for ClassicPress 1.x and 2.x by adjusting core version requirements.
+* Security: Implemented a "Global Immunity" standard. IPs in the Whitelist and Verified Bots (like Google) now flawlessly bypass all security modules, including Advanced Rules, XML-RPC lockdowns, and Rate Limiting.
+* Enhancement: Upgraded the Bot Verifier to automatically download and cache official IP CIDR JSON lists from AI providers (OpenAI, Anthropic, Cohere, etc.) and Google, bypassing unreliable reverse DNS lookups.
 
 = 8.10.13 =
 * Security: Completely redesigned the JS Challenge engine to use stateless cryptographic HMAC tokens, eliminating cookie forgery vulnerabilities and database overload during DDoS attacks.

@@ -3,14 +3,15 @@
 Plugin Name: Advanced IP Blocker
 Plugin URI: https://advaipbl.com/
 Description: Your complete WordPress security firewall. Blocks IPs, bots & countries. Includes an intelligent WAF, Threat Scoring, and Two-Factor Authentication.
-Version: 8.10.13
+Version: 8.10.14
 Author: IniLerm
 Author URI: https://advaipbl.com/
 Text Domain: advanced-ip-blocker
 Domain Path: /languages
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Requires at least: 6.7
+Requires at least: 5.9
+Tested up to ClassicPress: 2.x
 Requires PHP: 8.1
 */
 
@@ -18,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ADVAIPBL_VERSION', '8.10.13' );
+define( 'ADVAIPBL_VERSION', '8.10.14' );
 define( 'ADVAIPBL_PLUGIN_FILE', __FILE__ );
 
 if (!defined('ADVAIPBL_PLUGIN_PATH')) {

@@ -36,7 +36,7 @@ class ADVAIPBL_Cron_Manager {
         add_action('advaipbl_cloudflare_sync_event', [$this->plugin->cloudflare_manager, 'sync_blocked_ips']);
         add_action('advaipbl_update_community_list_event', [$this->plugin->community_manager, 'update_list']);
         add_action('advaipbl_community_report_event_v2', [$this->plugin, 'execute_community_report']); // Activated hook
-        add_action('advaipbl_update_ai_bot_lists_event', [$this->plugin->bot_verifier, 'fetch_and_cache_ai_lists']);
+        add_action('advaipbl_update_bot_lists_event', [$this->plugin->bot_verifier, 'fetch_and_cache_bot_lists']);
     }
 
     /**
@@ -207,13 +207,14 @@ class ADVAIPBL_Cron_Manager {
             wp_clear_scheduled_hook('advaipbl_update_spamhaus_list_event');
         }
 
-        // 12.5 AI Bot JSON Verification
+        // 12.5 Bot JSON Verification (Google & AI)
+        wp_clear_scheduled_hook('advaipbl_update_ai_bot_lists_event'); // Clear legacy hook
         if (!empty($this->plugin->options['enable_ai_bot_verification']) && '1' === $this->plugin->options['enable_ai_bot_verification']) {
-            if (!wp_next_scheduled('advaipbl_update_ai_bot_lists_event')) {
-                wp_schedule_event(time(), 'daily', 'advaipbl_update_ai_bot_lists_event');
+            if (!wp_next_scheduled('advaipbl_update_bot_lists_event')) {
+                wp_schedule_event(time(), 'daily', 'advaipbl_update_bot_lists_event');
             }
         } else {
-            wp_clear_scheduled_hook('advaipbl_update_ai_bot_lists_event');
+            wp_clear_scheduled_hook('advaipbl_update_bot_lists_event');
         }
 
         // 13. Community List Update (Missing logic fixed)

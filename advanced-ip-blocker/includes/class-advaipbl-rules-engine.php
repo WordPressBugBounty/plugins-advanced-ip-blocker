@@ -216,17 +216,23 @@ public function evaluate() {
     if (empty($rules)) {
         return false;
     }
+
+    $ip = $this->plugin->get_client_ip();
+
+    // Inmunidad Global: Si la IP está en la lista blanca manual o es un bot/ASN verificado, ignoramos las reglas de bloqueo/desafío.
+    if ($this->plugin->is_whitelisted($ip) || !empty($this->plugin->request_is_asn_whitelisted)) {
+        return false;
+    }
+
 	// Si el usuario acaba de pasar un desafío, le damos un pase de gracia de 15s
    // para evitar un bucle en la redirección. No evaluamos ninguna regla en esta petición.
-    if (get_transient('advaipbl_grace_pass_' . md5($this->plugin->get_client_ip()))) {
+    if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
         return false;
     }
 	
 	if ($this->plugin->js_challenge_manager->is_vip_pass_valid()) {
         return false;
     }
-
-    $ip = $this->plugin->get_client_ip();
 
     foreach ($rules as $rule) {
         if (!isset($rule['conditions']) || empty($rule['conditions']) || !isset($rule['action'])) {

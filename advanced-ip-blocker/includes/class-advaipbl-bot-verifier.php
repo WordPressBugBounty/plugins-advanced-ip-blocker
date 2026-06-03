@@ -76,21 +76,26 @@ class ADVAIPBL_Bot_Verifier {
         }
 
         $is_ai_bot = false;
+        $is_google_bot = false;
+        
         if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'searchbot', 'applebot'])) {
             $is_ai_bot = true;
+        } elseif (in_array($ua_keyword, ['googlebot', 'google.com/bot', 'adsbot-google'])) {
+            $is_google_bot = true;
         }
 
-        // Si es un bot de IA y la opción está activa, verificamos por CIDR en lugar de DNS
+        // Si es un bot de IA y la opción está activa, o si es de Google, verificamos por CIDR en lugar de DNS
         // (Activado por defecto si no está definido para usuarios existentes)
         $ai_bot_enabled = isset($this->plugin->options['enable_ai_bot_verification']) ? $this->plugin->options['enable_ai_bot_verification'] : '1';
-        if ($is_ai_bot && $ai_bot_enabled === '1') {
-            if (!get_transient('advaipbl_ai_bot_ips_cached')) {
-                $this->fetch_and_cache_ai_lists();
+        
+        if (($is_ai_bot && $ai_bot_enabled === '1') || $is_google_bot) {
+            if (!get_transient('advaipbl_bot_ips_cached')) {
+                $this->fetch_and_cache_bot_lists();
             }
-            $is_verified = $this->verify_ai_ip($ip, $ua_keyword);
+            $is_verified = $this->verify_bot_ip($ip, $ua_keyword);
             
-            // Fallback a DNS si la lista CIDR está vacía por algún error de API
-            if (!$is_verified && empty(get_option('advaipbl_ai_bot_ips', []))) {
+            // Fallback a DNS si la lista CIDR está vacía por algún error de API, o no está en la lista JSON (raro)
+            if (!$is_verified) {
                 $is_verified = $this->verify_dns($ip, $expected_domains);
             }
         } else {
@@ -173,29 +178,42 @@ class ADVAIPBL_Bot_Verifier {
     }
 
     /**
-     * Descarga y cachea las listas oficiales de IPs de bots de IA.
+     * Descarga y cachea las listas oficiales de IPs de bots (Google y bots de IA).
      */
-    public function fetch_and_cache_ai_lists() {
+    public function fetch_and_cache_bot_lists() {
         $endpoints = [
             'gptbot' => 'https://openai.com/gptbot.json',
             'searchbot' => 'https://openai.com/searchbot.json',
             'chatgpt-user' => 'https://openai.com/chatgpt-user.json',
-            'applebot' => 'https://search.developer.apple.com/applebot.json'
+            'applebot' => 'https://search.developer.apple.com/applebot.json',
+            'google' => [
+                'https://developers.google.com/static/crawling/ipranges/common-crawlers.json',
+                'https://developers.google.com/static/crawling/ipranges/special-crawlers.json',
+                'https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers.json',
+                'https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json',
+                'https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json'
+            ]
         ];
 
         $all_cidrs = [];
-        foreach ($endpoints as $bot => $url) {
-            $response = wp_remote_get($url, ['timeout' => 5]);
-            if (!is_wp_error($response)) {
-                $body = wp_remote_retrieve_body($response);
-                $data = json_decode($body, true);
-                if (is_array($data) && !empty($data['prefixes'])) {
-                    foreach ($data['prefixes'] as $prefix) {
-                        if (!empty($prefix['ipv4Prefix'])) {
-                            $all_cidrs[$bot][] = $prefix['ipv4Prefix'];
-                        }
-                        if (!empty($prefix['ipv6Prefix'])) {
-                            $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
+        foreach ($endpoints as $bot => $urls) {
+            if (!is_array($urls)) {
+                $urls = [$urls];
+            }
+            
+            foreach ($urls as $url) {
+                $response = wp_remote_get($url, ['timeout' => 5]);
+                if (!is_wp_error($response)) {
+                    $body = wp_remote_retrieve_body($response);
+                    $data = json_decode($body, true);
+                    if (is_array($data) && !empty($data['prefixes'])) {
+                        foreach ($data['prefixes'] as $prefix) {
+                            if (!empty($prefix['ipv4Prefix'])) {
+                                $all_cidrs[$bot][] = $prefix['ipv4Prefix'];
+                            }
+                            if (!empty($prefix['ipv6Prefix'])) {
+                                $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
+                            }
                         }
                     }
                 }
@@ -203,16 +221,16 @@ class ADVAIPBL_Bot_Verifier {
         }
 
         if (!empty($all_cidrs)) {
-            update_option('advaipbl_ai_bot_ips', $all_cidrs, false);
-            set_transient('advaipbl_ai_bot_ips_cached', true, DAY_IN_SECONDS);
+            update_option('advaipbl_bot_ips', $all_cidrs, false);
+            set_transient('advaipbl_bot_ips_cached', true, DAY_IN_SECONDS);
         }
     }
 
     /**
-     * Verifica si la IP pertenece a la lista CIDR del bot de IA.
+     * Verifica si la IP pertenece a la lista CIDR cacheada del bot.
      */
-    private function verify_ai_ip($ip, $ua_keyword) {
-        $ai_ips = get_option('advaipbl_ai_bot_ips', []);
+    private function verify_bot_ip($ip, $ua_keyword) {
+        $bot_ips = get_option('advaipbl_bot_ips', []);
         
         $bot_key = '';
         if ($ua_keyword === 'gptbot' || $ua_keyword === 'oai/openai') {
@@ -223,13 +241,15 @@ class ADVAIPBL_Bot_Verifier {
             $bot_key = 'chatgpt-user';
         } elseif ($ua_keyword === 'applebot') {
             $bot_key = 'applebot';
+        } elseif (in_array($ua_keyword, ['googlebot', 'google.com/bot', 'adsbot-google'])) {
+            $bot_key = 'google';
         }
 
-        if (empty($bot_key) || empty($ai_ips[$bot_key])) {
+        if (empty($bot_key) || empty($bot_ips[$bot_key])) {
             return false;
         }
 
-        foreach ($ai_ips[$bot_key] as $cidr) {
+        foreach ($bot_ips[$bot_key] as $cidr) {
             if ($this->plugin->is_ip_in_range($ip, $cidr)) {
                 return true;
             }

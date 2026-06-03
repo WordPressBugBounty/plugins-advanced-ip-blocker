@@ -33,7 +33,7 @@ class ADVAIPBL_Main {
     public $waf_manager;
 	public $rate_limit_manager;
 	public $asn_manager;
-	private $request_is_asn_whitelisted = false;
+	public $request_is_asn_whitelisted = false;
 	public $dashboard_manager;
 	public $threat_score_manager;
 	public $fingerprint_manager;
@@ -220,10 +220,13 @@ private function __construct() {
         // Ejecutar chequeo de base de datos muy temprano en init
         add_action('init', [$this, 'check_database_version'], -9999);
 
-        // Intercepción global y obligatoria para todos los JS Challenges (evita orfandad en módulos de bloqueo avanzados)
-        add_action('init', [$this->js_challenge_manager, 'verify_submission'], -999);
-		add_action('init', [$this, 'is_visitor_asn_whitelisted'], -100);
-		add_action('init', [$this, 'verify_known_bots'], -99);
+        // Ejecutamos las validaciones de inmunidad (Bots y ASN) ANTES que cualquier otra cosa
+		add_action('init', [$this, 'is_visitor_asn_whitelisted'], -1000);
+		add_action('init', [$this, 'verify_known_bots'], -999);
+		add_action('init', [$this->rules_engine, 'evaluate'], -998); // Reglas avanzadas (ALLOW/BLOCK) evalúan antes de las validaciones de challenge
+
+        // Intercepción global y obligatoria para todos los JS Challenges
+        add_action('init', [$this->js_challenge_manager, 'verify_submission'], -997);
 		add_action('init', [$this, 'check_ip_with_abuseipdb'], 10);
 		add_action('init', [$this, 'block_xmlrpc_requests_if_disabled'], -5);
         add_action('init', [$this, 'log_request_signature'], -2);
@@ -735,9 +738,9 @@ public function verify_known_bots() {
      * Se ejecuta en un hook muy temprano para comprobar la firma de la petición.
      * Si la firma es maliciosa, sirve un desafío JavaScript.
      */
-         public function check_for_malicious_signature() {
+      public function check_for_malicious_signature() {
 		if ($this->is_request_uri_excluded()) { return; }	
-		if ($this->request_is_asn_whitelisted) { return; }
+		if (!empty($this->request_is_asn_whitelisted) || $this->is_whitelisted($this->get_client_ip()) || !empty($this->is_advanced_rule_allowed)) { return; }
 		
         // Excluir AJAX, JSON, Cron y procesos internos (ej: Elementor, WP Dashboard)
         if (wp_doing_ajax() || wp_is_json_request() || is_admin() || wp_doing_cron() || (defined('WP_CLI') && WP_CLI)) {
@@ -823,7 +826,7 @@ public function verify_known_bots() {
             return;
         }
         
-        if ($this->request_is_asn_whitelisted || wp_doing_cron() || is_admin() || (defined('WP_CLI') && WP_CLI) || $this->is_whitelisted($ip)) {
+        if ($this->request_is_asn_whitelisted || wp_doing_cron() || is_admin() || (defined('WP_CLI') && WP_CLI) || $this->is_whitelisted($ip) || !empty($this->is_advanced_rule_allowed)) {
             return;
         }
 
@@ -2047,6 +2050,11 @@ return $status_header;
      * Enganchado a un hook 'init' temprano para máxima eficacia.
      */
     public function block_xmlrpc_requests_if_disabled() {
+        // Bypass global: Si la IP está en la whitelist, puede saltarse este bloqueo estricto
+        if ($this->is_whitelisted($this->get_client_ip()) || !empty($this->request_is_asn_whitelisted) || !empty($this->is_advanced_rule_allowed)) {
+            return;
+        }
+
         // Solo actuar si la opción está explícitamente en modo 'disabled'.
         if ( empty( $this->options['xmlrpc_protection_mode'] ) || 'disabled' !== $this->options['xmlrpc_protection_mode'] ) {
             return;
@@ -2175,6 +2183,11 @@ return $status_header;
      * @return array The modified endpoints.
      */
     public function disable_rest_api_user_endpoints( $endpoints ) {
+        // Inmunidad Global (Permite scripts de admin externos)
+        if ($this->is_whitelisted($this->get_client_ip())) {
+            return $endpoints;
+        }
+
         // Solo actuar si la opción está activada
         if ( empty( $this->options['disable_user_enumeration'] ) ) {
             return $endpoints;
@@ -2217,6 +2230,11 @@ return $status_header;
     * Enganchado a 'init'.
     */
     public function prevent_author_enumeration_redirect() {
+    // Inmunidad Global
+    if ($this->is_whitelisted($this->get_client_ip()) || !empty($this->request_is_asn_whitelisted) || !empty($this->is_advanced_rule_allowed)) {
+        return;
+    }
+
     // Solo actuar si la opción está activada y no estamos en el admin.
     if ( ! empty( $this->options['prevent_author_scanning'] ) && ! is_admin() ) {
         // Comprobamos directamente el parámetro GET 'author'. Es mucho más fiable.
@@ -2317,7 +2335,7 @@ return $status_header;
             return;
         }
 		
-		if ($this->rules_engine->evaluate()) {
+		if (!empty($this->is_advanced_rule_allowed)) {
             return;
          }
 		
@@ -7198,7 +7216,7 @@ public function handle_import_settings() {
         if (get_transient('advaipbl_grace_pass_' . md5($this->get_client_ip()))) {
            return;
         }
-        if ($this->request_is_asn_whitelisted) { return; }
+        if (!empty($this->request_is_asn_whitelisted) || $this->is_whitelisted($this->get_client_ip()) || !empty($this->is_advanced_rule_allowed)) { return; }
         
         // Procesa la respuesta del desafío si es para este tipo.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
