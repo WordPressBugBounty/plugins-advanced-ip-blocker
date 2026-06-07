@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-05-29 10:48+0200\n"
+"PO-Revision-Date: 2026-06-05 08:25+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8623,6 +8623,103 @@ msgstr ""
 "Invalida globalmente todos los pases VIP de JS Challenge activos. Usa este "
 "\"Botón de pánico\" si sospechas que se ha intentado eludir la seguridad o "
 "si acabas de modificar la configuración del desafío."
+
+msgid "IP & ASN Diagnostics Tool"
+msgstr "Herramienta de diagnóstico de IP y ASN"
+
+msgid ""
+"Enter an IP address or ASN to run a complete diagnostic across all security "
+"modules."
+msgstr ""
+"Introduzca una dirección IP o un número autónomo (ASN) para ejecutar un "
+"diagnóstico completo en todos los módulos de seguridad."
+
+msgid "Inspect IP/ASN"
+msgstr "Inspeccionar IP/ASN"
+
+msgid "IP Inspector"
+msgstr "IP Inspector"
+
+msgid "Please enter an IP address or ASN."
+msgstr "Introduzca una dirección IP o un ASN."
+
+msgid "Invalid IP address or ASN format."
+msgstr "Dirección IP o formato ASN no válidos."
+
+msgid "Geolocation Data"
+msgstr "Datos de geolocalización"
+
+msgid "City:"
+msgstr "Ciudad:"
+
+msgid "ASN:"
+msgstr "ASN:"
+
+msgid "Data provided by:"
+msgstr "Datos proporcionados por:"
+
+msgid "No geolocation data found."
+msgstr "No se encontraron datos de geolocalización."
+
+msgid "Method used:"
+msgstr "Método utilizado:"
+
+msgid "Security Status"
+msgstr "Estado de seguridad"
+
+msgid "Whitelisted:"
+msgstr "Whitelisted:"
+
+msgid "Yes (Manual Whitelist)"
+msgstr "Si (Manual Whitelist)"
+
+msgid "Verified Bot:"
+msgstr "Bot verificado:"
+
+msgid "Yes (Global Immunity)"
+msgstr "Si (Global Immunity)"
+
+msgid "Yes (Actively Blocked)"
+msgstr "Si (Actively Blocked)"
+
+msgid "Advanced Metrics"
+msgstr "Métricas avanzadas"
+
+msgid "AbuseIPDB Score:"
+msgstr "AbuseIPDB Score:"
+
+msgid "Not Checked / Disabled"
+msgstr "Not Checked / Disabled"
+
+msgid "JS Challenge Pass:"
+msgstr "JS Challenge Pass:"
+
+msgid "AIB Community Network:"
+msgstr "AIB Community Network:"
+
+msgid "Listed (Malicious)"
+msgstr "Listado (Malicioso)"
+
+msgid "Spamhaus ASN DROP:"
+msgstr "Spamhaus ASN DROP:"
+
+msgid "An error occurred while running the diagnostic."
+msgstr "Se produjo un error al ejecutar el diagnóstico."
+
+msgid "High Risk (Exceeds Threshold)"
+msgstr "Alto riesgo (supera el umbral)"
+
+msgid "Clean / Under Threshold"
+msgstr "Limpio / Por debajo del umbral"
+
+msgid "ISP/Org:"
+msgstr "ISP/Org:"
+
+msgid "Hostname:"
+msgstr "Hostname:"
+
+msgid "Location Map"
+msgstr "Ubicación"
 
 #~ msgid "Signature Logging (Beta)"
 #~ msgstr "Registro de firmas (Beta)"

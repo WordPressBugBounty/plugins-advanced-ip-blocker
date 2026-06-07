@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.10.14\n"
+"Project-Id-Version: Advanced IP Blocker 8.10.15\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7804,3 +7804,127 @@ msgstr ""
 #: includes/class-advaipbl-settings-manager.php
 msgid "Invalidates all currently active JS Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations."
 msgstr ""
+
+msgid "IP & ASN Diagnostics Tool"
+msgstr ""
+
+msgid "Enter an IP address or ASN to run a complete diagnostic across all security modules."
+msgstr ""
+
+msgid "Inspect IP/ASN"
+msgstr ""
+
+msgid "IP Inspector"
+msgstr ""
+
+msgid "Permission denied."
+msgstr ""
+
+msgid "Please enter an IP address or ASN."
+msgstr ""
+
+msgid "Invalid IP address or ASN format."
+msgstr ""
+
+msgid "Geolocation Data"
+msgstr ""
+
+msgid "Country:"
+msgstr ""
+
+msgid "City:"
+msgstr ""
+
+msgid "ASN:"
+msgstr ""
+
+msgid "Data provided by:"
+msgstr ""
+
+msgid "No geolocation data found."
+msgstr ""
+
+msgid "Method used:"
+msgstr ""
+
+msgid "Security Status"
+msgstr ""
+
+msgid "Whitelisted:"
+msgstr ""
+
+msgid "Yes (Manual Whitelist)"
+msgstr ""
+
+msgid "No"
+msgstr ""
+
+msgid "Verified Bot:"
+msgstr ""
+
+msgid "Yes (Global Immunity)"
+msgstr ""
+
+msgid "Blocked:"
+msgstr ""
+
+msgid "Yes (Actively Blocked)"
+msgstr ""
+
+msgid "Advanced Metrics"
+msgstr ""
+
+msgid "AbuseIPDB Score:"
+msgstr ""
+
+msgid "Not Checked / Disabled"
+msgstr ""
+
+msgid "JS Challenge Pass:"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+msgid "AIB Community Network:"
+msgstr ""
+
+msgid "Listed (Malicious)"
+msgstr ""
+
+msgid "Clean"
+msgstr ""
+
+msgid "Spamhaus ASN DROP:"
+msgstr ""
+
+msgid "An error occurred while running the diagnostic."
+msgstr ""
+
+
+msgid "High Risk (Exceeds Threshold)"
+msgstr ""
+
+msgid "Clean / Under Threshold"
+msgstr ""
+
+
+msgid "ISP/Org:"
+msgstr ""
+
+msgid "Hostname:"
+msgstr ""
+
+msgid "Location Map"
+msgstr ""
+
+
+msgid "External maps are used to comply with strict Content Security Policies (CSP)."
+msgstr ""
+
+msgid "View Map on OpenStreetMap"
+msgstr ""
+

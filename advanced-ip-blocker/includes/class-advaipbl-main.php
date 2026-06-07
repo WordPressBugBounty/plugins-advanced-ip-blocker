@@ -337,6 +337,7 @@ private function __construct() {
 			add_action('wp_ajax_advaipbl_get_signature_details', [$this->ajax_handler, 'ajax_get_signature_details']);
 			add_action('wp_ajax_advaipbl_whitelist_signature', [$this->ajax_handler, 'ajax_whitelist_signature']);
 			add_action('wp_ajax_advaipbl_get_lockdown_details', [$this->ajax_handler, 'ajax_get_lockdown_details']);
+            add_action('wp_ajax_advaipbl_inspect_ip', [$this->ajax_handler, 'ajax_inspect_ip']);
             add_action('admin_post_advaipbl_import_settings', [ $this, 'handle_import_settings' ] );
             add_action('admin_post_advaipbl_clear_location_cache_action', [$this, 'handle_clear_cache_action']);
             add_action('admin_post_advaipbl_revoke_vip_passes_action', [$this, 'handle_revoke_vip_passes_action']);
@@ -1751,6 +1752,13 @@ public function get_blocked_endpoints_count() {
                 wp_enqueue_style('leaflet-markercluster-default-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/MarkerCluster.Default.css');
                 wp_enqueue_script('leaflet-markercluster-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/leaflet.markercluster.js', ['leaflet-js'], '1.5.3', true);
                 wp_enqueue_script('advaipbl-dashboard-js', plugin_dir_url( dirname( __FILE__ ) ) . 'js/advaipbl-dashboard.js', ['jquery', 'chartjs', 'leaflet-markercluster-js', 'advaipbl-admin-core-js'], ADVAIPBL_VERSION, true);
+            }
+
+            // Cargar assets para IP Inspector
+            if ( 'ip_inspector' === $active_sub_tab ) {
+                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+                wp_enqueue_style('leaflet-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/leaflet.css');
+                wp_enqueue_script('leaflet-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/leaflet.js', [], '1.9.4', true);
             }
 
             // Cargar assets de la página "About"
@@ -4162,6 +4170,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     $wp_admin_bar->add_node(['id' => 'advaipbl_threat_blocked_signatures', 'parent' => 'advaipbl_threat_mgmt_group', 'title' => __('Blocked Signatures', 'advanced-ip-blocker') . $create_bubble($blocked_signatures_count), 'href' => add_query_arg(['tab' => 'ip_management', 'sub-tab' => 'blocked_signatures'], $base_admin_url)]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_threat_blocked_endpoints', 'parent' => 'advaipbl_threat_mgmt_group', 'title' => __('Blocked Endpoints', 'advanced-ip-blocker') . $create_bubble($blocked_endpoints_count), 'href' => add_query_arg(['tab' => 'ip_management', 'sub-tab' => 'blocked_endpoints'], $base_admin_url)]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_threat_whitelist', 'parent' => 'advaipbl_threat_mgmt_group', 'title' => __('Whitelist', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'ip_management', 'sub-tab' => 'whitelist'], $base_admin_url)]);
+    $wp_admin_bar->add_node(['id' => 'advaipbl_threat_ip_inspector', 'parent' => 'advaipbl_threat_mgmt_group', 'title' => __('IP Inspector', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'ip_management', 'sub-tab' => 'ip_inspector'], $base_admin_url)]);
 
     // --- 5. Grupo "Logs & Sessions" (y restantes) ---
     $wp_admin_bar->add_node(['id' => 'advaipbl_logs_group', 'parent' => 'advaipbl_menu', 'title' => __('Logs & Sessions', 'advanced-ip-blocker'), 'href' => false]);

@@ -33,6 +33,184 @@ class ADVAIPBL_Ajax_Handler {
         }
     }
 	/**
+     * AJAX callback para el IP Inspector.
+     */
+    public function ajax_inspect_ip() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied.', 'advanced-ip-blocker'));
+        }
+        check_ajax_referer('advaipbl_inspect_ip_nonce', 'nonce');
+
+        $query = isset($_POST['query']) ? sanitize_text_field(wp_unslash($_POST['query'])) : '';
+        if (!$query) {
+            wp_send_json_error(__('Please enter an IP address or ASN.', 'advanced-ip-blocker'));
+        }
+
+        // Si es un ASN, solo limpiarlo. Si es una IP, validarla.
+        $ip = '';
+        $asn = '';
+        if (preg_match('/^AS\d+$/i', $query)) {
+            $asn = strtoupper($query);
+        } elseif (filter_var($query, FILTER_VALIDATE_IP)) {
+            $ip = $query;
+        } else {
+            wp_send_json_error(__('Invalid IP address or ASN format.', 'advanced-ip-blocker'));
+        }
+
+        $data = [
+            'geo' => [
+                'country' => null,
+                'city' => null,
+                'asn' => null,
+                'isp' => null,
+                'hostname' => null,
+                'lat' => null,
+                'lon' => null,
+                'provider' => $this->plugin->options['geolocation_method'] === 'local_db' ? 'Local MaxMind Database' : 'External API'
+            ],
+            'status' => [
+                'is_whitelisted' => false,
+                'is_blocked' => false,
+                'is_bot' => false
+            ],
+            'metrics' => [
+                'abuse_score' => null,
+                'abuse_threshold' => 90,
+                'has_vip_pass' => false,
+                'aib_network' => false,
+                'spamhaus' => false
+            ]
+        ];
+
+        if ($ip) {
+            // 1. Geolocation
+            $loc = $this->plugin->geolocation_manager->fetch_location($ip);
+            if ($loc && empty($loc['error'])) {
+                $data['geo']['country'] = isset($loc['country']) ? $loc['country'] : (isset($loc['country_code']) ? $loc['country_code'] : null);
+                $data['geo']['city'] = isset($loc['city']) ? $loc['city'] : null;
+                $data['geo']['asn'] = isset($loc['as']) ? $loc['as'] : (isset($loc['isp']) ? $loc['isp'] : null);
+                $data['geo']['isp'] = isset($loc['isp']) ? $loc['isp'] : null;
+                $data['geo']['lat'] = isset($loc['lat']) ? $loc['lat'] : null;
+                $data['geo']['lon'] = isset($loc['lon']) ? $loc['lon'] : null;
+            }
+            
+            // Hostname (rDNS)
+            $hostname = gethostbyaddr($ip);
+            if ($hostname !== $ip && $hostname !== false) {
+                $data['geo']['hostname'] = $hostname;
+            }
+
+            // 2. Whitelist
+            $data['status']['is_whitelisted'] = $this->plugin->is_whitelisted($ip);
+
+            // 3. Bot Verifier
+            $data['status']['is_bot'] = $this->plugin->bot_verifier->is_verified_bot($ip, '');
+
+            // 4. Blocked Status
+            $data['status']['is_blocked'] = $this->plugin->is_ip_actively_blocked($ip);
+
+            // 5. VIP Pass
+            if (!empty($this->plugin->options['enable_js_challenge'])) {
+                $data['metrics']['has_vip_pass'] = $this->plugin->js_challenge_manager->is_vip_pass_valid($ip);
+            }
+
+            // 6. AbuseIPDB
+            $data['metrics']['abuse_threshold'] = (int) ($this->plugin->options['abuseipdb_threshold'] ?? 90);
+            if (!empty($this->plugin->options['enable_abuseipdb'])) {
+                $abuse_data = $this->plugin->abuseipdb_manager->check_ip($ip);
+                if (isset($abuse_data['score'])) {
+                    $data['metrics']['abuse_score'] = $abuse_data['score'];
+                }
+            }
+            
+            // 7. AIB Community Network
+            $data['metrics']['aib_network'] = false;
+            if (isset($this->plugin->community_manager) && $this->plugin->community_manager->is_ip_blocked($ip)) {
+                $data['metrics']['aib_network'] = true;
+            }
+            
+            // 8. Spamhaus ASN DROP
+            $data['metrics']['spamhaus'] = false;
+            if ($data['geo']['asn']) {
+                if (preg_match('/\d+/', $data['geo']['asn'], $matches)) {
+                    $asn_number = intval($matches[0]);
+                    $spamhaus_list = get_option('advaipbl_spamhaus_asn_list', []);
+                    if (in_array($asn_number, $spamhaus_list, true)) {
+                        $data['metrics']['spamhaus'] = true;
+                    }
+                }
+            }
+        } elseif ($asn) {
+            $data['geo']['asn'] = $asn;
+            $data['geo']['provider'] = 'ASN Lookup';
+            $data['status']['is_blocked'] = false;
+            $data['status']['is_whitelisted'] = false;
+            
+            if (preg_match('/\d+/', $asn, $matches)) {
+                $asn_number = intval($matches[0]);
+                
+                // Fetch ASN details from RIPE Stat API
+                $response = wp_remote_get('https://stat.ripe.net/data/as-overview/data.json?resource=' . $asn_number, ['timeout' => 5]);
+                
+                if (!is_wp_error($response)) {
+                    $body = wp_remote_retrieve_body($response);
+                    $json = json_decode($body, true);
+                    
+                    if (isset($json['status']) && $json['status'] === 'ok' && !empty($json['data']['holder'])) {
+                        $data['geo']['isp'] = $json['data']['holder'];
+                        $data['geo']['provider'] = 'RIPE Stat API (ASN Lookup)';
+                    }
+                }
+            }
+            
+            // Check ASN Whitelist
+            $whitelisted_asns_raw = get_option('advaipbl_whitelisted_asns', []);
+            $clean_whitelist = [];
+            if (!empty($whitelisted_asns_raw)) {
+                foreach ($whitelisted_asns_raw as $entry) {
+                    $parts = explode('#', $entry);
+                    $clean_val = strtoupper(trim($parts[0]));
+                    if (!empty($clean_val)) {
+                        $clean_whitelist[] = $clean_val;
+                    }
+                }
+            }
+            if (in_array(strtoupper($asn), $clean_whitelist, true)) {
+                $data['status']['is_whitelisted'] = true;
+            }
+            
+            // Check ASN Blocklist
+            $blocked_asns_raw = get_option('advaipbl_blocked_asns', []);
+            $clean_blocklist = [];
+            if (!empty($blocked_asns_raw)) {
+                foreach ($blocked_asns_raw as $entry) {
+                    $parts = explode('#', $entry);
+                    $clean_val = strtoupper(trim($parts[0]));
+                    if (!empty($clean_val)) {
+                        $clean_blocklist[] = $clean_val;
+                    }
+                }
+            }
+            if (in_array(strtoupper($asn), $clean_blocklist, true)) {
+                $data['status']['is_blocked'] = true;
+            }
+            
+            // Check Spamhaus Blocklist
+            if (preg_match('/\d+/', $asn, $matches)) {
+                $asn_number = intval($matches[0]);
+                $spamhaus_list = get_option('advaipbl_spamhaus_asn_list', []);
+                
+                if (in_array($asn_number, $spamhaus_list, true)) {
+                    $data['status']['is_blocked'] = true;
+                    $data['metrics']['spamhaus'] = true;
+                }
+            }
+        }
+
+        wp_send_json_success($data);
+    }
+
+	/**
      * AJAX callback para resetear la puntuación de amenaza de una IP.
      */
         public function ajax_reset_threat_score() {

@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.10.14
+Stable tag: 8.10.15
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,15 +21,16 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
-*   **(NEW) Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
-*   **(NEW) Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
-*   **(NEW) Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
-*   **(NEW) AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
-*   **(NEW) Whitelist Login Countries:** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, instantly blocking unauthorized foreign login attempts.
+*   **(NEW) IP & ASN Diagnostics Tool:** A complete Inspector tool integrated directly into the admin bar. Quickly audit any IP or ASN against your Geolocation database, Threat Scoring system, Spamhaus drops, and manual blocking rules in real-time.
+*   **Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
+*   **Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
+*   **Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
+*   **AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
+*   **Whitelist Login Countries:** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, instantly blocking unauthorized foreign login attempts.
 *   **(IMPROVED) Bulk Import/Export for Blocked IPs & Whitelist:** Seamlessly import massive lists of IPs via CSV or manual entry. The system now features a bulletproof "Bulk Import" type, strict duration inheritance, and intelligent conflict resolution.
-*   **(NEW) Internal Security & Forensics:** A complete audit suite solely for WordPress. Track every sensitive event (plugin installs, settings changes, user logins) and monitor your critical files for unauthorized modifications with the integrated File Integrity Monitor.
-*   **(NEW) Activity Audit Log:** Gain complete visibility into what's happening on your site. Who deactivated a plugin? Who changed a setting? The Audit Log answers these questions with timestamped, immutable records.
-*   **(NEW) Deep Scan Email Reports:** Get a weekly security summary delivered to your inbox, detailing pending updates, vulnerability status, and recent attack trends.
+*   **Internal Security & Forensics:** A complete audit suite solely for WordPress. Track every sensitive event (plugin installs, settings changes, user logins) and monitor your critical files for unauthorized modifications with the integrated File Integrity Monitor.
+*   **Activity Audit Log:** Gain complete visibility into what's happening on your site. Who deactivated a plugin? Who changed a setting? The Audit Log answers these questions with timestamped, immutable records.
+*   **Deep Scan Email Reports:** Get a weekly security summary delivered to your inbox, detailing pending updates, vulnerability status, and recent attack trends.
 *   **Username Blocking & Rules:** Gain granular control over login security. Creating Advanced Rules to block, challenge, or score specific usernames (e.g., "admin", "test").
 *   **Enhanced Lockdown Notifications:** Distributed Lockdowns (404/403) now fully support Email and Push notifications, ensuring you never miss a critical security event.
 *   **Improved Logging:** New "Endpoint Challenge" event type provides deeper visibility into challenges served during automated lockdowns.
@@ -68,6 +69,9 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+= What is the IP & ASN Diagnostics Tool (IP Inspector)? =
+It is a powerful built-in utility located in your Security menu (and top admin bar) that allows you to manually inspect any IP address or Autonomous System Number (ASN). It instantly cross-references the subject against your Geolocation databases, Threat Scoring system, AbuseIPDB, Spamhaus drops, and local whitelists/blocklists. It is the ultimate tool for investigating suspicious traffic or verifying if a legitimate user was blocked by a specific rule.
+
 = How does the Vulnerability Scanner work? =
 The scanner checks your site in two ways:
 Local Scan: Checks for outdated PHP versions, WordPress core updates, debug mode risks, and SSL status. This runs locally and instantly.
@@ -232,6 +236,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.15 =
+*   **NEW FEATURE:** IP & ASN Diagnostics Tool (IP Inspector). Run deep, real-time security audits on any IP or ASN directly from the admin bar or threat dashboard.
+*   **Security:** Fixed a critical bypass vulnerability in the ASN Firewall engine where inline comments inside manual blocklists were incorrectly parsed, allowing the target ASN to bypass the rules.
+*   **Improved:** Migrated ASN Organization lookups to the stable and official RIPE Stat API, replacing the deprecated BGPView service.
+*   **Fix:** Resolved a UI bug where missing Leaflet marker assets generated 404 errors in the admin console.
+
 = 8.10.14 =
 * Compatibility: Added official support for ClassicPress 1.x and 2.x by adjusting core version requirements.
 * Security: Implemented a "Global Immunity" standard. IPs in the Whitelist and Verified Bots (like Google) now flawlessly bypass all security modules, including Advanced Rules, XML-RPC lockdowns, and Rate Limiting.
@@ -304,5 +314,5 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.10.13 =
-**SECURITY UPDATE:** Eliminates JS challenge cookie forgery with new HMAC VIP passes. Adds global VIP revocation. Resolves false positives on slow networks. Login/XML-RPC Lockdowns now respect Global Duration. Improves Google bot verification.
+= 8.10.15 =
+**NEW TOOL & SECURITY FIX:** Introduces the comprehensive IP & ASN Diagnostics Tool for real-time traffic auditing. Fixes a critical firewall bypass involving inline comments in ASN blocklists. Migrates ASN lookups to the official RIPE Stat API.

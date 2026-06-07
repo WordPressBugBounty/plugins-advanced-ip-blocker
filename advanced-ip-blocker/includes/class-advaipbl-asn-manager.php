@@ -40,9 +40,21 @@ class ADVAIPBL_Asn_Manager {
             return false;
         }
 
+        // Helper to check ASN against a raw list containing comments
+        $in_asn_list = function($asn, $raw_list) {
+            if (empty($raw_list)) return false;
+            foreach ($raw_list as $entry) {
+                $parts = explode('#', $entry);
+                if (strtoupper(trim($parts[0])) === strtoupper($asn)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         // --- NEW: Check Whitelist First ---
         $whitelisted_asns = get_option(ADVAIPBL_Main::OPTION_WHITELISTED_ASNS, []);
-        if (!empty($whitelisted_asns) && in_array($visitor_asn, $whitelisted_asns, true)) {
+        if ($in_asn_list($visitor_asn, $whitelisted_asns)) {
             // Explicitly allowed, so we skip any block checks.
             return false;
         }
@@ -53,7 +65,7 @@ class ADVAIPBL_Asn_Manager {
 
         if ($enable_manual_list) {
             $blocked_asns_manual = get_option(ADVAIPBL_Main::OPTION_BLOCKED_ASNS, []);
-            if (!empty($blocked_asns_manual) && in_array($visitor_asn, $blocked_asns_manual, true)) {
+            if ($in_asn_list($visitor_asn, $blocked_asns_manual)) {
                 $is_blocked = true;
                 $block_source = 'Manual List';
             }

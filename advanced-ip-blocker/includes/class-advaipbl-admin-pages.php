@@ -50,7 +50,8 @@ class ADVAIPBL_Admin_Pages {
                 'blocked_ips'        => __('Blocked IPs', 'advanced-ip-blocker'),
                 'blocked_signatures' => __('Blocked Signatures', 'advanced-ip-blocker'),
                 'blocked_endpoints'  => __('Blocked Endpoints', 'advanced-ip-blocker'),
-                'whitelist'          => __('Whitelist', 'advanced-ip-blocker')
+                'whitelist'          => __('Whitelist', 'advanced-ip-blocker'),
+                'ip_inspector'       => __('IP Inspector', 'advanced-ip-blocker')
             ]
         ],
 
@@ -186,6 +187,7 @@ class ADVAIPBL_Admin_Pages {
         case 'blocked_signatures': $this->display_blocked_signatures_tab(); break;
 		case 'blocked_endpoints': $this->display_blocked_endpoints_tab(); break;
 		case 'whitelist': $this->display_whitelist_tab(); break;
+		case 'ip_inspector': $this->display_ip_inspector_tab(); break;
 		case 'scan_overview': $this->display_scanner_tab(); break;
         case 'security_log': $this->display_security_log_tab(); break;
         case 'audit_log': $this->display_audit_log_tab(); break;
@@ -3460,6 +3462,199 @@ $status_parts[] = sprintf(
     </template>
     <?php
  }
+
+public function display_ip_inspector_tab() {
+    ?>
+    <div class="advaipbl-main-dashboard">
+        <div class="advaipbl-main-dashboard-header">
+            <h2><?php esc_html_e('IP & ASN Diagnostics Tool', 'advanced-ip-blocker'); ?></h2>
+            <p><?php esc_html_e('Enter an IP address or ASN to run a complete diagnostic across all security modules.', 'advanced-ip-blocker'); ?></p>
+        </div>
+
+        <div class="advaipbl-card advaipbl-diagnostics-card" style="margin-top: 20px;">
+            <div class="advaipbl-card-content">
+                <form id="advaipbl-inspect-ip-form" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="advaipbl-inspect-ip-input" placeholder="e.g. 192.168.1.1 or AS15169" style="width: 300px; padding: 6px; font-size: 16px;" required>
+                    <?php wp_nonce_field('advaipbl_inspect_ip_nonce', 'advaipbl_inspect_ip_nonce_field'); ?>
+                    <button type="submit" class="advaipbl-btn advaipbl-btn-primary" id="advaipbl-inspect-btn">
+                        <span class="dashicons dashicons-search" style="vertical-align: middle;"></span> <?php esc_html_e('Inspect IP/ASN', 'advanced-ip-blocker'); ?>
+                    </button>
+                    <span class="spinner" id="advaipbl-inspect-spinner" style="float: none; margin: 0;"></span>
+                </form>
+            </div>
+        </div>
+
+        <div id="advaipbl-inspector-results" style="margin-top: 30px; display: none;">
+            <!-- Results will be injected here via JS -->
+        </div>
+    </div>
+    
+    <script>
+    jQuery(document).ready(function($) {
+        $('#advaipbl-inspect-ip-form').on('submit', function(e) {
+            e.preventDefault();
+            var query = $('#advaipbl-inspect-ip-input').val().trim();
+            var nonce = $('#advaipbl_inspect_ip_nonce_field').val();
+            
+            if (!query) return;
+            
+            $('#advaipbl-inspect-spinner').addClass('is-active');
+            $('#advaipbl-inspect-btn').prop('disabled', true);
+            $('#advaipbl-inspector-results').slideUp().empty();
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'advaipbl_inspect_ip',
+                    nonce: nonce,
+                    query: query
+                },
+                success: function(response) {
+                    $('#advaipbl-inspect-spinner').removeClass('is-active');
+                    $('#advaipbl-inspect-btn').prop('disabled', false);
+                    
+                    if (response.success) {
+                        var data = response.data;
+                        
+                        var html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">';
+                        
+                        // Geolocation Card
+                        html += '<div class="advaipbl-card">';
+                        html += '<div class="advaipbl-card-header"><h3><span class="dashicons dashicons-location"></span> ' + '<?php echo esc_js(__('Geolocation Data', 'advanced-ip-blocker')); ?>' + '</h3></div>';
+                        html += '<div class="advaipbl-card-content"><ul style="margin: 0; line-height: 1.8;">';
+                        if (data.geo.country || data.geo.asn) {
+                            if (data.geo.country) {
+                                html += '<li><strong>' + '<?php echo esc_js(__('Country:', 'advanced-ip-blocker')); ?>' + '</strong> ' + data.geo.country + '</li>';
+                            }
+                            if (data.geo.city) {
+                                html += '<li><strong>' + '<?php echo esc_js(__('City:', 'advanced-ip-blocker')); ?>' + '</strong> ' + data.geo.city + '</li>';
+                            } else if (data.geo.provider.indexOf('ASN Lookup') === -1) {
+                                // Show N/A for IP lookups, hide for direct ASN lookups
+                                html += '<li><strong>' + '<?php echo esc_js(__('City:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('N/A', 'advanced-ip-blocker')); ?>' + '</li>';
+                            }
+                            if (data.geo.asn) {
+                                html += '<li><strong>' + '<?php echo esc_js(__('ASN:', 'advanced-ip-blocker')); ?>' + '</strong> ' + data.geo.asn + '</li>';
+                            }
+                            if (data.geo.isp) {
+                                html += '<li><strong>' + '<?php echo esc_js(__('ISP/Org:', 'advanced-ip-blocker')); ?>' + '</strong> ' + data.geo.isp + '</li>';
+                            }
+                            if (data.geo.hostname) {
+                                html += '<li><strong>' + '<?php echo esc_js(__('Hostname:', 'advanced-ip-blocker')); ?>' + '</strong> ' + data.geo.hostname + '</li>';
+                            }
+                            html += '<li><span style="color: #666; font-size: 12px;">' + '<?php echo esc_js(__('Data provided by:', 'advanced-ip-blocker')); ?>' + ' <strong>' + data.geo.provider + '</strong></span></li>';
+                        } else {
+                            html += '<li>' + '<?php echo esc_js(__('No geolocation data found.', 'advanced-ip-blocker')); ?>' + '</li>';
+                            html += '<li><span style="color: #666; font-size: 12px;">' + '<?php echo esc_js(__('Method used:', 'advanced-ip-blocker')); ?>' + ' <strong>' + data.geo.provider + '</strong></span></li>';
+                        }
+                        html += '</ul></div></div>';
+                        
+                        // Status Card
+                        html += '<div class="advaipbl-card">';
+                        html += '<div class="advaipbl-card-header"><h3><span class="dashicons dashicons-shield"></span> ' + '<?php echo esc_js(__('Security Status', 'advanced-ip-blocker')); ?>' + '</h3></div>';
+                        html += '<div class="advaipbl-card-content"><ul style="margin: 0; line-height: 1.8;">';
+                        
+                        if (data.status.is_whitelisted) {
+                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('Whitelisted:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Yes (Manual Whitelist)', 'advanced-ip-blocker')); ?>' + '</li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-no" style="color: #ccc;"></span> <strong>' + '<?php echo esc_js(__('Whitelisted:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('No', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        if (data.status.is_bot) {
+                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('Verified Bot:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Yes (Global Immunity)', 'advanced-ip-blocker')); ?>' + '</li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-no" style="color: #ccc;"></span> <strong>' + '<?php echo esc_js(__('Verified Bot:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('No', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        if (data.status.is_blocked) {
+                            html += '<li><span class="dashicons dashicons-warning" style="color: red;"></span> <strong>' + '<?php echo esc_js(__('Blocked:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Yes (Actively Blocked)', 'advanced-ip-blocker')); ?>' + '</li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('Blocked:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('No', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        html += '</ul></div></div>';
+                        
+                        // Advanced Metrics Card
+                        html += '<div class="advaipbl-card">';
+                        html += '<div class="advaipbl-card-header"><h3><span class="dashicons dashicons-chart-pie"></span> ' + '<?php echo esc_js(__('Advanced Metrics', 'advanced-ip-blocker')); ?>' + '</h3></div>';
+                        html += '<div class="advaipbl-card-content"><ul style="margin: 0; line-height: 1.8;">';
+                        
+                        if (data.metrics.abuse_score !== null) {
+                            var abuseIcon = (data.metrics.abuse_score >= data.metrics.abuse_threshold) 
+                                ? '<span class="dashicons dashicons-warning" style="color: red;"></span> ' 
+                                : '<span class="dashicons dashicons-yes" style="color: green;"></span> ';
+                            var abuseText = (data.metrics.abuse_score >= data.metrics.abuse_threshold)
+                                ? '<?php echo esc_js(__('High Risk (Exceeds Threshold)', 'advanced-ip-blocker')); ?>'
+                                : '<?php echo esc_js(__('Clean / Under Threshold', 'advanced-ip-blocker')); ?>';
+                                
+                            html += '<li>' + abuseIcon + '<strong>' + '<?php echo esc_js(__('AbuseIPDB Score:', 'advanced-ip-blocker')); ?>' + '</strong> ' + data.metrics.abuse_score + '% <span style="color: #666; font-size: 12px;">(' + abuseText + ')</span></li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-minus" style="color: #ccc;"></span> <strong>' + '<?php echo esc_js(__('AbuseIPDB Score:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Not Checked / Disabled', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        if (data.metrics.has_vip_pass) {
+                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('JS Challenge Pass:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Active', 'advanced-ip-blocker')); ?>' + '</li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-no" style="color: #ccc;"></span> <strong>' + '<?php echo esc_js(__('JS Challenge Pass:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('None', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        if (data.metrics.aib_network) {
+                            html += '<li><span class="dashicons dashicons-warning" style="color: red;"></span> <strong>' + '<?php echo esc_js(__('AIB Community Network:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Listed (Malicious)', 'advanced-ip-blocker')); ?>' + '</li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('AIB Community Network:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Clean', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        if (data.metrics.spamhaus) {
+                            html += '<li><span class="dashicons dashicons-warning" style="color: red;"></span> <strong>' + '<?php echo esc_js(__('Spamhaus ASN DROP:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Listed (Malicious)', 'advanced-ip-blocker')); ?>' + '</li>';
+                        } else {
+                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('Spamhaus ASN DROP:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Clean', 'advanced-ip-blocker')); ?>' + '</li>';
+                        }
+                        
+                        html += '</ul></div></div>';
+                        
+                        // Location Map Card (Only if lat/lon are available)
+                        if (data.geo.lat && data.geo.lon) {
+                            html += '<div class="advaipbl-card">';
+                            html += '<div class="advaipbl-card-header"><h3><span class="dashicons dashicons-admin-site-alt3"></span> ' + '<?php echo esc_js(__('Location Map', 'advanced-ip-blocker')); ?>' + '</h3></div>';
+                            html += '<div class="advaipbl-card-content" style="padding: 0;">';
+                            html += '<div id="advaipbl-inspector-map" style="height: 200px; width: 100%; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; z-index: 1;"></div>';
+                            html += '</div></div>';
+                        }
+                        
+                        html += '</div>';
+                        
+                        $('#advaipbl-inspector-results').html(html).slideDown(400, function() {
+                            // Initialize Leaflet Map after the DOM is ready and visible
+                            if (data.geo.lat && data.geo.lon && typeof L !== 'undefined') {
+                                var lat = parseFloat(data.geo.lat);
+                                var lon = parseFloat(data.geo.lon);
+                                var map = L.map('advaipbl-inspector-map').setView([lat, lon], 12);
+                                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                                    subdomains: 'abcd',
+                                    maxZoom: 19
+                                }).addTo(map);
+                                L.marker([lat, lon]).addTo(map);
+                                
+                                // Fix Leaflet rendering issue inside hidden divs that are shown
+                                setTimeout(function(){ map.invalidateSize(); }, 10);
+                            }
+                        });
+                    } else {
+                        $('#advaipbl-inspector-results').html('<div class="notice notice-error"><p>' + response.data + '</p></div>').slideDown();
+                    }
+                },
+                error: function() {
+                    $('#advaipbl-inspect-spinner').removeClass('is-active');
+                    $('#advaipbl-inspect-btn').prop('disabled', false);
+                    $('#advaipbl-inspector-results').html('<div class="notice notice-error"><p>' + '<?php echo esc_js(__('An error occurred while running the diagnostic.', 'advanced-ip-blocker')); ?>' + '</p></div>').slideDown();
+                }
+            });
+        });
+    });
+    </script>
+    <?php
+}
 
 public function display_scanner_tab() {
         $scan_data = $this->plugin->site_scanner->run_local_scan();
