@@ -74,6 +74,7 @@ class ADVAIPBL_Main {
      * @var bool
      */
     public $is_advanced_rule_allowed = false;
+    public $is_bot_impersonator = false;
 	private $block_response_initiated = false;
     public static function get_instance() {
         if (null === self::$instance) {
@@ -231,6 +232,7 @@ private function __construct() {
 		add_action('init', [$this, 'block_xmlrpc_requests_if_disabled'], -5);
         add_action('init', [$this, 'log_request_signature'], -2);
         add_action('plugins_loaded', [$this, 'maybe_set_donotcachepage_constant'], 0);
+		add_action('init', [$this, 'check_for_bot_impersonator_block'], -1);
         add_action('init', [$this, 'check_for_endpoint_lockdown'], -1);		
         add_action('init', [$this, 'check_for_malicious_signature'], -1);
         add_action('init', [$this, 'check_for_geo_challenge'], -1);
@@ -689,10 +691,20 @@ public function verify_known_bots() {
             set_transient('advaipbl_verified_bot_' . md5($ip), true, DAY_IN_SECONDS);
             $this->request_is_asn_whitelisted = true;
 
-        } elseif ($this->bot_verifier->is_known_bot_impersonator($ip, $user_agent)) {
+    } elseif ($this->bot_verifier->is_known_bot_impersonator($ip, $user_agent)) {
         // -- FALLO: Es un impostor conocido --
-        // Instant Block (Zero Tolerance)
-        // Skip scoring system as impersonation is a confirmed threat.
+        // Guardamos el estado para bloquearlo en el hook -1 (después de evaluar Inmunidad Global)
+        $this->is_bot_impersonator = true;
+        return;
+    }
+} 
+
+    public function check_for_bot_impersonator_block() {
+        if (empty($this->is_bot_impersonator)) { return; }
+        if (!empty($this->request_is_asn_whitelisted) || $this->is_whitelisted($this->get_client_ip()) || !empty($this->is_advanced_rule_allowed)) { return; }
+        
+        $ip = $this->get_client_ip();
+        $user_agent = $this->get_user_agent();
         
         $duration_minutes = 1440; // Default fallback
 
@@ -733,7 +745,6 @@ public function verify_known_bots() {
             $duration_seconds // Pass explicit duration
         );
     }
-} 
 	  
      /**
      * Se ejecuta en un hook muy temprano para comprobar la firma de la petición.

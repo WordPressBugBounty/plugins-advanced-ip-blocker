@@ -5,7 +5,7 @@
 
 // Explicit check for direct access to satisfy Plugin Check while allowing auto_prepend_file.
 if ( ! defined( 'ABSPATH' ) ) {
-    $advaipbl_script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? sanitize_text_field(wp_unslash($_SERVER['SCRIPT_FILENAME'])) : '';
+    $advaipbl_script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';
     if ( basename( $advaipbl_script_filename ) === basename( __FILE__ ) ) {
         exit( 'Restricted access.' );
     }
@@ -45,26 +45,12 @@ define('ADVAIPBL_EDGE_MODE', true);
 
 ob_start(); // Iniciar el buffer de salida para capturar Notices.
 
-// Cargar lo mínimo de WP y luego el plugin completo.
+// Cargar WordPress de forma nativa.
+// Esto arranca todo el ecosistema y dispara el hook 'init',
+// el cual carga automáticamente todas las defensas del plugin.
 require_once ABSPATH . 'wp-config.php';
-require_once ABSPATH . 'wp-includes/class-wpdb.php';
-require_once ABSPATH . 'wp-includes/plugin.php';
-require_once ABSPATH . 'wp-includes/load.php';
-require_once ABSPATH . 'wp-includes/option.php';
-require_once ABSPATH . 'wp-includes/functions.php';
-require_once ABSPATH . 'wp-includes/pluggable.php';
 
+// Cargar el plugin forzosamente como medida de seguridad en caso 
+// de que haya sido desactivado en la base de datos pero el Edge Firewall
+// siga activo en el servidor (ej. auto_prepend_file).
 require_once __DIR__ . '/advanced-ip-blocker.php';
-
-try {
-    $advaipbl = ADVAIPBL_Main::get_instance();
-    
-    $advaipbl->js_challenge_manager->verify_submission();
-    $advaipbl->is_visitor_asn_whitelisted();
-    $advaipbl->verify_known_bots();
-    $advaipbl->check_for_endpoint_lockdown();
-    $advaipbl->check_for_malicious_signature();
-    $advaipbl->check_for_geo_challenge();
-    $advaipbl->run_all_block_checks();
-
-} catch (Exception $e) { /* silent fail */ }

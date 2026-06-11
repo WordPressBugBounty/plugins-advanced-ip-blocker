@@ -396,6 +396,12 @@ private function execute_action($rule, $ip) {
 
         case 'challenge':
         case 'challenge_automatic':
+            // Si el usuario está enviando el resultado del desafío, permitimos que el flujo
+            // continúe para que verify_submission lo valide, en lugar de servir el desafío de nuevo (bucle).
+            if (isset($_POST['_advaipbl_js_token'])) {
+                return false;
+            }
+
             $this->plugin->log_specific_error(
                 'advanced_rule', // Usamos el tipo base y el nivel lo diferencia
                 $ip,

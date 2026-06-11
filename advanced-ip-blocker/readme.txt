@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.10.15
+Stable tag: 8.10.16
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -56,7 +56,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 *   **Endpoint Lockdown Mode:** Automatically shields `wp-login.php` and `xmlrpc.php` with a JavaScript challenge during sustained distributed attacks, preventing server overload.
 *   **Two-Factor Authentication (2FA):** Secure user accounts with industry-standard TOTP authentication, backup codes, role enforcement, and a central admin management dashboard.
 *   **IP Trust & Threat Scoring System:** An intelligent defense that assigns "threat points" to IPs for malicious actions, blocking them only when they reach a configurable score. More accurate and context-aware than simple rules.
-*   **Attack Signature Engine (Beta):** Proactively stops distributed botnet attacks by identifying and blocking the attacker's "fingerprint" (signature) instead of just individual IPs.
+*   **Attack Signature Engine:** Proactively stops distributed botnet attacks by identifying and blocking the attacker's "fingerprint" (signature) instead of just individual IPs.
 *   **Web Application Firewall (WAF):** Block malicious requests (SQLi, XSS, etc.) with a customizable ruleset.
 *   **And much more:** Rate Limiting, Country & ASN Blocking (with Spamhaus support), ASN Whitelisting, Push Notifications, Google reCAPTCHA, Honeypots, Active User Session Management, and Full WP-CLI Support.
 
@@ -226,7 +226,7 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 11. An example of a professional HTML email notification.
 12. The new "Trusted Proxies" setting for advanced anti-spoofing protection.
 13. IP Trust & Threat Scoring System.
-14. Attack Signature Engine (Beta).
+14. Attack Signature Engine.
 15. The new Two-Factor Authentication (2FA) setup section in the user profile.
 16. The 2FA Management tab for administrators, showing user status and reset actions.
 17. The 2FA prompt on the WordPress login screen after entering a correct password.
@@ -235,6 +235,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 20. The new AbuseIPDB Api manager.
 
 == Changelog ==
+
+= 8.10.16 =
+*   **Performance:** Refactored the core security engine to execute seamlessly via native WordPress hooks (init), eliminating manual WAF duplicate executions and optimizing the Edge Firewall bootstrap process.
+*   **Fix:** Resolved a deadlock in the JS Challenge engine where certain Advanced Rules could intercept verification submissions, causing an infinite loop.
+*   **Enhancement:** Improved Bot Verification reliability to correctly handle extreme traffic situations without challenging legitimate search engines like Googlebot during high server load.
+*   **Stable:** Removed "(Beta)" labels from Attack Signature features. The engine is now considered stable for production environments.
 
 = 8.10.15 =
 *   **NEW FEATURE:** IP & ASN Diagnostics Tool (IP Inspector). Run deep, real-time security audits on any IP or ASN directly from the admin bar or threat dashboard.
@@ -252,19 +258,19 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 * Enhancement: Added a global "Panic Button" (Revoke All VIP Passes) to instantly invalidate all active JS challenge sessions worldwide.
 * Fix: Resolved a race condition causing false "JS challenge verification failed" errors for real users on slow networks by extending the token grace period.
 * Fix: Removed hardcoded 1-hour limits in Login & XML-RPC Lockdowns. All modules now fully respect the "Global Challenge Duration" setting.
-* Enhancement: Updated Bot Verifier to support new AdsBot-Google proxy domains (`.google.com`), preventing false 403 errors.
+* Enhancement: Updated Bot Verifier to support new AdsBot-Google proxy domains ('.google.com'), preventing false 403 errors.
 
 = 8.10.12 =
 * Compatibility: Fully tested and certified for WordPress 7.0.
 * Security/Enhancement: Enhanced the "Prevent Login Hinting" module to explicitly intercept invalid usernames during password recovery, fully neutralizing sophisticated enumeration bots that attempt to bypass email checks.
-* Enhancement: Removed the restriction preventing private/reserved IPs (like `::1` or `127.0.0.1`) from being added to the Login Whitelist, allowing seamless local development and intranet testing.
+* Enhancement: Removed the restriction preventing private/reserved IPs (like '::1' or '127.0.0.1') from being added to the Login Whitelist, allowing seamless local development and intranet testing.
 * Fix: Resolved a display bug where the Community Defense Network incorrectly showed "Updated 56 years ago" on fresh installations before the first synchronization.
 * Fix: Prevented the MaxMind GeoIP update cron from being scheduled unconditionally if a license key is not configured, saving server resources.
 * Fix: Ensured the Telemetry Notice "Allow & Continue" button works seamlessly across all plugin tabs, not just the main dashboard.
 
 = 8.10.11 =
 * Security: Prevented user enumeration via the Lost Password form by forcing a successful message simulation for non-existent users.
-* Fix: Resolved a fatal error (`Call to undefined method stdClass::lookup_ip()`) that occurred when reporting threats on sites not using the local MaxMind database.
+* Fix: Resolved a fatal error ('Call to undefined method stdClass::lookup_ip()') that occurred when reporting threats on sites not using the local MaxMind database.
 
 = 8.10.10 =
 * Security: Implemented a "Zero-Trust" infrastructure allowlist for the AIB Community Network, preventing critical global IPs (Cloudflare, Google, AWS) from being erroneously reported or blocked, whilst dramatically reducing central server load.
@@ -275,7 +281,7 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **Enhanced:** Major improvements to the Status & Debug dashboard. Added WP-Cron IP tracking to identify external cron triggers, expanded CDN detection (Sucuri, CloudFront, Fastly, Ezoic, LiteSpeed), and introduced deep server diagnostics including IPv6 support, core file permission checks, and Server vs WordPress timezone synchronization monitoring.
 
 = 8.10.8 =
-*   **SECURITY PATCH:** Fixed a Stored Cross-Site Scripting (XSS) vulnerability in the Signature Engine's "Blocked Signatures" details modal. Malicious payloads injected into HTTP headers (like `Referer` or `User-Agent`) are now safely escaped before rendering in the administrative dashboard.
+*   **SECURITY PATCH:** Fixed a Stored Cross-Site Scripting (XSS) vulnerability in the Signature Engine's "Blocked Signatures" details modal. Malicious payloads injected into HTTP headers (like 'Referer' or 'User-Agent') are now safely escaped before rendering in the administrative dashboard.
 *   **Improved:** AI Bot Verification is now enabled by default for all existing users to maximize protection out-of-the-box.
 *   **Improved:** Updated the System Status dashboard card and internal Telemetry engine to natively report AI Bot Verification feature adoption.
 
@@ -285,14 +291,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **ADDED:** Settings toggle to quickly enable/disable the new "Verify AI Bots (CIDR)" functionality.
 
 = 8.10.5 =
-*   **Security/Stability:** Hardened the Security Headers module with strict sanitization for Content-Security-Policy inputs. The system now automatically purifies copy/pasted policies by stripping invisible line breaks and safely escaping double quotes, completely eliminating the risk of 500 Internal Server Errors when generating `.htaccess` rules.
+*   **Security/Stability:** Hardened the Security Headers module with strict sanitization for Content-Security-Policy inputs. The system now automatically purifies copy/pasted policies by stripping invisible line breaks and safely escaping double quotes, completely eliminating the risk of 500 Internal Server Errors when generating '.htaccess' rules.
 *   **Fixed:** Resolved a display bug in the "IP Trust Log & Status" popup where details (Impersonated UA and URI) for "Impersonated" events were showing as "N/A".
 
 = 8.10.4 =
 *   **Major Refactor:** The JavaScript Challenge engine has been completely redesigned to be fully "Stateless" using secure cryptographic HMAC tokens. 
 *   **Fixed:** Resolves infinite redirect loops and "Verification failed" errors that occurred when strict caching layers (Cloudflare, LiteSpeed, WP Fastest Cache) cached the challenge HTML page or when Object Caching mechanisms (Redis/Memcached) experienced synchronization lag.
 *   **Improved:** Implemented strict anti-double-click logic in the frontend JS challenge scripts to prevent race conditions and double-POST submissions on touch devices or slow connections.
-*   **Performance:** Entirely eliminated database queries (`wp_options` transients) during JS challenge issuance and verification, protecting your database during DDoS events.
+*   **Performance:** Entirely eliminated database queries ('wp_options' transients) during JS challenge issuance and verification, protecting your database during DDoS events.
 
 = 8.10.3 =
 *   **Fixed:** Resolved a fatal out-of-memory error that could occur during the automated MaxMind GeoIP database CRON update on heavy WordPress installations by implementing dynamic memory scaling up to 512MB limit gracefully.
@@ -304,7 +310,7 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 = 8.10.1 =
 *   **Fixed:** 2FA interim-login behaviour. Prevents the WordPress dashboard from loading inside the small session-expiration modal after a successful two-factor authentication.
-*   **Improved:** Expanded Google reCAPTCHA protection support to third-party custom login forms (WooCommerce, BuddyPress, Ultimate Member, and frontend `wp_login_form()` implementations) without breaking unhookable themes.
+*   **Improved:** Expanded Google reCAPTCHA protection support to third-party custom login forms (WooCommerce, BuddyPress, Ultimate Member, and frontend 'wp_login_form()' implementations) without breaking unhookable themes.
 *   **Fixed:** Minor PHPCS code standards warnings and improved query performance on 2FA list tables.
 
 = 8.10.0 =
@@ -313,6 +319,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.16 =
+**PERFORMANCE & FIXES:** Massive performance boost by refactoring the core load sequence. Fixes an infinite loop in the JS challenge engine triggered by specific advanced rules. Highly recommended upgrade for high-traffic sites.
 
 = 8.10.15 =
 **NEW TOOL & SECURITY FIX:** Introduces the comprehensive IP & ASN Diagnostics Tool for real-time traffic auditing. Fixes a critical firewall bypass involving inline comments in ASN blocklists. Migrates ASN lookups to the official RIPE Stat API.
