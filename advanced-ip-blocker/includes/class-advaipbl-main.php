@@ -796,19 +796,20 @@ public function verify_known_bots() {
         ));
 
         if ($is_malicious) {
+            $mode = $this->options['signature_challenge_mode'] ?? 'managed';
             // 1. Registramos el evento aquí, en el punto de decisión.
             $this->log_specific_error(
                 'signature_challenge', 
                 $this->get_client_ip(), 
                 [
                     'signature_hash' => $signature_hash,
-                    'uri' => $this->get_current_request_uri()
+                    'uri' => $this->get_current_request_uri(),
+                    'mode' => $mode
                 ], 
                 'warning'
             );
             
             // 2. Luego, servimos el desafío.
-            $mode = $this->options['signature_challenge_mode'] ?? 'managed';
             $this->js_challenge_manager->serve_challenge('signature', $mode);
         }
     }
@@ -850,25 +851,23 @@ public function verify_known_bots() {
         $location = $this->geolocation_manager->fetch_location($ip);
         if ($location && !empty($location['country_code'])) {
             if (in_array($location['country_code'], $challenged_countries, true)) {
+                $mode = $this->options['geo_challenge_mode'] ?? 'managed';
                 $this->log_specific_error(
                     'geo_challenge', 
                     $ip, 
                     [
                         'country' => $location['country'] ?? $location['country_code'],
-                        'uri' => $this->get_current_request_uri()
+                        'action'  => 'Geolocation Challenge',
+                        'trigger' => 'Country Match',
+                        'mode'    => $mode
                     ], 
                     'warning'
                 );
                 
-                $mode = $this->options['geo_challenge_mode'] ?? 'managed';
                 $this->js_challenge_manager->serve_challenge('geo_challenge', $mode);
             }
         }
     }
-
-
-
-     
 
      /**
      * Envía notificaciones (Email/Push) cuando una nueva firma maliciosa es identificada.
@@ -1528,7 +1527,6 @@ public function get_blocked_endpoints_count() {
         wp_safe_redirect(wp_get_referer());
         exit;
     }
-
 	
 	 /**
      * Handles the request to send a test email from the settings page.
@@ -1651,8 +1649,6 @@ public function get_blocked_endpoints_count() {
         if ( !in_array($hook, $allowed_hooks) && !$is_plugin_page ) {
             return;
         }
-
-
 
         // --- 1. Determinar la pestaña y sub-pestaña activas ---
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -1994,8 +1990,7 @@ public function get_blocked_endpoints_count() {
                  exit;
              }
         }
-
-    
+   
     // --- DISTRIBUTED LOCKDOWN CHECK (404) ---
     if (!empty($this->options['enable_404_lockdown'])) {
         // 1. Check if Lockdown is currently ACTIVE
@@ -2003,8 +1998,8 @@ public function get_blocked_endpoints_count() {
              if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass (Human verified previously)
              } else {
-                 $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '404', 'reason' => '404 Lockdown Mode Active', 'uri' => $this->get_current_request_uri()], 'warning');
                  $mode = $this->options['lockdown_404_challenge_mode'] ?? 'managed';
+                 $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '404', 'reason' => '404 Lockdown Mode Active', 'uri' => $this->get_current_request_uri(), 'mode' => $mode], 'warning');
                  $this->js_challenge_manager->serve_challenge('404_lockdown', $mode);
                  exit;
              }
@@ -2034,8 +2029,8 @@ public function get_blocked_endpoints_count() {
              if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass
              } else {
-                 $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '403', 'reason' => '403 Lockdown Mode Active', 'uri' => $this->get_current_request_uri()], 'warning');
                  $mode = $this->options['lockdown_403_challenge_mode'] ?? 'managed';
+                 $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '403', 'reason' => '403 Lockdown Mode Active', 'uri' => $this->get_current_request_uri(), 'mode' => $mode], 'warning');
                  $this->js_challenge_manager->serve_challenge('403_lockdown', $mode);
                  exit;
              }
@@ -2382,8 +2377,8 @@ return $status_header;
                 foreach ($automattic_ua_patterns as $pattern) { if (preg_match($pattern, $user_agent)) { $is_trusted_service = true; break; } }
                 
                 if (!$is_trusted_service) {
-                    $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => 'xmlrpc.php', 'reason' => 'XML-RPC Lockdown Mode Active', 'uri' => $request_uri], 'warning');
                     $mode = $this->options['xmlrpc_lockdown_challenge_mode'] ?? 'managed';
+                    $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => 'xmlrpc.php', 'reason' => 'XML-RPC Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
                     $this->js_challenge_manager->serve_challenge('endpoint', $mode);
                 }
             }
@@ -2458,8 +2453,9 @@ return $status_header;
                     return;
                 }
                 
-                $this->log_specific_error('aib_network_challenge', $ip, $log_data, 'warning');
                 $mode = ($action === 'challenge_automatic') ? 'automatic' : 'managed';
+                $log_data['mode'] = $mode;
+                $this->log_specific_error('aib_network_challenge', $ip, $log_data, 'warning');
                 $this->js_challenge_manager->serve_challenge('aib_network', $mode);
             } else {
                 // Bloqueo
@@ -2672,8 +2668,7 @@ return $status_header;
             if ($context === 'frontend_block') { $this->access_denied_page(__('403 - Access Denied', 'advanced-ip-blocker'), $this->get_block_message('generic')); exit; }
             return;
         }
-        
-        
+                
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         if ($wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip))) {
@@ -2808,8 +2803,6 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
             } 
         } 
     }
-
-
 
     public function schedule_cron_jobs() {
         if ( ! isset($this->cron_manager) ) {
@@ -3436,6 +3429,9 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     if (is_array($extra_data)) {
         $details = array_merge($details, $extra_data);
     }
+    
+    // Inyectar todas las cabeceras HTTP filtradas para análisis forense
+    $details['headers'] = $this->get_sanitized_request_headers();
 
     $is_local_db_active = (($this->options['geolocation_method'] ?? 'api') === 'local_db' && $this->geoip_manager instanceof ADVAIPBL_GeoIP_Manager);
 
@@ -3923,36 +3919,6 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         $reason = __('Unknown reason', 'advanced-ip-blocker');
         $reason_label = ucwords(str_replace('_', ' ', $type));
         
-        // ... (Logic to build reason string is duplicated here just to pass it? Or Notification Manager rebuilds it?)
-        // Notification Manager rebuilds reason_label if empty. But $reason calculation is complex (switch case).
-        // I should Copy the Switch Case OR Pass the raw data.
-        // Notification Manager's `notify_block` accepts `$reason`.
-        // So I MUST calculate `$reason` here before delegating? 
-        // OR move the calculation to Notification Manager?
-        // I moved logic to `notify_block` but wait. `notify_block` signature is:
-        // notify_block($ip, $type, $reason, $reason_label = '', $extra_data = [])
-        // Meaning caller must provide $reason.
-        // So I must keep the Switch Case here to generate $reason?
-        // But I wanted to extract LOGIC.
-        // It seems `notify_block` in Manager uses `$reason` passed to it.
-        // I should have moved the Switch Case to Manager.
-        // Let's check the Manager code I wrote (Step 972).
-        // `notify_block` takes `$reason`. It DOES NOT calculate it.
-        // Check Step 972 content.
-        // Correct.
-        // So `ADVAIPBL_Main` MUST calculate reason.
-        // This defeats the purpose of extraction if the big switch case stays in Main.
-        // I should have a helper `get_block_reason($type, $count, $extra_data)` in Manager?
-        // Or in Main?
-        // I will keep the Switch Case in Main for now (delegating only the SENDING),
-        // OR I will extract the reason builder to a method and move it.
-        // Given I want to clean Main, I should move the reason builder.
-        // But `notify_block` in Manager doesn't have it.
-        
-        // I will keep the Switch Case and call `notify_block`.
-        
-        // ... (Switch case 404, login, etc. - lines 3719-3781)
-        
         switch ($type) {
             case '404': case '403':                
                 $reason = sprintf(/* translators: 1: The number of errors. 2: The error type (e.g., "404"). 3: The URL that triggered the error. */
@@ -4186,6 +4152,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     // --- 5. Grupo "Logs & Sessions" (y restantes) ---
     $wp_admin_bar->add_node(['id' => 'advaipbl_logs_group', 'parent' => 'advaipbl_menu', 'title' => __('Logs & Sessions', 'advanced-ip-blocker'), 'href' => false]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_log_security', 'parent' => 'advaipbl_logs_group', 'title' => __('Security Log', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'logs', 'sub-tab' => 'security_log'], $base_admin_url)]);
+    $wp_admin_bar->add_node(['id' => 'advaipbl_log_challenge', 'parent' => 'advaipbl_logs_group', 'title' => __('Challenge Logs', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'logs', 'sub-tab' => 'challenge_log'], $base_admin_url)]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_log_audit', 'parent' => 'advaipbl_logs_group', 'title' => __('Activity Audit', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'logs', 'sub-tab' => 'audit_log'], $base_admin_url)]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_log_ip_trust', 'parent' => 'advaipbl_logs_group', 'title' => __('IP Trust Log', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'logs', 'sub-tab' => 'ip_trust_log'], $base_admin_url)]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_log_general', 'parent' => 'advaipbl_logs_group', 'title' => __('General Log', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'logs', 'sub-tab' => 'general_log'], $base_admin_url)]);
@@ -7056,6 +7023,46 @@ public function handle_import_settings() {
     }
 
     /**
+     * Captura y sanea las cabeceras de la petición actual, ocultando información sensible.
+     * @return array
+     */
+    public function get_sanitized_request_headers() {
+        $headers = [];
+        
+        if (function_exists('getallheaders')) {
+            $raw_headers = getallheaders();
+            if (is_array($raw_headers)) {
+                foreach ($raw_headers as $name => $value) {
+                    $headers[$name] = $value;
+                }
+            }
+        } else {
+            // Fallback para Nginx u otros servidores que no soporten getallheaders()
+            foreach ($_SERVER as $name => $value) {
+                if (substr($name, 0, 5) === 'HTTP_') {
+                    $header_name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
+                    $headers[$header_name] = $value;
+                }
+            }
+        }
+        
+        $sensitive_headers = ['cookie', 'set-cookie', 'authorization'];
+        $sanitized_headers = [];
+        
+        foreach ($headers as $name => $value) {
+            $name_lower = strtolower($name);
+            if (in_array($name_lower, $sensitive_headers, true)) {
+                $sanitized_headers[$name] = '[REDACTED FOR SECURITY]';
+            } else {
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $sanitized_headers[$name] = sanitize_text_field(wp_unslash($value));
+            }
+        }
+        
+        return $sanitized_headers;
+    }
+
+    /**
      * Obtiene y sanea la IP de la conexión directa (REMOTE_ADDR).
      * @return string
      */
@@ -7294,14 +7301,14 @@ public function handle_import_settings() {
             }
             
             if (!$is_trusted_service) {
-                $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => $endpoint_key, 'reason' => ucfirst($endpoint_key) . ' Lockdown Mode Active', 'uri' => $request_uri], 'warning');
+                $mode = $this->options[$endpoint_key . '_lockdown_challenge_mode'] ?? 'managed';
+                $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => $endpoint_key, 'reason' => ucfirst($endpoint_key) . ' Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
                 // AIB Community Network Reporting
        if ( ! empty( $this->options['enable_community_network'] ) ) {
            $report_type = ($endpoint_key === 'xmlrpc') ? 'xmlrpc_block' : 'login_lockdown';
            $this->reporter_manager->queue_report( $ip, $report_type, ['uri' => $request_uri] );
        }
 
-       $mode = $this->options[$endpoint_key . '_lockdown_challenge_mode'] ?? 'managed';
        $this->js_challenge_manager->serve_challenge('endpoint', $mode);
             }
         }
@@ -7422,9 +7429,10 @@ public function check_ip_with_abuseipdb() {
 
         if (strpos($action_to_take, 'challenge') !== false) {
             // Si la acción es 'challenge' o 'challenge_automatic', registramos el evento y mostramos el desafío.
+            $mode = ($action_to_take === 'challenge_automatic') ? 'automatic' : 'managed';
+            $log_data['mode'] = $mode;
             $this->log_specific_error('abuseipdb_challenge', $ip, $log_data, 'warning');
             
-            $mode = ($action_to_take === 'challenge_automatic') ? 'automatic' : 'managed';
             $this->js_challenge_manager->serve_challenge('abuseipdb', $mode); // El tipo y modo son importantes
         } else {
             // Si no, procedemos con el bloqueo como antes.

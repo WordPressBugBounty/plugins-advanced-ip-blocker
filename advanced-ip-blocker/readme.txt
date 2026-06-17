@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.10.16
+Stable tag: 8.10.17
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -236,6 +236,13 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.10.17 =
+*   **NEW FEATURE:** Forensic Headers Logging. The plugin now captures and stores the exact HTTP headers sent by attackers during blocked events, providing unmatched visibility into threat vectors directly within the Security and Challenge logs.
+*   **SECURITY:** Strict GDPR/Privacy redaction added to the new headers engine. Highly sensitive headers (Cookie, Authorization, Set-Cookie) are automatically redacted before being logged to the database.
+*   **UI/UX:** Complete redesign of the "Security Logs" and "Challenge Logs" interface. Replaced the static table with a modern, responsive Accordion UI featuring a dynamic details grid and a scrollable black-box for forensic header inspection.
+*   **UI/UX:** Removed the arbitrary "NEW" tag logic from log timestamps to reduce visual clutter and improve rendering performance.
+*   **Fix:** Added missing JavaScript event listeners for the "Copy IP" button inside the log tables.
+
 = 8.10.16 =
 *   **Performance:** Refactored the core security engine to execute seamlessly via native WordPress hooks (init), eliminating manual WAF duplicate executions and optimizing the Edge Firewall bootstrap process.
 *   **Fix:** Resolved a deadlock in the JS Challenge engine where certain Advanced Rules could intercept verification submissions, causing an infinite loop.
@@ -319,6 +326,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.10.17 =
+**MAJOR FORENSIC UPGRADE:** Completely redesigned the Security Logs interface with a responsive accordion and dynamic grids. The plugin now captures raw HTTP request headers during blocked events for advanced threat analysis, with automatic GDPR redaction for sensitive data (Cookies/Auth).
 
 = 8.10.16 =
 **PERFORMANCE & FIXES:** Massive performance boost by refactoring the core load sequence. Fixes an infinite loop in the JS challenge engine triggered by specific advanced rules. Highly recommended upgrade for high-traffic sites.

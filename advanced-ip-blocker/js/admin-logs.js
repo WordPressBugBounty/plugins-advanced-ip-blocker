@@ -405,10 +405,39 @@ jQuery(document).ready(function ($) {
         }
     }
 
+    function initCopyIpActions() {
+        $('body').on('click', '.advaipbl-copy-ip', function (e) {
+            e.preventDefault();
+            e.stopPropagation(); // Prevenir que el acordeón se despliegue si se hace clic aquí
+            const ipToCopy = $(this).data('ip');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(ipToCopy)
+                    .then(() => {
+                        const originalText = $(this).text();
+                        $(this).text('Copied!');
+                        setTimeout(() => {
+                            $(this).text(originalText);
+                        }, 1500);
+                    })
+                    .catch(err => {
+                        alert('Failed to copy text: ' + err);
+                    });
+            } else {
+                const tempInput = $('<input>');
+                $('body').append(tempInput);
+                tempInput.val(ipToCopy).select();
+                document.execCommand('copy');
+                tempInput.remove();
+                alert('IP copied to clipboard!');
+            }
+        });
+    }
+
     // Initialize Logs Logic
     initIpTrustLogActions();
     initBlockedSignaturesActions();
     initLogFilterSelector();
     initClearLogModal();
     initAuditLogActions();
+    initCopyIpActions();
 });

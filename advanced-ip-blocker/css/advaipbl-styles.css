@@ -1,6 +1,6 @@
 /**
  * Advanced IP Blocker - Admin Panel Styles
- * Version: 8.10.16
+ * Version: 8.10.17
  */
 
 /* ==========================================================================
@@ -474,4 +474,66 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
+}
+
+/* ==========================================================================
+   Responsive Utilities & Accordion Styling (Logs Tables)
+   ========================================================================== */
+
+/* Accordion Row Interaction */
+.advaipbl-logs-table tr.advaipbl-primary-row {
+    transition: background-color 0.2s ease;
+}
+.advaipbl-logs-table tr.advaipbl-primary-row:hover {
+    background-color: #f0f6fc; /* Subtle blue hover */
+}
+.advaipbl-accordion-toggle .toggle-icon {
+    color: #888;
+    transition: transform 0.3s ease;
+}
+.advaipbl-accordion-toggle .toggle-icon.open {
+    transform: rotate(90deg);
+}
+
+/* Accordion Expanded Container */
+.advaipbl-accordion-body > td {
+    padding: 0 !important;
+}
+.advaipbl-accordion-inner {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--advaipbl-color-primary);
+    box-shadow: inset 0 4px 6px -4px rgba(0,0,0,0.1), inset 0 -4px 6px -4px rgba(0,0,0,0.1);
+    padding: 20px 25px;
+}
+.advaipbl-accordion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px 20px;
+}
+
+/* Responsive Table Column Utilities */
+@media screen and (max-width: 1024px) {
+    .advaipbl-logs-table .advaipbl-hide-tablet {
+        display: none !important;
+    }
+}
+@media screen and (max-width: 782px) {
+    .advaipbl-logs-table .advaipbl-hide-mobile {
+        display: none !important;
+    }
+    
+    /* Make actions column stack buttons nicely on mobile */
+    .advaipbl-logs-table td.column-actions {
+        white-space: normal;
+        min-width: 80px;
+    }
+    
+    /* Enhance grid on very small screens */
+    .advaipbl-accordion-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .advaipbl-accordion-inner {
+        padding: 15px;
+    }
 }

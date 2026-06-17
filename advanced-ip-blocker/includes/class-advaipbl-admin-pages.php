@@ -60,7 +60,7 @@ class ADVAIPBL_Admin_Pages {
             'icon'  => 'dashicons-search', 
             'sub_tabs' => [ 'scan_overview' => __('Health & Vulnerabilities', 'advanced-ip-blocker') ] 
         ],
-        'logs' => [ 'title' => __('Logs & Sessions', 'advanced-ip-blocker'), 'icon'  => 'dashicons-list-view', 'sub_tabs' => [ 'security_log' => __('Security Log', 'advanced-ip-blocker'), 'audit_log' => __('Activity Audit Log', 'advanced-ip-blocker'), 'general_log' => __('General Log', 'advanced-ip-blocker'), 'ip_trust_log'   => __('IP Trust Log', 'advanced-ip-blocker'), 'user_sessions' => __('User Sessions', 'advanced-ip-blocker'), 'cron_logs' => __('WP-Cron Log', 'advanced-ip-blocker') ] ],
+        'logs' => [ 'title' => __('Logs & Sessions', 'advanced-ip-blocker'), 'icon'  => 'dashicons-list-view', 'sub_tabs' => [ 'security_log' => __('Security Log', 'advanced-ip-blocker'), 'challenge_log' => __('Challenge Logs', 'advanced-ip-blocker'), 'audit_log' => __('Activity Audit Log', 'advanced-ip-blocker'), 'general_log' => __('General Log', 'advanced-ip-blocker'), 'ip_trust_log'   => __('IP Trust Log', 'advanced-ip-blocker'), 'user_sessions' => __('User Sessions', 'advanced-ip-blocker'), 'cron_logs' => __('WP-Cron Log', 'advanced-ip-blocker') ] ],
         'about' => [ 'title' => __('About', 'advanced-ip-blocker'), 'icon'  => 'dashicons-info', 'sub_tabs' => [ 'credits' => __('Credits & Support', 'advanced-ip-blocker') ] ]
     ];
     // phpcs:disable WordPress.Security.NonceVerification.Recommended
@@ -190,6 +190,7 @@ class ADVAIPBL_Admin_Pages {
 		case 'ip_inspector': $this->display_ip_inspector_tab(); break;
 		case 'scan_overview': $this->display_scanner_tab(); break;
         case 'security_log': $this->display_security_log_tab(); break;
+        case 'challenge_log': $this->display_challenge_log_tab(); break;
         case 'audit_log': $this->display_audit_log_tab(); break;
         case 'general_log': $this->display_general_log_tab(); break;
 		case 'ip_trust_log': $this->display_ip_trust_log_tab(); break;
@@ -1861,19 +1862,31 @@ public function display_general_settings_tab() {
  * Muestra la nueva pestaña unificada de logs de seguridad.
  */
     public function display_security_log_tab() {
-        // Añadimos 'endpoint_challenge' y el tipo implícito 'general' (para el log de activación) a la lista.
-        // Aunque no podemos filtrar por el mensaje exacto, los usuarios podrán ver los eventos críticos de auditoría.
+        // Ocultamos los challenges para la pestaña principal de seguridad
         $security_log_types = [
             'waf', 'rate_limit', 'asn', 'xmlrpc_block', 
             'honeypot', 'user_agent', 'geoblock', 
             '404', '403', 'login', 'threat_score',
-			'abuseipdb', 'abuseipdb_challenge',
-			'aib_network', 'aib_network_challenge',
-            'signature_challenge', 'signature_flagged',
-            'endpoint_challenge', 'geo_challenge', 'impersonation',
+			'abuseipdb',
+			'aib_network', 'signature_flagged',
+            'impersonation',
             'advanced_rule', 'login_geoblock'
         ];
-        $this->display_log_table_generic($security_log_types, ['critical', 'warning']);
+        $this->display_log_table_generic($security_log_types, ['critical', 'warning'], null, null, true);
+    }
+
+/**
+ * Muestra la pestaña unificada de desafíos (challenges).
+ */
+    public function display_challenge_log_tab() {
+        $challenge_log_types = [
+            'abuseipdb_challenge',
+            'aib_network_challenge',
+            'signature_challenge',
+            'endpoint_challenge', 
+            'geo_challenge'
+        ];
+        $this->display_log_table_generic($challenge_log_types, ['warning', 'info'], __('Challenge Logs', 'advanced-ip-blocker'), 'challenge_log', true);
     }
 
 /**
@@ -2158,7 +2171,7 @@ public function display_general_log_tab() {
         <?php
     }
 
-    public function display_log_table_generic($log_types, $levels_to_show = ['critical']) {
+    public function display_log_table_generic($log_types, $levels_to_show = ['critical'], $custom_title = null, $custom_sub_tab = null, $use_accordion = false) {
         $is_unified_log = is_array($log_types);
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $current_filter = isset($_GET['filter_log_type']) ? sanitize_key($_GET['filter_log_type']) : 'all';
@@ -2166,8 +2179,8 @@ public function display_general_log_tab() {
         $title = '';
         $current_sub_tab = '';
         if ($is_unified_log) {
-            $title = __('Security Log', 'advanced-ip-blocker');
-            $current_sub_tab = 'security_log';
+            $title = $custom_title ? $custom_title : __('Security Log', 'advanced-ip-blocker');
+            $current_sub_tab = $custom_sub_tab ? $custom_sub_tab : 'security_log';
         } else {
             $titles = [ 'general' => __('General System Event Log', 'advanced-ip-blocker'), 'wp_cron' => __('WP-Cron Execution Log', 'advanced-ip-blocker'), ];
             $title = $titles[$log_types] ?? ucfirst($log_types) . ' Log';
@@ -2227,15 +2240,17 @@ public function display_general_log_tab() {
                 <?php $this->plugin->render_per_page_selector( $per_page ); ?>
                 <?php if ($is_unified_log) : ?>
                     <select id="advaipbl-log-filter" name="filter_log_type" class="advaipbl-log-filter" style="vertical-align: middle;">
-                        <option value="all" <?php selected($current_filter, 'all'); ?>><?php esc_html_e('All Security Events', 'advanced-ip-blocker'); ?></option>
+                        <option value="all" <?php selected($current_filter, 'all'); ?>><?php esc_html_e('All Events', 'advanced-ip-blocker'); ?></option>
                         <?php $block_type_definitions = $this->plugin->get_all_block_type_definitions(); foreach ($log_types as $type) : $label = $block_type_definitions[$type]['label'] ?? ucwords(str_replace('_', ' ', $type)); ?>
                             <option value="<?php echo esc_attr($type); ?>" <?php selected($current_filter, $type); ?>><?php echo esc_html($label); ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if ($current_sub_tab === 'security_log') : ?>
                     <label style="margin-right: 10px; display: inline-flex; align-items: center; cursor: pointer; vertical-align: middle; height: 30px;">
                         <input type="checkbox" name="hide_community" value="1" <?php checked($hide_community, true); ?> onchange="this.form.submit()">
                         <span style="margin-left: 6px; font-weight: 500;"><?php esc_html_e('Hide Community Blocks', 'advanced-ip-blocker'); ?></span>
                     </label>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <input type="search" name="s" value="<?php echo esc_attr($search_term); ?>" placeholder="<?php esc_attr_e( 'Search by IP, etc.', 'advanced-ip-blocker' ); ?>"><input type="submit" class="button" value="<?php esc_html_e('Search / Filter', 'advanced-ip-blocker'); ?>">
             </form>
@@ -2253,29 +2268,42 @@ public function display_general_log_tab() {
     </div>
      
 	<div class="advaipbl-table-responsive-wrapper">
-    <table class="widefat striped" style="margin-top:1em;">
+    <table class="widefat striped advaipbl-logs-table" style="margin-top:1em;">
         <thead>
             <tr>
+                <?php if ($use_accordion): ?>
+                    <th style="width: 40px; text-align: center;"></th>
+                <?php endif; ?>
                 <?php $this->plugin->print_log_sortable_header(__('Date/Time', 'advanced-ip-blocker'), 'timestamp', $orderby, $order); ?>
                 <?php $this->plugin->print_log_sortable_header(__('IP', 'advanced-ip-blocker'), 'ip', $orderby, $order); ?>
                 <?php if ($is_unified_log) : ?><?php $this->plugin->print_log_sortable_header(__('Type', 'advanced-ip-blocker'), 'log_type', $orderby, $order); ?><?php endif; ?>
-                <th><?php esc_html_e('Method', 'advanced-ip-blocker'); ?></th>
-                <th><?php esc_html_e('Trigger / Details', 'advanced-ip-blocker'); ?></th>
-                <th style="width: 30%;"><?php esc_html_e('User Agent', 'advanced-ip-blocker'); ?></th>
-                <th><?php esc_html_e('Actions', 'advanced-ip-blocker'); ?></th>
+                <th class="<?php echo $use_accordion ? 'advaipbl-hide-mobile' : ''; ?>"><?php esc_html_e('Method', 'advanced-ip-blocker'); ?></th>
+                <th class="<?php echo $use_accordion ? 'advaipbl-hide-mobile' : ''; ?>"><?php esc_html_e('Trigger / Details', 'advanced-ip-blocker'); ?></th>
+                <th class="<?php echo $use_accordion ? 'advaipbl-hide-tablet' : ''; ?>" style="width: 30%;"><?php esc_html_e('User Agent', 'advanced-ip-blocker'); ?></th>
+                <th class="column-actions"><?php esc_html_e('Actions', 'advanced-ip-blocker'); ?></th>
             </tr>
         </thead>
                 <tbody>
-            <?php $colspan = $is_unified_log ? 7 : 6;
+            <?php 
+            $colspan = $is_unified_log ? 7 : 6;
+            if ($use_accordion) $colspan++;
+            
             if (empty($logs)): ?>
                 <tr><td colspan="<?php echo esc_attr($colspan); ?>"><?php esc_html_e('No log entries found for the current filter.', 'advanced-ip-blocker'); ?></td></tr>
             <?php else: 
-                foreach ($logs as $entry): 
+                foreach ($logs as $index => $entry): 
                     $details = json_decode($entry['details'], true) ?: [];
                     $user_agent_string = $details['user_agent'] ?? 'N/A';
                     $log_type = $entry['log_type'];
+                    $entry_id = $entry['id'] ?? 'ray_' . substr(md5($entry['ip'] . $entry['timestamp'] . $index), 0, 16);
+                    $row_id = 'log_row_' . $index . '_' . $entry_id;
             ?>
-                <tr>
+                <tr class="advaipbl-primary-row" <?php if ($use_accordion) echo 'data-target="' . esc_attr($row_id) . '" style="cursor: pointer;"'; ?>>
+                    <?php if ($use_accordion): ?>
+                    <td class="advaipbl-accordion-toggle">
+                        <span class="dashicons dashicons-arrow-right-alt2 toggle-icon"></span>
+                    </td>
+                    <?php endif; ?>
                     <td>
                         <?php echo esc_html(ADVAIPBL_Main::get_formatted_datetime($entry['timestamp'])); ?>
                         <?php
@@ -2303,27 +2331,31 @@ public function display_general_log_tab() {
                         ?>
                     </td>
                     <td>
-    <?php echo esc_html($entry['ip']); ?>
-    <?php
-    // Mostramos la ubicación siempre que esté disponible en los detalles del log, sin importar el nivel.
-    if ( ! empty($details['country']) ) {
-        $location_parts = [];
-        if ( ! empty($details['city']) ) { $location_parts[] = esc_html($details['city']); }
-        
-        $country_str = esc_html($details['country']);
-        if ( ! empty($details['country_code']) ) {
-            $country_str .= ' (' . esc_html($details['country_code']) . ')';
-        }
-        $location_parts[] = $country_str;
-        
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-        echo '<br><small style="color: #50575e;">' . implode(', ', $location_parts) . '</small>';
-    }
-    ?>
-</td>
+                        <strong><a href="<?php echo esc_url(add_query_arg('s', $entry['ip'])); ?>"><?php echo esc_html($entry['ip']); ?></a></strong>
+                        <div class="row-actions">
+                            <span class="copy-ip"><a href="#" class="advaipbl-copy-ip" data-ip="<?php echo esc_attr($entry['ip']); ?>" title="<?php esc_attr_e('Copy IP', 'advanced-ip-blocker'); ?>"><?php esc_html_e('Copy', 'advanced-ip-blocker'); ?></a> | </span>
+                            <span class="whois"><a href="https://whois.domaintools.com/<?php echo esc_attr($entry['ip']); ?>" target="_blank" title="<?php esc_attr_e('WHOIS Lookup', 'advanced-ip-blocker'); ?>"><?php esc_html_e('WHOIS', 'advanced-ip-blocker'); ?></a></span>
+                        </div>
+                        <?php
+                        // Mostramos la ubicación siempre que esté disponible en los detalles del log, sin importar el nivel.
+                        if ( ! empty($details['country']) ) {
+                            $location_parts = [];
+                            if ( ! empty($details['city']) ) { $location_parts[] = esc_html($details['city']); }
+                            
+                            $country_str = esc_html($details['country']);
+                            if ( ! empty($details['country_code']) ) {
+                                $country_str .= ' (' . esc_html($details['country_code']) . ')';
+                            }
+                            $location_parts[] = $country_str;
+                            
+                            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                            echo '<br><small style="color: #50575e;">' . implode(', ', $location_parts) . '</small>';
+                        }
+                        ?>
+                    </td>
                     <?php if ($is_unified_log) : ?><td><strong><?php echo esc_html($this->plugin->get_all_block_type_definitions()[$log_type]['label'] ?? ucwords(str_replace('_', ' ', $log_type))); ?></strong></td><?php endif; ?>
-                    <td><?php echo ('signature_flagged' === $log_type) ? '-' : esc_html($details['method'] ?? 'N/A'); ?></td>
-                    <td style="word-break: break-all;">
+                    <td class="<?php echo $use_accordion ? 'advaipbl-hide-mobile' : ''; ?>"><?php echo ('signature_flagged' === $log_type) ? '-' : esc_html($details['method'] ?? 'N/A'); ?></td>
+                    <td class="<?php echo $use_accordion ? 'advaipbl-hide-mobile' : ''; ?>" style="word-break: break-all;">
                         <?php
                         $detail_display = '';
                         $uri = esc_html($details['uri'] ?? ($details['url'] ?? ''));
@@ -2399,11 +2431,20 @@ public function display_general_log_tab() {
                                 $detail_display = !empty($uri) ? $uri : esc_html($entry['message']);
                                 break;
                         }
+
+                        if (!empty($details['mode'])) {
+                            $mode_bg = ($details['mode'] === 'automatic') ? '#e6f4ea' : '#fef7e0';
+                            $mode_text = ($details['mode'] === 'automatic') ? '#1e8e3e' : '#b08d00';
+                            $detail_display .= '<br><span style="display: inline-block; margin-top: 4px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; background-color: ' . esc_attr($mode_bg) . '; color: ' . esc_attr($mode_text) . '; border: 1px solid ' . esc_attr($mode_text) . '40;">' . esc_html($details['mode']) . '</span>';
+                        }
+
                         echo wp_kses_post($detail_display);
                         ?>
                     </td>
-                    <td style="word-break: break-all; font-family: monospace; font-size: 12px;"><?php echo esc_html($user_agent_string); ?></td>
-                    <td>
+                    <td class="<?php echo $use_accordion ? 'advaipbl-hide-tablet' : ''; ?>" style="word-break: break-all; font-family: monospace; font-size: 11px;">
+                        <?php echo esc_html($user_agent_string); ?>
+                    </td>
+                    <td class="column-actions">
                         <?php if (in_array($log_type, ['signature_challenge', 'signature_flagged'], true)) : ?>
                             <?php 
                             $manage_signatures_url = admin_url('admin.php?page=advaipbl_settings_page&tab=ip_management&sub-tab=blocked_signatures');
@@ -2417,11 +2458,97 @@ public function display_general_log_tab() {
                         <?php endif; ?>
                     </td>
                 </tr>
+                <?php if ($use_accordion): ?>
+                <tr class="advaipbl-accordion-body" id="<?php echo esc_attr($row_id); ?>" style="display: none;">
+                    <td colspan="<?php echo esc_attr($colspan); ?>">
+                        <div class="advaipbl-accordion-inner">
+                            <div class="advaipbl-accordion-grid">
+                            <?php
+                            $asn_display = 'N/A';
+                            if (isset($details['asn_number'])) {
+                                $asn_display = $details['asn_number'] . (!empty($details['asn_name']) ? ' (' . $details['asn_name'] . ')' : '');
+                            } elseif (!empty($details['as'])) {
+                                $asn_display = $details['as'];
+                            } elseif (!empty($details['asn'])) {
+                                $asn_display = $details['asn'];
+                            }
+
+                            $grid_data = [
+                                'Action' => $entry['action'] ?? $log_type,
+                                'Ray ID' => $entry['id'] ?? 'N/A',
+                                'Client IP' => $entry['ip'],
+                                'ASN' => $asn_display,
+                                'Location' => ($details['country'] ?? 'Unknown') . (!empty($details['city']) ? ', ' . $details['city'] : ''),
+                                'Method' => $details['method'] ?? 'N/A',
+                                'Path' => $details['uri'] ?? $details['url'] ?? 'N/A',
+                                'User Agent' => $details['user_agent'] ?? 'N/A',
+                            ];
+
+                            // Campos adicionales condicionales
+                            if (isset($details['username'])) { $grid_data['Username'] = $details['username']; }
+                            if (isset($details['rule']) || isset($details['rule_name'])) { $grid_data['Rule ID'] = $details['rule'] ?? $details['rule_name']; }
+                            if (isset($details['source'])) { $grid_data['Source'] = $details['source']; }
+                            if (isset($details['points_added'])) { $grid_data['Points Added'] = '+' . $details['points_added']; }
+                            if (isset($details['score'])) { $grid_data['Total Score'] = $details['score']; }
+                            if (isset($details['threat_level'])) { $grid_data['Threat Level'] = $details['threat_level']; }
+                            if (isset($details['duration_seconds'])) { $grid_data['Block Duration'] = round((int)$details['duration_seconds'] / 60) . ' min'; }
+                            if (isset($details['referrer'])) { $grid_data['Referer'] = $details['referrer']; }
+                            if (isset($details['signature_hash'])) { $grid_data['Signature Hash'] = $details['signature_hash']; }
+                            if (isset($details['mode'])) { $grid_data['Mode'] = $details['mode']; }
+                            
+                            foreach ($grid_data as $k => $v) {
+                                if ($v !== 'N/A' && !empty($v)) {
+                                    echo '<div class="advaipbl-grid-item"><strong style="color: #666; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 3px;">' . esc_html($k) . '</strong><div style="word-break: break-word; font-size: 13px;">' . wp_kses_post($v) . '</div></div>';
+                                }
+                            }
+                            ?>
+                            </div>
+                            <?php if (!empty($details['headers']) && is_array($details['headers'])): ?>
+                            <div style="margin-top: 20px;">
+                                <strong style="color: #666; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px;"><?php esc_html_e('Request Headers', 'advanced-ip-blocker'); ?></strong>
+                                <pre style="background: #2d2d2d; color: #ccc; padding: 10px 15px; border-radius: 4px; overflow-y: auto; max-height: 200px; font-size: 12px; line-height: 1.5; margin: 0;"><code><?php
+                                    foreach ($details['headers'] as $h_name => $h_val) {
+                                        echo esc_html($h_name . ': ' . $h_val) . "\n";
+                                    }
+                                ?></code></pre>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endif; ?>
             <?php endforeach; endif; ?>
         </tbody>
     </table>
 	</div>
 	
+    <?php if ($use_accordion): ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.advaipbl-primary-row[data-target]').forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                // Evitar activar el acordeón si el clic fue en un enlace o botón de acción
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('.row-actions') || e.target.closest('.button')) {
+                    return;
+                }
+                var targetId = this.getAttribute('data-target');
+                var targetRow = document.getElementById(targetId);
+                var icon = this.querySelector('.toggle-icon');
+                
+                if (targetRow) {
+                    if (targetRow.style.display === 'none' || targetRow.style.display === '') {
+                        targetRow.style.display = 'table-row';
+                        if (icon) icon.classList.add('open');
+                    } else {
+                        targetRow.style.display = 'none';
+                        if (icon) icon.classList.remove('open');
+                    }
+                }
+            });
+        });
+    });
+    </script>
+    <?php endif; ?>
     <?php
 }
 public function display_credits_tab() {
@@ -2579,7 +2706,7 @@ wp advaipbl spamhaus-update
                         <tr>
                             <th scope="row"><?php esc_html_e( 'Your Detected IP Address', 'advanced-ip-blocker' ); ?></th>
                             <td>
-                                <code><?php echo esc_html( $client_ip ); ?></code> <button type="button" class="button button-small" onclick="navigator.clipboard.writeText('<?php echo esc_js( $client_ip ); ?>'); this.innerText='<?php esc_attr_e( 'Copied!', 'advanced-ip-blocker' ); ?>'; setTimeout(() => this.innerText='<?php esc_attr_e( 'Copy', 'advanced-ip-blocker' ); ?>', 2000);" style="margin-left:5px; vertical-align: middle; padding: 0 5px; min-height: 24px; line-height: 22px; font-size: 11px;" title="<?php esc_attr_e( 'Copy IP', 'advanced-ip-blocker' ); ?>"><?php esc_html_e( 'Copy', 'advanced-ip-blocker' ); ?></button>
+                                <code><?php echo esc_html( $client_ip ); ?></code> <button type="button" class="button button-small" onclick="navigator.clipboard.writeText('<?php echo esc_js( $client_ip ); ?>'); this.innerText='<?php esc_attr_e( 'Copied!', 'advanced-ip-blocker' ); ?>'; setTimeout(() => this.innerText='<?php esc_html_e( 'Copy', 'advanced-ip-blocker' ); ?>', 2000);" style="margin-left:5px; vertical-align: middle; padding: 0 5px; min-height: 24px; line-height: 22px; font-size: 11px;" title="<?php esc_attr_e( 'Copy IP', 'advanced-ip-blocker' ); ?>"><?php esc_html_e( 'Copy', 'advanced-ip-blocker' ); ?></button>
                                 <?php
                                 // Comprobamos si la IP del admin está en la whitelist.
                                 if ( $this->plugin->is_whitelisted( $client_ip ) ) {
