@@ -458,6 +458,49 @@ add_settings_field(
     add_settings_field('advaipbl_enable_manual_asn', __('Manual ASN Protection', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_asn_protection_section', ['name' => 'enable_manual_asn', 'label' => __('Enable blocking based on your custom Manual ASN Blocklist.', 'advanced-ip-blocker'), 'description' => sprintf(/* translators: $s: ASN blocklist rules URL */__('Manage your custom list in the <a href="%s">Blocking Rules</a> tab.', 'advanced-ip-blocker'), admin_url('admin.php?page=advaipbl_settings_page&tab=rules&sub-tab=asn_blocking'))]);
     add_settings_field('advaipbl_duration_asn', __('ASN Block Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_asn_protection_section', ['name' => 'duration_asn', 'default' => 1440, 'description' => __('Duration to block IPs from both manual and automated ASN lists. Set to <strong>0</strong> for a permanent block.', 'advanced-ip-blocker')]);
 
+    add_settings_section('advaipbl_under_attack_section', __('Distributed Attack Protection (Auto-Panic)', 'advanced-ip-blocker'), null, $page);
+    add_settings_field(
+        'advaipbl_under_attack_mode', 
+        __('Under Attack Mode', 'advanced-ip-blocker'), 
+        [$this, 'select_field_callback'], 
+        $page, 
+        'advaipbl_under_attack_section', 
+        [
+            'name' => 'under_attack_mode', 
+            'options' => [
+                'off' => __('Off (Normal Operation)', 'advanced-ip-blocker'),
+                'auto' => __('Auto (Trigger on attack spikes)', 'advanced-ip-blocker'),
+                'manual' => __('Manual (Always On / Panic Mode)', 'advanced-ip-blocker')
+            ],
+            'default' => 'off',
+            'label' => __('Activates a global JS Challenge for all non-whitelisted visitors to protect the server.', 'advanced-ip-blocker'),
+			'help_url' => 'https://advaipbl.com/distributed-attack-protection-auto-panic/'
+        ]
+    );
+    add_settings_field('advaipbl_under_attack_threshold', __('Trigger Threshold', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_under_attack_section', ['name' => 'under_attack_threshold', 'default' => 100, 'description' => __('Total blocks (from any module) required to auto-trigger the Panic Mode.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_under_attack_window', __('Detection Window (sec)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_under_attack_section', ['name' => 'under_attack_window', 'default' => 60, 'description' => __('The time window in seconds in which the block threshold must be reached.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_under_attack_duration', __('Panic Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_under_attack_section', ['name' => 'under_attack_duration', 'default' => 15, 'description' => __('How long the Global Challenge will stay active after being auto-triggered.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_under_attack_challenge_mode', __('Challenge Mode', 'advanced-ip-blocker'), [$this, 'challenge_mode_callback'], $page, 'advaipbl_under_attack_section', ['name' => 'under_attack_challenge_mode', 'default' => 'automatic', 'description' => __('Choose the type of JS challenge to serve during the Panic Mode.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_under_attack_notification_email', __('Emergency Email', 'advanced-ip-blocker'), [$this, 'email_field_callback'], $page, 'advaipbl_under_attack_section', ['name' => 'under_attack_notification_email', 'label' => __('Leave empty to use the standard admin email.', 'advanced-ip-blocker')]);
+    add_settings_field(
+        'advaipbl_under_attack_alerts', 
+        __('Panic Alerts', 'advanced-ip-blocker'), 
+        [$this, 'select_field_callback'], 
+        $page, 
+        'advaipbl_under_attack_section', 
+        [
+            'name' => 'under_attack_alerts', 
+            'options' => [
+                'always' => __('Send Always (Email & Push)', 'advanced-ip-blocker'),
+                'push_only' => __('Send Push Only (No Email)', 'advanced-ip-blocker'),
+                'disabled' => __('Disabled (Silent Mode)', 'advanced-ip-blocker')
+            ],
+            'default' => 'always',
+            'description' => __('Choose how you want to be notified when Auto-Panic triggers.', 'advanced-ip-blocker')
+        ]
+    );
+    add_settings_field('advaipbl_under_attack_excluded_urls', __('Panic Mode Exclusions', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_under_attack_section', ['name' => 'under_attack_excluded_urls', 'label' => __('Add one URI path or fragment per line (e.g., /wp-json/wc/v3/*). These URLs will NEVER be challenged during Panic Mode. Global Exclusions and WAF Exclusions are also automatically respected.', 'advanced-ip-blocker')]);
+
     add_settings_section('advaipbl_waf_settings_section', null, null, $page);
     add_settings_field(
             'advaipbl_enable_waf', 
@@ -690,7 +733,7 @@ add_settings_field(
     add_settings_field('advaipbl_recaptcha_secret_key', __('Secret Key', 'advanced-ip-blocker'), [$this, 'recaptcha_secret_key_callback'], $page, 'advaipbl_recaptcha_section');
     add_settings_field('advaipbl_recaptcha_score_threshold', __('v3 Score Threshold', 'advanced-ip-blocker'), [$this, 'recaptcha_score_callback'], $page, 'advaipbl_recaptcha_section');
     
-	// SECCIÓN DE 2FA
+	// SECCIÃ“N DE 2FA
         add_settings_section(
             'advaipbl_2fa_settings_section',
             null, // El título ya está en el HTML de la pestaña
@@ -1060,7 +1103,8 @@ add_settings_field(
             'login_lockdown_event_threshold', 'login_lockdown_ip_threshold', 'login_lockdown_window', 'login_lockdown_duration',
             'lockdown_404_event_threshold', 'lockdown_404_ip_threshold', 'lockdown_404_window', 'lockdown_404_duration',
             'lockdown_403_event_threshold', 'lockdown_403_ip_threshold', 'lockdown_403_window', 'lockdown_403_duration',
-            'global_challenge_cookie_duration', 'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network'
+            'global_challenge_cookie_duration', 'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network',
+            'under_attack_threshold', 'under_attack_window', 'under_attack_duration'
         ];
         foreach ($numeric_fields as $field) {
             if (isset($input[$field])) {
@@ -1132,7 +1176,8 @@ add_settings_field(
 			'cf_api_token', 'cf_zone_id', 'community_blocking_action', 'scan_frequency', 'scan_notification_email',
             'fim_alert_email', 'api_token_v3',
             'geo_challenge_mode', 'lockdown_404_challenge_mode', 'lockdown_403_challenge_mode', 
-            'xmlrpc_lockdown_challenge_mode', 'login_lockdown_challenge_mode', 'signature_challenge_mode'
+            'xmlrpc_lockdown_challenge_mode', 'login_lockdown_challenge_mode', 'signature_challenge_mode',
+            'under_attack_mode', 'under_attack_challenge_mode', 'under_attack_notification_email', 'under_attack_excluded_urls', 'under_attack_alerts'
         ];
 
         foreach ($text_fields as $field) {
@@ -1389,6 +1434,9 @@ add_settings_field(
         }
         echo '</select>';
         
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->get_help_link_html($args);
+        
         if ( isset($args['label']) ) {
             printf(
                 '<p class="description">%s</p>',
@@ -1620,7 +1668,7 @@ add_settings_field(
         // Ofuscar si existe
         $display_val = $value;
         if (!empty($value) && strlen($value) > 8) {
-            $display_val = substr($value, 0, 4) . str_repeat('•', 24) . substr($value, -4);
+            $display_val = substr($value, 0, 4) . str_repeat('&bull;', 24) . substr($value, -4);
         }
 
         echo '<div style="display: flex; gap: 10px; position: relative; align-items: center;">';

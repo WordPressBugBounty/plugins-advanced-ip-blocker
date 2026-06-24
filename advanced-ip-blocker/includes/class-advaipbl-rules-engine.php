@@ -398,6 +398,7 @@ private function execute_action($rule, $ip) {
         case 'challenge_automatic':
             // Si el usuario está enviando el resultado del desafío, permitimos que el flujo
             // continúe para que verify_submission lo valide, en lugar de servir el desafío de nuevo (bucle).
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
             if (isset($_POST['_advaipbl_js_token'])) {
                 return false;
             }

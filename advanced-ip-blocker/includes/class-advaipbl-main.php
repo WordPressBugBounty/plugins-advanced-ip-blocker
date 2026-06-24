@@ -227,6 +227,7 @@ private function __construct() {
 		add_action('init', [$this->rules_engine, 'evaluate'], -998); // Reglas avanzadas (ALLOW/BLOCK) evalúan antes de las validaciones de challenge
 
         // Intercepción global y obligatoria para todos los JS Challenges
+        add_action('init', [$this, 'check_for_under_attack_mode'], -996);
         add_action('init', [$this->js_challenge_manager, 'verify_submission'], -997);
 		add_action('init', [$this, 'check_ip_with_abuseipdb'], 10);
 		add_action('init', [$this, 'block_xmlrpc_requests_if_disabled'], -5);
@@ -309,6 +310,7 @@ private function __construct() {
 			add_action('admin_post_advaipbl_refresh_spamhaus', [$this, 'handle_spamhaus_refresh_action']);
             add_action('admin_notices', [$this, 'display_force_2fa_setup_notice']);
         add_action('admin_notices', [$this, 'display_admin_notice']);
+        add_action('admin_notices', [$this, 'display_under_attack_notice']);
 
         // CSS Hiding Strategy:
         // Ocultar visualmente el enlace del Setup Wizard del menú lateral
@@ -776,7 +778,7 @@ public function verify_known_bots() {
         if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
         }
-        
+
         $signature_hash = $this->fingerprint_manager->generate_signature();
 
         global $wpdb;
@@ -832,7 +834,7 @@ public function verify_known_bots() {
         if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
         }
-        
+
         $ip = $this->get_client_ip();
 
         if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
@@ -3433,6 +3435,23 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     // Inyectar todas las cabeceras HTTP filtradas para análisis forense
     $details['headers'] = $this->get_sanitized_request_headers();
 
+    // --- Distributed Attack Protection (Auto-Panic) Tracker ---
+    if ($level === 'critical' && !empty($this->options['under_attack_mode']) && $this->options['under_attack_mode'] === 'auto') {
+        if (!get_transient('advaipbl_is_under_attack')) {
+            $window = (int) ($this->options['under_attack_window'] ?? 60);
+            $counter = (int) get_transient('advaipbl_auto_panic_counter');
+            $counter++;
+            set_transient('advaipbl_auto_panic_counter', $counter, $window);
+
+            $threshold = (int) ($this->options['under_attack_threshold'] ?? 100);
+            if ($counter >= $threshold) {
+                $duration_mins = (int) ($this->options['under_attack_duration'] ?? 15);
+                set_transient('advaipbl_is_under_attack', true, $duration_mins * MINUTE_IN_SECONDS);
+                $this->trigger_auto_panic_notifications($counter, $duration_mins, false, $window);
+            }
+        }
+    }
+
     $is_local_db_active = (($this->options['geolocation_method'] ?? 'api') === 'local_db' && $this->geoip_manager instanceof ADVAIPBL_GeoIP_Manager);
 
     if (!isset($details['country_code']) || $is_local_db_active) {
@@ -3496,6 +3515,14 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             break;
 		/* translators: %s: Country name. */
         case 'geo_challenge': $message = sprintf(__('Visitor from %s was challenged.', 'advanced-ip-blocker'), $details['country'] ?? 'N/A'); break;
+        case 'under_attack_challenge': 
+            $mode = $details['mode'] ?? 'unknown';
+            if ($mode === 'manual') {
+                $message = __('Visitor challenged due to Manual Auto-Panic mode.', 'advanced-ip-blocker');
+            } else {
+                $message = __('Visitor challenged due to Automatic Auto-Panic mode.', 'advanced-ip-blocker');
+            }
+            break;
 		/* translators: %s: Default error reason. */
 		default: $message = sprintf(__('A %s error occurred.', 'advanced-ip-blocker'), strtoupper($type)); break;
     }
@@ -3995,7 +4022,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         return false;
     }
 
-        public function on_settings_update($old_value, $new_value) {
+    public function on_settings_update($old_value, $new_value) {
         // antes de ejecutar cualquier lógica que dependa de $this->options (como el Htaccess Manager).
         $this->options = $new_value;
 
@@ -4009,6 +4036,13 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             if ($new_freq === 'daily' || $new_freq === 'weekly') {
                 $this->schedule_notification_cron();
             }
+        }
+
+        // Detectar si el administrador activa el modo pánico manualmente
+        $old_under_attack = $old_value['under_attack_mode'] ?? 'off';
+        $new_under_attack = $new_value['under_attack_mode'] ?? 'off';
+        if ($old_under_attack !== 'manual' && $new_under_attack === 'manual') {
+            $this->trigger_auto_panic_notifications(0, 0, true);
         }
 
         // Lógica para el cron de Spamhaus
@@ -4636,6 +4670,14 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'login_lockdown_window'       => 5, 
         'login_lockdown_duration'     => 60,
 		
+		// Auto-Panic (Under Attack Mode)
+        'under_attack_mode' => 'off',
+        'under_attack_threshold' => 100,
+        'under_attack_duration' => 15,
+        'under_attack_challenge_mode' => 'automatic',
+        'under_attack_notification_email' => '',
+		'under_attack_alerts' => 'always',
+		
         // Protección de Login y Módulos
         'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'restrict_login_page' => '0',
 		'auto_whitelist_admin' => '0',
@@ -4920,6 +4962,10 @@ public function conditionally_remove_admin_notices() {
         if (strpos($current_page_slug, $page_slug) === 0) {
             remove_all_actions('admin_notices');
             remove_all_actions('all_admin_notices');
+            
+            // Excepciones CRÍTICAS de nuestro propio plugin que deben sobrevivir la purga
+            add_action('admin_notices', [$this, 'display_under_attack_notice']);
+            
             // Una vez que encontramos una coincidencia y limpiamos, no necesitamos seguir.
             return;
         }
@@ -5048,6 +5094,37 @@ public function admin_menu() {
         // Esta es la técnica que sugeriste, es perfecta.
         remove_all_actions( 'admin_notices' );
         remove_all_actions( 'all_admin_notices' );
+    }
+
+    public function display_under_attack_notice() {
+        $mode = $this->options['under_attack_mode'] ?? 'off';
+        $is_active = false;
+        if ($mode === 'manual') {
+            $is_active = true;
+        } elseif ($mode === 'auto' && get_transient('advaipbl_is_under_attack')) {
+            $is_active = true;
+        }
+
+        if ($is_active) {
+            $settings_link = admin_url('admin.php?page=advaipbl_settings_page-settings&sub-tab=general_settings#sub-section-under-attack');
+            ?>
+            <div class="notice notice-error" style="border-left-color: #d63638;">
+                <p>
+                    <strong><?php esc_html_e('⚠️ URGENT:', 'advanced-ip-blocker'); ?></strong> 
+                    <?php 
+                    echo wp_kses(
+                        sprintf(
+                            /* translators: %s is the settings URL */
+                            __('Your website is currently in alert mode (under attack). A global JavaScript challenge is active for all visitors. <a href="%s">Manage Distributed Attack Protection (Auto-Panic) settings</a>', 'advanced-ip-blocker'),
+                            esc_url($settings_link)
+                        ),
+                        ['a' => ['href' => []]]
+                    ); 
+                    ?>
+                </p>
+            </div>
+            <?php
+        }
     }
 
     public function display_admin_notice() {
@@ -5263,6 +5340,10 @@ private function get_first_public_ip_from_string($ip_string) {
     public function get_all_block_type_definitions() {
         return [
             // El 'key' es el identificador técnico, usado en logs, transients, etc.
+            'under_attack_challenge' => [
+                'label'         => __('Panic Challenge', 'advanced-ip-blocker'),
+                'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
+            ],
             'geoblock' => [
                 'label'         => __('Geoblock', 'advanced-ip-blocker'),
                 'option_key'    => self::OPTION_BLOCKED_GEO,
@@ -5942,20 +6023,42 @@ public function handle_export_settings_ajax() {
         $settings_to_export = [];
 
         // 1. Exportar todas las opciones del plugin de la tabla wp_options
+        // Excluimos cachés pesadas y datos ultra-sensibles locales
+        $exclude_from_export = [
+            'advaipbl_spamhaus_asn_list',
+            'advaipbl_spamhaus_drop_list',
+            'advaipbl_community_blocklist',
+            'advaipbl_ai_bot_ips',
+            'advaipbl_fim_baseline_hashes',
+            'advaipbl_vip_salt_modifier',
+            'advaipbl_last_cron_ip',
+            'advaipbl_autoload_version'
+        ];
+
         $options = $wpdb->get_results( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE 'advaipbl_%'" );
         foreach ($options as $option) {
+            if (in_array($option->option_name, $exclude_from_export, true)) {
+                continue;
+            }
             $settings_to_export[$option->option_name] = maybe_unserialize($option->option_value);
         }
 
         // 2. Exportar la tabla de IPs bloqueadas
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $blocked_ips_data = $wpdb->get_results("SELECT ip_range, block_type, timestamp, expires_at, reason FROM {$table_name}", ARRAY_A);
+        if ($export_type === 'template') {
+            // Solo exportar bloqueos manuales si es una plantilla para no arrastrar baneos temporales a otro sitio
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $blocked_ips_data = $wpdb->get_results("SELECT ip_range, block_type, timestamp, expires_at, reason FROM {$table_name} WHERE block_type = 'manual'", ARRAY_A);
+        } else {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $blocked_ips_data = $wpdb->get_results("SELECT ip_range, block_type, timestamp, expires_at, reason FROM {$table_name}", ARRAY_A);
+        }
+        
         if (!empty($blocked_ips_data)) {
             $settings_to_export['blocked_ips_table'] = $blocked_ips_data;
         }
 
-        // 3. Si es una plantilla, eliminar claves sensibles
+        // 3. Si es una plantilla, eliminar claves sensibles de la configuración
         if ($export_type === 'template' && isset($settings_to_export[self::OPTION_SETTINGS])) {
             $sensitive_keys = [
                 'recaptcha_site_key', 'recaptcha_secret_key', 
@@ -6032,6 +6135,23 @@ public function handle_import_settings() {
                         ];
                         
                         if (!in_array($key, $skip_import_keys, true)) {
+                            // --- Smart Merge for Settings ---
+                            // Al importar una Plantilla, evitamos sobreescribir las claves de API existentes con valores vacíos
+                            if ( $key === self::OPTION_SETTINGS && is_array($value) ) {
+                                $current_settings = get_option( self::OPTION_SETTINGS, [] );
+                                $sensitive_keys = [
+                                    'recaptcha_site_key', 'recaptcha_secret_key', 
+                                    'api_key_ipapicom', 'api_key_ipstackcom', 'api_key_ipinfocom', 
+                                    'api_key_ip_apicom', 'maxmind_license_key', 'push_webhook_urls',
+                                    'cf_api_token', 'cf_zone_id', 'abuseipdb_api_key', 'api_token_v3'
+                                ];
+                                foreach ( $sensitive_keys as $s_key ) {
+                                    if ( empty($value[$s_key]) && !empty($current_settings[$s_key]) ) {
+                                        $value[$s_key] = $current_settings[$s_key];
+                                    }
+                                }
+                            }
+
                             update_option( $key, $value );
                             $imported_options_count++;
                         }
@@ -6764,7 +6884,7 @@ public function handle_import_settings() {
             // Por tanto, debemos verificar manualmente si el usuario introducido existe.
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
             if ( ! empty( $_POST['user_login'] ) ) {
-                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
                 $login = sanitize_user( wp_unslash( $_POST['user_login'] ) );
                 $user_data = strpos( $login, '@' ) ? get_user_by( 'email', $login ) : get_user_by( 'login', $login );
                 
@@ -7233,6 +7353,164 @@ public function handle_import_settings() {
      * Comprueba si un endpoint crítico está bajo "Lockdown" y sirve un desafío si es necesario.
      * Se ejecuta en un hook temprano para interceptar el tráfico antes que otras comprobaciones.
      */
+    /**
+     * Intercepta el tráfico si el sitio est bajo ataque (Auto o Manual)
+     */
+    public function check_for_under_attack_mode() {
+        $mode = $this->options['under_attack_mode'] ?? 'off';
+        
+        $is_active = false;
+        if ($mode === 'manual') {
+            $is_active = true;
+        } elseif ($mode === 'auto' && get_transient('advaipbl_is_under_attack')) {
+            $is_active = true;
+        }
+
+        if ($is_active) {
+            $ip = $this->get_client_ip();
+            if ($this->is_whitelisted($ip) || !empty($this->request_is_asn_whitelisted)) {
+                return; // Global Immunity (IP, ASN, or Verified Bot)
+            }
+            
+            // Native API Immunity (Internal Network Sync)
+            $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+            if (strpos($request_uri, '/wp-json/aib-api/v3/') !== false || strpos($request_uri, '/wp-json/advaipbl/v1/') !== false) {
+                return;
+            }
+
+            // Inherit Global Exclusions
+            if ($this->is_request_uri_excluded()) {
+                return;
+            }
+
+            // Check WAF and Specific Panic Exclusions
+            $waf_excluded = $this->options['waf_excluded_urls'] ?? '';
+            $panic_excluded = $this->options['under_attack_excluded_urls'] ?? '';
+            $combined_exclusions = trim($waf_excluded . "\n" . $panic_excluded);
+            
+            if (!empty($combined_exclusions)) {
+                $ex_urls = array_filter(array_map('trim', explode("\n", $combined_exclusions)));
+                foreach ($ex_urls as $ex_url) {
+                    if (empty($ex_url) || strpos($ex_url, '#') === 0) {
+                        continue;
+                    }
+                    $clean_ex_url = str_replace('*', '', $ex_url);
+                    if (!empty($clean_ex_url) && stripos($request_uri, $clean_ex_url) !== false) {
+                        return;
+                    }
+                }
+            }
+            
+            if (is_user_logged_in() && current_user_can('manage_options')) {
+                return; // Allow admins
+            }
+
+            // Si el usuario acaba de pasar el desafío, le damos un pase de gracia.
+            if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
+                return;
+            }
+
+            // Si ya está verificado, no hacer nada.
+            if ($this->js_challenge_manager->is_vip_pass_valid()) {
+                return;
+            }
+            
+            $challenge_mode = $this->options['under_attack_challenge_mode'] ?? 'automatic';
+            $this->log_specific_error(
+                'under_attack_challenge', 
+                $ip, 
+                [
+                    'panic_trigger' => $mode,
+                    'challenge_type' => $challenge_mode
+                ]
+            );
+
+            $this->js_challenge_manager->serve_challenge(
+                'under_attack', 
+                $challenge_mode,
+                __('Site is under heavy attack. Please complete the security check to access the content.', 'advanced-ip-blocker')
+            );
+            exit;
+        }
+    }
+
+    /**
+     * Dispara las notificaciones de emergencia (Email y Push)
+     */
+    public function trigger_auto_panic_notifications($blocks_count = 0, $duration_mins = 0, $is_manual = false, $window_secs = 60) {
+        if (!$is_manual) {
+            if (get_transient('advaipbl_auto_panic_email_sent')) {
+                return;
+            }
+            set_transient('advaipbl_auto_panic_email_sent', true, $window_secs);
+        }
+        
+        $mode_text = $is_manual ? __('Manual', 'advanced-ip-blocker') : __('Automatic', 'advanced-ip-blocker');
+
+        // Log general
+        if ($is_manual) {
+            $log_message = __('Auto-Panic Mode manually activated by administrator.', 'advanced-ip-blocker');
+        } else {
+            /* translators: 1: Number of blocks, 2: Window in seconds */
+            $log_message = sprintf(__('Auto-Panic Mode engaged automatically due to %1$d blocks in %2$d seconds.', 'advanced-ip-blocker'), $blocks_count, $window_secs);
+        }
+        $this->log_event($log_message, 'warning');
+        
+        // Manejar las notificaciones segun la preferencia del usuario
+        $alert_level = $this->options['under_attack_alerts'] ?? 'always';
+
+        if ($alert_level !== 'disabled') {
+            if (!empty($this->options['enable_push_notifications']) && $this->notification_manager) {
+                if ($is_manual) {
+                    $push_msg = sprintf("*CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.");
+                } else {
+                    /* translators: 1: Number of blocks, 2: Window in seconds, 3: Duration in minutes */
+                    $push_msg = sprintf("*CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\nAdvanced IP Blocker detected %1\$d blocks within %2\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %3\$d minutes.", $blocks_count, $window_secs, $duration_mins);
+                }
+                $this->notification_manager->execute_webhook_send($push_msg);
+            }
+
+            if ($alert_level === 'always') {
+                $to = !empty($this->options['under_attack_notification_email']) ? sanitize_email($this->options['under_attack_notification_email']) : get_option('admin_email');
+                if (is_email($to) && $this->notification_manager) {
+                    $site_name = get_bloginfo('name');
+                    /* translators: 1: Site Name, 2: Mode (Manual/Automatic) */
+                    $email_subject = sprintf(__('[%1$s] URGENT: Site is UNDER ATTACK (Auto-Panic %2$s) 🚨', 'advanced-ip-blocker'), $site_name, $mode_text);
+                    $template_title = __('CRITICAL SECURITY ALERT', 'advanced-ip-blocker');
+        
+                    $content_html = '<h3 style="color: #d63638;">' . esc_html__('CRITICAL SECURITY ALERT', 'advanced-ip-blocker') . ' 🚨</h3>';
+                    
+                    if ($is_manual) {
+                        $content_html .= '<p>' . esc_html__('The Distributed Attack Protection (Auto-Panic) has been manually engaged by an administrator to protect your server resources.', 'advanced-ip-blocker') . '</p>';
+                    } else {
+                        $content_html .= '<p>' . esc_html__('The Distributed Attack Protection (Auto-Panic) has been automatically engaged to protect your server resources.', 'advanced-ip-blocker') . '</p>';
+                        /* translators: 1: Number of blocks, 2: Window in seconds */
+                        $content_html .= '<p><strong>' . sprintf(esc_html__('Advanced IP Blocker detected a massive spike in malicious traffic (%1$d blocks within %2$d seconds).', 'advanced-ip-blocker'), $blocks_count, $window_secs) . '</strong></p>';
+                    }
+        
+                    $content_html .= '<ul>';
+                    $content_html .= '<li><strong>' . esc_html__('Status:', 'advanced-ip-blocker') . '</strong> ' . esc_html__('Global JS Challenge ACTIVE', 'advanced-ip-blocker') . '</li>';
+                    if (!$is_manual) {
+                        /* translators: 1: Duration in minutes */
+                        $content_html .= '<li><strong>' . esc_html__('Duration:', 'advanced-ip-blocker') . '</strong> ' . sprintf(esc_html__('%1$d minutes', 'advanced-ip-blocker'), $duration_mins) . '</li>';
+                    }
+                    $content_html .= '<li><strong>' . esc_html__('Bypassed:', 'advanced-ip-blocker') . '</strong> ' . esc_html__('Whitelisted IPs, ASN verified bots, Excluded URLs, and Administrators remain unaffected.', 'advanced-ip-blocker') . '</li>';
+                    $content_html .= '</ul>';
+                    
+                    if (!$is_manual) {
+                        $content_html .= '<p>' . esc_html__('The system will automatically return to normal operation when the time expires.', 'advanced-ip-blocker') . '</p>';
+                    }
+        
+                    $body = $this->notification_manager->get_html_email_template($template_title, $content_html);
+                    
+                    add_filter('wp_mail_content_type', [$this->notification_manager, 'set_html_mail_content_type']);
+                    wp_mail($to, $email_subject, $body);
+                    remove_filter('wp_mail_content_type', [$this->notification_manager, 'set_html_mail_content_type']);
+                }
+            }
+        }
+    }
+
     public function check_for_endpoint_lockdown() {
 		
 		if ($this->is_request_uri_excluded()) { return; }
@@ -7256,8 +7534,8 @@ public function handle_import_settings() {
         // Si ya está verificado, no hacer nada.
         if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
-        }        
-        
+        }
+
         $request_uri = $this->get_current_request_uri();
         $endpoint_key = '';
         $is_xmlrpc_request = strpos($request_uri, 'xmlrpc.php') !== false;
@@ -7679,3 +7957,8 @@ public function check_ip_with_abuseipdb() {
         }
     }
 }
+
+
+
+
+

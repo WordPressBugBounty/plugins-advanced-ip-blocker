@@ -3,7 +3,7 @@
 Plugin Name: Advanced IP Blocker
 Plugin URI: https://advaipbl.com/
 Description: Your complete WordPress security firewall. Blocks IPs, bots & countries. Includes an intelligent WAF, Threat Scoring, and Two-Factor Authentication.
-Version: 8.10.17
+Version: 8.11.0
 Author: IniLerm
 Author URI: https://advaipbl.com/
 Text Domain: advanced-ip-blocker
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ADVAIPBL_VERSION', '8.10.17' );
+define( 'ADVAIPBL_VERSION', '8.11.0' );
 define( 'ADVAIPBL_PLUGIN_FILE', __FILE__ );
 
 if (!defined('ADVAIPBL_PLUGIN_PATH')) {
@@ -83,9 +83,6 @@ require_once ADVAIPBL_PLUGIN_PATH . 'includes/class-advaipbl-geolocation-manager
 require_once ADVAIPBL_PLUGIN_PATH . 'includes/class-advaipbl-session-manager.php';
 require_once ADVAIPBL_PLUGIN_PATH . 'includes/class-advaipbl-main.php';
 
-
-
-
 function advaipbl_initialize() {
     // load_plugin_textdomain eliminado porque WP 4.6+ lo hace automático.
     
@@ -140,14 +137,24 @@ register_activation_hook( __FILE__, 'advaipbl_activate_plugin' );
 function advaipbl_deactivate_plugin() {
     // Limpiar todos los crons programados
     $cron_hooks = [
-        'advaipbl_purge_old_logs_event', 'advaipbl_send_summary_email',
-        'advaipbl_send_signature_summary_email', 'advaipbl_update_spamhaus_list_event',
-        'advaipbl_send_telemetry_data_event', 'advaipbl_threat_score_decay_event',
-        'advaipbl_update_geoip_db_event', 'advaipbl_cleanup_expired_cache_event',
-        'advaipbl_scheduled_scan_event', 'advaipbl_daily_fim_scan',
+        'advaipbl_purge_old_logs_event',
+        'advaipbl_send_summary_email',
+        'advaipbl_send_signature_summary_email',
+        'advaipbl_update_spamhaus_list_event',
+        'advaipbl_send_telemetry_data_event',
+        'advaipbl_threat_score_decay_event',
+        'advaipbl_update_geoip_db_event',
+        'advaipbl_cleanup_expired_cache_event',
+        'advaipbl_scheduled_scan_event',
+        'advaipbl_daily_fim_scan',
         'advaipbl_cloudflare_cleanup_event',
         'advaipbl_update_community_list_event',
-        'advaipbl_community_report_event_v2'
+        'advaipbl_community_report_event_v2',
+        'advaipbl_signature_analysis_event',
+        'advaipbl_cloudflare_sync_event',
+        'advaipbl_update_bot_lists_event',
+        'advaipbl_update_ai_bot_lists_event',
+        'advaipbl_clear_expired_blocks_event'
     ];
     
     foreach ($cron_hooks as $hook) {

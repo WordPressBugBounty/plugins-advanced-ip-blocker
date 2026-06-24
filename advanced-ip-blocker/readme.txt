@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.10.17
+Stable tag: 8.11.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Distributed Attack Protection (Auto-Panic):** Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.
 *   **(NEW) IP & ASN Diagnostics Tool:** A complete Inspector tool integrated directly into the admin bar. Quickly audit any IP or ASN against your Geolocation database, Threat Scoring system, Spamhaus drops, and manual blocking rules in real-time.
 *   **Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
 *   **Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
@@ -69,6 +70,9 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+= What is Distributed Attack Protection (Auto-Panic)? =
+This feature automatically engages a global JavaScript challenge to protect your server resources from massive spikes in malicious traffic. It monitors the number of blocks within a specific time window and, if the threshold is reached, it shields the entire site. Legitimate administrators, verified bots (like Googlebot), and explicitly excluded URLs are bypassed. You can configure the thresholds and notification preferences under Security > Settings > Core Protections.
+
 = What is the IP & ASN Diagnostics Tool (IP Inspector)? =
 It is a powerful built-in utility located in your Security menu (and top admin bar) that allows you to manually inspect any IP address or Autonomous System Number (ASN). It instantly cross-references the subject against your Geolocation databases, Threat Scoring system, AbuseIPDB, Spamhaus drops, and local whitelists/blocklists. It is the ultimate tool for investigating suspicious traffic or verifying if a legitimate user was blocked by a specific rule.
 
@@ -236,6 +240,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.0 =
+*   **NEW MAJOR FEATURE:** Distributed Attack Protection (Auto-Panic). Automatically shields your entire site with a global JS challenge during massive traffic spikes to prevent server overload.
+*   **ENHANCEMENT:** Granular control over Panic Mode alerts. Choose between receiving both Email & Push notifications, Push-only, or completely disabling them for silent operation.
+
 = 8.10.17 =
 *   **NEW FEATURE:** Forensic Headers Logging. The plugin now captures and stores the exact HTTP headers sent by attackers during blocked events, providing unmatched visibility into threat vectors directly within the Security and Challenge logs.
 *   **SECURITY:** Strict GDPR/Privacy redaction added to the new headers engine. Highly sensitive headers (Cookie, Authorization, Set-Cookie) are automatically redacted before being logged to the database.
@@ -326,6 +334,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.11.0 =
+**NEW MAJOR FEATURE:** Introduces Distributed Attack Protection (Auto-Panic). The plugin can now automatically engage a global JS challenge to protect your server resources during massive traffic spikes. Configurable thresholds, durations, exclusions, and notification preferences.
 
 = 8.10.17 =
 **MAJOR FORENSIC UPGRADE:** Completely redesigned the Security Logs interface with a responsive accordion and dynamic grids. The plugin now captures raw HTTP request headers during blocked events for advanced threat analysis, with automatic GDPR redaction for sensitive data (Cookies/Auth).

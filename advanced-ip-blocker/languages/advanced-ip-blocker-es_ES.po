@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-06-05 08:25+0200\n"
+"PO-Revision-Date: 2026-06-22 09:13+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -142,8 +142,8 @@ msgstr "Permanente"
 #: includes/class-advaipbl-main.php:1972 includes/class-advaipbl-main.php:2180
 #: includes/class-advaipbl-main.php:3788
 #, php-format
-msgid "%d minutes"
-msgstr "%d minutos"
+msgid "%1$d minutes"
+msgstr "%1$d minutos"
 
 #: includes/class-advaipbl-main.php:199
 msgid "WP-Cron execution triggered."
@@ -1997,7 +1997,7 @@ msgstr "Todos los Tipos de Bloqueo"
 msgid "ASN Block"
 msgstr "Bloqueo ASN"
 
-#: includes/class-advaipbl-main.php:3721
+#: includes/class-advaipbl-main.php:3721 includes/class-advaipbl-main.php
 msgid "Manual"
 msgstr "Manual"
 
@@ -8152,7 +8152,7 @@ msgstr ""
 msgid "Select CSV File"
 msgstr "Seleccionar archivo CSV"
 
-#: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php includes/class-advaipbl-main.php
 msgid "Duration:"
 msgstr "Duración:"
 
@@ -8721,6 +8721,292 @@ msgstr "Hostname:"
 msgid "Location Map"
 msgstr "Ubicación"
 
+msgid ""
+"External maps are used to comply with strict Content Security Policies (CSP)."
+msgstr ""
+"Los mapas externos se utilizan para cumplir con las estrictas Políticas de "
+"Seguridad de Contenido (CSP)."
+
+msgid "View Map on OpenStreetMap"
+msgstr "Ver mapa en OpenStreetMap"
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"Site is under heavy attack. Please complete the security check to access the "
+"content."
+msgstr ""
+"El sitio está sufriendo un ataque grave. Por favor, complete la verificación "
+"de seguridad para acceder al contenido."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Distributed Attack Protection (Auto-Panic)"
+msgstr "Protección contra ataques distribuidos (Pánico automático)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Under Attack Mode"
+msgstr "En modo ataque"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Off (Normal Operation)"
+msgstr "Apagado (Funcionamiento normal)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Auto (Trigger on attack spikes)"
+msgstr "Automático (Se activa ante picos de ataque)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Manual (Always On / Panic Mode)"
+msgstr "Manual (Siempre encendido / Modo pánico)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Activates a global JS Challenge for all non-whitelisted visitors to protect "
+"the server."
+msgstr ""
+"Activa un desafío JS global para todos los visitantes que no estén en la "
+"lista blanca para proteger el servidor."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Trigger Threshold"
+msgstr "Umbral de activación"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Total blocks (from any module) within 60 seconds required to auto-trigger "
+"the Panic Mode."
+msgstr ""
+"Bloqueos totales (de cualquier módulo) en 60 segundos necesarios para "
+"activar automáticamente el Modo Pánico."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Panic Duration (min)"
+msgstr "Duración del pánico (min)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"How long the Global Challenge will stay active after being auto-triggered."
+msgstr ""
+"Cuánto tiempo permanecerá activo el Desafío Global después de haberse "
+"activado automáticamente."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Emergency Email"
+msgstr "Correo electrónico de emergencia"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Leave empty to use the standard admin email."
+msgstr ""
+"Déjelo en blanco para usar el correo electrónico de administrador estándar."
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"Your website is currently in alert mode (under attack). A global JavaScript "
+"challenge is active for all visitors. <a href=\"%s\">Manage Distributed "
+"Attack Protection (Auto-Panic) settings</a>"
+msgstr ""
+"Su sitio web se encuentra actualmente en modo de alerta (bajo ataque). Un "
+"desafío global de JavaScript está activo para todos los visitantes. <a "
+"href=\"%s\">Administrar la configuración de Protección contra ataques "
+"distribuidos (Pánico automático)</a>"
+
+#: includes/class-advaipbl-main.php
+msgid "Auto-Panic Mode manually activated by administrator."
+msgstr "Modo de pánico automático activado manualmente por el administrador."
+
+#: includes/class-advaipbl-main.php
+msgid "Auto-Panic Mode engaged automatically due to %d blocks in 60s."
+msgstr ""
+"El modo de pánico automático se activó automáticamente debido a %d bloqueos "
+"en 60 s."
+
+#: includes/class-advaipbl-main.php
+msgid "Automatic"
+msgstr "Automático"
+
+#: includes/class-advaipbl-main.php
+msgid "CRITICAL SECURITY ALERT"
+msgstr "ALERTA DE SEGURIDAD CRÍTICA"
+
+#: includes/class-advaipbl-main.php
+msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) 🚨"
+msgstr "[%s] URGENTE: El sitio está BAJO ATAQUE (Pánico-automático %s) 🚨"
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"The Distributed Attack Protection (Auto-Panic) has been manually engaged by "
+"an administrator to protect your server resources."
+msgstr ""
+"La protección contra ataques distribuidos (Pánico automático) ha sido "
+"activada manualmente por un administrador para proteger los recursos de su "
+"servidor."
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"Advanced IP Blocker detected a massive spike in malicious traffic (%1$d "
+"blocks within %2$d seconds)."
+msgstr ""
+"Advanced IP Blocker detectó un aumento masivo en el tráfico malicioso (%1$d "
+"bloqueos en %2$d segundos)."
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"The Distributed Attack Protection (Auto-Panic) has been automatically "
+"engaged to protect your server resources."
+msgstr ""
+"La protección contra ataques distribuidos (Pánico automático) se ha activado "
+"automáticamente para proteger los recursos de su servidor."
+
+#: includes/class-advaipbl-main.php
+msgid "Status:"
+msgstr "Estado:"
+
+#: includes/class-advaipbl-main.php
+msgid "Bypassed:"
+msgstr "Omitido:"
+
+#: includes/class-advaipbl-main.php
+msgid "Visitor challenged due to Manual Auto-Panic mode."
+msgstr "Visitante desafiado - modo de pánico automático manual."
+
+#: includes/class-advaipbl-main.php
+msgid "Visitor challenged due to Automatic Auto-Panic mode."
+msgstr "Visitante desafiado - modo de pánico automático activado."
+
+#: includes/class-advaipbl-main.php
+msgid "Panic Challenge"
+msgstr "Panic Challenge"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Automatic JS Check"
+msgstr "Automático JS Check"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Managed (Interactive)"
+msgstr "Managed (Interactivo)"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Challenge Type:"
+msgstr "Challenge Type:"
+
+#: includes/class-advaipbl-main.php:7415
+msgid "Global JS Challenge ACTIVE"
+msgstr "Global JS Challenge ACTIVADO"
+
+#: includes/class-advaipbl-main.php:7419
+msgid ""
+"Whitelisted IPs, ASN verified bots, Excluded URLs, and Administrators remain "
+"unaffected."
+msgstr ""
+"Las direcciones IP incluidas en la lista blanca, los bots verificados por "
+"ASN, las URL excluidas y los administradores no se verán afectados."
+
+#: includes/class-advaipbl-main.php:7423
+msgid ""
+"The system will automatically return to normal operation when the time "
+"expires."
+msgstr ""
+"El sistema volverá automáticamente a su funcionamiento normal cuando expire "
+"el tiempo."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Total blocks (from any module) required to auto-trigger the Panic Mode."
+msgstr ""
+"Bloqueos totales (de cualquier módulo) necesarios para activar "
+"automáticamente el Modo Pánico."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Detection Window (sec)"
+msgstr "Ventana de detección (segundos)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"The time window in seconds in which the block threshold must be reached."
+msgstr ""
+"El intervalo de tiempo en segundos en el que se debe alcanzar el umbral de "
+"bloqueos."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose the type of JS challenge to serve during the Panic Mode."
+msgstr "Elige el tipo de desafío JS que se mostrará durante el Modo Pánico."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Panic Mode Exclusions"
+msgstr "Exclusiones del modo pánico"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid ""
+"Add one URI path or fragment per line (e.g., /wp-json/wc/v3/*). These URLs "
+"will NEVER be challenged during Panic Mode. Global Exclusions and WAF "
+"Exclusions are also automatically respected."
+msgstr ""
+"Agregue una ruta o fragmento URI por línea (p. ej., /wp-json/wc/v3/*). Estas "
+"URL NUNCA serán cuestionadas durante el Modo Pánico. Las exclusiones "
+"globales y las exclusiones del WAF también se respetan automáticamente."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Distributed Attack Protection (Auto-Panic):"
+msgstr "Protección contra ataques distribuidos  (Auto-Panic):"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Automatically shields your entire site with a global JS challenge during "
+"massive traffic spikes, keeping your server online while intelligently "
+"bypassing trusted bots and excluded routes."
+msgstr ""
+"Protege automáticamente todo tu sitio web con un desafío global de "
+"JavaScript durante picos de tráfico masivos, manteniendo tu servidor en "
+"línea y evitando de forma inteligente los bots de confianza y las rutas "
+"excluidas."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "IP Inspector:"
+msgstr "IP Inspector:"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"A comprehensive diagnostic tool to analyze any IP address or ASN against all "
+"security layers, local whitelists, and third-party threat databases in real-"
+"time."
+msgstr ""
+"Una herramienta de diagnóstico integral para analizar cualquier dirección IP "
+"o ASN comparándola con todas las capas de seguridad, listas blancas locales "
+"y bases de datos de amenazas de terceros en tiempo real."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Panic Alerts"
+msgstr "Panic Alerts"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Send Always (Email & Push)"
+msgstr "Enviar siempre (Email & Push)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Send Push Only (No Email)"
+msgstr "Solo envío de notificaciones push (sin email)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Disabled (Silent Mode)"
+msgstr "Desactivado (modo silencioso)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Choose how you want to be notified when Auto-Panic triggers."
+msgstr ""
+"Elige cómo quieres recibir notificaciones cuando se active la función de "
+"pánico automático."
+
+#~ msgid "⚠️ URGENT:"
+#~ msgstr "⚠️ URGENTE:"
+
+#~ msgid ""
+#~ "Your site is currently in Auto-Panic (Under Attack) Mode. A global JS "
+#~ "Challenge is active for all visitors."
+#~ msgstr ""
+#~ "Tu sitio web se encuentra actualmente en modo de alerta (bajo ataque). Un "
+#~ "desafío global de JavaScript está activo para todos los visitantes."
+
+#~ msgid "?? URGENT:"
+#~ msgstr "?? URGENTE:"
+
 #~ msgid "Signature Logging (Beta)"
 #~ msgstr "Registro de firmas (Beta)"
 
@@ -8913,9 +9199,6 @@ msgstr "Ubicación"
 #~ msgid "Block duration for IPs whose User-Agent is on the blacklist."
 #~ msgstr ""
 #~ "Duración del bloqueo para IPs cuyo User-Agent esté en la lista negra."
-
-#~ msgid "Error Threshold"
-#~ msgstr "Umbral de Errores"
 
 #~ msgid "Web Server Software"
 #~ msgstr "Software de servidor web"
