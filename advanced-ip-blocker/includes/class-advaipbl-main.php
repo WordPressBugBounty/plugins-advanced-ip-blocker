@@ -4664,11 +4664,13 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'xmlrpc_lockdown_threshold'   => 10,
         'xmlrpc_lockdown_window'      => 15,
         'xmlrpc_lockdown_duration'    => 60,
+        'xmlrpc_lockdown_challenge_mode' => 'block',
 		'enable_login_lockdown'       => '0',
         'login_lockdown_event_threshold' => 50,
         'login_lockdown_ip_threshold' => 10,
         'login_lockdown_window'       => 5, 
         'login_lockdown_duration'     => 60,
+        'login_lockdown_challenge_mode' => 'block',
 		
 		// Auto-Panic (Under Attack Mode)
         'under_attack_mode' => 'off',
@@ -4677,6 +4679,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'under_attack_challenge_mode' => 'automatic',
         'under_attack_notification_email' => '',
 		'under_attack_alerts' => 'always',
+        'under_attack_excluded_urls' => '',
 		
         // Protección de Login y Módulos
         'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'restrict_login_page' => '0',
@@ -4688,9 +4691,11 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'enable_manual_asn' => '1',
 		'enable_bot_verification' => '1',
         'enable_ai_bot_verification' => '1',
+        'enable_monitoring_bot_verification' => '1',
 		'enable_geo_challenge' => '0',
         'geo_challenge_countries' => [],
         'geo_challenge_cookie_duration' => 24,
+        'geo_challenge_mode' => 'js_challenge',
 
         // Ajustes generales
         'enable_logging' => '1',
@@ -4708,6 +4713,9 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'push_webhook_urls' => '',
         'push_critical_only' => '0',
 		'push_mentions' => '',
+        'signature_notification_frequency' => 'disabled',
+        'signature_notification_recipient' => 'admin',
+        'signature_notification_custom_email' => '',
         
         // Smart 404/403 Distributed Lockdown
     'enable_404_lockdown'            => '0',
@@ -4715,12 +4723,14 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     'lockdown_404_ip_threshold'      => 5,
     'lockdown_404_window'            => 10,
     'lockdown_404_duration'          => 60,
+    'lockdown_404_challenge_mode'    => 'block',
 
     'enable_403_lockdown'            => '0',
     'lockdown_403_event_threshold'   => 50,
     'lockdown_403_ip_threshold'      => 5,
     'lockdown_403_window'            => 10,
     'lockdown_403_duration'          => 60,
+    'lockdown_403_challenge_mode'    => 'block',
 
         // APIs Externas
         'geolocation_provider' => 'ip-api.com', 'api_key_ipapicom' => '', 'api_key_ipstackcom' => '',
@@ -4755,6 +4765,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         // Ajustes de reCAPTCHA
         'recaptcha_enable' => '0', 'recaptcha_version' => 'v3', 'recaptcha_site_key' => '',
         'recaptcha_secret_key' => '', 'recaptcha_score_threshold' => 0.5,
+        'api_token_v3' => '',
 		
 		// CLAVES 2FA 
 		'enable_2fa' => '0',       
@@ -4785,6 +4796,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             'signature_rule_ttl'            => 24,
 			'enable_signature_blocking'   => '0',
 			'trusted_signature_hashes'    => '',
+            'signature_challenge_mode'    => 'block',
 			// Cloudflare Integration
         'enable_cloudflare' => '0',
         'cf_api_token' => '',
@@ -4809,6 +4821,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
         // File Integrity Monitor (FIM)
         'enable_fim' => '0',
+        'fim_alert_email' => '',
     ];
 		
 }
@@ -5914,6 +5927,8 @@ private function get_first_public_ip_from_string($ip_string) {
             'enable_fim'                  => !empty($this->options['enable_fim']),
             'enable_bot_verification'     => !empty($this->options['enable_bot_verification']),
             'enable_ai_bot_verification'  => isset($this->options['enable_ai_bot_verification']) ? !empty($this->options['enable_ai_bot_verification']) : true,
+            'enable_monitoring_bot_verification' => isset($this->options['enable_monitoring_bot_verification']) ? !empty($this->options['enable_monitoring_bot_verification']) : true,
+            'under_attack_mode'           => (!empty($this->options['under_attack_mode']) && $this->options['under_attack_mode'] !== 'off'),
             'enable_geo_challenge'        => !empty($this->options['enable_geo_challenge']),
             'htaccess_write'              => !empty($this->options['enable_htaccess_write']),
             'htaccess_sync_ips'           => !empty($this->options['enable_htaccess_ip_blocking']),
@@ -7938,18 +7953,17 @@ public function check_ip_with_abuseipdb() {
      */
     public static function deactivate_plugin() {
         $cron_hooks = [
-            'advaipbl_purge_old_logs_event', 
-            'advaipbl_send_summary_email',
-            'advaipbl_update_spamhaus_list_event', 
-            'advaipbl_send_telemetry_data_event',
-            'advaipbl_threat_score_decay_event', 
-            'advaipbl_signature_analysis_event',
-            'advaipbl_update_geoip_db_event', 
-            'advaipbl_update_geoip_db_event', 
-            'advaipbl_cleanup_expired_cache_event',
-            'advaipbl_scheduled_scan_event',
-            'advaipbl_daily_fim_scan',
-            'advaipbl_cloudflare_cleanup_event'
+            'advaipbl_purge_old_logs_event', 'advaipbl_send_summary_email',
+            'advaipbl_update_spamhaus_list_event', 'advaipbl_send_telemetry_data_event',
+            'advaipbl_threat_score_decay_event', 'advaipbl_signature_analysis_event',
+            'advaipbl_update_geoip_db_event', 'advaipbl_cleanup_expired_cache_event',
+            'advaipbl_scheduled_scan_event', 'advaipbl_daily_fim_scan',
+            'advaipbl_cloudflare_cleanup_event',
+            'advaipbl_update_community_list_event',
+            'advaipbl_community_report_event_v2',
+            'advaipbl_cloudflare_sync_event',
+            'advaipbl_clear_expired_blocks_event',
+            'advaipbl_update_ai_bot_lists_event'
         ];
         
         foreach ($cron_hooks as $hook) {

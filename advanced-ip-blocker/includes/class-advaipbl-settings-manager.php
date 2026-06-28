@@ -438,6 +438,21 @@ add_settings_field(
             'name' => 'enable_ai_bot_verification',
             'label' => __('Enable IP CIDR verification for AI crawlers (e.g., OpenAI, ChatGPT).', 'advanced-ip-blocker'),
             'description' => __('Downloads official JSON IP lists from AI providers to verify their crawlers reliably, bypassing rDNS limitations.', 'advanced-ip-blocker'),
+            'help_url' => 'https://advaipbl.com/verify-ai-bots-cidr-guide/'
+        ]
+    );
+
+    add_settings_field(
+        'advaipbl_enable_monitoring_bot_verification',
+        __('Verify Monitoring Bots (IP List)', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_user_agent_settings_section',
+        [
+            'name' => 'enable_monitoring_bot_verification',
+            'label' => __('Enable IP verification for Monitoring Bots (e.g., Uptime Robot, Pingdom).', 'advanced-ip-blocker'),
+            'description' => __('Downloads official IP lists from monitoring services to allow legitimate pings and block impersonators.', 'advanced-ip-blocker'),
+            'help_url' => 'https://advaipbl.com/verify-monitoring-bots-ip-list-complete-guide/'
         ]
     );
 
@@ -1132,7 +1147,7 @@ add_settings_field(
             'enable_404_lockdown',
             'enable_403_lockdown',
             'enable_geo_challenge',
-			'enable_bot_verification', 'enable_ai_bot_verification',
+			'enable_bot_verification', 'enable_ai_bot_verification', 'enable_monitoring_bot_verification',
 			'enable_community_blocking',
 			'enable_abuseipdb',
 			'enable_community_network',

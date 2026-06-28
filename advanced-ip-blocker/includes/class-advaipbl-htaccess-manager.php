@@ -160,15 +160,22 @@ class ADVAIPBL_Htaccess_Manager {
             $rules[] = '# IP Blocking Rules';
             
             // Generar reglas SetEnvIF SOLO para IPs únicas (sin CIDR)
+            $setenvif_rules = [];
             foreach ( $ips_to_block as $ip ) {
                 if ( strpos( $ip, '/' ) === false ) {
                     $ip_regex = str_replace( '.', '\.', $ip );
                     $ip_regex = '^' . $ip_regex . '$';
                     
-                    $rules[] = 'SetEnvIF REMOTE_ADDR "' . $ip_regex . '" DenyAccess';
-                    $rules[] = 'SetEnvIF X-FORWARDED-FOR "' . $ip_regex . '" DenyAccess';
-                    $rules[] = 'SetEnvIF X-CLUSTER-CLIENT-IP "' . $ip_regex . '" DenyAccess';
+                    $setenvif_rules[] = '    SetEnvIF REMOTE_ADDR "' . $ip_regex . '" DenyAccess';
+                    $setenvif_rules[] = '    SetEnvIF X-FORWARDED-FOR "' . $ip_regex . '" DenyAccess';
+                    $setenvif_rules[] = '    SetEnvIF X-CLUSTER-CLIENT-IP "' . $ip_regex . '" DenyAccess';
                 }
+            }
+            
+            if (!empty($setenvif_rules)) {
+                $rules[] = '<IfModule mod_setenvif.c>';
+                $rules = array_merge($rules, $setenvif_rules);
+                $rules[] = '</IfModule>';
             }
             
             $rules[] = '';

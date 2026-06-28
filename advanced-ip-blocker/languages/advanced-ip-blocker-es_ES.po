@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-06-22 09:13+0200\n"
+"PO-Revision-Date: 2026-06-28 10:14+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8993,6 +8993,25 @@ msgid "Choose how you want to be notified when Auto-Panic triggers."
 msgstr ""
 "Elige cómo quieres recibir notificaciones cuando se active la función de "
 "pánico automático."
+
+#: includes/class-advaipbl-settings-manager.php:446
+msgid "Verify Monitoring Bots (IP List)"
+msgstr "Verificar bots de monitoreo (lista de IPs)"
+
+#: includes/class-advaipbl-settings-manager.php:451
+msgid ""
+"Enable IP verification for Monitoring Bots (e.g., Uptime Robot, Pingdom)."
+msgstr ""
+"Habilite la verificación de IP para bots de monitoreo (p. ej., Uptime Robot, "
+"Pingdom)."
+
+#: includes/class-advaipbl-settings-manager.php:452
+msgid ""
+"Downloads official IP lists from monitoring services to allow legitimate "
+"pings and block impersonators."
+msgstr ""
+"Descarga listas oficiales de direcciones IP de servicios de monitoreo para "
+"permitir pings legítimos y bloquear a los impostores."
 
 #~ msgid "⚠️ URGENT:"
 #~ msgstr "⚠️ URGENTE:"

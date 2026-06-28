@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.0\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -8130,4 +8130,16 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
 msgid "Choose how you want to be notified when Auto-Panic triggers."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:446
+msgid "Verify Monitoring Bots (IP List)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:451
+msgid "Enable IP verification for Monitoring Bots (e.g., Uptime Robot, Pingdom)."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:452
+msgid "Downloads official IP lists from monitoring services to allow legitimate pings and block impersonators."
 msgstr ""

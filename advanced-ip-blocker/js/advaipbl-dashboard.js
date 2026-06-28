@@ -96,7 +96,9 @@ jQuery(document).ready(function ($) {
             'login_blocking': 'Failed Login Blocking',
             'bot_verification': 'Verify Known Bots',
             'ai_bot_verification': 'Verify AI Bots (CIDR)',
+            'monitoring_bot_verification': 'Verify Monitoring Bots (IP List)',
             'geo_challenge': 'Geo Challenge',
+            'under_attack_mode': 'Distributed Attack Protection (Auto-Panic)',
             'abuseipdb': 'AbuseIPDB Protection',
             'activity_audit': 'Activity Audit Log',
             'advanced_rule': 'Advanced Rules'

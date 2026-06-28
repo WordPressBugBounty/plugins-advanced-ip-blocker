@@ -57,6 +57,10 @@ class ADVAIPBL_Bot_Verifier {
             'yahoo! slurp'        => '.yahoo.com',
             'yahoofaqbot'         => '.yahoo.com',
             'petalbot'            => ['.aspiegel.com', '.petalsearch.com'],
+
+            // --- Servicios de Monitoreo (Verificados por IP) ---
+            'uptimerobot'         => [], // Uptime Robot (Sin rDNS)
+            'pingdom'             => [], // Pingdom (Sin rDNS)
         ];
 
         $is_known_bot = false;
@@ -77,30 +81,38 @@ class ADVAIPBL_Bot_Verifier {
 
         $is_ai_bot = false;
         $is_google_bot = false;
+        $is_monitoring_bot = false;
         
         if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'searchbot', 'applebot'])) {
             $is_ai_bot = true;
         } elseif (in_array($ua_keyword, ['googlebot', 'google.com/bot', 'adsbot-google'])) {
             $is_google_bot = true;
+        } elseif (in_array($ua_keyword, ['uptimerobot', 'pingdom'])) {
+            $is_monitoring_bot = true;
         }
 
         // Si es un bot de IA y la opción está activa, o si es de Google, verificamos por CIDR en lugar de DNS
         // (Activado por defecto si no está definido para usuarios existentes)
         $ai_bot_enabled = isset($this->plugin->options['enable_ai_bot_verification']) ? $this->plugin->options['enable_ai_bot_verification'] : '1';
+        $monitoring_bot_enabled = isset($this->plugin->options['enable_monitoring_bot_verification']) ? $this->plugin->options['enable_monitoring_bot_verification'] : '1';
         
-        if (($is_ai_bot && $ai_bot_enabled === '1') || $is_google_bot) {
+        if (($is_ai_bot && $ai_bot_enabled === '1') || $is_google_bot || ($is_monitoring_bot && $monitoring_bot_enabled === '1')) {
             if (!get_transient('advaipbl_bot_ips_cached')) {
                 $this->fetch_and_cache_bot_lists();
             }
             $is_verified = $this->verify_bot_ip($ip, $ua_keyword);
             
             // Fallback a DNS si la lista CIDR está vacía por algún error de API, o no está en la lista JSON (raro)
-            if (!$is_verified) {
+            if (!$is_verified && !$is_monitoring_bot) {
                 $is_verified = $this->verify_dns($ip, $expected_domains);
             }
         } else {
-            // Ahora realizamos la verificación de DNS clásica
-            $is_verified = $this->verify_dns($ip, $expected_domains);
+            // Ahora realizamos la verificación de DNS clásica (omitido para bots de monitoreo que no tienen rDNS)
+            if ($is_monitoring_bot) {
+                $is_verified = false;
+            } else {
+                $is_verified = $this->verify_dns($ip, $expected_domains);
+            }
         }
 
         self::$verified_cache[$ip] = $is_verified;
@@ -167,6 +179,8 @@ class ADVAIPBL_Bot_Verifier {
             'gptbot'        => '.outbound-customer.openai.com',
             'searchbot'     => '.outbound-customer.openai.com',
             'amazonbot'     => '.amazonbot.amazon.com',
+            'uptimerobot'   => '',
+            'pingdom'       => '',
         ];
 
         foreach ($known_bots as $ua_keyword => $domain) {
@@ -195,7 +209,20 @@ class ADVAIPBL_Bot_Verifier {
             ]
         ];
 
+        $txt_endpoints = [
+            'uptimerobot' => [
+                'https://uptimerobot.com/inc/files/ips/IPv4.txt',
+                'https://uptimerobot.com/inc/files/ips/IPv6.txt'
+            ],
+            'pingdom' => [
+                'https://my.pingdom.com/probes/ipv4',
+                'https://my.pingdom.com/probes/ipv6'
+            ]
+        ];
+
         $all_cidrs = [];
+        
+        // Cargar listas JSON
         foreach ($endpoints as $bot => $urls) {
             if (!is_array($urls)) {
                 $urls = [$urls];
@@ -214,6 +241,27 @@ class ADVAIPBL_Bot_Verifier {
                             if (!empty($prefix['ipv6Prefix'])) {
                                 $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cargar listas TXT (Uptime Robot, Pingdom, etc.)
+        foreach ($txt_endpoints as $bot => $urls) {
+            foreach ($urls as $url) {
+                $response = wp_remote_get($url, ['timeout' => 5]);
+                if (!is_wp_error($response)) {
+                    $body = wp_remote_retrieve_body($response);
+                    $lines = explode("\n", $body);
+                    foreach ($lines as $line) {
+                        $ip = trim($line);
+                        // Limpiar comentarios si existen
+                        if (strpos($ip, '#') !== false) {
+                            $ip = trim(substr($ip, 0, strpos($ip, '#')));
+                        }
+                        if (!empty($ip)) {
+                            $all_cidrs[$bot][] = $ip;
                         }
                     }
                 }
@@ -243,6 +291,10 @@ class ADVAIPBL_Bot_Verifier {
             $bot_key = 'applebot';
         } elseif (in_array($ua_keyword, ['googlebot', 'google.com/bot', 'adsbot-google'])) {
             $bot_key = 'google';
+        } elseif ($ua_keyword === 'uptimerobot') {
+            $bot_key = 'uptimerobot';
+        } elseif ($ua_keyword === 'pingdom') {
+            $bot_key = 'pingdom';
         }
 
         if (empty($bot_key) || empty($bot_ips[$bot_key])) {

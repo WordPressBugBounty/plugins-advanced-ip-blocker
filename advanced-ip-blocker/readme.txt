@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.0
+Stable tag: 8.11.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,6 +49,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 *   **Edge Firewall Mode!** Protect any PHP file or standalone application within your WordPress directory (even if it's not part of WordPress). Ideal for securing custom scripts, legacy applications, or folders like `/scan/`. (Requires manual configuration).
 *   **Advanced Rules Engine!** Create powerful, custom security rules with multiple conditions (IP, Country, ASN, URI, User-Agent) and actions (Block, Challenge, or add Threat Score).
 *   **Known Bot Verification.** A powerful new security layer that uses reverse DNS lookups to verify legitimate crawlers like Googlebot and Bingbot. This completely neutralizes attackers who try to bypass security rules by faking their User-Agent, assigning high threat scores to impostors.
+*   **Verify Monitoring Bots (IP List).** A brand new feature that downloads and caches official IP lists from popular uptime monitoring services (like UptimeRobot and Pingdom) to ensure they are never incorrectly blocked or challenged.
 *   **Onboarding Setup Wizard.** A brand new step-by-step wizard that guides new users through the essential security configurations (IP whitelisting, WAF, and bot traps) in under a minute, ensuring a strong security posture from day one.
 *   **Major Refactor: Codebase Modernization.** The entire plugin architecture has been refactored into a modern, modular structure. Logic for admin pages, AJAX, actions, and settings is now handled by dedicated classes, making the plugin more stable, performant, and easier to maintain and extend in the future.
 *   **Advanced IP Spoofing Protection.** A zero-trust "Trusted Proxies" system ensures the plugin always identifies the true visitor IP, even behind complex setups like Cloudflare or a custom reverse proxy. It neutralizes attacks that attempt to fake their IP, preventing block evasion and the framing of innocent users.
@@ -126,6 +127,9 @@ AbuseIPDB is a global, crowdsourced project that tracks and reports malicious IP
 
 = What is "Known Bot Verification"? =
 This is an advanced security feature that checks if visitors claiming to be from major search engines (like Googlebot) are legitimate. It performs a DNS lookup to verify their IP address. If the check fails, the visitor is identified as an "impersonator" and receives a high threat score, preventing them from exploiting the trust given to real crawlers. This feature is enabled by default under `Settings > Core Protections`.
+
+= What is "Verify Monitoring Bots (IP List)"? =
+This feature ensures your uptime monitoring services (like UptimeRobot, Pingdom, StatusCake, etc.) can always reach your site to check its status. By automatically downloading and updating official IP lists from these providers, the plugin safely whitelists them from rate limiting or blocking without exposing your site to attackers who might spoof their user agents.
 
 = What is "Trusted Proxies" and why do I need it? =
 This is a critical security feature that prevents IP spoofing. If your site is behind a service like Cloudflare, Varnish, or another reverse proxy, the server's direct connection IP (`REMOTE_ADDR`) will always be the proxy's IP, not the visitor's. The real visitor IP is sent in an HTTP header (e.g., `CF-Connecting-IP`). An attacker can fake this header. The "Trusted Proxies" setting tells the plugin: "Only trust these headers if the request comes from an IP address I know is my proxy." You can add IPs, CIDR ranges, or ASNs (like `AS13335` for Cloudflare) to this list under `Security > Settings > IP Detection`.
@@ -240,6 +244,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.1 =
+*   **NEW FEATURE:** Verify Monitoring Bots (IP List). The plugin now automatically downloads and verifies official IP lists from monitoring services like Pingdom and UptimeRobot, allowing legitimate pings and safely preventing them from being blocked.
+
 = 8.11.0 =
 *   **NEW MAJOR FEATURE:** Distributed Attack Protection (Auto-Panic). Automatically shields your entire site with a global JS challenge during massive traffic spikes to prevent server overload.
 *   **ENHANCEMENT:** Granular control over Panic Mode alerts. Choose between receiving both Email & Push notifications, Push-only, or completely disabling them for silent operation.
@@ -335,14 +342,8 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
+= 8.11.1 =
+**NEW FEATURE:** Added "Verify Monitoring Bots (IP List)" to explicitly whitelist official uptime monitoring services based on dynamic IP lists, avoiding false positives.
+
 = 8.11.0 =
 **NEW MAJOR FEATURE:** Introduces Distributed Attack Protection (Auto-Panic). The plugin can now automatically engage a global JS challenge to protect your server resources during massive traffic spikes. Configurable thresholds, durations, exclusions, and notification preferences.
-
-= 8.10.17 =
-**MAJOR FORENSIC UPGRADE:** Completely redesigned the Security Logs interface with a responsive accordion and dynamic grids. The plugin now captures raw HTTP request headers during blocked events for advanced threat analysis, with automatic GDPR redaction for sensitive data (Cookies/Auth).
-
-= 8.10.16 =
-**PERFORMANCE & FIXES:** Massive performance boost by refactoring the core load sequence. Fixes an infinite loop in the JS challenge engine triggered by specific advanced rules. Highly recommended upgrade for high-traffic sites.
-
-= 8.10.15 =
-**NEW TOOL & SECURITY FIX:** Introduces the comprehensive IP & ASN Diagnostics Tool for real-time traffic auditing. Fixes a critical firewall bypass involving inline comments in ASN blocklists. Migrates ASN lookups to the official RIPE Stat API.

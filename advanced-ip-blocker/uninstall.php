@@ -144,6 +144,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_spamhaus_last_update',
             'advaipbl_spamhaus_drop_list',
             'advaipbl_ai_bot_ips',
+            'advaipbl_bot_ips',
             'advaipbl_last_cron_ip',
             
             // Community Network
