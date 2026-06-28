@@ -66,8 +66,8 @@ class ADVAIPBL_Htaccess_Manager {
             return false;
         }
 
-        // Usamos gmdate() para evitar problemas de zona horaria (Standard WP).
-        $backup_filename = 'htaccess_backup_' . gmdate( 'Y-m-d_H-i-s' ) . '.txt';
+        // Usamos gmdate() para evitar problemas de zona horaria y añadimos token aleatorio por seguridad.
+        $backup_filename = 'htaccess_backup_' . gmdate( 'Y-m-d_H-i-s' ) . '_' . bin2hex( random_bytes( 8 ) ) . '.txt';
         $backup_path = $backup_dir . '/' . $backup_filename;
 
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy

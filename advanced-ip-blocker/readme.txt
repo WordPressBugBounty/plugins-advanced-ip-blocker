@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.1
+Stable tag: 8.11.2
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -244,6 +244,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.2 =
+*   **SECURITY HARDENING:** Added a randomized cryptographic token to `.htaccess` backup filenames to prevent unauthorized enumeration, as recommended by the WordPress Plugin Review Team.
+
 = 8.11.1 =
 *   **NEW FEATURE:** Verify Monitoring Bots (IP List). The plugin now automatically downloads and verifies official IP lists from monitoring services like Pingdom and UptimeRobot, allowing legitimate pings and safely preventing them from being blocked.
 
@@ -341,6 +344,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.11.2 =
+**SECURITY HARDENING:** Minor update to improve the security of internal `.htaccess` backup files.
 
 = 8.11.1 =
 **NEW FEATURE:** Added "Verify Monitoring Bots (IP List)" to explicitly whitelist official uptime monitoring services based on dynamic IP lists, avoiding false positives.
