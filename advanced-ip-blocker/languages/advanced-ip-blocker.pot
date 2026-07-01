@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.2\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -8142,4 +8142,25 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:452
 msgid "Downloads official IP lists from monitoring services to allow legitimate pings and block impersonators."
+msgstr ""
+
+
+#: includes/class-advaipbl-main.php:4048
+msgid "Panic Mode manually disabled by administrator."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:4051
+msgid "Auto-Panic Mode disabled by administrator."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:4053
+msgid "Auto-Panic Mode enabled by administrator."
+msgstr ""
+
+#: includes/class-advaipbl-bot-verifier.php:274
+msgid "Official bot IP lists successfully downloaded and cached (Google, AI Bots, Monitoring Bots)."
+msgstr ""
+
+#: includes/class-advaipbl-bot-verifier.php:280
+msgid "Failed to download official bot IP lists. This could be due to a firewall blocking outgoing HTTP requests or an API outage. Retrying in 1 hour."
 msgstr ""

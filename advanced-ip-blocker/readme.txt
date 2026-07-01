@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.2
+Stable tag: 8.11.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -244,6 +244,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.3 =
+*   **SECURITY HARDENING:** Protected the local GeoIP database folder to prevent unauthorized direct downloads of MaxMind `.mmdb` files, ensuring full compliance with MaxMind EULA and saving server bandwidth.
+*   **PERFORMANCE FIX:** Added a circuit-breaker to the bot IP verification engine. Prevents an infinite loop of HTTP timeout delays (potential DoS) if the server is unable to fetch the official bot IP lists due to firewall restrictions.
+
 = 8.11.2 =
 *   **SECURITY HARDENING:** Added a randomized cryptographic token to `.htaccess` backup filenames to prevent unauthorized enumeration, as recommended by the WordPress Plugin Review Team.
 
@@ -344,6 +348,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.11.3 =
+**SECURITY HARDENING:** Minor update to protect the GeoIP directory from direct external access.
 
 = 8.11.2 =
 **SECURITY HARDENING:** Minor update to improve the security of internal `.htaccess` backup files.

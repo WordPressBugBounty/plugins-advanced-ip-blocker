@@ -4038,11 +4038,18 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             }
         }
 
-        // Detectar si el administrador activa el modo pánico manualmente
+        // Detectar si el administrador activa o desactiva el modo pánico manualmente
         $old_under_attack = $old_value['under_attack_mode'] ?? 'off';
         $new_under_attack = $new_value['under_attack_mode'] ?? 'off';
         if ($old_under_attack !== 'manual' && $new_under_attack === 'manual') {
             $this->trigger_auto_panic_notifications(0, 0, true);
+        } elseif ($old_under_attack === 'manual' && $new_under_attack !== 'manual') {
+            $this->log_event(__('Panic Mode manually disabled by administrator.', 'advanced-ip-blocker'), 'info');
+            delete_transient('advaipbl_is_under_attack');
+        } elseif ($old_under_attack === 'auto' && $new_under_attack !== 'auto') {
+            $this->log_event(__('Auto-Panic Mode disabled by administrator.', 'advanced-ip-blocker'), 'info');
+        } elseif ($old_under_attack !== 'auto' && $new_under_attack === 'auto') {
+            $this->log_event(__('Auto-Panic Mode enabled by administrator.', 'advanced-ip-blocker'), 'info');
         }
 
         // Lógica para el cron de Spamhaus

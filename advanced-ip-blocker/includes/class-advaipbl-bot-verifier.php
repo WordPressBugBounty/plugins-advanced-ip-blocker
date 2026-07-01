@@ -271,6 +271,12 @@ class ADVAIPBL_Bot_Verifier {
         if (!empty($all_cidrs)) {
             update_option('advaipbl_bot_ips', $all_cidrs, false);
             set_transient('advaipbl_bot_ips_cached', true, DAY_IN_SECONDS);
+            $this->plugin->log_event(__('Official bot IP lists successfully downloaded and cached (Google, AI Bots, Monitoring Bots).', 'advanced-ip-blocker'), 'info');
+        } else {
+            // CRITICAL FIX: If all HTTP requests fail, set a shorter transient to prevent
+            // a timeout loop on every page load (which could cause a DoS).
+            set_transient('advaipbl_bot_ips_cached', true, HOUR_IN_SECONDS);
+            $this->plugin->log_event(__('Failed to download official bot IP lists. This could be due to a firewall blocking outgoing HTTP requests or an API outage. Retrying in 1 hour.', 'advanced-ip-blocker'), 'error');
         }
     }
 

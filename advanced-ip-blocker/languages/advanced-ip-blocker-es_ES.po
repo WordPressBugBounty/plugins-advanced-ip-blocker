@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-06-28 10:14+0200\n"
+"PO-Revision-Date: 2026-07-01 08:57+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -9012,6 +9012,35 @@ msgid ""
 msgstr ""
 "Descarga listas oficiales de direcciones IP de servicios de monitoreo para "
 "permitir pings legítimos y bloquear a los impostores."
+
+#: includes/class-advaipbl-main.php:4048
+msgid "Panic Mode manually disabled by administrator."
+msgstr "Modo de pánico deshabilitado manualmente por el administrador."
+
+#: includes/class-advaipbl-main.php:4051
+msgid "Auto-Panic Mode disabled by administrator."
+msgstr "Modo de pánico automático deshabilitado por el administrador."
+
+#: includes/class-advaipbl-main.php:4053
+msgid "Auto-Panic Mode enabled by administrator."
+msgstr "Modo de pánico automático habilitado por el administrador."
+
+#: includes/class-advaipbl-bot-verifier.php:274
+msgid ""
+"Official bot IP lists successfully downloaded and cached (Google, AI Bots, "
+"Monitoring Bots)."
+msgstr ""
+"Las listas oficiales de direcciones IP de bots se han descargado y "
+"almacenado en caché correctamente (Google, bots de IA, bots de monitoreo)."
+
+#: includes/class-advaipbl-bot-verifier.php:280
+msgid ""
+"Failed to download official bot IP lists. This could be due to a firewall "
+"blocking outgoing HTTP requests or an API outage. Retrying in 1 hour."
+msgstr ""
+"No se pudieron descargar las listas oficiales de IP de bots. Esto podría "
+"deberse a un cortafuegos que bloquea las solicitudes HTTP salientes o a una "
+"interrupción de la API. Se reintentará en 1 hora."
 
 #~ msgid "⚠️ URGENT:"
 #~ msgstr "⚠️ URGENTE:"

@@ -25,6 +25,17 @@ class ADVAIPBL_GeoIP_Manager {
         if ( ! is_dir( $path ) ) {
             wp_mkdir_p( $path );
         }
+        
+        // Protect directory from unauthorized MaxMind DB downloads
+        if ( ! file_exists( $path . '.htaccess' ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+            file_put_contents( $path . '.htaccess', 'deny from all' );
+        }
+        if ( ! file_exists( $path . 'index.php' ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+            file_put_contents( $path . 'index.php', '<?php // Silence is golden' );
+        }
+
         return $path;
     }
 
