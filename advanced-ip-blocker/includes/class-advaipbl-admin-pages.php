@@ -884,6 +884,7 @@ public function display_general_settings_tab() {
             'blocking_rules' => __('Threshold Blocking', 'advanced-ip-blocker'),
             'ip_trust' => __('IP Trust & Scoring', 'advanced-ip-blocker'),
             'login_protection' => __('Login Protection', 'advanced-ip-blocker'),
+            'captcha_integrations' => __('Captcha Integrations', 'advanced-ip-blocker'),
             'signature_engine' => __('Signature Engine', 'advanced-ip-blocker'),
             'internal_security' => __('Internal Security', 'advanced-ip-blocker'),
             'uninstall' => __('Uninstallation', 'advanced-ip-blocker'),
@@ -1128,6 +1129,13 @@ public function display_general_settings_tab() {
                         </div>
                     </div>
 
+                    <div id="section-captcha_integrations" class="advaipbl-settings-section">
+                        <div class="advaipbl-card">
+                            <h2><?php esc_html_e('Captcha Integrations (Turnstile & hCaptcha)', 'advanced-ip-blocker'); ?></h2>
+                            <table class="form-table"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_captcha_integrations_section'); ?></table>
+                        </div>
+                    </div>
+
                     <div id="section-signature_engine" class="advaipbl-settings-section">
                         <div class="advaipbl-card">
                             <h2><?php esc_html_e('Attack Signature Engine', 'advanced-ip-blocker'); ?></h2>
@@ -1192,6 +1200,31 @@ public function display_general_settings_tab() {
               </span>
           </div>
         </div>
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var defaultEngineSelect = document.getElementById('advaipbl_default_challenge_engine');
+            if (defaultEngineSelect) {
+                var turnstileFields = document.querySelectorAll('.advaipbl-turnstile-field');
+                var hcaptchaFields = document.querySelectorAll('.advaipbl-hcaptcha-field');
+                
+                function toggleCaptchaFields() {
+                    var selected = defaultEngineSelect.value;
+                    turnstileFields.forEach(function(field) {
+                        var tr = field.closest('tr');
+                        if (tr) tr.style.display = (selected === 'turnstile') ? '' : 'none';
+                    });
+                    hcaptchaFields.forEach(function(field) {
+                        var tr = field.closest('tr');
+                        if (tr) tr.style.display = (selected === 'hcaptcha') ? '' : 'none';
+                    });
+                }
+                
+                defaultEngineSelect.addEventListener('change', toggleCaptchaFields);
+                toggleCaptchaFields(); // Init on load
+            }
+        });
+        </script>
         <?php
     }
 /**
@@ -1888,7 +1921,8 @@ public function display_general_settings_tab() {
             'aib_network_challenge',
             'signature_challenge',
             'endpoint_challenge', 
-            'geo_challenge'
+            'geo_challenge',
+            'rate_limit_challenge'
         ];
         $this->display_log_table_generic($challenge_log_types, ['warning', 'info'], __('Challenge Logs', 'advanced-ip-blocker'), 'challenge_log', true);
     }
@@ -2401,8 +2435,6 @@ public function display_general_log_tab() {
                             case 'under_attack_challenge':
                                 $detail_display = esc_html($entry['message']);
                                 if (!empty($uri)) { $detail_display .= '<br><small>' . $uri . '</small>'; }
-                                // Map challenge_type to mode so the generic badge picks it up
-                                $details['mode'] = $details['challenge_type'] ?? 'automatic';
                                 break;
                             case 'geo_challenge':
                                 $country_name = esc_html($details['country'] ?? 'N/A');
@@ -2442,7 +2474,56 @@ public function display_general_log_tab() {
                                 break;
                         }
 
-                        if (!empty($details['mode'])) {
+                        // 1. Mostrar Panic Trigger si existe (solo para under_attack_challenge)
+                        if (!empty($details['panic_trigger'])) {
+                            $trigger_text = ($details['panic_trigger'] === 'manual') ? __('Manual', 'advanced-ip-blocker') : __('Automatic', 'advanced-ip-blocker');
+                            $trigger_bg = ($details['panic_trigger'] === 'manual') ? '#fef7e0' : '#e6f4ea';
+                            $trigger_color = ($details['panic_trigger'] === 'manual') ? '#b08d00' : '#1e8e3e';
+                            $detail_display .= '<br><span style="display: inline-block; margin-top: 4px; margin-right: 4px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; background-color: ' . esc_attr($trigger_bg) . '; color: ' . esc_attr($trigger_color) . '; border: 1px solid ' . esc_attr($trigger_color) . '40;">' . esc_html__('Trigger:', 'advanced-ip-blocker') . ' ' . esc_html($trigger_text) . '</span>';
+                        }
+
+                        // 2. Mostrar Engine (Motor) explícito
+                        // Intentamos usar 'engine' (nuevo formato), si no 'mode', si no 'challenge_type'
+                        $engine_val = $details['engine'] ?? ($details['mode'] ?? ($details['challenge_type'] ?? ''));
+                        
+                        if (!empty($engine_val) && strpos($log_type, '_challenge') !== false) {
+                            $engine_label = $engine_val;
+                            $engine_bg = '#f0f0f1';
+                            $engine_color = '#3c434a';
+
+                            switch ($engine_val) {
+                                case 'turnstile':
+                                    $engine_label = 'Turnstile';
+                                    $engine_bg = '#fff3e0'; // Naranja clarito
+                                    $engine_color = '#d84315';
+                                    break;
+                                case 'hcaptcha':
+                                    $engine_label = 'hCaptcha';
+                                    $engine_bg = '#f3e5f5'; // Morado clarito
+                                    $engine_color = '#6a1b9a';
+                                    break;
+                                case 'js_automatic':
+                                case 'automatic': // Legacy
+                                    $engine_label = 'JS Automatic';
+                                    $engine_bg = '#e8f5e9'; // Verde clarito
+                                    $engine_color = '#2e7d32';
+                                    break;
+                                case 'js_managed':
+                                case 'managed': // Legacy
+                                    $engine_label = 'JS Managed';
+                                    $engine_bg = '#e8f5e9'; // Verde clarito
+                                    $engine_color = '#2e7d32';
+                                    break;
+                                case 'default':
+                                    $engine_label = 'Global Default';
+                                    $engine_bg = '#e3f2fd'; // Azul clarito
+                                    $engine_color = '#1565c0';
+                                    break;
+                            }
+                            
+                            $detail_display .= '<br><span style="display: inline-block; margin-top: 4px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; background-color: ' . esc_attr($engine_bg) . '; color: ' . esc_attr($engine_color) . '; border: 1px solid ' . esc_attr($engine_color) . '40;">' . esc_html__('Engine:', 'advanced-ip-blocker') . ' ' . esc_html($engine_label) . '</span>';
+                        } elseif (!empty($details['mode']) && strpos($log_type, '_challenge') === false) {
+                            // Badge genérico para otras cosas que usen 'mode' (si existen)
                             $mode_bg = ($details['mode'] === 'automatic') ? '#e6f4ea' : '#fef7e0';
                             $mode_text = ($details['mode'] === 'automatic') ? '#1e8e3e' : '#b08d00';
                             $detail_display .= '<br><span style="display: inline-block; margin-top: 4px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; background-color: ' . esc_attr($mode_bg) . '; color: ' . esc_attr($mode_text) . '; border: 1px solid ' . esc_attr($mode_text) . '40;">' . esc_html($details['mode']) . '</span>';
@@ -2601,6 +2682,7 @@ public function display_credits_tab() {
 					<div class="advaipbl-feature-item"><strong><?php esc_html_e('IP Trust & Threat Scoring System:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('An advanced defense that assigns threat points for malicious actions, blocking IPs based on their cumulative score for more accurate, context-aware security.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Attack Signature Engine:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('A proactive defense that detects distributed botnet attacks by analyzing request "fingerprints" and stops them with an invisible JavaScript challenge.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Endpoint Lockdown Mode:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Automatically shields critical endpoints like wp-login.php and xmlrpc.php with a challenge mode during sustained distributed attacks, preventing server overload.', 'advanced-ip-blocker'); ?></div>
+                    <div class="advaipbl-feature-item"><strong><?php esc_html_e('Captcha Integrations (Turnstile & hCaptcha):', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Two-Factor Authentication (2FA):', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Secure user accounts with TOTP authentication, backup codes, and role enforcement. Fully manageable via UI and WP-CLI.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Security Dashboard:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Get a real-time visual overview of all threats with interactive charts and a live attack map.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('High-Performance Geolocation:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Choose between real-time APIs or a high-performance local MaxMind database for IP lookups, ensuring speed and reliability.', 'advanced-ip-blocker'); ?></div>
@@ -3577,6 +3659,8 @@ $status_parts[] = sprintf(
                                     <option value="block"><?php esc_html_e('Block', 'advanced-ip-blocker'); ?></option>
                                     <option value="challenge"><?php esc_html_e('Challenge with JavaScript (Managed)', 'advanced-ip-blocker'); ?></option>
                                     <option value="challenge_automatic"><?php esc_html_e('Challenge with JavaScript (Automatic)', 'advanced-ip-blocker'); ?></option>
+                                    <option value="challenge_turnstile"><?php esc_html_e('Cloudflare Turnstile', 'advanced-ip-blocker'); ?></option>
+                                    <option value="challenge_hcaptcha"><?php esc_html_e('hCaptcha', 'advanced-ip-blocker'); ?></option>
                                     <option value="score"><?php esc_html_e('Add Threat Score', 'advanced-ip-blocker'); ?></option>									
                                 </select>
                             </td>

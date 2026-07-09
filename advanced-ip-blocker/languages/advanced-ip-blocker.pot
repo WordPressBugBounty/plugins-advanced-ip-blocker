@@ -1,9 +1,9 @@
-# Copyright (C) 2024 IniLerm
+﻿# Copyright (C) 2024 IniLerm
 # This file is distributed under the same license as the Advanced IP Blocker package.
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.3\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -6147,9 +6147,9 @@ msgstr ""
 msgid "Real-time IP reputation checking will be temporarily paused."
 msgstr ""
 
-#: includes/class-advaipbl-main.php: (número de línea de la función)
+#: includes/class-advaipbl-main.php: (nÃºmero de lÃ­nea de la funciÃ³n)
 #, php-format
-msgid "> • *Action Required:* Consider <%1$s|verifying your domain> to triple your free quota or <%2$s|upgrading your plan>."
+msgid "> â€¢ *Action Required:* Consider <%1$s|verifying your domain> to triple your free quota or <%2$s|upgrading your plan>."
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:1022
@@ -8006,7 +8006,7 @@ msgid "CRITICAL SECURITY ALERT"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) 🚨"
+msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) ðŸš¨"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -8164,3 +8164,138 @@ msgstr ""
 #: includes/class-advaipbl-bot-verifier.php:280
 msgid "Failed to download official bot IP lists. This could be due to a firewall blocking outgoing HTTP requests or an API outage. Retrying in 1 hour."
 msgstr ""
+
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Advanced Rules"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Add New Rule"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Define specific limits for different endpoints."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "No advanced rules defined. Global limits will apply."
+msgstr ""
+
+#: includes/class-advaipbl-rate-limiting-manager.php
+msgid "Rate limit exceeded (%3$s): %1$d requests in %2$d seconds"
+msgstr ""
+
+#: includes/class-advaipbl-rate-limiting-manager.php
+msgid "You have sent too many requests in a given amount of time. Please slow down."
+msgstr ""
+
+
+#: includes/class-advaipbl-main.php
+msgid "Rate Limit Challenge Served (%s)"
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "Rate Limit Challenge"
+msgstr ""
+
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Turnstile Site Key"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Turnstile Secret Key"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "hCaptcha Site Key"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "hCaptcha Secret Key"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Default Challenge Engine"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Default JS Challenge (Proof of Work)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Cloudflare Turnstile"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "hCaptcha"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Select the default engine used when serving challenges (e.g. Rate Limiting, Under Attack Mode, Lockdowns). Note: Geo Challenge remains separate."
+
+#. translators: %s: URL to Cloudflare Turnstile registration.
+#: includes/class-advaipbl-settings-manager.php:773
+#, php-format
+msgid "You can get your Turnstile keys from the <a href=\"%s\" target=\"_blank\" rel=\"noopener noreferrer\">Cloudflare Dashboard</a>."
+msgstr ""
+
+#. translators: %s: URL to hCaptcha registration.
+#: includes/class-advaipbl-settings-manager.php:784
+#, php-format
+msgid "You can get your hCaptcha keys from the <a href=\"%s\" target=\"_blank\" rel=\"noopener noreferrer\">hCaptcha Dashboard</a>."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:2346
+msgid "Use Global Default Engine"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:2347
+msgid "JS Challenge (Managed / Checkbox)"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:2348
+msgid "JS Challenge (Automatic / Transparent)"
+msgstr ""
+
+
+#: includes/class-advaipbl-js-challenge.php:261
+#, php-format
+msgid "Missing API keys for %s. Falling back to JS Automatic Challenge to prevent lockout."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:2451
+msgid "Advanced IP Blocker Warning:"
+msgstr ""
+
+#. translators: 1: Missing captcha engines, 2: URL to settings page start tag, 3: URL to settings page end tag
+#: includes/class-advaipbl-settings-manager.php:2454
+#, php-format
+msgid "You have selected %1$s as a challenge method but the API keys are missing. The system will automatically fall back to the JS Challenge to prevent locking out legitimate users. Please %2$sconfigure your keys%3$s."
+msgstr ""
+
+
+msgid "All Challenge VIP passes were manually revoked globally by %s."
+msgstr ""
+
+msgid "Are you sure you want to revoke all VIP passes? Every user will be forced to solve the Security Challenge again."
+msgstr ""
+
+msgid "All VIP passes have been successfully revoked. Everyone will be required to pass the Security Challenge again."
+msgstr ""
+
+msgid "Invalidates all currently active Security Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations."
+msgstr ""
+
+msgid "Rate Limit Challenge"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:2685
+msgid "Captcha Integrations (Turnstile & hCaptcha):"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:2685
+msgid "Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts."
+msgstr ""
+

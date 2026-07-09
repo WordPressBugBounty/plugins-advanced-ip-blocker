@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-07-01 08:57+0200\n"
+"PO-Revision-Date: 2026-07-09 07:40+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -6340,6 +6340,7 @@ msgstr ""
 "recientes para identificar y marcar nuevas firmas de ataques maliciosos."
 
 #: includes/class-advaipbl-admin-pages.php:50
+#: includes/class-advaipbl-settings-manager.php
 msgid "Advanced Rules"
 msgstr "Reglas avanzadas"
 
@@ -6360,6 +6361,7 @@ msgid "Existing Rules"
 msgstr "Reglas existentes"
 
 #: includes/class-advaipbl-admin-pages.php:1443
+#: includes/class-advaipbl-settings-manager.php
 msgid "Add New Rule"
 msgstr "Agregar nueva regla"
 
@@ -6751,11 +6753,14 @@ msgid "Real-time IP reputation checking will be temporarily paused."
 msgstr ""
 "La comprobación de reputación IP en tiempo real se pausará temporalmente."
 
-#: includes/class-advaipbl-main.php: (número de línea la función)
-#, php-format
+#: includes/class-advaipbl-main.php: (nÃºmero de lÃ­nea la funciÃ³n)
+#, fuzzy, php-format
+#| msgid ""
+#| "> • *Action Required:* Consider <%1$s|verifying your domain> to triple "
+#| "your free quota or <%2$s|upgrading your plan>."
 msgid ""
-"> • *Action Required:* Consider <%1$s|verifying your domain> to triple your "
-"free quota or <%2$s|upgrading your plan>."
+"> â€¢ *Action Required:* Consider <%1$s|verifying your domain> to triple "
+"your free quota or <%2$s|upgrading your plan>."
 msgstr ""
 "> • *Acción requerida:* Considere <%1$s|verificar su dominio> para triplicar "
 "su cuota gratuita o <%2$s|actualizar su plan>."
@@ -8828,7 +8833,9 @@ msgid "CRITICAL SECURITY ALERT"
 msgstr "ALERTA DE SEGURIDAD CRÍTICA"
 
 #: includes/class-advaipbl-main.php
-msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) 🚨"
+#, fuzzy
+#| msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) 🚨"
+msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) ðŸš¨"
 msgstr "[%s] URGENTE: El sitio está BAJO ATAQUE (Pánico-automático %s) 🚨"
 
 #: includes/class-advaipbl-main.php
@@ -9041,6 +9048,179 @@ msgstr ""
 "No se pudieron descargar las listas oficiales de IP de bots. Esto podría "
 "deberse a un cortafuegos que bloquea las solicitudes HTTP salientes o a una "
 "interrupción de la API. Se reintentará en 1 hora."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Define specific limits for different endpoints."
+msgstr "Defina límites específicos para diferentes  endpoints."
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "No advanced rules defined. Global limits will apply."
+msgstr ""
+"No se han definido reglas avanzadas. Se aplicarán los límites globales."
+
+#: includes/class-advaipbl-rate-limiting-manager.php
+msgid "Rate limit exceeded (%3$s): %1$d requests in %2$d seconds"
+msgstr ""
+"Se ha superado el límite de tasa (%3$s): %1$d solicitudes en %2$d segundos"
+
+#: includes/class-advaipbl-rate-limiting-manager.php
+msgid ""
+"You have sent too many requests in a given amount of time. Please slow down."
+msgstr ""
+"Has enviado demasiadas solicitudes en un periodo de tiempo determinado. Por "
+"favor, reduce la velocidad."
+
+#: includes/class-advaipbl-main.php
+msgid "Rate Limit Challenge Served (%s)"
+msgstr "Desafío de límite de tasa presentado (%s)"
+
+#: includes/class-advaipbl-main.php
+msgid "Rate Limit Challenge"
+msgstr "Rate Limit Challenge"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Turnstile Site Key"
+msgstr "Turnstile Site Key"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Turnstile Secret Key"
+msgstr "Turnstile Secret Key"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "hCaptcha Site Key"
+msgstr "hCaptcha Site Key"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "hCaptcha Secret Key"
+msgstr "hCaptcha Secret Key"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Default Challenge Engine"
+msgstr "Default Challenge Engine"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Default JS Challenge (Proof of Work)"
+msgstr "Default JS Challenge (Proof of Work)"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "Cloudflare Turnstile"
+msgstr "Cloudflare Turnstile"
+
+#: includes/class-advaipbl-settings-manager.php
+msgid "hCaptcha"
+msgstr "hCaptcha"
+
+#. translators: %s: URL to Cloudflare Turnstile registration.
+#: includes/class-advaipbl-settings-manager.php
+#: includes/class-advaipbl-settings-manager.php:773
+#, php-format
+msgid ""
+"You can get your Turnstile keys from the <a href=\"%s\" target=\"_blank\" "
+"rel=\"noopener noreferrer\">Cloudflare Dashboard</a>."
+msgstr ""
+"Puedes obtener tus claves de Turnstile en el <a href=\"%s\" "
+"target=\"_blank\" rel=\"noopener noreferrer\">panel de control de "
+"Cloudflare</a>."
+
+#. translators: %s: URL to hCaptcha registration.
+#: includes/class-advaipbl-settings-manager.php:784
+#, php-format
+msgid ""
+"You can get your hCaptcha keys from the <a href=\"%s\" target=\"_blank\" "
+"rel=\"noopener noreferrer\">hCaptcha Dashboard</a>."
+msgstr ""
+"Puedes obtener tus claves de hCaptcha en el <a href=\"%s\" target=\"_blank\" "
+"rel=\"noopener noreferrer\">panel de control de hCaptcha</a>."
+
+#: includes/class-advaipbl-settings-manager.php:2346
+msgid "Use Global Default Engine"
+msgstr "Usar motor predeterminado global"
+
+#: includes/class-advaipbl-settings-manager.php:2347
+msgid "JS Challenge (Managed / Checkbox)"
+msgstr "Desafío JS (Gestionado / Casilla de verificación)"
+
+#: includes/class-advaipbl-settings-manager.php:2348
+msgid "JS Challenge (Automatic / Transparent)"
+msgstr "Desafío JS (automático / transparente)"
+
+#: includes/class-advaipbl-js-challenge.php:261
+#, php-format
+msgid ""
+"Missing API keys for %s. Falling back to JS Automatic Challenge to prevent "
+"lockout."
+msgstr ""
+"Faltan las claves de API para %s. Se recurre al desafío automático de JS "
+"para evitar el bloqueo de acceso."
+
+#: includes/class-advaipbl-settings-manager.php:2451
+msgid "Advanced IP Blocker Warning:"
+msgstr "Advertencia de Advanced IP Blocker:"
+
+#. translators: 1: Missing captcha engines, 2: URL to settings page start tag, 3: URL to settings page end tag
+#: includes/class-advaipbl-settings-manager.php:2454
+#, php-format
+msgid ""
+"You have selected %1$s as a challenge method but the API keys are missing. "
+"The system will automatically fall back to the JS Challenge to prevent "
+"locking out legitimate users. Please %2$sconfigure your keys%3$s."
+msgstr ""
+"Ha seleccionado %1$s como método de desafío, pero faltan las claves de API. "
+"El sistema recurrirá automáticamente al desafío JS para evitar bloquear a "
+"usuarios legítimos. Por favor, %2$sconfigure sus claves%3$s."
+
+msgid "All Challenge VIP passes were manually revoked globally by %s."
+msgstr ""
+"Todos los pases VIP de Challenge fueron revocados manualmente a nivel "
+"mundial por %s."
+
+msgid ""
+"Are you sure you want to revoke all VIP passes? Every user will be forced to "
+"solve the Security Challenge again."
+msgstr ""
+"¿Estás seguro de que quieres revocar todos los pases VIP? Todos los usuarios "
+"tendrán que resolver de nuevo el desafío de seguridad."
+
+msgid ""
+"All VIP passes have been successfully revoked. Everyone will be required to "
+"pass the Security Challenge again."
+msgstr ""
+"Todos los pases VIP han sido revocados con éxito. Todos deberán superar "
+"nuevamente la prueba de seguridad."
+
+msgid ""
+"Invalidates all currently active Security Challenge VIP passes globally. Use "
+"this \"Panic Button\" if you suspect a bypass or if you just changed your "
+"challenge configurations."
+msgstr ""
+"Anula a nivel global todos los pases VIP de Desafío de Seguridad actualmente "
+"activos. Utilice este «botón de pánico» si sospecha que se ha eludido la "
+"seguridad o si acaba de modificar las configuraciones de los desafíos."
+
+#: includes/class-advaipbl-admin-pages.php:2685
+msgid "Captcha Integrations (Turnstile & hCaptcha):"
+msgstr "Integraciones de CAPTCHA (Turnstile y hCaptcha):"
+
+#: includes/class-advaipbl-admin-pages.php:2685
+msgid ""
+"Seamlessly integrate modern verification challenges like Cloudflare "
+"Turnstile and hCaptcha, with granular control per module and a smart "
+"fallback to our invisible JS Challenge to prevent accidental lockouts."
+msgstr ""
+"Integre sin problemas desafíos de verificación modernos, como Cloudflare "
+"Turnstile y hCaptcha, con control granular por módulo y un mecanismo "
+"inteligente de respaldo a nuestro desafío JS invisible para evitar bloqueos "
+"accidentales."
+
+#~ msgid ""
+#~ "Select the default engine used when serving challenges (e.g. Rate "
+#~ "Limiting, Under Attack Mode, Lockdowns). Note: Geo Challenge remains "
+#~ "separate."
+#~ msgstr ""
+#~ "Seleccione el motor predeterminado que se utilizará al gestionar los "
+#~ "desafíos (p. ej., limitación de tasa, modo «bajo ataque» o bloqueos). "
+#~ "Tenga en cuenta que el desafío geográfico (Geo Challenge) permanece "
+#~ "separado."
 
 #~ msgid "⚠️ URGENT:"
 #~ msgstr "⚠️ URGENTE:"

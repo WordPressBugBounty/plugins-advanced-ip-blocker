@@ -24,6 +24,7 @@ class ADVAIPBL_Settings_Manager {
     public function __construct(ADVAIPBL_Main $plugin_instance, ADVAIPBL_Admin_Pages $admin_pages_instance) {
         $this->plugin = $plugin_instance;
         $this->admin_pages = $admin_pages_instance;
+        add_action('admin_notices', [$this, 'display_captcha_keys_warning']);
     }
 
     public function register_settings() {
@@ -575,6 +576,7 @@ add_settings_field(
     add_settings_field('advaipbl_rate_limiting_limit', __('Request Limit', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_rate_limiting_section', ['name' => 'rate_limiting_limit', 'default' => 120, 'description' => __('Number of requests to allow within the time window.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_rate_limiting_window', __('Time Window (seconds)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_rate_limiting_section', ['name' => 'rate_limiting_window', 'default' => 60, 'description' => __('The time period in which the request count is measured.', 'advanced-ip-blocker')]);	
     add_settings_field('advaipbl_duration_rate_limit', __('Block Duration (minutes)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_rate_limiting_section', ['name' => 'duration_rate_limit', 'default' => 5, 'description' => __('How long the IP will be blocked after reaching the limit.', 'advanced-ip-blocker')]);	
+    add_settings_field('advaipbl_rate_limiting_advanced_rules', __('Advanced Rules', 'advanced-ip-blocker'), [$this, 'rate_limiting_advanced_rules_callback'], $page, 'advaipbl_rate_limiting_section', ['name' => 'rate_limiting_advanced_rules', 'description' => __('Define specific limits for different endpoints.', 'advanced-ip-blocker')]);
     
     add_settings_section('advaipbl_login_settings_section', null, null, $page);
     add_settings_field('advaipbl_threshold_login', __('Login Failure Threshold', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_login_settings_section', ['name' => 'threshold_login', 'default' => 5, 'description' => __('Number of failed logins to trigger a block.', 'advanced-ip-blocker')]);
@@ -747,6 +749,55 @@ add_settings_field(
     add_settings_field('advaipbl_recaptcha_site_key', __('Site Key', 'advanced-ip-blocker'), [$this, 'recaptcha_site_key_callback'], $page, 'advaipbl_recaptcha_section');
     add_settings_field('advaipbl_recaptcha_secret_key', __('Secret Key', 'advanced-ip-blocker'), [$this, 'recaptcha_secret_key_callback'], $page, 'advaipbl_recaptcha_section');
     add_settings_field('advaipbl_recaptcha_score_threshold', __('v3 Score Threshold', 'advanced-ip-blocker'), [$this, 'recaptcha_score_callback'], $page, 'advaipbl_recaptcha_section');
+
+    // CAPTCHA INTEGRATIONS SECTION (TURNSTILE & HCAPTCHA)
+    add_settings_section('advaipbl_captcha_integrations_section', null, null, $page);
+    
+    add_settings_field('advaipbl_default_challenge_engine', __('Default Challenge Engine', 'advanced-ip-blocker'), [$this, 'select_field_callback'], $page, 'advaipbl_captcha_integrations_section', [
+        'name' => 'default_challenge_engine',
+        'options' => [
+            'js_managed'   => __('JS Challenge (Managed / Checkbox)', 'advanced-ip-blocker'),
+            'js_automatic' => __('JS Challenge (Automatic / Transparent)', 'advanced-ip-blocker'),
+            'turnstile'    => __('Cloudflare Turnstile', 'advanced-ip-blocker'),
+            'hcaptcha'     => __('hCaptcha', 'advanced-ip-blocker')
+        ],
+        'description' => __('Select the default engine used when serving challenges (e.g. Rate Limiting, Under Attack Mode, Lockdowns). Note: Geo Challenge remains separate.', 'advanced-ip-blocker'),
+        'help_url' => 'https://advaipbl.com/captcha-integrations-advanced-ip-blocker/'
+    ]);
+    
+    // Cloudflare Turnstile
+    add_settings_field('advaipbl_turnstile_site_key', __('Turnstile Site Key', 'advanced-ip-blocker'), [$this, 'password_field_callback'], $page, 'advaipbl_captcha_integrations_section', [
+        'name' => 'turnstile_site_key',
+        'class' => 'regular-text advaipbl-turnstile-field',
+        'default' => '',
+        'description' => sprintf(
+            /* translators: %s: URL to Cloudflare Turnstile registration. */
+            __('You can get your Turnstile keys from the <a href="%s" target="_blank" rel="noopener noreferrer">Cloudflare Dashboard</a>.', 'advanced-ip-blocker'),
+            'https://dash.cloudflare.com/?to=/:account/turnstile'
+        )
+    ]);
+    add_settings_field('advaipbl_turnstile_secret_key', __('Turnstile Secret Key', 'advanced-ip-blocker'), [$this, 'password_field_callback'], $page, 'advaipbl_captcha_integrations_section', [
+        'name' => 'turnstile_secret_key',
+        'class' => 'regular-text advaipbl-turnstile-field',
+        'default' => ''
+    ]);
+    
+    // hCaptcha
+    add_settings_field('advaipbl_hcaptcha_site_key', __('hCaptcha Site Key', 'advanced-ip-blocker'), [$this, 'password_field_callback'], $page, 'advaipbl_captcha_integrations_section', [
+        'name' => 'hcaptcha_site_key',
+        'class' => 'regular-text advaipbl-hcaptcha-field',
+        'default' => '',
+        'description' => sprintf(
+            /* translators: %s: URL to hCaptcha registration. */
+            __('You can get your hCaptcha keys from the <a href="%s" target="_blank" rel="noopener noreferrer">hCaptcha Dashboard</a>.', 'advanced-ip-blocker'),
+            'https://dashboard.hcaptcha.com/'
+        )
+    ]);
+    add_settings_field('advaipbl_hcaptcha_secret_key', __('hCaptcha Secret Key', 'advanced-ip-blocker'), [$this, 'password_field_callback'], $page, 'advaipbl_captcha_integrations_section', [
+        'name' => 'hcaptcha_secret_key',
+        'class' => 'regular-text advaipbl-hcaptcha-field',
+        'default' => ''
+    ]);
     
 	// SECCIÃ“N DE 2FA
         add_settings_section(
@@ -1192,7 +1243,8 @@ add_settings_field(
             'fim_alert_email', 'api_token_v3',
             'geo_challenge_mode', 'lockdown_404_challenge_mode', 'lockdown_403_challenge_mode', 
             'xmlrpc_lockdown_challenge_mode', 'login_lockdown_challenge_mode', 'signature_challenge_mode',
-            'under_attack_mode', 'under_attack_challenge_mode', 'under_attack_notification_email', 'under_attack_excluded_urls', 'under_attack_alerts'
+            'under_attack_mode', 'under_attack_challenge_mode', 'under_attack_notification_email', 'under_attack_excluded_urls', 'under_attack_alerts',
+            'default_challenge_engine', 'turnstile_site_key', 'turnstile_secret_key', 'hcaptcha_site_key', 'hcaptcha_secret_key'
         ];
 
         foreach ($text_fields as $field) {
@@ -1268,6 +1320,27 @@ add_settings_field(
             $new_input['recaptcha_score_threshold'] = $this->plugin->sanitize_score_threshold($input['recaptcha_score_threshold']);
         }
         
+        if (isset($input['rate_limiting_advanced_rules'])) {
+            $json_string = wp_unslash($input['rate_limiting_advanced_rules']);
+            $decoded = json_decode($json_string, true);
+            if (is_array($decoded)) {
+                $clean_rules = [];
+                foreach ($decoded as $rule) {
+                    if (isset($rule['endpoint'])) {
+                        $clean_rules[] = [
+                            'endpoint' => sanitize_text_field($rule['endpoint']),
+                            'limit' => absint($rule['limit']),
+                            'window' => absint($rule['window']),
+                            'action' => sanitize_text_field($rule['action'])
+                        ];
+                    }
+                }
+                $new_input['rate_limiting_advanced_rules'] = wp_json_encode($clean_rules);
+            } else {
+                $new_input['rate_limiting_advanced_rules'] = '[]';
+            }
+        }
+        
         // Purge page caches when security settings are updated
         $this->plugin->purge_all_page_caches();
         
@@ -1327,7 +1400,24 @@ add_settings_field(
         }
     }
 
-        public function checkbox_field_callback($args){
+    public function password_field_callback($args){
+        $value = $this->plugin->options[$args['name']] ?? $args['default'] ?? '';
+        $class = $args['class'] ?? '';
+        
+        printf(
+            '<input type="password" id="%1$s" name="%2$s" value="%3$s" class="regular-text %4$s" autocomplete="new-password" />',
+            esc_attr($args['name']),
+            esc_attr('advaipbl_settings[' . $args['name'] . ']'),
+            esc_attr($value),
+            esc_attr($class)
+        );
+        
+        if (isset($args['description'])) {
+            echo '<p class="description">' . wp_kses_post($args['description']) . '</p>';
+        }
+    }
+
+    public function checkbox_field_callback($args){
         $checked = checked( '1', $this->plugin->options[$args['name']] ?? '0', false );
         $id_attr = isset($args['id']) ? 'id="' . esc_attr($args['id']) . '"' : '';
 
@@ -1353,7 +1443,89 @@ add_settings_field(
         }
     }
 	
-	    /**
+	    public function rate_limiting_advanced_rules_callback($args) {
+        $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS);
+        $name = $args['name'];
+        $val = isset($options[$name]) ? $options[$name] : '[]';
+        
+        echo '<input type="hidden" id="advaipbl_advanced_rules_data" name="advaipbl_settings[' . esc_attr($name) . ']" value="' . esc_attr($val) . '">';
+        echo '<div id="advaipbl_advanced_rules_container" style="margin-bottom: 10px;"></div>';
+        echo '<button type="button" class="button" id="advaipbl_add_advanced_rule">' . esc_html__('Add New Rule', 'advanced-ip-blocker') . '</button>';
+        
+        if (isset($args['description'])) {
+            echo '<p class="description">' . esc_html($args['description']) . '</p>';
+        }
+
+        ?>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                var rulesDataField = $('#advaipbl_advanced_rules_data');
+                var container = $('#advaipbl_advanced_rules_container');
+                var rules = [];
+                
+                try {
+                    rules = JSON.parse(rulesDataField.val());
+                    if (!Array.isArray(rules)) rules = [];
+                } catch(e) {
+                    rules = [];
+                }
+
+                function renderRules() {
+                    container.empty();
+                    if (rules.length === 0) {
+                        container.append('<p style="color:#777;"><em><?php esc_html_e('No advanced rules defined. Global limits will apply.', 'advanced-ip-blocker'); ?></em></p>');
+                    }
+                    $.each(rules, function(index, rule) {
+                        var row = $('<div class="advaipbl-rule-row" style="display:flex; gap:10px; margin-bottom:10px; align-items:center;"></div>');
+                        
+                        var endpointInput = $('<input type="text" placeholder="/wp-json/" value="' + (rule.endpoint || '') + '">');
+                        var limitInput = $('<input type="number" style="width:80px;" placeholder="Max" value="' + (rule.limit || 30) + '">');
+                        var windowInput = $('<input type="number" style="width:80px;" placeholder="Secs" value="' + (rule.window || 60) + '">');
+                        var actionSelect = $('<select></select>');
+                        actionSelect.append('<option value="429" ' + (rule.action === '429' ? 'selected' : '') + '>429 Slow Down</option>');
+                        actionSelect.append('<option value="403" ' + (rule.action === '403' ? 'selected' : '') + '>403 Block</option>');
+                        actionSelect.append('<option value="challenge_managed" ' + (rule.action === 'challenge_managed' ? 'selected' : '') + '>Managed JS Challenge</option>');
+                        actionSelect.append('<option value="challenge_automatic" ' + (rule.action === 'challenge_automatic' ? 'selected' : '') + '>Automatic JS Challenge</option>');
+                        actionSelect.append('<option value="challenge_turnstile" ' + (rule.action === 'challenge_turnstile' ? 'selected' : '') + '>Cloudflare Turnstile</option>');
+                        actionSelect.append('<option value="challenge_hcaptcha" ' + (rule.action === 'challenge_hcaptcha' ? 'selected' : '') + '>hCaptcha</option>');
+                        
+                        var deleteBtn = $('<button type="button" class="button button-link-delete" style="color: #a00;">&times;</button>');
+                        
+                        endpointInput.on('input change', function() { rules[index].endpoint = $(this).val(); saveRules(); });
+                        limitInput.on('input change', function() { rules[index].limit = $(this).val(); saveRules(); });
+                        windowInput.on('input change', function() { rules[index].window = $(this).val(); saveRules(); });
+                        actionSelect.on('change', function() { rules[index].action = $(this).val(); saveRules(); });
+                        
+                        deleteBtn.on('click', function(e) {
+                            e.preventDefault();
+                            rules.splice(index, 1);
+                            saveRules();
+                            renderRules();
+                        });
+                        
+                        row.append(endpointInput).append(limitInput).append($('<span>reqs /</span>')).append(windowInput).append($('<span>secs &rarr;</span>')).append(actionSelect).append(deleteBtn);
+                        container.append(row);
+                    });
+                }
+
+                function saveRules() {
+                    rulesDataField.val(JSON.stringify(rules));
+                }
+
+                $('#advaipbl_add_advanced_rule').on('click', function(e) {
+                    e.preventDefault();
+                    rules.push({endpoint: '', limit: 30, window: 60, action: '429'});
+                    saveRules();
+                    renderRules();
+                });
+
+                renderRules();
+            });
+        </script>
+        <?php
+    }
+
+    /**
      * Muestra un campo de tipo interruptor (toggle/switch) para los ajustes.
      * Utiliza la estructura HTML necesaria para ser estilizado con CSS.
      */
@@ -1870,7 +2042,7 @@ public function xmlrpc_protection_mode_callback() {
         ?>
         <a href="<?php echo esc_url($nonce_url); ?>" id="advaipbl-revoke-vip-passes-btn" class="button button-secondary"><?php esc_html_e('Revoke All VIP Passes', 'advanced-ip-blocker'); ?></a>
         <p class="description">
-            <?php esc_html_e('Invalidates all currently active JS Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations.', 'advanced-ip-blocker'); ?>
+            <?php esc_html_e('Invalidates all currently active Security Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations.', 'advanced-ip-blocker'); ?>
         </p>
         <?php
     }
@@ -2145,8 +2317,10 @@ public function sanitize_waf_rules($input) {
         
         printf('<select name="advaipbl_settings[%s]">', esc_attr($name));
         printf('<option value="block" %s>%s</option>', selected($current_action, 'block', false), esc_html__('Block IP Instantly (Recommended)', 'advanced-ip-blocker'));
-        printf('<option value="challenge" %s>%s</option>', selected($current_action, 'challenge', false), esc_html__('Challenge (Managed / Checkbox)', 'advanced-ip-blocker'));
-        printf('<option value="challenge_automatic" %s>%s</option>', selected($current_action, 'challenge_automatic', false), esc_html__('Challenge (Automatic / Transparent)', 'advanced-ip-blocker'));
+        printf('<option value="challenge" %s>%s</option>', selected($current_action, 'challenge', false), esc_html__('Challenge (JS Managed)', 'advanced-ip-blocker'));
+        printf('<option value="challenge_automatic" %s>%s</option>', selected($current_action, 'challenge_automatic', false), esc_html__('Challenge (JS Automatic)', 'advanced-ip-blocker'));
+        printf('<option value="challenge_turnstile" %s>%s</option>', selected($current_action, 'challenge_turnstile', false), esc_html__('Cloudflare Turnstile', 'advanced-ip-blocker'));
+        printf('<option value="challenge_hcaptcha" %s>%s</option>', selected($current_action, 'challenge_hcaptcha', false), esc_html__('hCaptcha', 'advanced-ip-blocker'));
         echo '</select>';
 
         if ( ! empty( $args['description'] ) ) {
@@ -2179,11 +2353,17 @@ public function abuseipdb_action_callback() {
      */
     public function challenge_mode_callback($args) {
         $name = $args['name'];
-        $current_mode = $this->plugin->options[$name] ?? 'managed';
+        $current_mode = $this->plugin->options[$name] ?? 'default';
+        if ($current_mode === 'managed' || $current_mode === 'automatic') {
+            $current_mode = 'default';
+        }
         
         printf('<select name="advaipbl_settings[%s]">', esc_attr($name));
-        printf('<option value="managed" %s>%s</option>', selected($current_mode, 'managed', false), esc_html__('Managed (Human interaction required)', 'advanced-ip-blocker'));
-        printf('<option value="automatic" %s>%s</option>', selected($current_mode, 'automatic', false), esc_html__('Automatic (Transparent execution)', 'advanced-ip-blocker'));
+        printf('<option value="default" %s>%s</option>', selected($current_mode, 'default', false), esc_html__('Use Global Default Engine', 'advanced-ip-blocker'));
+        printf('<option value="js_managed" %s>%s</option>', selected($current_mode, 'js_managed', false), esc_html__('JS Challenge (Managed / Checkbox)', 'advanced-ip-blocker'));
+        printf('<option value="js_automatic" %s>%s</option>', selected($current_mode, 'js_automatic', false), esc_html__('JS Challenge (Automatic / Transparent)', 'advanced-ip-blocker'));
+        printf('<option value="turnstile" %s>%s</option>', selected($current_mode, 'turnstile', false), esc_html__('Cloudflare Turnstile', 'advanced-ip-blocker'));
+        printf('<option value="hcaptcha" %s>%s</option>', selected($current_mode, 'hcaptcha', false), esc_html__('hCaptcha', 'advanced-ip-blocker'));
         echo '</select>';
 
         if ( ! empty( $args['description'] ) ) {
@@ -2224,6 +2404,75 @@ public function abuseipdb_action_callback() {
     public function geochallenge_separator_callback() {
         echo '<hr style="margin: 30px 0 10px; border: 0; border-top: 1px solid #ddd;">';
         echo '<h3 id="sub-section-geochallenge" style="margin: 0; padding: 0;">' . esc_html__('Geo-Challenge', 'advanced-ip-blocker') . '</h3>';
+    }
+
+    public function display_captcha_keys_warning() {
+        $options = $this->plugin->options;
+        $global_engine = $options['default_challenge_engine'] ?? 'js_automatic';
+        
+        $engines_in_use = [];
+        if ($global_engine === 'turnstile' || $global_engine === 'hcaptcha') {
+            $engines_in_use[] = $global_engine;
+        }
+
+        $granular_modes = [
+            'lockdown_404_challenge_mode', 'lockdown_403_challenge_mode',
+            'login_lockdown_challenge_mode', 'xmlrpc_lockdown_challenge_mode',
+            'under_attack_challenge_mode', 'geo_challenge_mode', 'signature_challenge_mode',
+            'abuseipdb_challenge_mode', 'aib_network_challenge_mode'
+        ];
+
+        foreach ($granular_modes as $mode_key) {
+            $mode = $options[$mode_key] ?? 'default';
+            if ($mode === 'default' || $mode === 'managed' || $mode === 'automatic') {
+                $mode = $global_engine;
+            }
+            if ($mode === 'turnstile' || $mode === 'hcaptcha') {
+                if (!in_array($mode, $engines_in_use)) {
+                    $engines_in_use[] = $mode;
+                }
+            }
+        }
+        
+        // Comprobar Reglas Avanzadas (Advanced Rules)
+        $advanced_rules = get_option('advaipbl_advanced_rules', []);
+        if (is_array($advanced_rules)) {
+            foreach ($advanced_rules as $rule) {
+                if (isset($rule['action'])) {
+                    if ($rule['action'] === 'challenge_turnstile' && !in_array('turnstile', $engines_in_use)) {
+                        $engines_in_use[] = 'turnstile';
+                    } elseif ($rule['action'] === 'challenge_hcaptcha' && !in_array('hcaptcha', $engines_in_use)) {
+                        $engines_in_use[] = 'hcaptcha';
+                    }
+                }
+            }
+        }
+
+        $missing_keys_engines = [];
+        foreach ($engines_in_use as $engine) {
+            $site_key = $options[$engine . '_site_key'] ?? '';
+            $secret_key = $options[$engine . '_secret_key'] ?? '';
+            if (empty($site_key) || empty($secret_key)) {
+                $missing_keys_engines[] = ucfirst($engine);
+            }
+        }
+
+        if (!empty($missing_keys_engines)) {
+            $engines_str = implode(' and ', array_unique($missing_keys_engines));
+            $settings_url = admin_url('admin.php?page=advaipbl_settings_page#sub-section-captcha');
+            
+            echo '<div class="notice notice-warning is-dismissible" style="border-left-color: #ffb900;">';
+            echo '<p><strong>' . esc_html__('Advanced IP Blocker Warning:', 'advanced-ip-blocker') . '</strong> ';
+            echo sprintf(
+                /* translators: 1: Missing captcha engines, 2: URL to settings page */
+                esc_html__('You have selected %1$s as a challenge method but the API keys are missing. The system will automatically fall back to the JS Challenge to prevent locking out legitimate users. Please %2$sconfigure your keys%3$s.', 'advanced-ip-blocker'),
+                esc_html($engines_str),
+                '<a href="' . esc_url($settings_url) . '">',
+                '</a>'
+            );
+            echo '</p>';
+            echo '</div>';
+        }
     }
 
 }

@@ -147,42 +147,12 @@ class ADVAIPBL_JS_Challenge {
         }
 
         if ($is_valid) {
-            
             set_transient('advaipbl_grace_pass_' . md5($ip), true, 15);
-                   $expiration = ($cookie_duration > 0) ? time() + $cookie_duration : 0;
-            $request_uri = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'] ?? ''));
-
-            // Generar Pase VIP HMAC
-            $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
-            $modifier = get_option('advaipbl_vip_salt_modifier', '');
-            $signature = hash_hmac('sha256', $ip . $expiration, $salt . $modifier);
-            $cookie_value = base64_encode($expiration . '|' . $signature);
-
-            if (defined('ADVAIPBL_EDGE_MODE') && ADVAIPBL_EDGE_MODE) {
-                // En Edge Mode, limpiamos el buffer y usamos una redireccin de PHP nativa.
-                if (ob_get_level()) {
-                    ob_end_clean();
-                }
-
-                $cookie_options = [
-                    'expires' => $expiration,
-                    'path' => '/',
-                    'domain' => defined('COOKIE_DOMAIN') && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
-                    'secure' => is_ssl(),
-                    'httponly' => true,
-                    'samesite' => 'Lax'
-                ];
-                setcookie($cookie_name, $cookie_value, $cookie_options);
-                
-                wp_safe_redirect($request_uri, 303);
-                exit;
-
-            } else {
-                // En modo normal de WordPress, usamos las funciones de WordPress.
-                setcookie($cookie_name, $cookie_value, $expiration, '/', defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '', is_ssl(), true);
-                wp_safe_redirect($request_uri);
-                exit;
-            }
+            $this->set_vip_pass_cookie($cookie_duration, $ip);
+        } else {
+            $this->plugin->log_event("JS Challenge verification failed (IP: {$ip}).", 'warning', [
+                'action' => 'js_challenge_failed'
+            ]);
         }
     
         if ( ! defined( 'DONOTCACHEPAGE' ) ) {
@@ -201,13 +171,109 @@ class ADVAIPBL_JS_Challenge {
     }
 
     /**
-     * Muestra la página del desafío JavaScript, optimizada para seguridad, UX y responsividad.
-     *
-     * @param string $challenge_type Un identificador para el desafío (ej. 'signature', 'geo_challenge').
-     * @param string $challenge_mode El modo del desafío ('managed' o 'automatic').
+     * Generates and sets the VIP pass cookie.
+     * @param int $cookie_duration
+     * @param string|null $ip
      */
+    public function set_vip_pass_cookie($cookie_duration, $ip = null) {
+        if (!$ip) {
+            $ip = $this->plugin->get_client_ip();
+        }
+        $cookie_name = 'advaipbl_js_verified';
+        $expiration = ($cookie_duration > 0) ? time() + $cookie_duration : 0;
+        $request_uri = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'] ?? ''));
+
+        // Generar Pase VIP HMAC
+        $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
+        $modifier = get_option('advaipbl_vip_salt_modifier', '');
+        $signature = hash_hmac('sha256', $ip . $expiration, $salt . $modifier);
+        $cookie_value = base64_encode($expiration . '|' . $signature);
+
+        if (defined('ADVAIPBL_EDGE_MODE') && ADVAIPBL_EDGE_MODE) {
+            // En Edge Mode, limpiamos el buffer y usamos una redirecci&oacute;n de PHP nativa.
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            $cookie_options = [
+                'expires' => $expiration,
+                'path' => '/',
+                'domain' => defined('COOKIE_DOMAIN') && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
+                'secure' => is_ssl(),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ];
+            setcookie($cookie_name, $cookie_value, $cookie_options);
+            
+            wp_safe_redirect($request_uri, 303);
+            exit;
+
+        } else {
+            // En modo normal de WordPress, usamos las funciones de WordPress.
+            setcookie($cookie_name, $cookie_value, $expiration, '/', defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '', is_ssl(), true);
+            wp_safe_redirect($request_uri, 303);
+            exit;
+        }
+    }
+
     public function serve_challenge($challenge_type, $challenge_mode = 'managed') {
-            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
+        $global_engine = $this->plugin->options['default_challenge_engine'] ?? 'js_managed';
+        
+        // If mode is default (or legacy managed/automatic), use the global engine
+        if ($challenge_mode === 'default' || $challenge_mode === 'managed' || $challenge_mode === 'automatic') {
+            $challenge_mode = $global_engine;
+        }
+
+        // Now parse the chosen mode (which is either explicitly set by the module or resolved from global)
+        $engine = 'js_challenge'; // Default assumption
+        $final_mode = 'managed';
+        
+        if ($challenge_mode === 'js_managed') {
+            $engine = 'js_challenge';
+            $final_mode = 'managed';
+        } elseif ($challenge_mode === 'js_automatic') {
+            $engine = 'js_challenge';
+            $final_mode = 'automatic';
+        } elseif ($challenge_mode === 'turnstile') {
+            $engine = 'turnstile';
+            $final_mode = 'managed';
+        } elseif ($challenge_mode === 'hcaptcha') {
+            $engine = 'hcaptcha';
+            $final_mode = 'managed';
+        }
+
+        if ($engine === 'turnstile' || $engine === 'hcaptcha') {
+            $has_keys = false;
+            if ($engine === 'turnstile') {
+                $site_key = $this->plugin->options['turnstile_site_key'] ?? '';
+                $secret_key = $this->plugin->options['turnstile_secret_key'] ?? '';
+                $has_keys = !empty($site_key) && !empty($secret_key);
+            } else {
+                $site_key = $this->plugin->options['hcaptcha_site_key'] ?? '';
+                $secret_key = $this->plugin->options['hcaptcha_secret_key'] ?? '';
+                $has_keys = !empty($site_key) && !empty($secret_key);
+            }
+
+            if (!$has_keys) {
+                // Fallback to js_automatic
+                $this->plugin->log_event(
+                    sprintf("Missing API keys for %s. Falling back to JS Automatic Challenge to prevent lockout.", ucfirst($engine)),
+                    'warning',
+                    ['action' => 'captcha_fallback', 'module' => $challenge_type]
+                );
+                $engine = 'js_challenge';
+                $final_mode = 'automatic';
+            }
+        }
+
+        if (($engine === 'turnstile' || $engine === 'hcaptcha') && isset($this->plugin->captcha_manager)) {
+            $this->plugin->captcha_manager->serve_challenge($challenge_type, $engine, $final_mode);
+            exit;
+        }
+        
+        $challenge_mode = $final_mode; // Pass down the final mode to the rest of the method
+
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
         if (!defined('DONOTCACHEPAGE')) define('DONOTCACHEPAGE', true);
         if (headers_sent()) { return; }
         

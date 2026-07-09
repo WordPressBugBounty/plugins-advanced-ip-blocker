@@ -59,7 +59,7 @@ private function sanitize_rule(array $rule_data) {
     }
     $sanitized_rule['name'] = isset($rule_data['name']) ? sanitize_text_field($rule_data['name']) : 'Untitled Rule';
 
-    $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'score', 'allow'];
+    $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha', 'score', 'allow'];
     $sanitized_rule['action'] = isset($rule_data['action']) && in_array($rule_data['action'], $allowed_actions, true) ? $rule_data['action'] : 'block';
 
     $sanitized_rule['action_params'] = [];
@@ -342,8 +342,9 @@ private function check_condition($condition, $ip) {
             }
             break;
         case 'matches_regex':
-            // Añadimos supresión de errores por si la regex es inválida
-            $result = @preg_match('/' . $value . '/i', $subject) === 1;
+            // Evitamos colisión de delimitadores reemplazando @ por \@ en el valor
+            $safe_value = str_replace('@', '\@', $value);
+            $result = @preg_match('@' . $safe_value . '@i', $subject) === 1;
             break;
     }
     return $result;
@@ -396,10 +397,12 @@ private function execute_action($rule, $ip) {
 
         case 'challenge':
         case 'challenge_automatic':
+        case 'challenge_turnstile':
+        case 'challenge_hcaptcha':
             // Si el usuario está enviando el resultado del desafío, permitimos que el flujo
             // continúe para que verify_submission lo valide, en lugar de servir el desafío de nuevo (bucle).
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            if (isset($_POST['_advaipbl_js_token'])) {
+            if (isset($_POST['_advaipbl_js_token']) || isset($_POST['cf-turnstile-response']) || isset($_POST['h-captcha-response'])) {
                 return false;
             }
 
@@ -409,7 +412,10 @@ private function execute_action($rule, $ip) {
                 $log_data,
                 'warning' // Nivel 'warning' porque no es un bloqueo, es un desafío
             );
-            $mode = ($action === 'challenge_automatic') ? 'automatic' : 'managed';
+            $mode = str_replace('challenge_', '', $action);
+            if ($mode === 'challenge') $mode = 'managed';
+            if ($mode === 'managed') $mode = 'js_managed';
+            if ($mode === 'automatic') $mode = 'js_automatic';
             $this->plugin->js_challenge_manager->serve_challenge('advanced_rule', $mode);
             return true; // serve_challenge ya hace exit()
 

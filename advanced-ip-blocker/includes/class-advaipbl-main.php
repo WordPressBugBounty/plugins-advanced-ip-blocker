@@ -64,6 +64,7 @@ class ADVAIPBL_Main {
 	public $site_scanner;
     public $security_headers_manager;
     public $js_challenge_manager;
+    public $captcha_manager;
     public $cache_manager;
     public $live_feed_manager;
     public $notification_manager;
@@ -113,6 +114,7 @@ private function __construct() {
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-audit-logger.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-file-verifier.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-js-challenge.php';
+    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-captcha-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cache-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-live-feed-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cron-manager.php';
@@ -143,6 +145,7 @@ private function __construct() {
     $this->audit_logger = new ADVAIPBL_Audit_Logger($this);
     $this->file_verifier = new ADVAIPBL_File_Verifier($this);
     $this->js_challenge_manager = new ADVAIPBL_JS_Challenge($this);
+    $this->captcha_manager = new ADVAIPBL_Captcha_Manager($this);
     $this->cache_manager = new ADVAIPBL_Cache_Manager();
     $this->live_feed_manager = new ADVAIPBL_Live_Feed_Manager($this);
     $this->cron_manager = new ADVAIPBL_Cron_Manager($this);
@@ -229,6 +232,7 @@ private function __construct() {
         // Intercepción global y obligatoria para todos los JS Challenges
         add_action('init', [$this, 'check_for_under_attack_mode'], -996);
         add_action('init', [$this->js_challenge_manager, 'verify_submission'], -997);
+        add_action('init', [$this->captcha_manager, 'verify_submission'], -997);
 		add_action('init', [$this, 'check_ip_with_abuseipdb'], 10);
 		add_action('init', [$this, 'block_xmlrpc_requests_if_disabled'], -5);
         add_action('init', [$this, 'log_request_signature'], -2);
@@ -798,7 +802,7 @@ public function verify_known_bots() {
         ));
 
         if ($is_malicious) {
-            $mode = $this->options['signature_challenge_mode'] ?? 'managed';
+            $mode = $this->options['signature_challenge_mode'] ?? 'default';
             // 1. Registramos el evento aquí, en el punto de decisión.
             $this->log_specific_error(
                 'signature_challenge', 
@@ -853,7 +857,7 @@ public function verify_known_bots() {
         $location = $this->geolocation_manager->fetch_location($ip);
         if ($location && !empty($location['country_code'])) {
             if (in_array($location['country_code'], $challenged_countries, true)) {
-                $mode = $this->options['geo_challenge_mode'] ?? 'managed';
+                $mode = $this->options['geo_challenge_mode'] ?? 'default';
                 $this->log_specific_error(
                     'geo_challenge', 
                     $ip, 
@@ -1522,9 +1526,9 @@ public function get_blocked_endpoints_count() {
         update_option('advaipbl_vip_salt_modifier', wp_generate_password(24, true, true));
         
         /* translators: %s: Admin username. */
-        $this->log_event( sprintf( __( 'All JS Challenge VIP passes were manually revoked globally by %s.', 'advanced-ip-blocker' ), $this->get_current_admin_username() ), 'warning' );
+        $this->log_event( sprintf( __( 'All Challenge VIP passes were manually revoked globally by %s.', 'advanced-ip-blocker' ), $this->get_current_admin_username() ), 'warning' );
         
-        set_transient('advaipbl_admin_notice', ['message' => __('All VIP passes have been successfully revoked. Everyone will be required to pass the JS Challenge again.', 'advanced-ip-blocker'), 'type' => 'success'], 30);
+        set_transient('advaipbl_admin_notice', ['message' => __('All VIP passes have been successfully revoked. Everyone will be required to pass the Security Challenge again.', 'advanced-ip-blocker'), 'type' => 'success'], 30);
         
         wp_safe_redirect(wp_get_referer());
         exit;
@@ -1868,7 +1872,7 @@ public function get_blocked_endpoints_count() {
                     
                     /* VIP Passes Revocation Modal */
                     'revoke_vip_title'         => __( 'Revoke All VIP Passes', 'advanced-ip-blocker' ),
-                    'revoke_vip_confirm'       => __( 'Are you sure you want to revoke all VIP passes? Every user will be forced to solve the JS Challenge again.', 'advanced-ip-blocker' ),
+                    'revoke_vip_confirm'       => __( 'Are you sure you want to revoke all VIP passes? Every user will be forced to solve the Security Challenge again.', 'advanced-ip-blocker' ),
                     'revoke_vip_btn'           => __( 'Yes, Revoke All', 'advanced-ip-blocker' ),
                     
                     'ajax_error'               => __( 'AJAX error. Check browser console.', 'advanced-ip-blocker' ),
@@ -2000,7 +2004,7 @@ public function get_blocked_endpoints_count() {
              if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass (Human verified previously)
              } else {
-                 $mode = $this->options['lockdown_404_challenge_mode'] ?? 'managed';
+                 $mode = $this->options['lockdown_404_challenge_mode'] ?? 'default';
                  $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '404', 'reason' => '404 Lockdown Mode Active', 'uri' => $this->get_current_request_uri(), 'mode' => $mode], 'warning');
                  $this->js_challenge_manager->serve_challenge('404_lockdown', $mode);
                  exit;
@@ -2031,7 +2035,7 @@ public function get_blocked_endpoints_count() {
              if ($this->js_challenge_manager->is_vip_pass_valid()) {
                  // Pass
              } else {
-                 $mode = $this->options['lockdown_403_challenge_mode'] ?? 'managed';
+                 $mode = $this->options['lockdown_403_challenge_mode'] ?? 'default';
                  $this->log_specific_error('endpoint_challenge', $this->get_client_ip(), ['endpoint' => '403', 'reason' => '403 Lockdown Mode Active', 'uri' => $this->get_current_request_uri(), 'mode' => $mode], 'warning');
                  $this->js_challenge_manager->serve_challenge('403_lockdown', $mode);
                  exit;
@@ -2379,7 +2383,7 @@ return $status_header;
                 foreach ($automattic_ua_patterns as $pattern) { if (preg_match($pattern, $user_agent)) { $is_trusted_service = true; break; } }
                 
                 if (!$is_trusted_service) {
-                    $mode = $this->options['xmlrpc_lockdown_challenge_mode'] ?? 'managed';
+                    $mode = $this->options['xmlrpc_lockdown_challenge_mode'] ?? 'default';
                     $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => 'xmlrpc.php', 'reason' => 'XML-RPC Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
                     $this->js_challenge_manager->serve_challenge('endpoint', $mode);
                 }
@@ -3467,9 +3471,11 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         case 'login': $message = sprintf(__('Failed login attempt for user: %s', 'advanced-ip-blocker'), $details['username'] ?? __('unknown', 'advanced-ip-blocker')); break;
         /* translators: %s: WAF rule. */
 		case 'waf': $message = sprintf(__('Request blocked by WAF rule: %s', 'advanced-ip-blocker'), $details['rule'] ?? __('unknown rule', 'advanced-ip-blocker')); break;
-        /* translators: 1: Number of request, 2: Seconds */
+        /* translators: 1: Number of requests, 2: Window in seconds. */
 		case 'rate_limit': $message = sprintf(__('Rate limit exceeded: %1$d requests in %2$d seconds.', 'advanced-ip-blocker'), $details['count'] ?? 0, $details['window'] ?? 0); break;
-        /* translators: %s: AS number. */
+        /* translators: %s: Request URI. */
+		case 'rate_limit_challenge': $message = sprintf(__('Rate Limit Challenge Served (%s)', 'advanced-ip-blocker'), $details['uri'] ?? 'N/A'); break;
+        /* translators: %s: ASN Number. */
 		case 'asn': $message = sprintf(__('Request blocked due to blacklisted ASN: %s', 'advanced-ip-blocker'), $details['asn_number'] ?? 'N/A'); break;
         /* translators: %s: User-Agent. */
 		case 'xmlrpc_block': $message = $details['_reason'] ?? sprintf(__('Blocked untrusted XML-RPC request from User-Agent: %s', 'advanced-ip-blocker'), $details['user_agent'] ?? 'N/A'); break;
@@ -4692,7 +4698,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'restrict_login_page' => '0',
 		'auto_whitelist_admin' => '0',
 		'enable_waf' => '0', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
-        'rate_limiting_window' => 60, 'xmlrpc_protection_mode' => 'smart',
+        'rate_limiting_window' => 60, 'rate_limiting_advanced_rules' => '[]', 'xmlrpc_protection_mode' => 'smart',
         'enable_geoblocking' => '1', 'enable_honeypot_blocking' => '1', 'enable_user_agent_blocking' => '1',
         'enable_spamhaus_asn' => '1',
         'enable_manual_asn' => '1',
@@ -4702,7 +4708,14 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 		'enable_geo_challenge' => '0',
         'geo_challenge_countries' => [],
         'geo_challenge_cookie_duration' => 24,
-        'geo_challenge_mode' => 'js_challenge',
+        'geo_challenge_mode' => 'default',
+        
+        // Captcha Integrations
+        'default_challenge_engine' => 'js_automatic',
+        'turnstile_site_key'       => '',
+        'turnstile_secret_key'     => '',
+        'hcaptcha_site_key'        => '',
+        'hcaptcha_secret_key'      => '',
 
         // Ajustes generales
         'enable_logging' => '1',
@@ -4985,6 +4998,9 @@ public function conditionally_remove_admin_notices() {
             
             // Excepciones CRÍTICAS de nuestro propio plugin que deben sobrevivir la purga
             add_action('admin_notices', [$this, 'display_under_attack_notice']);
+            if (isset($this->settings_manager)) {
+                add_action('admin_notices', [$this->settings_manager, 'display_captcha_keys_warning']);
+            }
             
             // Una vez que encontramos una coincidencia y limpiamos, no necesitamos seguir.
             return;
@@ -5488,6 +5504,12 @@ private function get_first_public_ip_from_string($ip_string) {
             ],
 			'aib_network_challenge' => [
                 'label'         => __('AIB Community Challenge', 'advanced-ip-blocker'),
+                'option_key'    => null,
+                'duration_key'  => null,
+                'uses_transient'=> false
+            ],
+            'rate_limit_challenge' => [
+                'label'         => __('Rate Limit Challenge', 'advanced-ip-blocker'),
                 'option_key'    => null,
                 'duration_key'  => null,
                 'uses_transient'=> false
@@ -7437,7 +7459,7 @@ public function handle_import_settings() {
                 return;
             }
             
-            $challenge_mode = $this->options['under_attack_challenge_mode'] ?? 'automatic';
+            $challenge_mode = $this->options['under_attack_challenge_mode'] ?? 'default';
             $this->log_specific_error(
                 'under_attack_challenge', 
                 $ip, 

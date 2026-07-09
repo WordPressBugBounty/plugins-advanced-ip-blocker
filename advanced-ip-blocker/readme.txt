@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.3
+Stable tag: 8.11.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,8 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
+*   **(NEW) Rate Limiting Advanced Rules:** Create highly specific rate limits for different endpoints. For example, set a strict limit with a Turnstile challenge for `/login`, while keeping a more generous limit with a temporary block for your main API, all without affecting the rest of the site.
 *   **(NEW) Distributed Attack Protection (Auto-Panic):** Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.
 *   **(NEW) IP & ASN Diagnostics Tool:** A complete Inspector tool integrated directly into the admin bar. Quickly audit any IP or ASN against your Geolocation database, Threat Scoring system, Spamhaus drops, and manual blocking rules in real-time.
 *   **Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
@@ -71,6 +73,13 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+
+= What are Captcha Integrations (Turnstile & hCaptcha)? =
+Our new Captcha Integrations allow you to seamlessly connect modern verification challenges like Cloudflare Turnstile and hCaptcha to your security modules. You can set a Global Default Engine and even apply different challenges granularly per module. To ensure your site never breaks, it includes a smart fallback to our invisible JS Challenge if your API keys are ever misconfigured or missing.
+
+= How do Rate Limiting Advanced Rules work? =
+Instead of a single global rate limit for your entire site, Advanced Rules allow you to define custom limits for specific URLs or endpoints. You can define the maximum number of requests, the time window, and the specific action (like returning a 429 error, a 403 block, or triggering a Turnstile/hCaptcha challenge) for each endpoint independently. This is ideal for protecting sensitive areas like login pages or APIs with stricter limits while allowing normal traffic on the rest of the site.
+
 = What is Distributed Attack Protection (Auto-Panic)? =
 This feature automatically engages a global JavaScript challenge to protect your server resources from massive spikes in malicious traffic. It monitors the number of blocks within a specific time window and, if the threshold is reached, it shields the entire site. Legitimate administrators, verified bots (like Googlebot), and explicitly excluded URLs are bypassed. You can configure the thresholds and notification preferences under Security > Settings > Core Protections.
 
@@ -244,6 +253,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.4 =
+*   **NEW FEATURE:** Captcha Integrations. Native support for Cloudflare Turnstile and hCaptcha, alongside our proprietary invisible JS Challenge. Includes granular control per security module and a smart emergency fallback to prevent accidental lockouts.
+*   **NEW FEATURE:** Rate Limiting Advanced Rules. Define custom request limits, time windows, and specific actions (like presenting a Captcha or blocking) for individual URLs and endpoints independently from the global rate limit.
+
 = 8.11.3 =
 *   **SECURITY HARDENING:** Protected the local GeoIP database folder to prevent unauthorized direct downloads of MaxMind `.mmdb` files, ensuring full compliance with MaxMind EULA and saving server bandwidth.
 *   **PERFORMANCE FIX:** Added a circuit-breaker to the bot IP verification engine. Prevents an infinite loop of HTTP timeout delays (potential DoS) if the server is unable to fetch the official bot IP lists due to firewall restrictions.
@@ -258,96 +271,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **NEW MAJOR FEATURE:** Distributed Attack Protection (Auto-Panic). Automatically shields your entire site with a global JS challenge during massive traffic spikes to prevent server overload.
 *   **ENHANCEMENT:** Granular control over Panic Mode alerts. Choose between receiving both Email & Push notifications, Push-only, or completely disabling them for silent operation.
 
-= 8.10.17 =
-*   **NEW FEATURE:** Forensic Headers Logging. The plugin now captures and stores the exact HTTP headers sent by attackers during blocked events, providing unmatched visibility into threat vectors directly within the Security and Challenge logs.
-*   **SECURITY:** Strict GDPR/Privacy redaction added to the new headers engine. Highly sensitive headers (Cookie, Authorization, Set-Cookie) are automatically redacted before being logged to the database.
-*   **UI/UX:** Complete redesign of the "Security Logs" and "Challenge Logs" interface. Replaced the static table with a modern, responsive Accordion UI featuring a dynamic details grid and a scrollable black-box for forensic header inspection.
-*   **UI/UX:** Removed the arbitrary "NEW" tag logic from log timestamps to reduce visual clutter and improve rendering performance.
-*   **Fix:** Added missing JavaScript event listeners for the "Copy IP" button inside the log tables.
-
-= 8.10.16 =
-*   **Performance:** Refactored the core security engine to execute seamlessly via native WordPress hooks (init), eliminating manual WAF duplicate executions and optimizing the Edge Firewall bootstrap process.
-*   **Fix:** Resolved a deadlock in the JS Challenge engine where certain Advanced Rules could intercept verification submissions, causing an infinite loop.
-*   **Enhancement:** Improved Bot Verification reliability to correctly handle extreme traffic situations without challenging legitimate search engines like Googlebot during high server load.
-*   **Stable:** Removed "(Beta)" labels from Attack Signature features. The engine is now considered stable for production environments.
-
-= 8.10.15 =
-*   **NEW FEATURE:** IP & ASN Diagnostics Tool (IP Inspector). Run deep, real-time security audits on any IP or ASN directly from the admin bar or threat dashboard.
-*   **Security:** Fixed a critical bypass vulnerability in the ASN Firewall engine where inline comments inside manual blocklists were incorrectly parsed, allowing the target ASN to bypass the rules.
-*   **Improved:** Migrated ASN Organization lookups to the stable and official RIPE Stat API, replacing the deprecated BGPView service.
-*   **Fix:** Resolved a UI bug where missing Leaflet marker assets generated 404 errors in the admin console.
-
-= 8.10.14 =
-* Compatibility: Added official support for ClassicPress 1.x and 2.x by adjusting core version requirements.
-* Security: Implemented a "Global Immunity" standard. IPs in the Whitelist and Verified Bots (like Google) now flawlessly bypass all security modules, including Advanced Rules, XML-RPC lockdowns, and Rate Limiting.
-* Enhancement: Upgraded the Bot Verifier to automatically download and cache official IP CIDR JSON lists from AI providers (OpenAI, Anthropic, Cohere, etc.) and Google, bypassing unreliable reverse DNS lookups.
-
-= 8.10.13 =
-* Security: Completely redesigned the JS Challenge engine to use stateless cryptographic HMAC tokens, eliminating cookie forgery vulnerabilities and database overload during DDoS attacks.
-* Enhancement: Added a global "Panic Button" (Revoke All VIP Passes) to instantly invalidate all active JS challenge sessions worldwide.
-* Fix: Resolved a race condition causing false "JS challenge verification failed" errors for real users on slow networks by extending the token grace period.
-* Fix: Removed hardcoded 1-hour limits in Login & XML-RPC Lockdowns. All modules now fully respect the "Global Challenge Duration" setting.
-* Enhancement: Updated Bot Verifier to support new AdsBot-Google proxy domains ('.google.com'), preventing false 403 errors.
-
-= 8.10.12 =
-* Compatibility: Fully tested and certified for WordPress 7.0.
-* Security/Enhancement: Enhanced the "Prevent Login Hinting" module to explicitly intercept invalid usernames during password recovery, fully neutralizing sophisticated enumeration bots that attempt to bypass email checks.
-* Enhancement: Removed the restriction preventing private/reserved IPs (like '::1' or '127.0.0.1') from being added to the Login Whitelist, allowing seamless local development and intranet testing.
-* Fix: Resolved a display bug where the Community Defense Network incorrectly showed "Updated 56 years ago" on fresh installations before the first synchronization.
-* Fix: Prevented the MaxMind GeoIP update cron from being scheduled unconditionally if a license key is not configured, saving server resources.
-* Fix: Ensured the Telemetry Notice "Allow & Continue" button works seamlessly across all plugin tabs, not just the main dashboard.
-
-= 8.10.11 =
-* Security: Prevented user enumeration via the Lost Password form by forcing a successful message simulation for non-existent users.
-* Fix: Resolved a fatal error ('Call to undefined method stdClass::lookup_ip()') that occurred when reporting threats on sites not using the local MaxMind database.
-
-= 8.10.10 =
-* Security: Implemented a "Zero-Trust" infrastructure allowlist for the AIB Community Network, preventing critical global IPs (Cloudflare, Google, AWS) from being erroneously reported or blocked, whilst dramatically reducing central server load.
-* Fix: Resolved a false positive in the Status & Debug tab where IPv6 support was incorrectly reported as disabled if the PHP sockets extension was missing.
-* Enhancement: Added quick "Copy to Clipboard" buttons for IP addresses in the Status tab to improve administrative workflow.
-
-= 8.10.9 =
-*   **Enhanced:** Major improvements to the Status & Debug dashboard. Added WP-Cron IP tracking to identify external cron triggers, expanded CDN detection (Sucuri, CloudFront, Fastly, Ezoic, LiteSpeed), and introduced deep server diagnostics including IPv6 support, core file permission checks, and Server vs WordPress timezone synchronization monitoring.
-
-= 8.10.8 =
-*   **SECURITY PATCH:** Fixed a Stored Cross-Site Scripting (XSS) vulnerability in the Signature Engine's "Blocked Signatures" details modal. Malicious payloads injected into HTTP headers (like 'Referer' or 'User-Agent') are now safely escaped before rendering in the administrative dashboard.
-*   **Improved:** AI Bot Verification is now enabled by default for all existing users to maximize protection out-of-the-box.
-*   **Improved:** Updated the System Status dashboard card and internal Telemetry engine to natively report AI Bot Verification feature adoption.
-
-= 8.10.6 =
-*   **NEW SECURITY FEATURE:** AI Bot Verification (CIDR). Introduces a new security layer that downloads and caches official IP ranges (JSON format) directly from major AI providers like OpenAI and Apple.
-*   **IMPROVED:** Significantly enhances accuracy by verifying crawlers mathematically via CIDR instead of relying on unpredictable Reverse DNS lookups that often fail on public cloud infrastructure.
-*   **ADDED:** Settings toggle to quickly enable/disable the new "Verify AI Bots (CIDR)" functionality.
-
-= 8.10.5 =
-*   **Security/Stability:** Hardened the Security Headers module with strict sanitization for Content-Security-Policy inputs. The system now automatically purifies copy/pasted policies by stripping invisible line breaks and safely escaping double quotes, completely eliminating the risk of 500 Internal Server Errors when generating '.htaccess' rules.
-*   **Fixed:** Resolved a display bug in the "IP Trust Log & Status" popup where details (Impersonated UA and URI) for "Impersonated" events were showing as "N/A".
-
-= 8.10.4 =
-*   **Major Refactor:** The JavaScript Challenge engine has been completely redesigned to be fully "Stateless" using secure cryptographic HMAC tokens. 
-*   **Fixed:** Resolves infinite redirect loops and "Verification failed" errors that occurred when strict caching layers (Cloudflare, LiteSpeed, WP Fastest Cache) cached the challenge HTML page or when Object Caching mechanisms (Redis/Memcached) experienced synchronization lag.
-*   **Improved:** Implemented strict anti-double-click logic in the frontend JS challenge scripts to prevent race conditions and double-POST submissions on touch devices or slow connections.
-*   **Performance:** Entirely eliminated database queries ('wp_options' transients) during JS challenge issuance and verification, protecting your database during DDoS events.
-
-= 8.10.3 =
-*   **Fixed:** Resolved a fatal out-of-memory error that could occur during the automated MaxMind GeoIP database CRON update on heavy WordPress installations by implementing dynamic memory scaling up to 512MB limit gracefully.
-
-= 8.10.2 =
-*   **Improved:** "Whitelist Login Countries" restrictions are now explicitly detailed in the Security Logs, displaying the precise country and reason instead of a generic 403 error.
-*   **Fixed:** Improved geolocation fallback handling by adding a localizable "Unknown Location" string for IPs lacking country data, avoiding log confusion.
-*   **Fixed:** Refined the internal security logging architecture to completely eliminate duplicate entries during early request terminations (e.g., login blocks).
-
-= 8.10.1 =
-*   **Fixed:** 2FA interim-login behaviour. Prevents the WordPress dashboard from loading inside the small session-expiration modal after a successful two-factor authentication.
-*   **Improved:** Expanded Google reCAPTCHA protection support to third-party custom login forms (WooCommerce, BuddyPress, Ultimate Member, and frontend 'wp_login_form()' implementations) without breaking unhookable themes.
-*   **Fixed:** Minor PHPCS code standards warnings and improved query performance on 2FA list tables.
-
-= 8.10.0 =
-*   **NEW MAJOR FEATURE:** Advanced Rules Import/Export. Site administrators and agencies can now securely migrate their custom firewall rules between sites via a robust JSON package.
-*   **ENHANCEMENT:** The new Import/Export bridge uses local browser Blob building, eliminating server-side temporary files, and includes structural hashing deduplication to prevent rules from being accidentally duplicated on recurrent imports.
-*   **SECURITY HARDENING:** Deep JSON Schema validation integrated. Uploaded rule configurations are strictly sanitized, and system IDs are regenerated upon import to eliminate any Object Injection or namespace collision vectors.
 
 == Upgrade Notice ==
+
+= 8.11.4 =
+**NEW FEATURE:** Introduces Captcha Integrations (Turnstile & hCaptcha) and Rate Limiting Advanced Rules for granular endpoint protection.
 
 = 8.11.3 =
 **SECURITY HARDENING:** Minor update to protect the GeoIP directory from direct external access.
