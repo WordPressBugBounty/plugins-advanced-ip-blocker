@@ -306,7 +306,7 @@ jQuery(document).ready(function ($) {
             const type = conditionRow.find('.condition-type').val();
             const operatorDropdown = conditionRow.find('.condition-operator');
             let ops = [...operators.string];
-            if (type === 'ip') ops = [...operators.ip];
+            if (type === 'ip' || type === 'request_method') ops = [...operators.ip];
             if (type === 'ip_range' || type === 'country' || type === 'asn') ops = [...operators.ip_range];
             if (type === 'country' || type === 'asn') {
                 const isOp = ops.find(op => op.value === 'is'); if (isOp) isOp.text = 'is';
@@ -330,6 +330,13 @@ jQuery(document).ready(function ($) {
                 }
                 valueContainer.append(select);
                 select.select2({ dropdownParent: modal, placeholder: 'Search for a country...', closeOnSelect: true });
+            } else if (type === 'request_method') {
+                const select = $('<select>', { class: 'condition-value', style: 'width: 100%;' });
+                const methods = ['GET', 'POST', 'HEAD', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
+                methods.forEach(method => {
+                    select.append(new Option(method, method, false, false));
+                });
+                valueContainer.append(select);
             } else {
                 let placeholder = 'e.g., /admin/login.php';
                 if (type === 'ip') placeholder = 'e.g., 1.2.3.4';
@@ -337,6 +344,7 @@ jQuery(document).ready(function ($) {
                 if (type === 'asn') placeholder = 'e.g., AS15169';
                 if (type === 'user_agent') placeholder = 'e.g., BadBot/1.0';
                 if (type === 'username') placeholder = 'e.g., admin';
+                if (type === 'referer') placeholder = 'e.g., badsite.com';
                 valueContainer.append($('<input>', { type: 'text', class: 'condition-value', placeholder: placeholder }));
             }
         }

@@ -150,6 +150,10 @@ function advaipbl_process_site_uninstallation() {
             // Community Network
             'advaipbl_community_blocklist',
             'advaipbl_community_last_update',
+            'advaipbl_network_degraded',
+            
+            // Database Cache
+            'advaipbl_db_cidrs_cache',
             
             // Opciones de bloqueo (ahora obsoletas, para limpieza de instalaciones antiguas)
             'advaipbl_blocked_ips_manual',

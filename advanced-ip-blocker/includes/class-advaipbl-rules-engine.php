@@ -78,7 +78,7 @@ private function sanitize_rule(array $rule_data) {
     }
 
     $sanitized_rule['conditions'] = [];
-    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'uri', 'user_agent', 'username'];
+    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'uri', 'user_agent', 'username', 'request_method', 'referer'];
     $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex'];
 
     foreach ($rule_data['conditions'] as $condition) {
@@ -301,6 +301,12 @@ private function check_condition($condition, $ip) {
         case 'user_agent':
             $subject = $this->plugin->get_user_agent();
             break;
+        case 'request_method':
+            $subject = $_SERVER['REQUEST_METHOD'] ?? '';
+            break;
+        case 'referer':
+            $subject = $_SERVER['HTTP_REFERER'] ?? '';
+            break;
         default:
             return false;
     }
@@ -406,17 +412,20 @@ private function execute_action($rule, $ip) {
                 return false;
             }
 
-            $this->plugin->log_specific_error(
-                'advanced_rule', // Usamos el tipo base y el nivel lo diferencia
-                $ip,
-                $log_data,
-                'warning' // Nivel 'warning' porque no es un bloqueo, es un desafío
-            );
             $mode = str_replace('challenge_', '', $action);
             if ($mode === 'challenge') $mode = 'managed';
             if ($mode === 'managed') $mode = 'js_managed';
             if ($mode === 'automatic') $mode = 'js_automatic';
-            $this->plugin->js_challenge_manager->serve_challenge('advanced_rule', $mode);
+            
+            $log_data['mode'] = $mode;
+
+            $this->plugin->log_specific_error(
+                'advanced_rule_challenge', // Usamos un tipo especifico para challenges
+                $ip,
+                $log_data,
+                'warning' // Nivel 'warning' porque no es un bloqueo, es un desafío
+            );
+            $this->plugin->js_challenge_manager->serve_challenge('advanced_rule_challenge', $mode);
             return true; // serve_challenge ya hace exit()
 
         case 'score':

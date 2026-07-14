@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.4
+Stable tag: 8.11.5
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -24,7 +24,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 *   **(NEW) Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
 *   **(NEW) Rate Limiting Advanced Rules:** Create highly specific rate limits for different endpoints. For example, set a strict limit with a Turnstile challenge for `/login`, while keeping a more generous limit with a temporary block for your main API, all without affecting the rest of the site.
 *   **(NEW) Distributed Attack Protection (Auto-Panic):** Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.
-*   **(NEW) IP & ASN Diagnostics Tool:** A complete Inspector tool integrated directly into the admin bar. Quickly audit any IP or ASN against your Geolocation database, Threat Scoring system, Spamhaus drops, and manual blocking rules in real-time.
+*   **IP & ASN Diagnostics Tool:** A complete Inspector tool integrated directly into the admin bar. Quickly audit any IP or ASN against your Geolocation database, Threat Scoring system, Spamhaus drops, and manual blocking rules in real-time.
 *   **Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
 *   **Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
 *   **Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
@@ -49,7 +49,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 *   **File Hardening.** Protect your most sensitive files (`wp-config.php`, `readme.html`, `.git`) at the server level with a single click.
 *   **AbuseIPDB Integration.** Proactively block attackers before they strike. The plugin can now check visitor IPs against AbuseIPDB's real-time, crowdsourced database of malicious IPs and block those with a high abuse score on their very first request.
 *   **Edge Firewall Mode!** Protect any PHP file or standalone application within your WordPress directory (even if it's not part of WordPress). Ideal for securing custom scripts, legacy applications, or folders like `/scan/`. (Requires manual configuration).
-*   **Advanced Rules Engine!** Create powerful, custom security rules with multiple conditions (IP, Country, ASN, URI, User-Agent) and actions (Block, Challenge, or add Threat Score).
+*   **Advanced Rules Engine!** Create powerful, custom security rules with multiple conditions (IP, Country, ASN, URI, User-Agent, Request Method, Referer) and actions (Block, Challenge, or add Threat Score).
 *   **Known Bot Verification.** A powerful new security layer that uses reverse DNS lookups to verify legitimate crawlers like Googlebot and Bingbot. This completely neutralizes attackers who try to bypass security rules by faking their User-Agent, assigning high threat scores to impostors.
 *   **Verify Monitoring Bots (IP List).** A brand new feature that downloads and caches official IP lists from popular uptime monitoring services (like UptimeRobot and Pingdom) to ensure they are never incorrectly blocked or challenged.
 *   **Onboarding Setup Wizard.** A brand new step-by-step wizard that guides new users through the essential security configurations (IP whitelisting, WAF, and bot traps) in under a minute, ensuring a strong security posture from day one.
@@ -253,6 +253,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.5 =
+*   **NEW FEATURE:** Added 'Request Method' (GET, POST, etc.) and 'Referer' conditions to the Advanced Rules Engine to effectively block referrer spam and targeted attack vectors.
+*   **PERFORMANCE FIX:** Implemented native in-memory caching for bulk-imported CIDR blocks. This prevents "double blocks" by evaluating CIDR ranges natively in PHP before triggering third-party APIs like AbuseIPDB.
+*   **ENHANCEMENT:** Advanced Rules that trigger Captcha or JS Challenges are now properly logged and badged in the Live Feed and Challenge Logs.
+*   **ENHANCEMENT:** Log retention policies now comprehensively clean up all secondary tracking tables to minimize database footprint on high-traffic sites.
+*   **BUG FIX:** Fully resolved Edge Firewall compatibility issues with native redirect exits for early Captcha/Challenge interception.
+*   **BUG FIX:** Ensures complete removal of dynamic caches and community network options upon clean uninstallation.
+
 = 8.11.4 =
 *   **NEW FEATURE:** Captcha Integrations. Native support for Cloudflare Turnstile and hCaptcha, alongside our proprietary invisible JS Challenge. Includes granular control per security module and a smart emergency fallback to prevent accidental lockouts.
 *   **NEW FEATURE:** Rate Limiting Advanced Rules. Define custom request limits, time windows, and specific actions (like presenting a Captcha or blocking) for individual URLs and endpoints independently from the global rate limit.
@@ -273,6 +281,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.5 =
+**NEW FEATURE & ENHANCEMENT:** Added 'Request Method' and 'Referer' conditions to Advanced Rules. Resolves "double blocks" for bulk-imported CIDR ranges, and improves Edge Firewall compatibility.
 
 = 8.11.4 =
 **NEW FEATURE:** Introduces Captcha Integrations (Turnstile & hCaptcha) and Rate Limiting Advanced Rules for granular endpoint protection.

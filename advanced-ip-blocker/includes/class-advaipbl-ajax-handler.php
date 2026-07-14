@@ -1241,6 +1241,7 @@ public function ajax_verify_abuseipdb_key() {
 
         if ($imported_count > 0) {
             $this->plugin->purge_all_page_caches();
+            $this->plugin->update_db_cidrs_cache();
         }
 
         // Si Cloudflare está habilitado, desencadenamos una sincronización asíncrona casi inmediata.

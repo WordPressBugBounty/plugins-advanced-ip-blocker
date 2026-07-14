@@ -105,6 +105,7 @@ class ADVAIPBL_Live_Feed_Manager {
                         $details_message = sprintf(__('Blocked by AbuseIPDB with a score of %d%%.', 'advanced-ip-blocker'), $score);
                         break;
                     case 'advanced_rule':
+                    case 'advanced_rule_challenge':
                         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                         $block_entry = $wpdb->get_row($wpdb->prepare("SELECT reason FROM {$wpdb->prefix}advaipbl_blocked_ips WHERE ip_range = %s", $row['ip']), ARRAY_A);
                         if ($block_entry && !empty($block_entry['reason'])) {

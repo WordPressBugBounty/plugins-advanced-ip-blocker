@@ -2442,6 +2442,16 @@ return $status_header;
                 }
             }
         }
+        
+        // Comprobación de bloqueos CIDR cacheados desde la base de datos (Bulk Imports, etc.)
+        $db_cidrs = get_option( 'advaipbl_db_cidrs_cache', [] );
+        if ( ! empty( $db_cidrs ) ) {
+            foreach ( $db_cidrs as $cidr => $data ) {
+                if ( $this->is_ip_in_range( $ip, $cidr ) ) {
+                    $this->block_ip_instantly( $ip, $data['type'], $data['reason'] );
+                }
+            }
+        }
                 
 		// AIB COMMUNITY CHECK
     if (!empty($this->options['enable_community_blocking'])) {
@@ -2723,6 +2733,9 @@ if ($custom_duration_seconds !== null) {
 }
 $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $this->clear_blocked_ips_cache();
+        if (strpos($ip, '/') !== false) {
+            $this->update_db_cidrs_cache();
+        }
         
         // Lógica condicional completa para sincronización
         $write_enabled = !empty($this->options['enable_htaccess_write']);
@@ -2823,10 +2836,29 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $retention_days = (int) ($this->options['log_retention_days'] ?? 30);
         if ($retention_days <= 0) return;
         global $wpdb;
-        $table_name = $wpdb->prefix . 'advaipbl_logs';
         
+        $table_logs = $wpdb->prefix . 'advaipbl_logs';
+        $table_request_log = $wpdb->prefix . 'advaipbl_request_log';
+        $table_queue = $wpdb->prefix . 'advaipbl_notifications_queue';
+        $table_reports = $wpdb->prefix . 'advaipbl_pending_reports';
+        
+        $cutoff_unix = time() - ($retention_days * DAY_IN_SECONDS);
+        
+        // 1. Clean primary Security Logs (DATETIME)
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE timestamp < DATE_SUB(NOW(), INTERVAL %d DAY)", $retention_days));
+        $wpdb->query($wpdb->prepare("DELETE FROM $table_logs WHERE timestamp < DATE_SUB(NOW(), INTERVAL %d DAY)", $retention_days));
+        
+        // 2. Clean Attack Signature Request Logs (UNIX INT)
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $wpdb->query($wpdb->prepare("DELETE FROM $table_request_log WHERE timestamp < %d", $cutoff_unix));
+        
+        // 3. Clean orphaned Notification Queue items (DATETIME)
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $wpdb->query($wpdb->prepare("DELETE FROM $table_queue WHERE timestamp < DATE_SUB(NOW(), INTERVAL %d DAY)", $retention_days));
+        
+        // 4. Clean orphaned Community Reports (UNIX INT)
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $wpdb->query($wpdb->prepare("DELETE FROM $table_reports WHERE timestamp < %d", $cutoff_unix));
     }
     
     public function check_database_update() {
@@ -4518,6 +4550,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
         // 5. Registrar el evento.
         $this->log_event(sprintf('All blocked IPs have been unblocked. Action via %s.', $source), 'critical');
+        
+        $this->update_db_cidrs_cache();
     }
 
     public function limpiar_ips_expiradas() {
@@ -5520,6 +5554,12 @@ private function get_first_public_ip_from_string($ip_string) {
                 'duration_key'  => null, // La duración es por regla, no global.
                 'uses_transient'=> true   // Un bloqueo es un bloqueo, debe tener un transient.
             ],
+            'advanced_rule_challenge' => [
+                'label'         => __('Advanced Rule Challenge', 'advanced-ip-blocker'),
+                'option_key'    => null,
+                'duration_key'  => null,
+                'uses_transient'=> false
+            ],
 			    'advanced_rule_allow' => [
                 'label'         => __('Advanced Rule (Allow)', 'advanced-ip-blocker'),
                 'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
@@ -5527,6 +5567,36 @@ private function get_first_public_ip_from_string($ip_string) {
         ];
     }        
     
+    /**
+     * Updates the memory cache of active CIDR blocks from the database.
+     * This cache is used for extremely fast CIDR evaluation in PHP without database queries.
+     */
+    public function update_db_cidrs_cache() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
+        
+        $like_pattern = '%' . $wpdb->esc_like('/') . '%';
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $results = $wpdb->get_results( $wpdb->prepare(
+            "SELECT ip_range, block_type, reason FROM {$table_name} WHERE ip_range LIKE %s AND (expires_at = 0 OR expires_at > %d)",
+            $like_pattern,
+            time()
+        ), ARRAY_A );
+        
+        $cache = [];
+        if ( !empty($results) ) {
+            foreach ( $results as $row ) {
+                $cache[ $row['ip_range'] ] = [
+                    'type'   => $row['block_type'],
+                    'reason' => $row['reason']
+                ];
+            }
+        }
+        
+        update_option( 'advaipbl_db_cidrs_cache', $cache, 'yes' );
+    }
+
     /**
      * Limpia la entrada de la caché de objetos para la lista de IPs bloqueadas.
      * Debe ser llamada cada vez que la tabla _advaipbl_blocked_ips es modificada.

@@ -1922,7 +1922,8 @@ public function display_general_settings_tab() {
             'signature_challenge',
             'endpoint_challenge', 
             'geo_challenge',
-            'rate_limit_challenge'
+            'rate_limit_challenge',
+            'advanced_rule_challenge'
         ];
         $this->display_log_table_generic($challenge_log_types, ['warning', 'info'], __('Challenge Logs', 'advanced-ip-blocker'), 'challenge_log', true);
     }
@@ -2416,6 +2417,7 @@ public function display_general_log_tab() {
 								if (!empty($uri)) { $detail_display .= '<br><small>' . $uri . '</small>'; }
                                 break;
 							case 'advanced_rule':
+							case 'advanced_rule_challenge':
                                 $level = $entry['level'];
                                 $rule_name_html = '<strong>' . esc_html__('Rule:', 'advanced-ip-blocker') . '</strong> ' . esc_html($details['rule_name'] ?? 'N/A');
                                 
@@ -3693,6 +3695,8 @@ $status_parts[] = sprintf(
                 <option value="uri"><?php esc_html_e('Request URI', 'advanced-ip-blocker'); ?></option>
                 <option value="user_agent"><?php esc_html_e('User-Agent', 'advanced-ip-blocker'); ?></option>
                 <option value="username"><?php esc_html_e('Username (Login)', 'advanced-ip-blocker'); ?></option>
+                <option value="request_method"><?php esc_html_e('Request Method', 'advanced-ip-blocker'); ?></option>
+                <option value="referer"><?php esc_html_e('Referer', 'advanced-ip-blocker'); ?></option>
             </select>
             <select class="condition-operator"></select>
             <div class="condition-value-container"></div>

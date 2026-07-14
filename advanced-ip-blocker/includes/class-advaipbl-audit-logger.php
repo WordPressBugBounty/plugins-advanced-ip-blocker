@@ -32,7 +32,7 @@ class ADVAIPBL_Audit_Logger {
         add_action('update_option_' . ADVAIPBL_Main::OPTION_SETTINGS, [$this, 'log_settings_change'], 10, 3);
         
         // Cron
-        add_action('advaipbl_daily_event', [$this, 'cleanup_logs']);
+        add_action('advaipbl_purge_old_logs_event', [$this, 'cleanup_logs']);
     }
 
     /**
