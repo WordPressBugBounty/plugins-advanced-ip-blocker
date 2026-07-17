@@ -2734,7 +2734,7 @@ return $status_header;
                 
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        if ($wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip))) {
+        if ($wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s AND (expires_at = 0 OR expires_at > %d)", $ip, time()))) {
             $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
             if ($context === 'frontend_block') { $this->access_denied_page(__('403 - Access Denied', 'advanced-ip-blocker'), $this->get_block_message('generic')); exit; }
             return;
@@ -3651,7 +3651,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         return;
     }
 
-    $all_block_types = ['geoblock', 'honeypot', 'manual', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score'];
+    $all_block_types = ['geoblock', 'honeypot', 'manual', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score', 'impersonation', 'aib_network'];
     foreach ($all_block_types as $reason_type) {
         if (get_transient('advaipbl_bloqueo_' . $reason_type . '_' . md5($ip))) {
             $this->log_specific_error($type, $ip, $extra_data);
@@ -4426,9 +4426,15 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     }
 
     if (isset($this->block_response_initiated) && $this->block_response_initiated) {
+        if (!headers_sent()) {
+            header('HTTP/1.1 403 Forbidden');
+            header('X-Accel-Expires: 0');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        }
         exit;
     }
     $this->block_response_initiated = true;
+    $this->error_handled_this_request = true;
 
     $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
     $is_xmlrpc_request = (strpos($request_uri, 'xmlrpc.php') !== false);
@@ -4449,6 +4455,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     if ($is_xmlrpc_request) {
         if (!headers_sent()) {
             header('HTTP/1.1 403 Forbidden');
+            header('X-Accel-Expires: 0');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
             header('Content-Type: text/html; charset=utf-8');
         }       
 
@@ -4479,7 +4487,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
     } else {
         if (!headers_sent()) {
-            header('Cache-Control: no-cache, must-revalidate, max-age=0');
+            header('X-Accel-Expires: 0');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
             header('Pragma: no-cache');
             header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
             status_header(403);

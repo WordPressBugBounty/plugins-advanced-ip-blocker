@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.6
+Stable tag: 8.11.7
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -257,6 +257,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.7 =
+*   **CRITICAL FIX:** Resolved an infinite recursion bug in the firewall block pipeline that could cause an empty HTTP 200 response and poison Nginx/FastCGI page caches (such as Kinsta). This update ensures X-Accel-Expires headers are strictly enforced to prevent cache poisoning. Thanks to @thewatchman3 for the excellent report!
+
 = 8.11.6 =
 *   **NEW FEATURE:** Added "Block Ghost IPs" global option to automatically block IPs without ASN and Reverse DNS.
 *   **ENHANCEMENT:** Added 'is empty' and 'is not empty' conditions to the ASN field in Advanced Rules, and improved 'Hostname / rDNS' targeting for strict custom rules.
@@ -290,6 +293,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.7 =
+**CRITICAL FIX:** Resolves a major cache poisoning vulnerability that could cause a blank page to be cached by Nginx/FastCGI on high-traffic sites during a block event. Update immediately.
 
 = 8.11.6 =
 **NEW FEATURE & ENHANCEMENT:** Introduces the "Block Ghost IPs" global option to stop anonymous traffic, adds new condition checks (is empty) for ASN and Hostname/rDNS in Advanced Rules, and includes a toggle switch to easily deactivate rules.
