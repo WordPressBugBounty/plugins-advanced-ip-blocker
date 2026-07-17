@@ -215,38 +215,49 @@ class ADVAIPBL_Dashboard_Manager {
     public function get_system_status() {
         $options = $this->main_class->options;
         return [
-            'waf'              => !empty($options['enable_waf']),
-            'rate_limit'       => !empty($options['rate_limiting_enable']),
-            'geoblock'         => !empty($options['enable_geoblocking']),
-            'honeypot'         => !empty($options['enable_honeypot_blocking']),
-            'user_agent'       => !empty($options['enable_user_agent_blocking']),
-            '404_blocking'     => true,
-            '403_blocking'     => true,
-            'login_blocking'   => true,
-            'xmlrpc_mode'      => $options['xmlrpc_protection_mode'] ?? 'smart',
-            // Separamos la protección ASN en sus dos componentes.
-            'spamhaus_asn'     => !empty($options['enable_spamhaus_asn']),
-            'manual_asn'       => !empty($options['enable_manual_asn']),
-			'threat_scoring'   => !empty($options['enable_threat_scoring']),
-			'signature_logging'   => !empty($options['enable_signature_engine']),
-            'signature_analysis'  => !empty($options['enable_signature_analysis']),
-            'signature_blocking'  => !empty($options['enable_signature_blocking']),
-			'enable_2fa'  => !empty($options['enable_2fa']),
-			'xmlrpc_lockdown'  => !empty($options['enable_xmlrpc_lockdown']),
-			'login_lockdown'  => !empty($options['enable_login_lockdown']),
-            '404_lockdown'  => !empty($options['enable_404_lockdown']),
-            '403_lockdown'  => !empty($options['enable_403_lockdown']),
-			'bot_verification'   => !empty($options['enable_bot_verification']),
+            // Level 1 & Infrastructure
+            'cloudflare_sync'    => !empty($options['enable_cloudflare']),
+            'htaccess_firewall'  => !empty($options['enable_htaccess_write']),
+            'community_network'  => !empty($options['enable_community_blocking']),
+            
+            // Level 2: Bot Verification
+            'bot_verification'   => !empty($options['enable_bot_verification']),
             'ai_bot_verification'=> isset($options['enable_ai_bot_verification']) ? !empty($options['enable_ai_bot_verification']) : true,
             'monitoring_bot_verification' => isset($options['enable_monitoring_bot_verification']) ? !empty($options['enable_monitoring_bot_verification']) : true,
-            'geo_challenge'      => !empty($options['enable_geo_challenge']),
-            'under_attack_mode'  => (!empty($options['under_attack_mode']) && $options['under_attack_mode'] !== 'off'),
-            'abuseipdb'          => !empty($options['enable_abuseipdb']),
-            'activity_audit'     => !empty($options['enable_audit_log']),
+            
+            // Level 3: Advanced Rules
             'advanced_rule'      => !empty($this->main_class->rules_engine->get_rules()),
-			'htaccess_firewall'  => !empty($options['enable_htaccess_write']),
-			'cloudflare_sync'    => !empty($options['enable_cloudflare']),
-			'community_network'  => !empty($options['enable_community_blocking']),
+            
+            // Level 4: Global & Automated Shields
+            'under_attack_mode'  => (!empty($options['under_attack_mode']) && $options['under_attack_mode'] !== 'off'),
+            'block_ghost_ips'    => !empty($options['block_ghost_ips']),
+            'xmlrpc_lockdown'    => !empty($options['enable_xmlrpc_lockdown']),
+            'login_lockdown'     => !empty($options['enable_login_lockdown']),
+            'signature_logging'  => !empty($options['enable_signature_engine']),
+            'signature_analysis' => !empty($options['enable_signature_analysis']),
+            'signature_blocking' => !empty($options['enable_signature_blocking']),
+            'geo_challenge'      => !empty($options['enable_geo_challenge']),
+            'rate_limit'         => !empty($options['rate_limiting_enable']),
+            
+            // Level 5: Core Blocking Engine (WAF & Static Rules)
+            'honeypot'           => !empty($options['enable_honeypot_blocking']),
+            'waf'                => !empty($options['enable_waf']),
+            'geoblock'           => !empty($options['enable_geoblocking']),
+            'user_agent'         => !empty($options['enable_user_agent_blocking']),
+            'spamhaus_asn'       => !empty($options['enable_spamhaus_asn']),
+            'manual_asn'         => !empty($options['enable_manual_asn']),
+            '404_blocking'       => true,
+            '403_blocking'       => true,
+            'login_blocking'     => true,
+            '404_lockdown'       => !empty($options['enable_404_lockdown']),
+            '403_lockdown'       => !empty($options['enable_403_lockdown']),
+            'xmlrpc_mode'        => $options['xmlrpc_protection_mode'] ?? 'smart',
+            'enable_2fa'         => !empty($options['enable_2fa']),
+            
+            // Level 6: External Intelligence & Auditing
+            'abuseipdb'          => !empty($options['enable_abuseipdb']),
+            'threat_scoring'     => !empty($options['enable_threat_scoring']),
+            'activity_audit'     => !empty($options['enable_audit_log']),
         ];
     }
 

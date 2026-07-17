@@ -1905,7 +1905,7 @@ public function display_general_settings_tab() {
             '404', '403', 'login', 'threat_score',
 			'abuseipdb',
 			'aib_network', 'signature_flagged',
-            'impersonation',
+            'impersonation', 'ghost_ip',
             'advanced_rule', 'login_geoblock'
         ];
         $this->display_log_table_generic($security_log_types, ['critical', 'warning'], null, null, true);
@@ -3692,6 +3692,7 @@ $status_parts[] = sprintf(
                 <option value="ip_range"><?php esc_html_e('IP Range', 'advanced-ip-blocker'); ?></option>
                 <option value="country"><?php esc_html_e('Country', 'advanced-ip-blocker'); ?></option>
                 <option value="asn"><?php esc_html_e('ASN', 'advanced-ip-blocker'); ?></option>
+                <option value="hostname"><?php esc_html_e('Hostname / rDNS', 'advanced-ip-blocker'); ?></option>
                 <option value="uri"><?php esc_html_e('Request URI', 'advanced-ip-blocker'); ?></option>
                 <option value="user_agent"><?php esc_html_e('User-Agent', 'advanced-ip-blocker'); ?></option>
                 <option value="username"><?php esc_html_e('Username (Login)', 'advanced-ip-blocker'); ?></option>

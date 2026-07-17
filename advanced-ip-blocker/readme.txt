@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.5
+Stable tag: 8.11.6
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Block Ghost IPs:** Automatically block IPs without ASN and Reverse DNS to stop anonymous traffic (Warning: Could cause false positives if rDNS is misconfigured by ISPs).
 *   **(NEW) Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
 *   **(NEW) Rate Limiting Advanced Rules:** Create highly specific rate limits for different endpoints. For example, set a strict limit with a Turnstile challenge for `/login`, while keeping a more generous limit with a temporary block for your main API, all without affecting the rest of the site.
 *   **(NEW) Distributed Attack Protection (Auto-Panic):** Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.
@@ -73,6 +74,9 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+
+= What is Block Ghost IPs? =
+This feature automatically blocks incoming traffic from IP addresses that lack an Autonomous System Number (ASN) and Reverse DNS (rDNS) record. Since legitimate traffic almost always has these identifiers, Ghost IPs are often malicious actors trying to hide. Please note that this can cause false positives if a legitimate Internet Service Provider (ISP) has misconfigured their rDNS.
 
 = What are Captcha Integrations (Turnstile & hCaptcha)? =
 Our new Captcha Integrations allow you to seamlessly connect modern verification challenges like Cloudflare Turnstile and hCaptcha to your security modules. You can set a Global Default Engine and even apply different challenges granularly per module. To ensure your site never breaks, it includes a smart fallback to our invisible JS Challenge if your API keys are ever misconfigured or missing.
@@ -253,6 +257,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.6 =
+*   **NEW FEATURE:** Added "Block Ghost IPs" global option to automatically block IPs without ASN and Reverse DNS.
+*   **ENHANCEMENT:** Added 'is empty' and 'is not empty' conditions to the ASN field in Advanced Rules, and improved 'Hostname / rDNS' targeting for strict custom rules.
+*   **ENHANCEMENT:** Added a new toggle switch in the Advanced Rules list to easily activate or deactivate individual rules.
+
 = 8.11.5 =
 *   **NEW FEATURE:** Added 'Request Method' (GET, POST, etc.) and 'Referer' conditions to the Advanced Rules Engine to effectively block referrer spam and targeted attack vectors.
 *   **PERFORMANCE FIX:** Implemented native in-memory caching for bulk-imported CIDR blocks. This prevents "double blocks" by evaluating CIDR ranges natively in PHP before triggering third-party APIs like AbuseIPDB.
@@ -281,6 +290,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.6 =
+**NEW FEATURE & ENHANCEMENT:** Introduces the "Block Ghost IPs" global option to stop anonymous traffic, adds new condition checks (is empty) for ASN and Hostname/rDNS in Advanced Rules, and includes a toggle switch to easily deactivate rules.
 
 = 8.11.5 =
 **NEW FEATURE & ENHANCEMENT:** Added 'Request Method' and 'Referer' conditions to Advanced Rules. Resolves "double blocks" for bulk-imported CIDR ranges, and improves Edge Firewall compatibility.

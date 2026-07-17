@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.5\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.6\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -8299,3 +8299,24 @@ msgstr ""
 msgid "Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts."
 msgstr ""
 
+
+msgid "Block Ghost IPs (No ASN & No rDNS)"
+msgstr ""
+
+msgid "Block Ghost IPs"
+msgstr ""
+
+msgid "Automatically block IPs without ASN and Reverse DNS (Warning: Could cause false positives if rDNS is misconfigured by ISPs)."
+msgstr ""
+
+msgid "Empty ASN and No Reverse DNS (Ghost IP)"
+msgstr ""
+
+msgid "Anonymous IP blocked by Ghost IPs Shield."
+msgstr ""
+
+msgid "Your connection has been blocked due to missing network identifiers (ASN & rDNS)."
+msgstr ""
+
+msgid "Hostname / rDNS"
+msgstr ""

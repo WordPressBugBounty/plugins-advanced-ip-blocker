@@ -238,6 +238,7 @@ private function __construct() {
         add_action('init', [$this, 'log_request_signature'], -2);
         add_action('plugins_loaded', [$this, 'maybe_set_donotcachepage_constant'], 0);
 		add_action('init', [$this, 'check_for_bot_impersonator_block'], -1);
+        add_action('init', [$this, 'check_for_ghost_ips'], -1);
         add_action('init', [$this, 'check_for_endpoint_lockdown'], -1);		
         add_action('init', [$this, 'check_for_malicious_signature'], -1);
         add_action('init', [$this, 'check_for_geo_challenge'], -1);
@@ -360,6 +361,7 @@ private function __construct() {
         }
 		add_action('wp_ajax_advaipbl_get_advanced_rules', [$this->ajax_handler, 'ajax_get_advanced_rules']);
         add_action('wp_ajax_advaipbl_save_advanced_rule', [$this->ajax_handler, 'ajax_save_advanced_rule']);
+        add_action('wp_ajax_advaipbl_toggle_advanced_rule', [$this->ajax_handler, 'ajax_toggle_advanced_rule']);
         add_action('wp_ajax_advaipbl_delete_advanced_rule', [$this->ajax_handler, 'ajax_delete_advanced_rule']);
 		add_action('wp_ajax_advaipbl_reorder_rules', [$this->ajax_handler, 'ajax_reorder_advanced_rules']);
 		add_action('wp_ajax_advaipbl_bulk_delete_advanced_rules', [$this->ajax_handler, 'ajax_bulk_delete_advanced_rules']);
@@ -704,6 +706,51 @@ public function verify_known_bots() {
         return;
     }
 } 
+
+    public function check_for_ghost_ips() {
+        if (empty($this->options['block_ghost_ips'])) { return; }
+        if (!empty($this->request_is_asn_whitelisted) || $this->is_whitelisted($this->get_client_ip()) || !empty($this->is_advanced_rule_allowed)) { return; }
+
+        $ip = $this->get_client_ip();
+        
+        // Exclude localhost/private IPs from this check to prevent locking out local dev
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) { return; }
+
+        $location = $this->geolocation_manager->fetch_location($ip);
+        $asn_info = $this->asn_manager->extract_asn_from_data($location);
+        if (!empty($asn_info)) { return; }
+
+        $hostname = @gethostbyaddr($ip);
+        // If hostname is empty or equal to the IP, then it failed reverse DNS resolution
+        if (!empty($hostname) && $hostname !== $ip) { return; }
+
+        // Ghost IP detected!
+        $duration_minutes = 1440; // Default fallback
+
+        if (!empty($this->options['enable_threat_scoring'])) {
+             $points = (int) ($this->options['score_impersonation'] ?? 100);
+             $this->threat_score_manager->increment_score(
+                 $ip, 
+                 $points, 
+                 'ghost_ip', 
+                 [
+                     'uri' => $this->get_current_request_uri()
+                 ]
+             );
+             $duration_minutes = (int) ($this->options['duration_threat_score'] ?? 1440);
+        }
+
+        $this->add_to_blocked_ips($ip, 'ghost_ip', __('Empty ASN and No Reverse DNS (Ghost IP)', 'advanced-ip-blocker'), $duration_minutes);
+
+        $log_data = [
+            'ip' => $ip,
+            'type' => 'ghost_ip',
+            'reason_message' => __('Anonymous IP blocked by Ghost IPs Shield.', 'advanced-ip-blocker')
+        ];
+        $this->handle_threat_event($ip, 'ghost_ip', __('Empty ASN and No Reverse DNS (Ghost IP)', 'advanced-ip-blocker'), $log_data);
+
+        $this->access_denied_page(__('Access Restricted', 'advanced-ip-blocker'), __('Your connection has been blocked due to missing network identifiers (ASN & rDNS).', 'advanced-ip-blocker'));
+    }
 
     public function check_for_bot_impersonator_block() {
         if (empty($this->is_bot_impersonator)) { return; }
@@ -4277,6 +4324,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'enable_honeypot_blocking' => __('Honeypot Protection', 'advanced-ip-blocker'),
         'enable_user_agent_blocking' => __('User-Agent Protection', 'advanced-ip-blocker'),
 		'enable_spamhaus_blocking' => __('Spamhaus ASN Protection', 'advanced-ip-blocker'),
+        'block_ghost_ips' => __('Block Ghost IPs (No ASN & No rDNS)', 'advanced-ip-blocker'),
 		// Notificaciones
         'enable_email_notifications' => __('Email Notifications', 'advanced-ip-blocker'),
         'notification_frequency' => __('Notification Frequency', 'advanced-ip-blocker'),
@@ -4330,7 +4378,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     $checkbox_keys = [
         'enable_logging', 'enable_email_notifications', 'disable_user_enumeration', 'enable_2fa', 'tfa_force_roles',
         'prevent_author_scanning', 'restrict_login_page', 'recaptcha_enable', 'enable_waf', 'rate_limiting_enable',
-        'delete_data_on_uninstall', 'disable_xmlrpc', 'show_admin_bar_menu', 'enable_xmlrpc_lockdown'
+        'delete_data_on_uninstall', 'disable_xmlrpc', 'show_admin_bar_menu', 'enable_xmlrpc_lockdown', 'block_ghost_ips'
     ];
 
     foreach ($friendly_names as $key => $name) {
@@ -4734,7 +4782,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 		'enable_waf' => '0', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
         'rate_limiting_window' => 60, 'rate_limiting_advanced_rules' => '[]', 'xmlrpc_protection_mode' => 'smart',
         'enable_geoblocking' => '1', 'enable_honeypot_blocking' => '1', 'enable_user_agent_blocking' => '1',
-        'enable_spamhaus_asn' => '1',
+        'enable_spamhaus_asn' => '1', 'block_ghost_ips' => '0',
         'enable_manual_asn' => '1',
 		'enable_bot_verification' => '1',
         'enable_ai_bot_verification' => '1',
@@ -5452,6 +5500,12 @@ private function get_first_public_ip_from_string($ip_string) {
                 'duration_key'  => null,
                 'uses_transient'=> false
             ],
+            'ghost_ip' => [
+                'label'         => __('Ghost IPs Shield', 'advanced-ip-blocker'),
+                'option_key'    => null,
+                'duration_key'  => null,
+                'uses_transient'=> false
+            ],
             '404' => [
                 'label'         => __('404 Error', 'advanced-ip-blocker'),
                 'option_key'    => self::OPTION_BLOCKED_404,
@@ -5997,6 +6051,7 @@ private function get_first_public_ip_from_string($ip_string) {
             'enable_waf'                  => !empty($this->options['enable_waf']),
             'rate_limiting_enable'        => !empty($this->options['rate_limiting_enable']),
             'enable_geoblocking'          => !empty($this->options['enable_geoblocking']),
+            'block_ghost_ips'             => !empty($this->options['block_ghost_ips']),
             'enable_honeypot_blocking'    => !empty($this->options['enable_honeypot_blocking']),
             'enable_user_agent_blocking'  => !empty($this->options['enable_user_agent_blocking']),
             'enable_spamhaus_asn'         => !empty($this->options['enable_spamhaus_asn']),
@@ -7575,11 +7630,12 @@ public function handle_import_settings() {
 
         if ($alert_level !== 'disabled') {
             if (!empty($this->options['enable_push_notifications']) && $this->notification_manager) {
+                $site_name_push = get_bloginfo('name');
                 if ($is_manual) {
-                    $push_msg = sprintf("*CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.");
+                    $push_msg = sprintf("*[%s] CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.", $site_name_push);
                 } else {
-                    /* translators: 1: Number of blocks, 2: Window in seconds, 3: Duration in minutes */
-                    $push_msg = sprintf("*CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\nAdvanced IP Blocker detected %1\$d blocks within %2\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %3\$d minutes.", $blocks_count, $window_secs, $duration_mins);
+                    /* translators: 1: Site Name, 2: Number of blocks, 3: Window in seconds, 4: Duration in minutes */
+                    $push_msg = sprintf("*[%1\$s] CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\nAdvanced IP Blocker detected %2\$d blocks within %3\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %4\$d minutes.", $site_name_push, $blocks_count, $window_secs, $duration_mins);
                 }
                 $this->notification_manager->execute_webhook_send($push_msg);
             }

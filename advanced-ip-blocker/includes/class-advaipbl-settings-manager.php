@@ -41,6 +41,7 @@ class ADVAIPBL_Settings_Manager {
     add_settings_field('advaipbl_excluded_error_urls', __('Global URL Exclusions', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'excluded_error_urls', 'label' => __('Add one URL path or fragment per line. Requests containing these strings will bypass 404/403 error logging and all JavaScript challenges (Signature, Geo, and Endpoint).', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_show_admin_bar_menu', __( 'Admin Bar Menu', 'advanced-ip-blocker' ), [$this, 'switch_field_callback'], $page, 'advaipbl_general_settings_section', ['name'  => 'show_admin_bar_menu', 'label' => __( 'Show security menu in the WordPress admin bar', 'advanced-ip-blocker' )]);
     add_settings_field('advaipbl_global_challenge_cookie_duration', __( 'Global Challenge Duration (Hours)', 'advanced-ip-blocker' ), [$this, 'text_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'global_challenge_cookie_duration', 'default' => 4, 'description' => __( 'How long a visitor can access the site after passing a JS challenge (e.g. from Lockdowns, Login Page, XML-RPC or Advanced Rules). Set to 0 for the browser session only.', 'advanced-ip-blocker' )]);
+
     add_settings_field('advaipbl_revoke_vip_passes_button', __('Global VIP Revocation', 'advanced-ip-blocker'), [$this, 'revoke_vip_passes_button_callback'], $page, 'advaipbl_general_settings_section');
     
 
@@ -473,6 +474,18 @@ add_settings_field(
         );
     add_settings_field('advaipbl_enable_manual_asn', __('Manual ASN Protection', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_asn_protection_section', ['name' => 'enable_manual_asn', 'label' => __('Enable blocking based on your custom Manual ASN Blocklist.', 'advanced-ip-blocker'), 'description' => sprintf(/* translators: $s: ASN blocklist rules URL */__('Manage your custom list in the <a href="%s">Blocking Rules</a> tab.', 'advanced-ip-blocker'), admin_url('admin.php?page=advaipbl_settings_page&tab=rules&sub-tab=asn_blocking'))]);
     add_settings_field('advaipbl_duration_asn', __('ASN Block Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_asn_protection_section', ['name' => 'duration_asn', 'default' => 1440, 'description' => __('Duration to block IPs from both manual and automated ASN lists. Set to <strong>0</strong> for a permanent block.', 'advanced-ip-blocker')]);
+    add_settings_field(
+        'advaipbl_block_ghost_ips', 
+        __('Block Ghost IPs', 'advanced-ip-blocker'), 
+        [$this, 'switch_field_callback'], 
+        $page, 
+        'advaipbl_asn_protection_section', 
+        [
+            'name' => 'block_ghost_ips', 
+            'label' => __('Automatically block IPs without ASN and Reverse DNS (Warning: Could cause false positives if rDNS is misconfigured by ISPs).', 'advanced-ip-blocker'),
+            'help_url' => 'https://advaipbl.com/block-ghost-ips-rdns-asn/'
+        ]
+    );
 
     add_settings_section('advaipbl_under_attack_section', __('Distributed Attack Protection (Auto-Panic)', 'advanced-ip-blocker'), null, $page);
     add_settings_field(
@@ -1213,7 +1226,8 @@ add_settings_field(
             'enable_scheduled_scans',
             'enable_audit_log',
             'enable_fim',
-            'scan_check_ssl', 'scan_check_updates', 'scan_check_php', 'scan_check_wp', 'scan_check_debug',			
+            'scan_check_ssl', 'scan_check_updates', 'scan_check_php', 'scan_check_wp', 'scan_check_debug',
+            'block_ghost_ips'
         ];
         
         foreach ($checkbox_fields as $field) {

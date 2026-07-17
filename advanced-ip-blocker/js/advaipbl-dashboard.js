@@ -72,36 +72,48 @@ jQuery(document).ready(function ($) {
 
         // Actualizamos el mapa de etiquetas para reflejar los nuevos estados.
         const statusMap = {
-            'htaccess_firewall': 'Server-Level Firewall (.htaccess)',
+            // Level 1: Absolute Bypass & Infrastructure
             'cloudflare_sync': 'Cloud Edge Defense (Cloudflare)',
+            'htaccess_firewall': 'Server-Level Firewall (.htaccess)',
             'community_network': 'AIB Community Network',
-            'waf': 'Web Application Firewall (WAF)',
-            'rate_limit': 'Rate Limiting',
-            'spamhaus_asn': 'Spamhaus ASN Protection',
-            'manual_asn': 'Manual ASN Protection',
-            'geoblock': 'Geoblocking',
-            'honeypot': 'Honeypot Protection',
-            'user_agent': 'User-Agent Blocking',
-            'threat_scoring': 'Threat Scoring System',
-            'enable_2fa': 'Two-Factor Authentication (2FA)',
-            'signature_logging': 'Signature Logging',
-            'signature_analysis': 'Signature Analysis',
-            'signature_blocking': 'Signature Blocking',
-            'xmlrpc_lockdown': 'XML-RPC Lockdown',
-            'login_lockdown': 'Login Lockdown',
-            '404_lockdown': '404 Error Lockdown',
-            '404_blocking': '404 Error Blocking',
-            '403_lockdown': '403 Error Lockdown',
-            '403_blocking': '403 Error Blocking',
-            'login_blocking': 'Failed Login Blocking',
+            
+            // Level 2: Bot Verification
             'bot_verification': 'Verify Known Bots',
             'ai_bot_verification': 'Verify AI Bots (CIDR)',
             'monitoring_bot_verification': 'Verify Monitoring Bots (IP List)',
-            'geo_challenge': 'Geo Challenge',
+            
+            // Level 3: Advanced Rules Engine
+            'advanced_rule': 'Advanced Rules',
+            
+            // Level 4: Global & Automated Shields
             'under_attack_mode': 'Distributed Attack Protection (Auto-Panic)',
+            'block_ghost_ips': 'Block Ghost IPs',
+            'xmlrpc_lockdown': 'XML-RPC Lockdown',
+            'login_lockdown': 'Login Lockdown',
+            'signature_logging': 'Signature Logging',
+            'signature_analysis': 'Signature Analysis',
+            'signature_blocking': 'Signature Blocking',
+            'geo_challenge': 'Geo Challenge',
+            'rate_limit': 'Rate Limiting',
+            
+            // Level 5: Core Blocking Engine (WAF & Static Rules)
+            'honeypot': 'Honeypot Protection',
+            'waf': 'Web Application Firewall (WAF)',
+            'geoblock': 'Geoblocking',
+            'user_agent': 'User-Agent Blocking',
+            'spamhaus_asn': 'Spamhaus ASN Protection',
+            'manual_asn': 'Manual ASN Protection',
+            '404_blocking': '404 Error Blocking',
+            '403_blocking': '403 Error Blocking',
+            'login_blocking': 'Failed Login Blocking',
+            '404_lockdown': '404 Error Lockdown',
+            '403_lockdown': '403 Error Lockdown',
+            'enable_2fa': 'Two-Factor Authentication (2FA)',
+            
+            // Level 6: External Intelligence & Auditing
             'abuseipdb': 'AbuseIPDB Protection',
-            'activity_audit': 'Activity Audit Log',
-            'advanced_rule': 'Advanced Rules'
+            'threat_scoring': 'Threat Scoring System',
+            'activity_audit': 'Activity Audit Log'
         };
 
         let html = '<div class="advaipbl-status-list">';

@@ -748,6 +748,41 @@ public function ajax_get_advanced_rules() {
         }
     }
 
+    public function ajax_toggle_advanced_rule() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+        }
+        check_ajax_referer('advaipbl_save_rule_nonce', 'nonce');
+
+        $rule_id = isset($_POST['rule_id']) ? sanitize_key($_POST['rule_id']) : '';
+        $is_active = isset($_POST['is_active']) ? (int)$_POST['is_active'] === 1 : true;
+
+        if (empty($rule_id)) {
+            wp_send_json_error(['message' => __('Invalid rule ID.', 'advanced-ip-blocker')]);
+        }
+
+        $rules = $this->plugin->rules_engine->get_rules();
+        $target_rule = null;
+        
+        foreach ($rules as $rule) {
+            if ($rule['id'] === $rule_id) {
+                $target_rule = $rule;
+                break;
+            }
+        }
+
+        if ($target_rule) {
+            $target_rule['is_active'] = $is_active;
+            if ($this->plugin->rules_engine->update_rule($rule_id, $target_rule)) {
+                wp_send_json_success(['message' => __('Rule toggled successfully.', 'advanced-ip-blocker')]);
+            } else {
+                wp_send_json_error(['message' => __('Failed to save rule state.', 'advanced-ip-blocker')]);
+            }
+        } else {
+            wp_send_json_error(['message' => __('Rule not found.', 'advanced-ip-blocker')]);
+        }
+    }
+
     /**
      * AJAX callback para eliminar una regla avanzada.
      */

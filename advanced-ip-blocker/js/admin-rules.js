@@ -297,7 +297,7 @@ jQuery(document).ready(function ($) {
         const conditionsContainer = $('#advaipbl-rule-conditions');
 
         const operators = {
-            string: [{ value: 'is', text: 'is' }, { value: 'is_not', text: 'is not' }, { value: 'contains', text: 'contains' }, { value: 'does_not_contain', text: 'does not contain' }, { value: 'starts_with', text: 'starts with' }, { value: 'ends_with', text: 'ends with' }, { value: 'matches_regex', text: 'matches regex' }],
+            string: [{ value: 'is', text: 'is' }, { value: 'is_not', text: 'is not' }, { value: 'contains', text: 'contains' }, { value: 'does_not_contain', text: 'does not contain' }, { value: 'starts_with', text: 'starts with' }, { value: 'ends_with', text: 'ends with' }, { value: 'matches_regex', text: 'matches regex' }, { value: 'is_empty', text: 'is empty' }, { value: 'is_not_empty', text: 'is not empty' }],
             ip: [{ value: 'is', text: 'is' }, { value: 'is_not', text: 'is not' }],
             ip_range: [{ value: 'is', text: 'is in range' }, { value: 'is_not', text: 'is not in range' }]
         };
@@ -311,6 +311,10 @@ jQuery(document).ready(function ($) {
             if (type === 'country' || type === 'asn') {
                 const isOp = ops.find(op => op.value === 'is'); if (isOp) isOp.text = 'is';
                 const isNotOp = ops.find(op => op.value === 'is_not'); if (isNotOp) isNotOp.text = 'is not';
+            }
+            if (type === 'asn') {
+                ops.push({ value: 'is_empty', text: 'is empty' });
+                ops.push({ value: 'is_not_empty', text: 'is not empty' });
             }
             operatorDropdown.empty();
             ops.forEach(op => operatorDropdown.append($('<option>', { value: op.value, text: op.text })));
@@ -342,6 +346,7 @@ jQuery(document).ready(function ($) {
                 if (type === 'ip') placeholder = 'e.g., 1.2.3.4';
                 if (type === 'ip_range') placeholder = 'e.g., 1.2.3.0/24';
                 if (type === 'asn') placeholder = 'e.g., AS15169';
+                if (type === 'hostname') placeholder = 'e.g., crawl.google.com';
                 if (type === 'user_agent') placeholder = 'e.g., BadBot/1.0';
                 if (type === 'username') placeholder = 'e.g., admin';
                 if (type === 'referer') placeholder = 'e.g., badsite.com';
@@ -365,6 +370,7 @@ jQuery(document).ready(function ($) {
                     newRow.find('.condition-value').val(condition.value);
                 }
             }
+            newRow.find('.condition-operator').trigger('change');
         }
 
         function updateActionParams() {
@@ -389,10 +395,18 @@ jQuery(document).ready(function ($) {
                 if (rule.action_params.points) actionHtml += ` <span class="rule-action-param">(+${rule.action_params.points} pts)</span>`;
             }
 
+            const isChecked = (rule.is_active !== false) ? 'checked' : '';
+
             return `
-        <div class="advaipbl-rule-card" data-rule-id="${rule.id}">
-            <div class="rule-selector"><input type="checkbox" class="rule-checkbox"></div>
-            <div class="rule-name"><strong>${rule.name}</strong></div>
+        <div class="advaipbl-rule-card ${isChecked ? '' : 'advaipbl-rule-inactive'}" data-rule-id="${rule.id}">
+            <div class="rule-selector"><input type="checkbox" class="rule-checkbox" value="${rule.id}"></div>
+            <div class="rule-name">
+                <label class="advaipbl-switch" style="vertical-align: middle; margin-right: 10px;" title="Enable/Disable Rule">
+                    <input type="checkbox" class="toggle-rule-status" ${isChecked}>
+                    <span class="advaipbl-slider round"></span>
+                </label>
+                <strong style="${isChecked ? '' : 'text-decoration: line-through; color: #999;'}">${rule.name}</strong>
+            </div>
             <div class="rule-summary">
                 <strong>IF:</strong> ${conditionsHtml}
             </div>
@@ -407,6 +421,51 @@ jQuery(document).ready(function ($) {
             </div>
         </div>`;
         }
+
+        rulesListContainer.on('change', '.toggle-rule-status', function () {
+            const checkbox = $(this);
+            const card = checkbox.closest('.advaipbl-rule-card');
+            const ruleId = card.data('rule-id');
+            const isActive = checkbox.prop('checked');
+            
+            // Visual feedback
+            if (isActive) {
+                card.removeClass('advaipbl-rule-inactive');
+                card.find('.rule-name strong').css({'text-decoration': 'none', 'color': 'inherit'});
+            } else {
+                card.addClass('advaipbl-rule-inactive');
+                card.find('.rule-name strong').css({'text-decoration': 'line-through', 'color': '#999'});
+            }
+
+            $.post(ajaxurl, {
+                action: 'advaipbl_toggle_advanced_rule',
+                nonce: adminData.nonces.save_rule_nonce,
+                rule_id: ruleId,
+                is_active: isActive ? 1 : 0
+            }).done(function (response) {
+                if (!response.success) {
+                    showAdminNotice(response.data.message || 'Could not update rule status.', 'error');
+                    checkbox.prop('checked', !isActive); // Revert UI
+                    if (!isActive) {
+                        card.removeClass('advaipbl-rule-inactive');
+                        card.find('.rule-name strong').css({'text-decoration': 'none', 'color': 'inherit'});
+                    } else {
+                        card.addClass('advaipbl-rule-inactive');
+                        card.find('.rule-name strong').css({'text-decoration': 'line-through', 'color': '#999'});
+                    }
+                }
+            }).fail(function () {
+                showAdminNotice(adminData.text.ajax_error || 'Ajax error.', 'error');
+                checkbox.prop('checked', !isActive); // Revert UI
+                if (!isActive) {
+                    card.removeClass('advaipbl-rule-inactive');
+                    card.find('.rule-name strong').css({'text-decoration': 'none', 'color': 'inherit'});
+                } else {
+                    card.addClass('advaipbl-rule-inactive');
+                    card.find('.rule-name strong').css({'text-decoration': 'line-through', 'color': '#999'});
+                }
+            });
+        });
 
         function renderPagination(pagination) {
             const paginationContainers = $('.advaipbl-pagination-container');
@@ -541,7 +600,18 @@ jQuery(document).ready(function ($) {
 
         importModal.on('click', '.advaipbl-modal-cancel', function () { importModal.hide(); });
         modal.on('click', '.advaipbl-modal-cancel', function () { modal.hide(); });
-        conditionsContainer.on('change', '.condition-type', function () { const row = $(this).closest('.advaipbl-condition-row'); updateOperatorDropdown(row); updateValueInput(row); });
+        conditionsContainer.on('change', '.condition-type', function () { const row = $(this).closest('.advaipbl-condition-row'); updateOperatorDropdown(row); updateValueInput(row); row.find('.condition-operator').trigger('change'); });
+        conditionsContainer.on('change', '.condition-operator', function () {
+            const row = $(this).closest('.advaipbl-condition-row');
+            const operator = $(this).val();
+            const valueContainer = row.find('.condition-value-container');
+            if (operator === 'is_empty' || operator === 'is_not_empty') {
+                valueContainer.hide();
+                row.find('.condition-value').val('');
+            } else {
+                valueContainer.show();
+            }
+        });
         conditionsContainer.on('click', '.remove-condition', function () { $(this).closest('.advaipbl-condition-row').remove(); });
         $('#advaipbl-add-condition-btn').on('click', addConditionRow);
         $('#advaipbl-rule-action').on('change', updateActionParams);

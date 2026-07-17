@@ -39,7 +39,15 @@ class ADVAIPBL_Rules_Engine {
      * @return array
      */
     public function get_rules() {
-        return get_option(self::OPTION_RULES, []);
+        $rules = get_option(self::OPTION_RULES, []);
+        if (is_array($rules)) {
+            foreach ($rules as &$rule) {
+                if (!isset($rule['is_active'])) {
+                    $rule['is_active'] = true;
+                }
+            }
+        }
+        return is_array($rules) ? $rules : [];
     }
 
     /**
@@ -58,6 +66,7 @@ private function sanitize_rule(array $rule_data) {
     $sanitized_rule['id'] = 'ar_' . bin2hex(random_bytes(8));
     }
     $sanitized_rule['name'] = isset($rule_data['name']) ? sanitize_text_field($rule_data['name']) : 'Untitled Rule';
+    $sanitized_rule['is_active'] = isset($rule_data['is_active']) ? filter_var($rule_data['is_active'], FILTER_VALIDATE_BOOLEAN) : true;
 
     $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha', 'score', 'allow'];
     $sanitized_rule['action'] = isset($rule_data['action']) && in_array($rule_data['action'], $allowed_actions, true) ? $rule_data['action'] : 'block';
@@ -78,22 +87,28 @@ private function sanitize_rule(array $rule_data) {
     }
 
     $sanitized_rule['conditions'] = [];
-    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'uri', 'user_agent', 'username', 'request_method', 'referer'];
-    $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex'];
+    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer'];
+    $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex', 'is_empty', 'is_not_empty'];
 
     foreach ($rule_data['conditions'] as $condition) {
         if (
             !isset($condition['type']) || !in_array($condition['type'], $allowed_types, true) ||
-            !isset($condition['operator']) || !in_array($condition['operator'], $allowed_operators, true) ||
-            !isset($condition['value']) || $condition['value'] === ''
+            !isset($condition['operator']) || !in_array($condition['operator'], $allowed_operators, true)
         ) {
             continue; // Saltar condición mal formada o vacía.
+        }
+        
+        // Value is required unless operator is is_empty or is_not_empty
+        if (!in_array($condition['operator'], ['is_empty', 'is_not_empty'], true)) {
+            if (!isset($condition['value']) || $condition['value'] === '') {
+                continue;
+            }
         }
         
         $sanitized_condition = [
             'type'     => $condition['type'],
             'operator' => $condition['operator'],
-            'value'    => sanitize_text_field($condition['value']) // Sanitización genérica y segura para todos los valores.
+            'value'    => isset($condition['value']) ? sanitize_text_field($condition['value']) : '' // Sanitización genérica y segura para todos los valores.
         ];
         
         $sanitized_rule['conditions'][] = $sanitized_condition;
@@ -235,6 +250,10 @@ public function evaluate() {
     }
 
     foreach ($rules as $rule) {
+        if (isset($rule['is_active']) && $rule['is_active'] === false) {
+            continue; // Regla inactiva, la saltamos
+        }
+        
         if (!isset($rule['conditions']) || empty($rule['conditions']) || !isset($rule['action'])) {
             continue; // Regla mal formada, la saltamos
         }
@@ -266,9 +285,14 @@ public function evaluate() {
 private function check_condition($condition, $ip) {
     $type     = $condition['type'] ?? null;
     $operator = $condition['operator'] ?? 'is';
-    $value    = $condition['value'] ?? null;
+    $value    = $condition['value'] ?? '';
 
-    if ($type === null || $value === null) {
+    if ($type === null) {
+        return false;
+    }
+    
+    // Value check is no longer absolute here since is_empty/is_not_empty don't need a value
+    if ($value === '' && !in_array($operator, ['is_empty', 'is_not_empty'], true)) {
         return false;
     }
 
@@ -295,6 +319,10 @@ private function check_condition($condition, $ip) {
             $location = $this->plugin->geolocation_manager->fetch_location($ip);
             $subject = $this->plugin->asn_manager->extract_asn_from_data($location);
             break;
+        case 'hostname':
+            $hostname = @gethostbyaddr($ip);
+            $subject = ($hostname && $hostname !== $ip) ? $hostname : '';
+            break;
         case 'uri':
             $subject = $this->plugin->get_current_request_uri();
             break;
@@ -314,6 +342,12 @@ private function check_condition($condition, $ip) {
     $result = false;
     // Realizamos la comparación usando el operador
     switch ($operator) {
+        case 'is_empty':
+            $result = empty($subject);
+            break;
+        case 'is_not_empty':
+            $result = !empty($subject);
+            break;
         case 'is':
             if ($type === 'ip_range') {
                 $result = $this->plugin->is_ip_in_range($subject, $value);
