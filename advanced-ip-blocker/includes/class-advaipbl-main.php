@@ -2099,7 +2099,7 @@ public function get_blocked_endpoints_count() {
         // Comprobación de whitelist.
         if ($this->is_whitelisted($ip)) return $status_header;
 
-        $all_block_types = ['geoblock', 'honeypot', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score'];
+        $all_block_types = ['geoblock', 'honeypot', 'manual', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score', 'impersonation', 'aib_network', 'abuseipdb', 'advanced_rule'];
         foreach ($all_block_types as $type) {
             if (get_transient('advaipbl_bloqueo_' . $type . '_' . md5($ip))) {
                 return $status_header;
@@ -3651,7 +3651,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         return;
     }
 
-    $all_block_types = ['geoblock', 'honeypot', 'manual', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score', 'impersonation', 'aib_network'];
+    $all_block_types = ['geoblock', 'honeypot', 'manual', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score', 'impersonation', 'aib_network', 'abuseipdb', 'advanced_rule'];
     foreach ($all_block_types as $reason_type) {
         if (get_transient('advaipbl_bloqueo_' . $reason_type . '_' . md5($ip))) {
             $this->log_specific_error($type, $ip, $extra_data);

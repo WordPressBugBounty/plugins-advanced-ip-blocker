@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.7
+Stable tag: 8.11.8
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -257,6 +257,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.8 =
+*   **SECURITY HARDENING:** Synchronized the internal early-detection transient arrays (`detect_http_error_status`) with modern block types (`abuseipdb`, `advanced_rule`, `impersonation`, `aib_network`) to guarantee absolute impermeability against re-entrant loops.
+
 = 8.11.7 =
 *   **CRITICAL FIX:** Resolved an infinite recursion bug in the firewall block pipeline that could cause an empty HTTP 200 response and poison Nginx/FastCGI page caches (such as Kinsta). This update ensures X-Accel-Expires headers are strictly enforced to prevent cache poisoning. Thanks to @thewatchman3 for the excellent report!
 
@@ -293,6 +296,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.8 =
+**SECURITY HARDENING:** Minor update to synchronize internal transient cooldowns across all firewall layers, ensuring modern block types never trigger false positives during error detection.
 
 = 8.11.7 =
 **CRITICAL FIX:** Resolves a major cache poisoning vulnerability that could cause a blank page to be cached by Nginx/FastCGI on high-traffic sites during a block event. Update immediately.
