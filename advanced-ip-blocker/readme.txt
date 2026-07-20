@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.8
+Stable tag: 8.11.9
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -257,6 +257,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.9 =
+*   **ENHANCEMENT:** Expanded default WAF exclusions to automatically cover generic WooCommerce REST API webhooks (`?wc-api=`) to natively support gateways like Mollie, Square, and Coinbase without false positives.
+*   **ENHANCEMENT:** Added common mobile icons (like `apple-touch-icon.png`) and crawler paths (`robots.txt`, `sitemap.xml`) to the default global 404/403 exclusions to prevent accidental blocking of legitimate traffic.
+*   **ENHANCEMENT:** Included an automatic database migration routine to safely inject these new default exclusions into existing installations without overwriting user customizations.
+*   **ENHANCEMENT:** Improved UX for the Two-Factor Authentication (2FA) module by adding automatic focus to the verification code input fields.
+
 = 8.11.8 =
 *   **SECURITY HARDENING:** Synchronized the internal early-detection transient arrays (`detect_http_error_status`) with modern block types (`abuseipdb`, `advanced_rule`, `impersonation`, `aib_network`) to guarantee absolute impermeability against re-entrant loops.
 
@@ -296,6 +302,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.9 =
+**ENHANCEMENT:** Expands default protection rules for WooCommerce API endpoints, adds mobile/crawler exclusions to prevent 404 blocks, and includes an automatic database migrator for existing users.
 
 = 8.11.8 =
 **SECURITY HARDENING:** Minor update to synchronize internal transient cooldowns across all firewall layers, ensuring modern block types never trigger false positives during error detection.

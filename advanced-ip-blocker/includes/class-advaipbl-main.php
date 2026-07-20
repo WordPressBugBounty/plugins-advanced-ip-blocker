@@ -740,16 +740,14 @@ public function verify_known_bots() {
              $duration_minutes = (int) ($this->options['duration_threat_score'] ?? 1440);
         }
 
-        $this->add_to_blocked_ips($ip, 'ghost_ip', __('Empty ASN and No Reverse DNS (Ghost IP)', 'advanced-ip-blocker'), $duration_minutes);
-
-        $log_data = [
-            'ip' => $ip,
-            'type' => 'ghost_ip',
-            'reason_message' => __('Anonymous IP blocked by Ghost IPs Shield.', 'advanced-ip-blocker')
-        ];
-        $this->handle_threat_event($ip, 'ghost_ip', __('Empty ASN and No Reverse DNS (Ghost IP)', 'advanced-ip-blocker'), $log_data);
-
-        $this->access_denied_page(__('Access Restricted', 'advanced-ip-blocker'), __('Your connection has been blocked due to missing network identifiers (ASN & rDNS).', 'advanced-ip-blocker'));
+        $this->block_ip_instantly(
+            $ip, 
+            'ghost_ip', 
+            __('Anonymous IP blocked by Ghost IPs Shield.', 'advanced-ip-blocker'),
+            [],
+            'frontend_block',
+            $duration_minutes * 60
+        );
     }
 
     public function check_for_bot_impersonator_block() {
@@ -2265,11 +2263,6 @@ return $status_header;
             return $endpoints;
         }
 
-        // 2. Permitir IPs en la Whitelist
-        if ( $this->is_whitelisted( $this->get_client_ip() ) ) {
-            return $endpoints;
-        }
-
         // 3. Permitir User-Agents en la Whitelist (Plan A support)
         $ua = $this->get_user_agent();
         $whitelisted_uas = get_option( self::OPTION_WHITELISTED_UAS, [] );
@@ -2696,9 +2689,10 @@ return $status_header;
 			'waf'        => __('Your request was blocked by the security firewall.', 'advanced-ip-blocker'),
             'rate_limit' => __('Your connection has been temporarily suspended due to an excessive request rate.', 'advanced-ip-blocker'),
 			'asn'        => __('Access from your network (ASN) has been blocked by the administrator.', 'advanced-ip-blocker'),
-			'xmlrpc_block' => __('Blocked suspicious XML-RPC request.', 'advanced-ip-blocker'),
+            'xmlrpc_block' => __('Blocked suspicious XML-RPC request.', 'advanced-ip-blocker'),
 			'threat_score' => __('Your connection has been blocked due to a high threat score.', 'advanced-ip-blocker'),
             'impersonation' => __('Access blocked for impersonating a known crawler (Googlebot, Bingbot, etc.).', 'advanced-ip-blocker'),
+            'ghost_ip' => __('Your connection has been blocked due to missing network identifiers (ASN & rDNS).', 'advanced-ip-blocker'),
         ];
         return $messages[$type] ?? __('Access blocked.', 'advanced-ip-blocker');
     }
@@ -2953,6 +2947,10 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
             if ( version_compare($installed_plugin_ver, '8.9.0', '<') && $installed_plugin_ver !== '0.0.0' ) {
                 $this->auto_migrate_v3_token();
             }
+            
+            if ( version_compare($installed_plugin_ver, '8.11.9', '<') && $installed_plugin_ver !== '0.0.0' ) {
+                $this->auto_migrate_default_exclusions_8_11_9();
+            }
 
             // Actualizar la versión instalada en la base de datos
             update_option('advaipbl_version_installed', ADVAIPBL_VERSION);
@@ -2961,6 +2959,59 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
 		$already_checked = true;
     }
 	
+	
+    /**
+     * Inyecta de forma segura y sin duplicados las nuevas exclusiones por defecto
+     * introducidas en la versión 8.11.9 en las instalaciones existentes.
+     */
+    private function auto_migrate_default_exclusions_8_11_9() {
+        $settings = get_option(self::OPTION_SETTINGS, []);
+        $updated = false;
+
+        // 1. Nuevas exclusiones 404/403
+        $new_error_urls = [
+            '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png',
+            '/browserconfig.xml', '/site.webmanifest', '/robots.txt', '/sitemap.xml', '/sitemap_index.xml'
+        ];
+        
+        $current_error_urls = isset($settings['excluded_error_urls']) ? array_map('trim', explode("\n", $settings['excluded_error_urls'])) : [];
+        $added_error = false;
+        foreach ($new_error_urls as $url) {
+            if (!in_array($url, $current_error_urls, true)) {
+                $current_error_urls[] = $url;
+                $added_error = true;
+            }
+        }
+        if ($added_error) {
+            $settings['excluded_error_urls'] = implode("\n", array_filter($current_error_urls));
+            $updated = true;
+        }
+
+        // 2. Nuevas exclusiones WAF
+        $new_waf_urls = [
+            '?wc-api=', '/wp-json/wc/v3/', '/wp-json/oembed/1.0/embed'
+        ];
+
+        $current_waf_urls = isset($settings['waf_excluded_urls']) ? array_map('trim', explode("\n", $settings['waf_excluded_urls'])) : [];
+        $added_waf = false;
+        foreach ($new_waf_urls as $url) {
+            if (!in_array($url, $current_waf_urls, true)) {
+                $current_waf_urls[] = $url;
+                $added_waf = true;
+            }
+        }
+        if ($added_waf) {
+            $settings['waf_excluded_urls'] = implode("\n", array_filter($current_waf_urls));
+            $updated = true;
+        }
+
+        if ($updated) {
+            update_option(self::OPTION_SETTINGS, $settings);
+            $this->options = $settings; // Refrescar en memoria
+            $this->log_event('Successfully injected v8.11.9 default URL exclusions into existing settings.', 'info');
+        }
+    }
+
 	    /**
      * Limpia las opciones de la base de datos de versiones muy antiguas del plugin.
      * Se ejecuta una sola vez gracias a un sistema de versionado.
@@ -4742,6 +4793,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     $default_exclusions_404_403 = [
         'wc-ajax=get_refreshed_fragments', '?wc-ajax=', 'undefinedjetpack',
         '/wp-cron.php', '.js.map', '.css.map', '/favicon.ico', '/.well-known/traffic-advice',
+        '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png',
+        '/browserconfig.xml', '/site.webmanifest', '/robots.txt', '/sitemap.xml', '/sitemap_index.xml'
     ];
 
     $default_waf_exclusions = [
@@ -4752,6 +4805,9 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'wc-ajax=ppc-capture-order',         // PayPal Capture Order
         '?wc-api=wc_gateway_stripe',         // Stripe Webhook Endpoint
         '?wc-api=wc_gateway_paypal',         // PayPal IPN/Webhook Endpoint
+        '?wc-api=',                          // Catch-all for other WooCommerce Webhooks (Mollie, Square, Coinbase, etc)
+        '/wp-json/wc/v3/',                   // WooCommerce REST API (POS, Inventory sync)
+        '/wp-json/oembed/1.0/embed',         // Standard WordPress oEmbed endpoint
     ];
 
     return [
@@ -6664,7 +6720,7 @@ public function handle_import_settings() {
         <form name="advaipbl_validate_2fa_form" id="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ); ?>" method="post">
             <p>
                 <label for="advaipbl_2fa_code"><?php esc_html_e( 'Authentication Code:', 'advanced-ip-blocker' ); ?></label>
-                <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" pattern="[0-9]*" inputmode="numeric" autocomplete="one-time-code" placeholder="123 456" />
+                <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" pattern="[0-9]*" inputmode="numeric" autocomplete="one-time-code" placeholder="123 456" autofocus />
             </p>
             <input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
             <input type="hidden" name="redirect_to" value="<?php echo esc_attr( isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '' ); ?>" />
@@ -6732,7 +6788,7 @@ public function handle_import_settings() {
         <form name="advaipbl_validate_2fa_backup_form" id="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ); ?>" method="post">
             <p>
                 <label for="advaipbl_2fa_code"><?php esc_html_e( 'Recovery Code', 'advanced-ip-blocker' ); ?></label>
-                <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" autocomplete="off" placeholder="XXXXX-XXXXX" />
+                <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" autocomplete="off" placeholder="XXXXX-XXXXX" autofocus />
             </p>
             <input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
             <input type="hidden" name="redirect_to" value="<?php echo esc_attr( isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '' ); ?>" />
