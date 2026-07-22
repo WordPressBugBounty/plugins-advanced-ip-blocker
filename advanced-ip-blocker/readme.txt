@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.9
+Stable tag: 8.11.10
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -257,6 +257,13 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.10 =
+*   **NEW FEATURE:** Asynchronous Challenge & Advanced Rules Metrics. Dashboard now displays real-time performance analytics for challenges served/passed/failed and top Advanced Rules triggered with zero database write-locking overhead.
+*   **CRITICAL FIX:** Resolved an interception conflict where AIB would mistakenly attempt to validate third-party Turnstile/hCaptcha responses (e.g. from WP Simple Membership or standard WP Login implementations). AIB now strictly validates its own hidden fields.
+*   **SECURITY HARDENING:** Fixed a vulnerability in the Rules Engine where an attacker could bypass a WAF challenge by injecting standard captcha response fields into a POST request.
+*   **ENHANCEMENT:** Changed the generic Google recommendation message to suggest Stripe or PayPal when users seek alternative payment options, improving international clarity.
+*   **ENHANCEMENT:** Adjusted and improved multiple translations for clarity (backported from previous 8.11.4).
+
 = 8.11.9 =
 *   **ENHANCEMENT:** Expanded default WAF exclusions to automatically cover generic WooCommerce REST API webhooks (`?wc-api=`) to natively support gateways like Mollie, Square, and Coinbase without false positives.
 *   **ENHANCEMENT:** Added common mobile icons (like `apple-touch-icon.png`) and crawler paths (`robots.txt`, `sitemap.xml`) to the default global 404/403 exclusions to prevent accidental blocking of legitimate traffic.
@@ -302,6 +309,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.10 =
+**CRITICAL FIX:** Fixes a third-party Captcha interception conflict that could block WP Login, patches a potential WAF challenge bypass, and introduces new real-time performance analytics for challenges and Advanced Rules.
 
 = 8.11.9 =
 **ENHANCEMENT:** Expands default protection rules for WooCommerce API endpoints, adds mobile/crawler exclusions to prevent 404 blocks, and includes an automatic database migrator for existing users.

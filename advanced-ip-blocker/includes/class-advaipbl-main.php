@@ -40,6 +40,8 @@ class ADVAIPBL_Main {
     public $tfa_manager;
 	public $geoip_manager;
 	public $rules_engine;
+	public $rules_metrics;
+	public $challenge_metrics;
     public $audit_logger;
     public $file_verifier;
 	private $client_ip = null;
@@ -101,6 +103,7 @@ private function __construct() {
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-threat-score-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-bot-verifier.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rules-engine.php';
+    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rules-metrics.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-fingerprint-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-abuseipdb-manager.php';
 	require_once plugin_dir_path(__FILE__) . 'class-advaipbl-htaccess-manager.php';
@@ -136,6 +139,11 @@ private function __construct() {
     $this->threat_score_manager = new ADVAIPBL_Threat_Score_Manager($this);
     $this->bot_verifier = new ADVAIPBL_Bot_Verifier($this);
     $this->rules_engine = new ADVAIPBL_Rules_Engine($this);
+    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rules-metrics.php';
+    $this->rules_metrics = new ADVAIPBL_Rules_Metrics($this);
+    
+    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-challenge-metrics.php';
+    $this->challenge_metrics = new ADVAIPBL_Challenge_Metrics($this);
     $this->fingerprint_manager = new ADVAIPBL_Fingerprint_Manager($this);
     $this->abuseipdb_manager = new ADVAIPBL_AbuseIPDB_Manager($this);
     $this->htaccess_manager = new ADVAIPBL_Htaccess_Manager($this);
@@ -4143,6 +4151,9 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             case 'impersonation':
                 /* translators: %s: The User-Agent being impersonated code. */
                 $reason = sprintf(__('Blocked for impersonating a known crawler. Fake User-Agent: %s', 'advanced-ip-blocker'), $extra_data['impersonated_user_agent'] ?? 'Unknown');
+                break;
+            case 'ghost_ip':
+                $reason = __('Anonymous IP blocked by Ghost IPs Shield.', 'advanced-ip-blocker');
                 break;			
         }
 

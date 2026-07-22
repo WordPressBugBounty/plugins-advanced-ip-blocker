@@ -686,6 +686,9 @@ public function ajax_get_advanced_rules() {
         }
         
         if ($found_rule) {
+             if (isset($this->plugin->rules_metrics)) {
+                 $found_rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($found_rule['id']);
+             }
              wp_send_json_success(['rules' => [$found_rule]]);
         } else {
              wp_send_json_error(['message' => __('Rule not found.', 'advanced-ip-blocker')]);
@@ -700,6 +703,13 @@ public function ajax_get_advanced_rules() {
     $total_items = count($all_rules);
     $total_pages = ceil($total_items / $per_page);
     $rules_for_page = array_slice($all_rules, ($page - 1) * $per_page, $per_page);
+    
+    if (isset($this->plugin->rules_metrics)) {
+        foreach ($rules_for_page as &$rule) {
+            $rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($rule['id']);
+        }
+    }
+
     wp_send_json_success([
         'rules'       => $rules_for_page,
         'pagination'  => [

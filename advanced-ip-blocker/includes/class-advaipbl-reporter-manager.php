@@ -17,6 +17,7 @@ class ADVAIPBL_Reporter_Manager {
     'rate_limit',
     'aib_network',
     'impersonation',
+    'ghost_ip',
 ];
 
     public function __construct( ADVAIPBL_Main $plugin_instance ) {

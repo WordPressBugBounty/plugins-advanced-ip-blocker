@@ -24,27 +24,52 @@ class ADVAIPBL_Dashboard_Manager {
      * @return array
      */
     public function get_dashboard_stats() {
-    $this->main_class->limpiar_ips_expiradas();
+        $this->main_class->limpiar_ips_expiradas();
 
-    $days = 7;
-    $date_after = gmdate('Y-m-d H:i:s', strtotime("-{$days} days"));
+        $days = 7;
+        $date_after = gmdate('Y-m-d H:i:s', strtotime("-{$days} days"));
 
-    // Obtenemos los datos de los ataques para el mapa una sola vez.
-    $live_attacks_data = $this->get_recent_attacks_for_map();
+        // Obtenemos los datos de los ataques para el mapa una sola vez.
+        $live_attacks_data = $this->get_recent_attacks_for_map();
 
-    return [
-        'summary'            => $this->get_summary_stats($date_after),
-        'timeline'           => $this->get_timeline_stats($days, $date_after),
-        'top_ips'            => $this->get_top_attackers($date_after),
-        'top_countries'      => $this->get_top_countries($date_after),
-        'system_status'      => $this->get_system_status(),
-        'live_attacks'       => $live_attacks_data,
+        // Procesar las métricas de reglas avanzadas para inyectar el nombre de la regla y ordenarlas
+        $raw_rules_metrics = isset($this->main_class->rules_metrics) ? $this->main_class->rules_metrics->get_metrics() : [];
+        $advanced_rules = $this->main_class->rules_engine->get_rules();
+        $processed_rules_metrics = [];
+        
+        foreach ($raw_rules_metrics as $rule_id => $metrics) {
+            $rule_name = 'Unknown Rule';
+            foreach ($advanced_rules as $rule) {
+                if ($rule['id'] === $rule_id) {
+                    $rule_name = $rule['name'];
+                    break;
+                }
+            }
+            $processed_rules_metrics[] = [
+                'id' => $rule_id,
+                'name' => $rule_name,
+                'hits' => $metrics['hits'] ?? 0,
+                'passed' => $metrics['passed'] ?? 0
+            ];
+        }
+        
+        // Ordenar por hits descendente
+        usort($processed_rules_metrics, function($a, $b) {
+            return $b['hits'] <=> $a['hits'];
+        });
 
-        // Añadimos el contador de IPs bloqueadas activas.
-        'blocked_ips_count'  => count($live_attacks_data),
-
-    ];
-}
+        return [
+            'summary'            => $this->get_summary_stats($date_after),
+            'timeline'           => $this->get_timeline_stats($days, $date_after),
+            'top_ips'            => $this->get_top_attackers($date_after),
+            'top_countries'      => $this->get_top_countries($date_after),
+            'system_status'      => $this->get_system_status(),
+            'live_attacks'       => $live_attacks_data,
+            'blocked_ips_count'  => count($live_attacks_data),
+            'challenge_stats'    => isset($this->main_class->challenge_metrics) ? $this->main_class->challenge_metrics->get_historical_stats() : [],
+            'advanced_rules_stats'=> array_slice($processed_rules_metrics, 0, 5), // Top 5
+        ];
+    }
 
     /**
      * Obtiene estadísticas de resumen: total de bloqueos y desglose por tipo.
@@ -55,7 +80,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT log_type, COUNT(*) as count
@@ -89,7 +114,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT DATE(timestamp) as day, COUNT(*) as count
@@ -129,7 +154,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT ip, COUNT(*) as count
@@ -155,7 +180,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT JSON_UNQUOTE(JSON_EXTRACT(details, '$.country')) as country, 
@@ -188,7 +213,7 @@ class ADVAIPBL_Dashboard_Manager {
 
         $spamhaus_asns = get_option('advaipbl_spamhaus_asn_list', []);
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $blocked_count = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COUNT(DISTINCT ip)

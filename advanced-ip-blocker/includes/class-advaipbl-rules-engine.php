@@ -87,7 +87,7 @@ private function sanitize_rule(array $rule_data) {
     }
 
     $sanitized_rule['conditions'] = [];
-    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer'];
+    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header'];
     $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex', 'is_empty', 'is_not_empty'];
 
     foreach ($rule_data['conditions'] as $condition) {
@@ -108,6 +108,7 @@ private function sanitize_rule(array $rule_data) {
         $sanitized_condition = [
             'type'     => $condition['type'],
             'operator' => $condition['operator'],
+            'target'   => isset($condition['target']) ? sanitize_text_field($condition['target']) : '',
             'value'    => isset($condition['value']) ? sanitize_text_field($condition['value']) : '' // Sanitización genérica y segura para todos los valores.
         ];
         
@@ -335,6 +336,19 @@ private function check_condition($condition, $ip) {
         case 'referer':
             $subject = $_SERVER['HTTP_REFERER'] ?? '';
             break;
+        case 'cookie':
+            $target = $condition['target'] ?? '';
+            $subject = (!empty($target) && isset($_COOKIE[$target])) ? $_COOKIE[$target] : '';
+            break;
+        case 'header':
+            $target = $condition['target'] ?? '';
+            if (empty($target)) {
+                $subject = '';
+            } else {
+                $header_key = 'HTTP_' . strtoupper(str_replace('-', '_', $target));
+                $subject = isset($_SERVER[$header_key]) ? $_SERVER[$header_key] : '';
+            }
+            break;
         default:
             return false;
     }
@@ -402,6 +416,11 @@ private function execute_action($rule, $ip) {
     $params = $rule['action_params'] ?? [];
     $rule_name = $rule['name'] ?? 'Untitled Rule';
 
+    // Increment analytics counter
+    if (isset($this->plugin->rules_metrics) && !empty($rule['id'])) {
+        $this->plugin->rules_metrics->increment($rule['id'], 'hits');
+    }
+
     // Preparamos los datos de log comunes para todas las acciones
     $log_data = [
         'rule_id'   => $rule['id'],
@@ -442,7 +461,7 @@ private function execute_action($rule, $ip) {
             // Si el usuario está enviando el resultado del desafío, permitimos que el flujo
             // continúe para que verify_submission lo valide, en lugar de servir el desafío de nuevo (bucle).
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            if (isset($_POST['_advaipbl_js_token']) || isset($_POST['cf-turnstile-response']) || isset($_POST['h-captcha-response'])) {
+            if (isset($_POST['_advaipbl_js_token']) || isset($_POST['_advaipbl_challenge_type'])) {
                 return false;
             }
 

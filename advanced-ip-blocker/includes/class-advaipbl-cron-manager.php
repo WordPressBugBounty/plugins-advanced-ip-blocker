@@ -149,6 +149,16 @@ class ADVAIPBL_Cron_Manager {
             wp_schedule_event(time(), 'hourly', 'advaipbl_clear_expired_blocks_event');
         }
 
+        // 7b. Aggregate Rule Metrics (Hourly)
+        if (!wp_next_scheduled('advaipbl_aggregate_rules_metrics')) {
+            wp_schedule_event(time(), 'hourly', 'advaipbl_aggregate_rules_metrics');
+        }
+
+        // 7c. Aggregate Challenge Metrics (Hourly)
+        if (!wp_next_scheduled('advaipbl_aggregate_challenge_metrics')) {
+            wp_schedule_event(time(), 'hourly', 'advaipbl_aggregate_challenge_metrics');
+        }
+
         // 8. Cleanup Cache (Daily)
         if (!wp_next_scheduled('advaipbl_cleanup_expired_cache_event')) {
             wp_schedule_event(time(), 'daily', 'advaipbl_cleanup_expired_cache_event');

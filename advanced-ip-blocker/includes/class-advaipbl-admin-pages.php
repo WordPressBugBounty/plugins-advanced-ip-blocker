@@ -424,7 +424,7 @@ public function display_asn_blocking_tab() {
                 <!-- Columna 3: Whitelist ASN -->
                 <h3 style="margin-bottom: 1em;"><?php esc_html_e('ASN Whitelist', 'advanced-ip-blocker'); ?></h3>
                 <p><?php esc_html_e('Add one ASN per line to always allow traffic from that network. This will override ALL other blocking rules, including the WAF and Signature Engine.', 'advanced-ip-blocker'); ?></p>
-                <p class="description"><?php esc_html_e('Useful for trusted services like Google (AS15169) or Cloudflare (AS13335) to prevent false positives.', 'advanced-ip-blocker'); ?></p>
+                <p class="description"><?php esc_html_e('Useful for trusted services like Stripe (AS5091) or PayPal (AS17012) to prevent false positives.', 'advanced-ip-blocker'); ?></p>
                 <textarea name="whitelisted_asns" rows="10" class="large-text code" style="width: 100%;" <?php disabled(!$is_compatible); ?>><?php echo esc_textarea(implode("\n", get_option(ADVAIPBL_Main::OPTION_WHITELISTED_ASNS, []))); ?></textarea>
 
             </div>
@@ -861,6 +861,23 @@ public function display_dashboard_tab() {
                     <h3><?php esc_html_e('Threat Activity Timeline', 'advanced-ip-blocker'); ?></h3>
                     <div class="advaipbl-timeline-chart-container">
                         <canvas id="advaipbl-timeline-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fila 4: Dos columnas (Métricas Avanzadas) -->
+            <div class="advaipbl-dashboard-row">
+                <div class="advaipbl-dashboard-widget widget-third">
+                    <h3><?php esc_html_e('Challenges Overview', 'advanced-ip-blocker'); ?></h3>
+                    <div class="advaipbl-summary-stats" style="min-height: 300px;">
+                        <div class="advaipbl-summary-chart" style="min-height: 250px;"><canvas id="advaipbl-challenges-chart"></canvas></div>
+                        <div id="advaipbl-challenges-legend" class="advaipbl-summary-legend"></div>
+                    </div>
+                </div>
+                <div class="advaipbl-dashboard-widget widget-two-thirds">
+                    <h3><?php esc_html_e('Advanced Rules Hits', 'advanced-ip-blocker'); ?></h3>
+                    <div class="advaipbl-summary-stats" style="display: block; width: 100%; min-height: 300px;">
+                        <canvas id="advaipbl-advanced-rules-chart" style="height: 100%; min-height: 300px; width: 100%;"></canvas>
                     </div>
                 </div>
             </div>
@@ -3699,7 +3716,10 @@ $status_parts[] = sprintf(
                 <option value="username"><?php esc_html_e('Username (Login)', 'advanced-ip-blocker'); ?></option>
                 <option value="request_method"><?php esc_html_e('Request Method', 'advanced-ip-blocker'); ?></option>
                 <option value="referer"><?php esc_html_e('Referer', 'advanced-ip-blocker'); ?></option>
+                <option value="cookie"><?php esc_html_e('Cookie', 'advanced-ip-blocker'); ?></option>
+                <option value="header"><?php esc_html_e('Request Header', 'advanced-ip-blocker'); ?></option>
             </select>
+            <div class="condition-target-container" style="display:none; margin-right: 5px;"></div>
             <select class="condition-operator"></select>
             <div class="condition-value-container"></div>
             <button class="button button-link-delete remove-condition" title="<?php esc_attr_e('Remove condition', 'advanced-ip-blocker'); ?>"><span class="dashicons dashicons-no-alt"></span></button>

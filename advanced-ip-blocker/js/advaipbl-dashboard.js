@@ -56,6 +56,79 @@ jQuery(document).ready(function ($) {
         renderTopLists(data.top_ips, data.top_countries);
         renderSystemStatus(data.system_status);
         renderLiveAttackMap(data.live_attacks);
+        renderChallengesOverviewWidget(data.challenge_stats);
+        renderAdvancedRulesWidget(data.advanced_rules_stats);
+    }
+
+    function renderChallengesOverviewWidget(challengeStats) {
+        const ctx = document.getElementById('advaipbl-challenges-chart');
+        if (!ctx) return;
+        
+        let totalServed = 0, totalPassed = 0, totalFailed = 0;
+        
+        if (challengeStats && Object.keys(challengeStats).length > 0) {
+            Object.values(challengeStats).forEach(day => {
+                totalServed += (day.served || 0);
+                totalPassed += (day.passed || 0);
+                totalFailed += (day.failed || 0);
+            });
+        }
+        
+        const labels = ['Served', 'Passed', 'Failed'];
+        const values = [totalServed, totalPassed, totalFailed];
+        const colors = ['#3498db', '#2ecc71', '#e74c3c'];
+
+        new Chart(ctx, { 
+            type: 'doughnut', 
+            data: { 
+                labels: labels, 
+                datasets: [{ data: values, backgroundColor: colors, hoverOffset: 4 }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } } 
+            } 
+        }); 
+        
+        const legendContainer = $('#advaipbl-challenges-legend'); 
+        legendContainer.empty(); 
+        let legendHtml = `<h4>Total Served: <strong>${totalServed}</strong></h4>`; 
+        labels.forEach((label, index) => { 
+            const count = values[index]; 
+            const color = colors[index]; 
+            legendHtml += `<div class="legend-item"><span class="legend-label-group"><span class="legend-color-box" style="background-color: ${color};"></span><span class="legend-label">${label}</span></span><span class="legend-value">${count}</span></div>`; 
+        }); 
+        legendContainer.html(legendHtml);
+    }
+
+    function renderAdvancedRulesWidget(rulesStats) {
+        const ctx = document.getElementById('advaipbl-advanced-rules-chart');
+        if (!ctx || !rulesStats || rulesStats.length === 0) return;
+
+        const labels = rulesStats.map(rule => rule.name);
+        const dataHits = rulesStats.map(rule => rule.hits);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Hits',
+                    data: dataHits,
+                    backgroundColor: '#9b59b6',
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
     }
 
     function renderSummaryWidget(summaryData) { const ctx = document.getElementById('advaipbl-attack-type-chart'); if (!ctx || !summaryData || !summaryData.by_type) return; const labels = Object.keys(summaryData.by_type); const values = Object.values(summaryData.by_type); new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ label: 'Attacks by Type', data: values, backgroundColor: chartColors, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); const legendContainer = $('#advaipbl-summary-legend'); legendContainer.empty(); let legendHtml = `<h4>Total Blocked: <strong>${summaryData.total}</strong></h4>`; labels.forEach((label, index) => { const count = values[index]; const color = chartColors[index % chartColors.length]; legendHtml += `<div class="legend-item"><span class="legend-label-group"><span class="legend-color-box" style="background-color: ${color};"></span><span class="legend-label">${label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span></span><span class="legend-value">${count}</span></div>`; }); legendContainer.html(legendHtml); }

@@ -147,9 +147,15 @@ class ADVAIPBL_JS_Challenge {
         }
 
         if ($is_valid) {
+            if (isset($this->plugin->challenge_metrics)) {
+                $this->plugin->challenge_metrics->increment('passed');
+            }
             set_transient('advaipbl_grace_pass_' . md5($ip), true, 15);
             $this->set_vip_pass_cookie($cookie_duration, $ip);
         } else {
+            if (isset($this->plugin->challenge_metrics)) {
+                $this->plugin->challenge_metrics->increment('failed');
+            }
             $this->plugin->log_event("JS Challenge verification failed (IP: {$ip}).", 'warning', [
                 'action' => 'js_challenge_failed'
             ]);
@@ -217,6 +223,10 @@ class ADVAIPBL_JS_Challenge {
     }
 
     public function serve_challenge($challenge_type, $challenge_mode = 'managed') {
+        if (isset($this->plugin->challenge_metrics)) {
+            $this->plugin->challenge_metrics->increment('served');
+        }
+
         $global_engine = $this->plugin->options['default_challenge_engine'] ?? 'js_managed';
         
         // If mode is default (or legacy managed/automatic), use the global engine

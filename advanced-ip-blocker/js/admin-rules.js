@@ -323,7 +323,18 @@ jQuery(document).ready(function ($) {
         function updateValueInput(conditionRow) {
             const type = conditionRow.find('.condition-type').val();
             const valueContainer = conditionRow.find('.condition-value-container');
+            const targetContainer = conditionRow.find('.condition-target-container');
+            
             valueContainer.empty();
+            targetContainer.empty();
+            targetContainer.hide();
+            
+            if (type === 'cookie' || type === 'header') {
+                targetContainer.show();
+                let targetPlaceholder = type === 'cookie' ? 'Cookie Name' : 'Header Name (e.g., Sec-Fetch-Dest)';
+                targetContainer.append($('<input>', { type: 'text', class: 'condition-target', placeholder: targetPlaceholder }));
+            }
+            
             if (type === 'country') {
                 const select = $('<select>', { class: 'condition-value', style: 'width: 100%;' });
                 select.append(new Option('', '', false, false));
@@ -350,6 +361,8 @@ jQuery(document).ready(function ($) {
                 if (type === 'user_agent') placeholder = 'e.g., BadBot/1.0';
                 if (type === 'username') placeholder = 'e.g., admin';
                 if (type === 'referer') placeholder = 'e.g., badsite.com';
+                if (type === 'cookie') placeholder = 'e.g., cookie_value';
+                if (type === 'header') placeholder = 'e.g., header_value';
                 valueContainer.append($('<input>', { type: 'text', class: 'condition-value', placeholder: placeholder }));
             }
         }
@@ -364,6 +377,9 @@ jQuery(document).ready(function ($) {
                 updateOperatorDropdown(newRow);
                 updateValueInput(newRow);
                 newRow.find('.condition-operator').val(condition.operator);
+                if (condition.target) {
+                    newRow.find('.condition-target').val(condition.target);
+                }
                 if (condition.type === 'country') {
                     newRow.find('.condition-value').val(condition.value).trigger('change');
                 } else {
@@ -388,7 +404,7 @@ jQuery(document).ready(function ($) {
         }
 
         function renderRule(rule) {
-            let conditionsHtml = rule.conditions.map(c => `<li><span class="rule-component-type">${c.type.replace('_', ' ')}</span> <span class="rule-component-operator">${c.operator.replace('_', ' ')}</span> <code class="rule-component-value">${c.value}</code></li>`).join('');
+            let conditionsHtml = rule.conditions.map(c => `<li><span class="rule-component-type">${c.type.replace('_', ' ')}</span>${c.target ? ` <code class="rule-component-target">${c.target}</code>` : ''} <span class="rule-component-operator">${c.operator.replace('_', ' ')}</span> <code class="rule-component-value">${c.value}</code></li>`).join('');
             let actionHtml = `<span class="rule-action-type" data-action="${rule.action}">${rule.action}</span>`;
             if (rule.action_params) {
                 if (rule.action_params.duration !== undefined) actionHtml += ` <span class="rule-action-param">(${rule.action_params.duration > 0 ? rule.action_params.duration + ' min' : 'permanent'})</span>`;
@@ -412,6 +428,7 @@ jQuery(document).ready(function ($) {
             </div>
             <div class="rule-action">
                 <strong>THEN:</strong> ${actionHtml}
+                ${rule.metrics ? `<span style="display: inline-block; margin-left: 15px; padding: 2px 6px; background: #f0f0f1; border-radius: 3px; color: #50575e; font-size: 12px; font-weight: 500;" title="Total times this rule was triggered"><span class="dashicons dashicons-chart-bar" style="font-size: 14px; width: 14px; height: 14px; line-height: 14px; vertical-align: text-top;"></span> Hits: ${rule.metrics.hits || 0}</span>` : ''}
             </div>
             <div class="rule-actions">
                 <button class="button button-secondary move-rule-up" title="Move Up"><span class="dashicons dashicons-arrow-up-alt2"></span></button>
@@ -616,7 +633,7 @@ jQuery(document).ready(function ($) {
         $('#advaipbl-add-condition-btn').on('click', addConditionRow);
         $('#advaipbl-rule-action').on('change', updateActionParams);
 
-        $('#advaipbl-save-rule-btn').on('click', function () { const button = $(this); button.prop('disabled', true); const feedback = $('#advaipbl-rule-builder-feedback'); feedback.text('Saving...').css('color', ''); const rule = { id: $('#advaipbl-rule-id').val(), name: $('#advaipbl-rule-name').val().trim(), conditions: [], action: $('#advaipbl-rule-action').val(), action_params: {} }; if (!rule.name) { feedback.text('Rule name is required.').css('color', 'red'); button.prop('disabled', false); return; } conditionsContainer.find('.advaipbl-condition-row').each(function () { const row = $(this); rule.conditions.push({ type: row.find('.condition-type').val(), operator: row.find('.condition-operator').val(), value: row.find('.condition-value').val() }); }); if (rule.action === 'block') rule.action_params.duration = parseInt($('#param-duration').val()) || 0; if (rule.action === 'score') rule.action_params.points = parseInt($('#param-points').val()) || 10; $.post(ajaxurl, { action: 'advaipbl_save_advanced_rule', nonce: adminData.nonces.save_rule_nonce, rule: JSON.stringify(rule) }).done(function (response) { if (response.success) { feedback.text(response.data.message).css('color', 'green'); setTimeout(() => { modal.hide(); loadRules(); }, 1000); } else { feedback.text(response.data.message).css('color', 'red'); } }).fail(function () { feedback.text('An AJAX error occurred.').css('color', 'red'); }).always(function () { button.prop('disabled', false); }); });
+        $('#advaipbl-save-rule-btn').on('click', function () { const button = $(this); button.prop('disabled', true); const feedback = $('#advaipbl-rule-builder-feedback'); feedback.text('Saving...').css('color', ''); const rule = { id: $('#advaipbl-rule-id').val(), name: $('#advaipbl-rule-name').val().trim(), conditions: [], action: $('#advaipbl-rule-action').val(), action_params: {} }; if (!rule.name) { feedback.text('Rule name is required.').css('color', 'red'); button.prop('disabled', false); return; } conditionsContainer.find('.advaipbl-condition-row').each(function () { const row = $(this); rule.conditions.push({ type: row.find('.condition-type').val(), target: row.find('.condition-target').val() || '', operator: row.find('.condition-operator').val(), value: row.find('.condition-value').val() }); }); if (rule.action === 'block') rule.action_params.duration = parseInt($('#param-duration').val()) || 0; if (rule.action === 'score') rule.action_params.points = parseInt($('#param-points').val()) || 10; $.post(ajaxurl, { action: 'advaipbl_save_advanced_rule', nonce: adminData.nonces.save_rule_nonce, rule: JSON.stringify(rule) }).done(function (response) { if (response.success) { feedback.text(response.data.message).css('color', 'green'); setTimeout(() => { modal.hide(); loadRules(); }, 1000); } else { feedback.text(response.data.message).css('color', 'red'); } }).fail(function () { feedback.text('An AJAX error occurred.').css('color', 'red'); }).always(function () { button.prop('disabled', false); }); });
         rulesListContainer.on('click', '.delete-rule', function (e) {
             e.preventDefault();
             const card = $(this).closest('.advaipbl-rule-card');

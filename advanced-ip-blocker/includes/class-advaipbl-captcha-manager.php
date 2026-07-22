@@ -23,6 +23,10 @@ class ADVAIPBL_Captcha_Manager {
      * Verifica la respuesta de un Captcha si se ha enviado.
      */
     public function verify_submission() {
+        if (!isset($_POST['_advaipbl_challenge_type'])) {
+            return;
+        }
+
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (!isset($_POST['cf-turnstile-response']) && !isset($_POST['h-captcha-response'])) {
             return;
@@ -83,6 +87,9 @@ class ADVAIPBL_Captcha_Manager {
         }
 
         if ($is_valid) {
+            if (isset($this->plugin->challenge_metrics)) {
+                $this->plugin->challenge_metrics->increment('passed');
+            }
             // Set grace pass transient to avoid instant loops due to caching
             set_transient('advaipbl_grace_pass_' . md5($ip), true, 15);
             // Set cookie and reload
@@ -100,6 +107,9 @@ class ADVAIPBL_Captcha_Manager {
             wp_safe_redirect($redirect_to);
             exit;
         } else {
+            if (isset($this->plugin->challenge_metrics)) {
+                $this->plugin->challenge_metrics->increment('failed');
+            }
             $this->plugin->log_event("{$engine} verification failed.", 'warning', ['ip' => $ip, 'token' => substr($token, 0, 10) . '...']);
             wp_die(
                 esc_html__('Verification failed. Please try again.', 'advanced-ip-blocker'),
@@ -113,6 +123,10 @@ class ADVAIPBL_Captcha_Manager {
      * Sirve el desafío Captcha (Turnstile o hCaptcha).
      */
     public function serve_challenge($challenge_type, $engine, $challenge_mode = 'managed') {
+        if (isset($this->plugin->challenge_metrics)) {
+            $this->plugin->challenge_metrics->increment('served');
+        }
+
         if (!defined('DONOTCACHEPAGE')) define('DONOTCACHEPAGE', true);
         if (headers_sent()) { return; }
         
