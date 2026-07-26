@@ -23,6 +23,7 @@ class ADVAIPBL_Captcha_Manager {
      * Verifica la respuesta de un Captcha si se ha enviado.
      */
     public function verify_submission() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- CAPTCHA submission occurs prior to authenticated sessions/nonces.
         if (!isset($_POST['_advaipbl_challenge_type'])) {
             return;
         }

@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.10
+Stable tag: 8.11.11
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -257,6 +257,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.11 =
+*   **ENHANCEMENT:** Added 'Export Selected' option to the Advanced Rules Bulk Actions menu, allowing power users to easily backup or share specific rule subsets.
+*   **ENHANCEMENT:** Added the 'Block Ghost IPs / Anonymous Traffic' setting to Step 2 of the initial Setup Wizard, enabling out-of-the-box protection against HTTP/1.0 scanner bots with missing Host headers.
+
 = 8.11.10 =
 *   **NEW FEATURE:** Asynchronous Challenge & Advanced Rules Metrics. Dashboard now displays real-time performance analytics for challenges served/passed/failed and top Advanced Rules triggered with zero database write-locking overhead.
 *   **CRITICAL FIX:** Resolved an interception conflict where AIB would mistakenly attempt to validate third-party Turnstile/hCaptcha responses (e.g. from WP Simple Membership or standard WP Login implementations). AIB now strictly validates its own hidden fields.
@@ -309,6 +313,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.11 =
+**ENHANCEMENT:** Adds a new Bulk Action in the Advanced Rules manager to selectively export specific rules, and includes the Ghost IP Shield inside Step 2 of the initial Setup Wizard for easier out-of-the-box hardening.
 
 = 8.11.10 =
 **CRITICAL FIX:** Fixes a third-party Captcha interception conflict that could block WP Login, patches a potential WAF challenge bypass, and introduces new real-time performance analytics for challenges and Advanced Rules.

@@ -3368,6 +3368,15 @@ public function render_import_export_controls_callback() {
                                 </div>
                             </label>
                         </div>
+                        <div class="wizard-option-item">
+                            <label>
+                                <input type="checkbox" name="activate_ghost_ips" value="1" checked>
+                                <div>
+                                    <strong><?php esc_html_e( 'Block Ghost IPs / Anonymous Traffic', 'advanced-ip-blocker' ); ?></strong>
+                                    <p class="description"><?php esc_html_e( 'Instantly drops malicious HTTP/1.0 requests with missing Host headers typical of legacy vulnerability scanners.', 'advanced-ip-blocker' ); ?></p>
+                                </div>
+                            </label>
+                        </div>
                         
                     </div>
                     <p class="submit">
@@ -3582,6 +3591,7 @@ $status_parts[] = sprintf(
         <select name="action" class="advaipbl-adv-rules-bulk-action">
             <option value="-1"><?php esc_html_e('Bulk Actions', 'advanced-ip-blocker'); ?></option>
             <option value="delete"><?php esc_html_e('Delete', 'advanced-ip-blocker'); ?></option>
+            <option value="export"><?php esc_html_e('Export Selected', 'advanced-ip-blocker'); ?></option>
         </select>
         <button type="button" class="button action advaipbl-apply-bulk-action"><?php esc_html_e('Apply', 'advanced-ip-blocker'); ?></button>
     </div>
@@ -3600,6 +3610,7 @@ $status_parts[] = sprintf(
         <select name="action2" class="advaipbl-adv-rules-bulk-action">
             <option value="-1"><?php esc_html_e('Bulk Actions', 'advanced-ip-blocker'); ?></option>
             <option value="delete"><?php esc_html_e('Delete', 'advanced-ip-blocker'); ?></option>
+            <option value="export"><?php esc_html_e('Export Selected', 'advanced-ip-blocker'); ?></option>
         </select>
         <button type="button" class="button action advaipbl-apply-bulk-action"><?php esc_html_e('Apply', 'advanced-ip-blocker'); ?></button>
     </div>

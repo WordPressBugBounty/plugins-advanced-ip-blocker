@@ -405,6 +405,13 @@ public function handle_wizard_step_2() {
         $options['enable_xmlrpc_protection'] = '0';
     }
 
+    // Activar Ghost IP Shield si está marcado
+    if ( isset( $_POST['activate_ghost_ips'] ) && $_POST['activate_ghost_ips'] === '1' ) {
+        $options['block_ghost_ips'] = '1';
+    } else {
+        $options['block_ghost_ips'] = '0';
+    }
+
     update_option( ADVAIPBL_Main::OPTION_SETTINGS, $options );
 
     // Redirigir al siguiente paso

@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-07-22 09:04+0200\n"
+"PO-Revision-Date: 2026-07-26 10:51+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -55,8 +55,8 @@ msgstr "Respuesta no válida de ipapi.com"
 msgid "Invalid response from ipstack.com"
 msgstr "Respuesta no válida de ipstack.com"
 
-#: includes/class-advaipbl-asn-manager.php:63
 #: includes/class-advaipbl-asn-manager.php:57
+#: includes/class-advaipbl-asn-manager.php:63
 #, php-format
 msgid "Blocked ASN: %1$s (%2$s) - Source: %3$s"
 msgstr "ASN bloqueado: %1$s (%2$s) - Origen: %3$s"
@@ -168,8 +168,8 @@ msgstr "Reglas WAF actualizadas por %s."
 msgid "Spamhaus ASN list has been updated."
 msgstr "Se ha actualizado la lista ASN de Spamhaus."
 
-#: includes/class-advaipbl-main.php:337 includes/class-advaipbl-main.php:2309
-#: includes/class-advaipbl-main.php:3241
+#: includes/class-advaipbl-main.php:2309 includes/class-advaipbl-main.php:3241
+#: includes/class-advaipbl-main.php:337
 msgid "ASN Blocking"
 msgstr "Bloqueo ASN"
 
@@ -185,7 +185,7 @@ msgstr "PROTECCIÓN ACTIVA"
 msgid "PROTECTION DISABLED"
 msgstr "PROTECCIÓN DESACTIVADA"
 
-#: includes/class-advaipbl-main.php:358 includes/class-advaipbl-main.php:1964
+#: includes/class-advaipbl-main.php:1964 includes/class-advaipbl-main.php:358
 #, php-format
 msgid "Blocking %s malicious networks."
 msgstr "Bloqueando %s redes maliciosas."
@@ -198,7 +198,7 @@ msgstr "Actividad (Últimos 7 días)"
 msgid "Total IPs Blocked by this list:"
 msgstr "Total IP bloqueadas por esta lista:"
 
-#: includes/class-advaipbl-main.php:374 includes/class-advaipbl-main.php:1976
+#: includes/class-advaipbl-main.php:1976 includes/class-advaipbl-main.php:374
 #, php-format
 msgid "List updated %s ago."
 msgstr "Lista actualizada hace %s."
@@ -255,7 +255,7 @@ msgstr ""
 "<strong>ERROR</strong>: Su acción fue bloqueada porque fue marcada como "
 "automatizada."
 
-#: includes/class-advaipbl-main.php:638 includes/class-advaipbl-main.php:2339
+#: includes/class-advaipbl-main.php:2339 includes/class-advaipbl-main.php:638
 msgid "an unknown user"
 msgstr "un usuario desconocido"
 
@@ -264,7 +264,7 @@ msgstr "un usuario desconocido"
 msgid "Entry %1$s added to whitelist by %2$s."
 msgstr "La entrada %1$s fue agregada a la lista blanca por %2$s."
 
-#: includes/class-advaipbl-main.php:699 includes/class-advaipbl-main.php:4970
+#: includes/class-advaipbl-main.php:4970 includes/class-advaipbl-main.php:699
 #: includes/class-advaipbl-session-manager.php:233
 #: includes/class-advaipbl-session-manager.php:255
 #: includes/class-advaipbl-session-manager.php:271
@@ -490,8 +490,8 @@ msgstr ""
 msgid "Are you absolutely sure you want to proceed?"
 msgstr "¿Estás absolutamente seguro de que quieres continuar?"
 
-#: includes/class-advaipbl-main.php:920 includes/class-advaipbl-main.php:3907
-#: includes/class-advaipbl-main.php:5228 includes/class-advaipbl-main.php:5251
+#: includes/class-advaipbl-main.php:3907 includes/class-advaipbl-main.php:5228
+#: includes/class-advaipbl-main.php:5251 includes/class-advaipbl-main.php:920
 msgid "Add to Whitelist"
 msgstr "Añadir a Lista Blanca"
 
@@ -507,8 +507,8 @@ msgstr "Añadido exitosamente!"
 msgid "Search for a country to block..."
 msgstr "Buscar un país para bloquear..."
 
-#: includes/class-advaipbl-main.php:920 includes/class-advaipbl-main.php:5086
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:5086
+#: includes/class-advaipbl-main.php:920
 msgid "Verify"
 msgstr "Verificar"
 
@@ -544,7 +544,7 @@ msgstr "ataques"
 msgid "blocks"
 msgstr "bloqueos"
 
-#: includes/class-advaipbl-main.php:964 includes/class-advaipbl-main.php:1826
+#: includes/class-advaipbl-main.php:1826 includes/class-advaipbl-main.php:964
 #, php-format
 msgid "Honeypot URL accessed: %s"
 msgstr "Acceso a URL trampa: %s"
@@ -597,7 +597,7 @@ msgstr ""
 msgid "Access to this page has been restricted by the administrator."
 msgstr "El acceso a esta página ha sido restringido por el administrador."
 
-#: includes/class-advaipbl-main.php:1030 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1030
 msgid "Access Denied"
 msgstr "Acceso denegado"
 
@@ -636,9 +636,9 @@ msgstr "Geobloqueo"
 msgid "Honeypot"
 msgstr "Honeypot"
 
+#: includes/class-advaipbl-admin-pages.php:1506
 #: includes/class-advaipbl-main.php:1236 includes/class-advaipbl-main.php:3719
 #: includes/class-advaipbl-main.php:4263 includes/class-advaipbl-main.php:4281
-#: includes/class-advaipbl-admin-pages.php:1506
 msgid "User-Agent"
 msgstr "User-Agent"
 
@@ -696,7 +696,7 @@ msgstr ""
 msgid "Access blocked due to suspicious User-Agent."
 msgstr "Acceso bloqueado debido a agente de usuario sospechoso."
 
-#: includes/class-advaipbl-main.php:1328 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1328
 msgid "Your request was blocked by the security firewall."
 msgstr "Su solicitud fue bloqueada por el firewall de seguridad."
 
@@ -753,11 +753,10 @@ msgstr "Migrado desde el formato antiguo"
 msgid "Invalid date"
 msgstr "Fecha inválida"
 
-#: includes/class-advaipbl-main.php:1536
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1536
 #: includes/class-advaipbl-session-manager.php:327
 #: includes/class-advaipbl-session-manager.php:328
 #: includes/class-advaipbl-session-manager.php:344
-#: includes/class-advaipbl-main.php
 msgid "Unknown"
 msgstr "Desconocido"
 
@@ -848,8 +847,8 @@ msgstr "IP Bloqueada"
 msgid "Date and Time"
 msgstr "Fecha y Hora"
 
-#: includes/class-advaipbl-main.php:1982 includes/class-advaipbl-main.php:2064
-#: includes/class-advaipbl-main.php:2191 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1982
+#: includes/class-advaipbl-main.php:2064 includes/class-advaipbl-main.php:2191
 msgid "Reason"
 msgstr "Motivo"
 
@@ -923,14 +922,14 @@ msgid "Cloudflare Sync Complete. Synced: %1$d, Errors: %2$d"
 msgstr ""
 "Sincronización de Cloudflare completa. Sincronizado: %1$d, Errores: %2$d"
 
-#: includes/class-advaipbl-ajax-handler.php:738
 #: includes/class-advaipbl-admin-pages.php:1679
 #: includes/class-advaipbl-ajax-handler.php
+#: includes/class-advaipbl-ajax-handler.php:738
 msgid "Bulk Import"
 msgstr "Importación masiva"
 
-#: includes/class-advaipbl-ajax-handler.php:750
 #: includes/class-advaipbl-ajax-handler.php
+#: includes/class-advaipbl-ajax-handler.php:750
 #, php-format
 msgid "Import complete. Imported: %1$d. Skipped/Invalid/Duplicate: %2$d."
 msgstr ""
@@ -940,8 +939,8 @@ msgstr ""
 msgid "Whitelist is empty."
 msgstr "La lista blanca está vacía."
 
-#: includes/class-advaipbl-admin-pages.php:1682
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php:1682
 msgid "Export Whitelist"
 msgstr "Exportar lista blanca"
 
@@ -1029,10 +1028,10 @@ msgstr ""
 "Audite las acciones administrativas y monitoree la integridad de sus "
 "archivos de WordPress."
 
-#: includes/class-advaipbl-admin-pages.php:3395
-#: includes/class-advaipbl-main.php:3749 includes/class-advaipbl-main.php:3931
-#: includes/class-advaipbl-main.php:3063
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php:3395
+#: includes/class-advaipbl-main.php:3063 includes/class-advaipbl-main.php:3749
+#: includes/class-advaipbl-main.php:3931
 msgid "Details"
 msgstr "Detalles"
 
@@ -1080,19 +1079,19 @@ msgstr "Auditoría de actividad"
 msgid "Theme"
 msgstr "Tema"
 
-#: includes/class-advaipbl-admin-pages.php:3219
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php:3219
 msgid "Version"
 msgstr "Versión"
 
 #: includes/class-advaipbl-admin-pages.php:3220
-#: includes/class-advaipbl-main.php:4194 includes/class-advaipbl-main.php:3061
+#: includes/class-advaipbl-main.php:3061 includes/class-advaipbl-main.php:4194
 msgid "Type"
 msgstr "Tipo"
 
-#: includes/class-advaipbl-admin-pages.php:3221
-#: includes/class-advaipbl-main.php:3751 includes/class-advaipbl-main.php
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php:3221
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3751
 msgid "Status"
 msgstr "Estado"
 
@@ -1139,11 +1138,8 @@ msgstr "Regla no encontrada."
 msgid "Rule reordered successfully."
 msgstr "Regla reordenada exitosamente."
 
-#, php-format
-msgid "FAILED to send security summary to %s. Queue NOT cleared."
-msgstr "No se pudo enviar el resumen de seguridad a %s. La cola no se borró."
-
 #: includes/class-advaipbl-main.php:2111
+#, php-format
 msgid "Unknown reason"
 msgstr "Razón desconocida"
 
@@ -1196,8 +1192,8 @@ msgstr "Seguridad"
 msgid "Configuration"
 msgstr "Configuración"
 
-#: includes/class-advaipbl-main.php:2302 includes/class-advaipbl-main.php:3240
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-main.php:2302 includes/class-advaipbl-main.php:3240
 msgid "Import / Export"
 msgstr "Importar / Exportar"
 
@@ -1320,8 +1316,8 @@ msgstr "Protección del Honeypot"
 msgid "User-Agent Protection"
 msgstr "Protección User-Agent"
 
-#: includes/class-advaipbl-main.php:2360 includes/class-advaipbl-main.php:4512
-#: includes/class-advaipbl-main.php:3041 includes/class-advaipbl-main.php:3504
+#: includes/class-advaipbl-main.php:2360 includes/class-advaipbl-main.php:3041
+#: includes/class-advaipbl-main.php:3504 includes/class-advaipbl-main.php:4512
 msgid "Spamhaus ASN Protection"
 msgstr "Protección ASN de Spamhaus"
 
@@ -1699,12 +1695,12 @@ msgstr "La entrada %s no se encontró en ninguna lista de bloqueo activa."
 msgid "Manually added via admin panel"
 msgstr "Añadida manualmente a través del panel de administración"
 
-#: includes/class-advaipbl-main.php:3143 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3143
 #, php-format
 msgid "Entry %s added to whitelist and unblocked."
 msgstr "IP %s añadida a la lista blanca y desbloqueada."
 
-#: includes/class-advaipbl-main.php:3145 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3145
 #, php-format
 msgid "Entry %s was already in the whitelist or is invalid."
 msgstr "La entrada %s ya estaba en la lista blanca o no es válida."
@@ -1768,9 +1764,9 @@ msgstr "User Agents"
 msgid "Credits & Support"
 msgstr "Créditos y soporte"
 
-#: includes/class-advaipbl-main.php:3384 includes/class-advaipbl-main.php:3411
-#: includes/class-advaipbl-main.php
 #: includes/class-advaipbl-admin-pages.php:1493
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3384
+#: includes/class-advaipbl-main.php:3411
 #: includes/class-advaipbl-settings-manager.php:1639
 msgid "Cancel"
 msgstr "Cancelar"
@@ -1987,8 +1983,8 @@ msgstr "Todas las IPs Bloqueadas"
 msgid "Filter by type"
 msgstr "Filtrar por tipo"
 
-#: includes/class-advaipbl-main.php:3716
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-main.php:3716
 msgid "All Block Types"
 msgstr "Todos los Tipos de Bloqueo"
 
@@ -1997,7 +1993,7 @@ msgstr "Todos los Tipos de Bloqueo"
 msgid "ASN Block"
 msgstr "Bloqueo ASN"
 
-#: includes/class-advaipbl-main.php:3721 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3721
 msgid "Manual"
 msgstr "Manual"
 
@@ -2046,10 +2042,10 @@ msgstr "Duración"
 msgid "Location"
 msgstr "Ubicación"
 
+#: includes/class-advaipbl-2fa-users-list-table.php
 #: includes/class-advaipbl-main.php:3752 includes/class-advaipbl-main.php:3933
 #: includes/class-advaipbl-main.php:4199
 #: includes/class-advaipbl-session-manager.php:172
-#: includes/class-advaipbl-2fa-users-list-table.php
 msgid "Actions"
 msgstr "Acciones"
 
@@ -2175,19 +2171,19 @@ msgstr "Borrar registro..."
 msgid "Are you sure you want to delete all %s logs?"
 msgstr "¿Está seguro de que desea eliminar todos los registros %s?"
 
-#: includes/class-advaipbl-main.php:4171 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4171
 msgid "Confirm Log Deletion"
 msgstr "Confirmar la eliminación del registro"
 
-#: includes/class-advaipbl-main.php:4173 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4173
 msgid "Yes, Delete Logs"
 msgstr "Sí, eliminar registros"
 
-#: includes/class-advaipbl-main.php:4174 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4174
 msgid "Clear this Log"
 msgstr "Limpiar este Registro"
 
-#: includes/class-advaipbl-main.php:4196 includes/class-advaipbl-main.php:3062
+#: includes/class-advaipbl-main.php:3062 includes/class-advaipbl-main.php:4196
 msgid "Method"
 msgstr "Método"
 
@@ -2199,7 +2195,7 @@ msgstr "Activador / Detalles"
 msgid "Hide Community Blocks"
 msgstr "Ocultar Bloqueo Comunitario"
 
-#: includes/class-advaipbl-main.php:4198 includes/class-advaipbl-main.php:3065
+#: includes/class-advaipbl-main.php:3065 includes/class-advaipbl-main.php:4198
 msgid "User Agent"
 msgstr "User Agent"
 
@@ -2219,8 +2215,8 @@ msgstr "Regla:"
 msgid "Untrusted XML-RPC Request"
 msgstr "Solicitud XML-RPC no confiable"
 
-#: includes/class-advaipbl-main.php:4247
 #: includes/class-advaipbl-admin-pages.php:1476
+#: includes/class-advaipbl-main.php:4247
 msgid "Block"
 msgstr "Bloquear"
 
@@ -2405,7 +2401,7 @@ msgstr "Ver registros e IP bloqueadas"
 msgid "Manage Configuration"
 msgstr "Administrar configuración"
 
-#: includes/class-advaipbl-main.php:4423 includes/class-advaipbl-main.php:3901
+#: includes/class-advaipbl-main.php:3901 includes/class-advaipbl-main.php:4423
 msgid "Credits and Attributions"
 msgstr "Créditos y atribuciones"
 
@@ -2663,8 +2659,8 @@ msgstr "Duración User-Agent (min)"
 msgid "Block duration for IPs with a malicious User-Agent."
 msgstr "Duración del bloqueo para IP con un User-Agent. malicioso."
 
-#: includes/class-advaipbl-main.php:4512 includes/class-advaipbl-main.php:3041
-#: includes/class-advaipbl-main.php:3504
+#: includes/class-advaipbl-main.php:3041 includes/class-advaipbl-main.php:3504
+#: includes/class-advaipbl-main.php:4512
 msgid "Enable automatic blocking using the Spamhaus ASN DROP list."
 msgstr ""
 "Habilite el bloqueo automático mediante la lista DROP de ASN de Spamhaus."
@@ -2950,8 +2946,8 @@ msgstr ""
 msgid "Provider is missing."
 msgstr "Falta el proveedor."
 
-#: includes/class-advaipbl-main.php:4986
 #: includes/class-advaipbl-abuseipdb-manager.php:116
+#: includes/class-advaipbl-main.php:4986
 msgid "API Key is valid!"
 msgstr "¡La clave API es válida!"
 
@@ -3086,8 +3082,8 @@ msgstr "Entorno del servidor"
 msgid "Web Server"
 msgstr "Web Server"
 
-#: includes/class-advaipbl-main.php:5315
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-main.php:5315
 msgid "PHP Version"
 msgstr "PHP Version"
 
@@ -3243,8 +3239,8 @@ msgstr "¡Todo claro!"
 msgid "No potential configuration issues were detected."
 msgstr "No se detectaron posibles problemas de configuración."
 
-#: includes/class-advaipbl-main.php:5457
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-main.php:5457
 msgid "Export Configuration"
 msgstr "Configuración de exportación"
 
@@ -3256,8 +3252,8 @@ msgstr ""
 "Descarga un archivo JSON con la configuración de tu plugin. Elige el formato "
 "adecuado a tus necesidades."
 
-#: includes/class-advaipbl-main.php:5465
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-main.php:5465
 msgid "Export Template (No API Keys)"
 msgstr "Plantilla de exportación (sin claves API)"
 
@@ -3269,8 +3265,8 @@ msgstr ""
 "Ideal para migrar tus reglas a otro sitio web. Este archivo excluye todas "
 "las claves API secretas."
 
-#: includes/class-advaipbl-main.php:5474
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-main.php:5474
 msgid "Export Full Backup (With API Keys)"
 msgstr "Exportar copia de seguridad completa (con claves API)"
 
@@ -3396,8 +3392,8 @@ msgstr "Por favor seleccione un rol."
 msgid "Close User Sessions"
 msgstr "Cerrar Ssesiones"
 
-#: includes/class-advaipbl-session-manager.php:37
 #: includes/class-advaipbl-session-manager.php:198
+#: includes/class-advaipbl-session-manager.php:37
 msgid "Close All Sessions"
 msgstr "Cerrar Todas las Sesiones"
 
@@ -3444,14 +3440,14 @@ msgid_plural "%s sessions"
 msgstr[0] "%s sesión"
 msgstr[1] "%s sesiones"
 
-#: includes/class-advaipbl-session-manager.php:166
-#: includes/class-advaipbl-main.php:4050
 #: includes/class-advaipbl-2fa-users-list-table.php
+#: includes/class-advaipbl-main.php:4050
+#: includes/class-advaipbl-session-manager.php:166
 msgid "User"
 msgstr "Usuario"
 
-#: includes/class-advaipbl-session-manager.php:167
 #: includes/class-advaipbl-2fa-users-list-table.php
+#: includes/class-advaipbl-session-manager.php:167
 msgid "Role"
 msgstr "Rol"
 
@@ -3459,8 +3455,8 @@ msgstr "Rol"
 msgid "ISP / Organization"
 msgstr "ISP / Organización"
 
-#: includes/class-advaipbl-session-manager.php:171
 #: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-session-manager.php:171
 msgid "Last Activity"
 msgstr "Última Actividad"
 
@@ -3515,8 +3511,8 @@ msgstr "Acción no permitida."
 msgid "ASN Protection"
 msgstr "Protección ASN"
 
-#: includes/class-advaipbl-main.php:3042 js/advaipbl-dashboard.js:190
-#: includes/class-advaipbl-main.php:3505
+#: includes/class-advaipbl-main.php:3042 includes/class-advaipbl-main.php:3505
+#: js/advaipbl-dashboard.js:190
 msgid "Manual ASN Protection"
 msgstr "Protección ASN Manual"
 
@@ -3961,7 +3957,7 @@ msgstr "Acción por lote"
 msgid "Apply"
 msgstr "Aplicar"
 
-#: includes/class-advaipbl-main.php:4838 includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4838
 msgid "%d entry has been unblocked."
 msgid_plural "%d entries have been unblocked."
 msgstr[0] "Se ha desbloqueado  %d IP."
@@ -3971,7 +3967,7 @@ msgstr[1] "Se han desbloqueado %d  IPs."
 msgid "No valid entries were selected for unblocking."
 msgstr "No se seleccionaron entradas válidas para desbloquear."
 
-#: js/advaipbl-admin.js:347 includes/class-advaipbl-main.php:1221
+#: includes/class-advaipbl-main.php:1221 js/advaipbl-admin.js:347
 msgid "Confirm Bulk Action"
 msgstr "Confirmar acción por lote"
 
@@ -3983,7 +3979,7 @@ msgstr ""
 "¿Seguro que quieres desbloquear las IPs seleccionadas? Esto las eliminará de "
 "todas las listas de bloqueo."
 
-#: js/advaipbl-admin.js:349 includes/class-advaipbl-main.php:1223
+#: includes/class-advaipbl-main.php:1223 js/advaipbl-admin.js:349
 msgid "Yes, Unblock Selected"
 msgstr "Sí, desbloquear seleccionada"
 
@@ -4048,7 +4044,7 @@ msgstr "IP/Ubicación"
 msgid "Threat score threshold exceeded: %1$d/%2$d"
 msgstr "Umbral de puntuación de amenaza excedido: %1$d/%2$d"
 
-#: includes/class-advaipbl-main.php (en register_settings y callbacks)
+#: (en callbacks) includes/class-advaipbl-main.php register_settings y
 msgid "IP Trust & Threat Scoring"
 msgstr "Puntuación de confianza y amenazas de IP"
 
@@ -5045,8 +5041,8 @@ msgstr "Buscar por IP o User Agent..."
 msgid "Are you sure you want to delete all WP-Cron logs?"
 msgstr "¿Estás seguro de que quieres eliminar todos los registros de WP-Cron?"
 
-#: includes/class-advaipbl-main.php
 #: includes/class-advaipbl-admin-pages.php:1501
+#: includes/class-advaipbl-main.php
 msgid "IP Address"
 msgstr "Dirección IP"
 
@@ -5130,7 +5126,7 @@ msgstr ""
 msgid "Installed"
 msgstr "Instalado"
 
-#: includes/class-advaipbl-main.php includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php includes/class-advaipbl-main.php
 msgid "Not Found"
 msgstr "No encontrado"
 
@@ -5927,7 +5923,7 @@ msgstr ""
 msgid "needs to review the security of your connection before proceeding."
 msgstr "necesita revisar la seguridad de su conexión antes de continuar."
 
-#: includes/class-advaipbl-main.php includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php includes/class-advaipbl-main.php
 msgid "Setup Wizard"
 msgstr "Asistente de configuración"
 
@@ -6753,7 +6749,7 @@ msgid "Real-time IP reputation checking will be temporarily paused."
 msgstr ""
 "La comprobación de reputación IP en tiempo real se pausará temporalmente."
 
-#: includes/class-advaipbl-main.php: (nÃºmero de lÃ­nea la funciÃ³n)
+#: (nÃºmero de funciÃ³n) includes/class-advaipbl-main.php: la lÃ­nea
 #, fuzzy, php-format
 #| msgid ""
 #| "> • *Action Required:* Consider <%1$s|verifying your domain> to triple "
@@ -7962,12 +7958,6 @@ msgid "Error occurred during scan."
 msgstr "Se produjo un error durante el escaneo."
 
 #: includes/class-advaipbl-main.php:1685
-msgid "Please provide a reason/detail for these IPs (Required)."
-msgstr "Proporcione un motivo/detalle para estas IP (obligatorio)."
-
-msgid "Check SSL Certificate"
-msgstr "Verificar certificado SSL"
-
 msgid "Enable SSL/TLS certificate validation."
 msgstr "Habilitar la validación del certificado SSL/TLS."
 
@@ -9263,6 +9253,17 @@ msgid ""
 msgstr ""
 "Útil para servicios de confianza como Stripe (AS5091) o PayPal (AS17012) "
 "para evitar falsos positivos."
+
+#, php-format
+#~ msgid "FAILED to send security summary to %s. Queue NOT cleared."
+#~ msgstr ""
+#~ "No se pudo enviar el resumen de seguridad a %s. La cola no se borró."
+
+#~ msgid "Please provide a reason/detail for these IPs (Required)."
+#~ msgstr "Proporcione un motivo/detalle para estas IP (obligatorio)."
+
+#~ msgid "Check SSL Certificate"
+#~ msgstr "Verificar certificado SSL"
 
 #~ msgid ""
 #~ "Select the default engine used when serving challenges (e.g. Rate "

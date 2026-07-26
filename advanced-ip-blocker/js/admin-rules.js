@@ -672,6 +672,29 @@ jQuery(document).ready(function ($) {
                         $.post(ajaxurl, { action: 'advaipbl_bulk_delete_advanced_rules', nonce: adminData.nonces.bulk_delete_rules_nonce, rule_ids: selected_ids }).done(function (response) { if (response.success) { showAdminNotice(response.data.message, 'success'); loadRules(1); } else { showAdminNotice(response.data.message, 'error'); } });
                     }
                 });
+            } else if (action === 'export') {
+                $.post(ajaxurl, { 
+                    action: 'advaipbl_export_selected_advanced_rules', 
+                    nonce: adminData.nonces.export_adv_rules_nonce, 
+                    rule_ids: selected_ids 
+                }).done(function (response) { 
+                    if (response.success) { 
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(response.data.payload, null, 4));
+                        const downloadAnchorNode = document.createElement('a');
+                        downloadAnchorNode.setAttribute("href", dataStr);
+                        downloadAnchorNode.setAttribute("download", response.data.filename || "advaipbl-selected-rules-export.json");
+                        document.body.appendChild(downloadAnchorNode); // required for firefox
+                        downloadAnchorNode.click();
+                        downloadAnchorNode.remove();
+                        showAdminNotice('Rules exported successfully.', 'success'); 
+                        $('.advaipbl-rule-select-all').prop('checked', false);
+                        rulesListContainer.find('.rule-checkbox').prop('checked', false);
+                    } else { 
+                        showAdminNotice(response.data.message || 'Error exporting rules.', 'error'); 
+                    } 
+                }).fail(function () { 
+                    showAdminNotice(adminData.text.ajax_error, 'error'); 
+                });
             }
         });
         const selectAllTop = $('<input type="checkbox" class="advaipbl-rule-select-all">');

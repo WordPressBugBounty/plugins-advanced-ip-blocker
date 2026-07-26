@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.10\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.11\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -62,6 +62,7 @@ msgstr ""
 msgid "Invalid response from ipstack.com"
 msgstr ""
 
+#: includes/class-advaipbl-asn-manager.php:57
 #: includes/class-advaipbl-asn-manager.php:63
 #, php-format
 msgid "Blocked ASN: %1$s (%2$s) - Source: %3$s"
@@ -165,8 +166,8 @@ msgstr ""
 msgid "Spamhaus ASN list has been updated."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:337 includes/class-advaipbl-main.php:2309
-#: includes/class-advaipbl-main.php:3241
+#: includes/class-advaipbl-main.php:2309 includes/class-advaipbl-main.php:3241
+#: includes/class-advaipbl-main.php:337
 msgid "ASN Blocking"
 msgstr ""
 
@@ -182,7 +183,7 @@ msgstr ""
 msgid "PROTECTION DISABLED"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:358
+#: includes/class-advaipbl-main.php:1964 includes/class-advaipbl-main.php:358
 #, php-format
 msgid "Blocking %s malicious networks."
 msgstr ""
@@ -195,7 +196,7 @@ msgstr ""
 msgid "Total IPs Blocked by this list:"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:374
+#: includes/class-advaipbl-main.php:1976 includes/class-advaipbl-main.php:374
 #, php-format
 msgid "List updated %s ago."
 msgstr ""
@@ -241,7 +242,7 @@ msgstr ""
 msgid "<strong>ERROR</strong>: Your action was blocked as it was flagged as automated."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:638 includes/class-advaipbl-main.php:2339
+#: includes/class-advaipbl-main.php:2339 includes/class-advaipbl-main.php:638
 msgid "an unknown user"
 msgstr ""
 
@@ -250,7 +251,7 @@ msgstr ""
 msgid "Entry %1$s added to whitelist by %2$s."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:699 includes/class-advaipbl-main.php:4970
+#: includes/class-advaipbl-main.php:4970 includes/class-advaipbl-main.php:699
 #: includes/class-advaipbl-session-manager.php:233
 #: includes/class-advaipbl-session-manager.php:255
 #: includes/class-advaipbl-session-manager.php:271
@@ -399,8 +400,8 @@ msgstr ""
 msgid "Are you absolutely sure you want to proceed?"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:920 includes/class-advaipbl-main.php:3907
-#: includes/class-advaipbl-main.php:5228 includes/class-advaipbl-main.php:5251
+#: includes/class-advaipbl-main.php:3907 includes/class-advaipbl-main.php:5228
+#: includes/class-advaipbl-main.php:5251 includes/class-advaipbl-main.php:920
 msgid "Add to Whitelist"
 msgstr ""
 
@@ -416,7 +417,8 @@ msgstr ""
 msgid "Search for a country to block..."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:920 includes/class-advaipbl-main.php:5086
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:5086
+#: includes/class-advaipbl-main.php:920
 msgid "Verify"
 msgstr ""
 
@@ -452,7 +454,7 @@ msgstr ""
 msgid "blocks"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:964 includes/class-advaipbl-main.php:1826
+#: includes/class-advaipbl-main.php:1826 includes/class-advaipbl-main.php:964
 #, php-format
 msgid "Honeypot URL accessed: %s"
 msgstr ""
@@ -491,7 +493,7 @@ msgstr ""
 msgid "Access to this page has been restricted by the administrator."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1030
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1030
 msgid "Access Denied"
 msgstr ""
 
@@ -530,6 +532,7 @@ msgstr ""
 msgid "Honeypot"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php:1506
 #: includes/class-advaipbl-main.php:1236 includes/class-advaipbl-main.php:3719
 #: includes/class-advaipbl-main.php:4263 includes/class-advaipbl-main.php:4281
 msgid "User-Agent"
@@ -588,7 +591,7 @@ msgstr ""
 msgid "Access blocked due to suspicious User-Agent."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1328
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1328
 msgid "Your request was blocked by the security firewall."
 msgstr ""
 
@@ -639,7 +642,7 @@ msgstr ""
 msgid "Invalid date"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1536
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1536
 #: includes/class-advaipbl-session-manager.php:327
 #: includes/class-advaipbl-session-manager.php:328
 #: includes/class-advaipbl-session-manager.php:344
@@ -731,8 +734,8 @@ msgstr ""
 msgid "Date and Time"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1982 includes/class-advaipbl-main.php:2064
-#: includes/class-advaipbl-main.php:2191
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1982
+#: includes/class-advaipbl-main.php:2064 includes/class-advaipbl-main.php:2191
 msgid "Reason"
 msgstr ""
 
@@ -804,12 +807,14 @@ msgstr ""
 #, php-format
 msgid "Cloudflare Sync Complete. Synced: %1$d, Errors: %2$d"
 msgstr ""
-msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php:1679
+#: includes/class-advaipbl-ajax-handler.php
 #: includes/class-advaipbl-ajax-handler.php:738
 msgid "Bulk Import"
 msgstr ""
 
+#: includes/class-advaipbl-ajax-handler.php
 #: includes/class-advaipbl-ajax-handler.php:750
 #, php-format
 msgid "Import complete. Imported: %1$d. Skipped/Invalid/Duplicate: %2$d."
@@ -819,10 +824,7 @@ msgstr ""
 msgid "Whitelist is empty."
 msgstr ""
 
-#: includes/class-advaipbl-admin-pages.php:1679
-msgid "Bulk Import"
-msgstr ""
-
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-admin-pages.php:1682
 msgid "Export Whitelist"
 msgstr ""
@@ -848,8 +850,9 @@ msgid "Import IPs"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:1699
+#: includes/class-advaipbl-main.php:3392 includes/class-advaipbl-main.php:3802
+#: includes/class-advaipbl-session-manager.php:209
 msgid "Close"
-msgstr ""
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:866
@@ -892,7 +895,10 @@ msgstr ""
 msgid "Audit administrative actions and monitor the integrity of your WordPress files."
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-admin-pages.php:3395
+#: includes/class-advaipbl-main.php:3063 includes/class-advaipbl-main.php:3749
+#: includes/class-advaipbl-main.php:3931
 msgid "Details"
 msgstr ""
 
@@ -932,19 +938,24 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-admin-pages.php:3219
 msgid "Version"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:3220
+#: includes/class-advaipbl-main.php:3061 includes/class-advaipbl-main.php:4194
 msgid "Type"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-admin-pages.php:3221
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3751
 msgid "Status"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:3226
+#: includes/class-advaipbl-main.php
 msgid "Active"
 msgstr ""
 
@@ -957,6 +968,7 @@ msgid "Standard / Child"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:3239
+#: includes/class-advaipbl-main.php
 msgid "Inactive"
 msgstr ""
 
@@ -986,7 +998,6 @@ msgid "Rule reordered successfully."
 msgstr ""
 #, php-format
 msgid "FAILED to send security summary to %s. Queue NOT cleared."
-msgstr ""
 
 #: includes/class-advaipbl-main.php:2111
 msgid "Unknown reason"
@@ -1041,6 +1052,7 @@ msgstr ""
 msgid "Configuration"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-main.php:2302 includes/class-advaipbl-main.php:3240
 msgid "Import / Export"
 msgstr ""
@@ -1164,7 +1176,8 @@ msgstr ""
 msgid "User-Agent Protection"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:2360 includes/class-advaipbl-main.php:4512
+#: includes/class-advaipbl-main.php:2360 includes/class-advaipbl-main.php:3041
+#: includes/class-advaipbl-main.php:3504 includes/class-advaipbl-main.php:4512
 msgid "Spamhaus ASN Protection"
 msgstr ""
 
@@ -1173,10 +1186,12 @@ msgid "Email Notifications"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:2363 includes/class-advaipbl-main.php:4481
+#: includes/class-advaipbl-settings-manager.php
 msgid "Notification Frequency"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:2364 includes/class-advaipbl-main.php:4482
+#: includes/class-advaipbl-settings-manager.php
 msgid "Notification Email"
 msgstr ""
 
@@ -1512,12 +1527,12 @@ msgstr ""
 msgid "Manually added via admin panel"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3143
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3143
 #, php-format
 msgid "Entry %s added to whitelist and unblocked."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3145
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3145
 #, php-format
 msgid "Entry %s was already in the whitelist or is invalid."
 msgstr ""
@@ -1549,6 +1564,7 @@ msgid "Top Attacking Countries"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:3207
+#: includes/class-advaipbl-site-scanner.php
 msgid "Manage Settings"
 msgstr ""
 
@@ -1580,13 +1596,11 @@ msgstr ""
 msgid "Credits & Support"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3384 includes/class-advaipbl-main.php:3411
+#: includes/class-advaipbl-admin-pages.php:1493
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3384
+#: includes/class-advaipbl-main.php:3411
+#: includes/class-advaipbl-settings-manager.php:1639
 msgid "Cancel"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3392 includes/class-advaipbl-main.php:3802
-#: includes/class-advaipbl-session-manager.php:209
-msgid "Close"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:3403
@@ -1763,6 +1777,7 @@ msgstr ""
 msgid "Filter by type"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-main.php:3716
 msgid "All Block Types"
 msgstr ""
@@ -1772,7 +1787,7 @@ msgstr ""
 msgid "ASN Block"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3721
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:3721
 msgid "Manual"
 msgstr ""
 
@@ -1816,19 +1831,12 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3749 includes/class-advaipbl-main.php:3931
-msgid "Details"
-msgstr ""
-
 #: includes/class-advaipbl-main.php:3750
 #: includes/class-advaipbl-session-manager.php:169
 msgid "Location"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3751
-msgid "Status"
-msgstr ""
-
+#: includes/class-advaipbl-2fa-users-list-table.php
 #: includes/class-advaipbl-main.php:3752 includes/class-advaipbl-main.php:3933
 #: includes/class-advaipbl-main.php:4199
 #: includes/class-advaipbl-session-manager.php:172
@@ -1955,23 +1963,19 @@ msgstr ""
 msgid "Are you sure you want to delete all %s logs?"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4171
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4171
 msgid "Confirm Log Deletion"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4173
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4173
 msgid "Yes, Delete Logs"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4174
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4174
 msgid "Clear this Log"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4194
-msgid "Type"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:4196
+#: includes/class-advaipbl-main.php:3062 includes/class-advaipbl-main.php:4196
 msgid "Method"
 msgstr ""
 
@@ -1983,7 +1987,7 @@ msgstr ""
 msgid "Hide Community Blocks"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4198
+#: includes/class-advaipbl-main.php:3065 includes/class-advaipbl-main.php:4198
 msgid "User Agent"
 msgstr ""
 
@@ -2003,6 +2007,7 @@ msgstr ""
 msgid "Untrusted XML-RPC Request"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php:1476
 #: includes/class-advaipbl-main.php:4247
 msgid "Block"
 msgstr ""
@@ -2139,7 +2144,7 @@ msgstr ""
 msgid "Manage Configuration"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4423
+#: includes/class-advaipbl-main.php:3901 includes/class-advaipbl-main.php:4423
 msgid "Credits and Attributions"
 msgstr ""
 
@@ -2355,6 +2360,7 @@ msgstr ""
 msgid "Block duration for IPs with a malicious User-Agent."
 msgstr ""
 
+#: includes/class-advaipbl-main.php:3041 includes/class-advaipbl-main.php:3504
 #: includes/class-advaipbl-main.php:4512
 msgid "Enable automatic blocking using the Spamhaus ASN DROP list."
 msgstr ""
@@ -2450,6 +2456,7 @@ msgid "The time period in which the request count is measured."
 msgstr ""
 
 #: includes/class-advaipbl-main.php:4538
+#: includes/class-advaipbl-settings-manager.php:486
 msgid "Block Duration (minutes)"
 msgstr ""
 
@@ -2599,6 +2606,7 @@ msgstr ""
 msgid "Provider is missing."
 msgstr ""
 
+#: includes/class-advaipbl-abuseipdb-manager.php:116
 #: includes/class-advaipbl-main.php:4986
 msgid "API Key is valid!"
 msgstr ""
@@ -2724,6 +2732,7 @@ msgstr ""
 msgid "Web Server"
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-main.php:5315
 msgid "PHP Version"
 msgstr ""
@@ -2845,6 +2854,7 @@ msgstr ""
 msgid "No potential configuration issues were detected."
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-main.php:5457
 msgid "Export Configuration"
 msgstr ""
@@ -2853,6 +2863,7 @@ msgstr ""
 msgid "Download a JSON file with your plugin configuration. Choose the appropriate format for your needs."
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-main.php:5465
 msgid "Export Template (No API Keys)"
 msgstr ""
@@ -2861,6 +2872,7 @@ msgstr ""
 msgid "Ideal for migrating your rules to another website. This file excludes all secret API keys."
 msgstr ""
 
+#: includes/class-advaipbl-admin-pages.php
 #: includes/class-advaipbl-main.php:5474
 msgid "Export Full Backup (With API Keys)"
 msgstr ""
@@ -2964,8 +2976,8 @@ msgstr ""
 msgid "Close User Sessions"
 msgstr ""
 
-#: includes/class-advaipbl-session-manager.php:37
 #: includes/class-advaipbl-session-manager.php:198
+#: includes/class-advaipbl-session-manager.php:37
 msgid "Close All Sessions"
 msgstr ""
 
@@ -3012,10 +3024,13 @@ msgid_plural "%s sessions"
 msgstr[0] ""
 msgstr[1] ""
 
+#: includes/class-advaipbl-2fa-users-list-table.php
+#: includes/class-advaipbl-main.php:4050
 #: includes/class-advaipbl-session-manager.php:166
 msgid "User"
 msgstr ""
 
+#: includes/class-advaipbl-2fa-users-list-table.php
 #: includes/class-advaipbl-session-manager.php:167
 msgid "Role"
 msgstr ""
@@ -3024,6 +3039,7 @@ msgstr ""
 msgid "ISP / Organization"
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 #: includes/class-advaipbl-session-manager.php:171
 msgid "Last Activity"
 msgstr ""
@@ -3075,44 +3091,33 @@ msgstr ""
 msgid "Action not allowed."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3040
+#: includes/class-advaipbl-main.php:3040 includes/class-advaipbl-main.php:3503
 msgid "ASN Protection"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3041
-msgid "Spamhaus ASN Protection"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3041
-msgid "Enable automatic blocking using the Spamhaus ASN DROP list."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3042
-msgid "Manual ASN Protection"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3042
-msgid "Enable blocking based on your custom Manual ASN Blocklist."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3043
-msgid "Manage your custom list in the <a href=\"%s\">Blocking Rules</a> tab."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3415
-msgid "Spamhaus Protection Status"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3455
-msgid "Enable this list and set the block duration in the <a href=\"%s\">Settings</a> tab."
-msgstr ""
-
+#: includes/class-advaipbl-main.php:3042 includes/class-advaipbl-main.php:3505
 #: js/advaipbl-dashboard.js:190
 msgid "Manual ASN Protection"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1753
+#: includes/class-advaipbl-main.php:3042 includes/class-advaipbl-main.php:3505
+msgid "Enable blocking based on your custom Manual ASN Blocklist."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:3043 includes/class-advaipbl-main.php:3506
+msgid "Manage your custom list in the <a href=\"%s\">Blocking Rules</a> tab."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:3415 includes/class-advaipbl-main.php:404
+msgid "Spamhaus Protection Status"
+msgstr ""
+
+#: includes/class-advaipbl-main.php:3455 includes/class-advaipbl-main.php:437
+msgid "Enable this list and set the block duration in the <a href=\"%s\">Settings</a> tab."
+msgstr ""
+
 # translators: 1: IP Address, 2: Block Type Label (e.g., "WAF Block")
+#: includes/class-advaipbl-main.php:1753
 msgid "IP %1$s was automatically blocked. Reason: %2$s."
 msgstr ""
 
@@ -3122,42 +3127,6 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php:3987
 msgid "Blocked:"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3503
-msgid "ASN Protection"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3504
-msgid "Spamhaus ASN Protection"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3504
-msgid "Enable automatic blocking using the Spamhaus ASN DROP list."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3505
-msgid "Manual ASN Protection"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3505
-msgid "Enable blocking based on your custom Manual ASN Blocklist."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3506
-msgid "Manage your custom list in the <a href=\"%s\">Blocking Rules</a> tab."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:404
-msgid "Spamhaus Protection Status"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:437
-msgid "Enable this list and set the block duration in the <a href=\"%s\">Settings</a> tab."
-msgstr ""
-
-#: includes/class-advaipbl-asn-manager.php:57
-msgid "Blocked ASN: %1$s (%2$s) - Source: %3$s"
 msgstr ""
 
 #: includes/class-advaipbl-cli.php:483
@@ -3256,8 +3225,7 @@ msgstr ""
 msgid "Only send alerts for instant blocks (WAF, Honeypot, etc.), not for threshold-based blocks (404, Login)."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3468
-#: includes/class-advaipbl-main.php:3476
+#: includes/class-advaipbl-main.php:3468 includes/class-advaipbl-main.php:3476
 msgid "Send Test Notification"
 msgstr ""
 
@@ -3293,7 +3261,7 @@ msgstr ""
 msgid "Security Dashboard:"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3605
+#: includes/class-advaipbl-main.php:3605 includes/class-advaipbl-main.php:3835
 msgid "Get a real-time visual overview of all threats with interactive charts and a live attack map."
 msgstr ""
 
@@ -3389,24 +3357,8 @@ msgstr ""
 msgid "blocked from"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3061
-msgid "Type"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3062
-msgid "Method"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3063
-msgid "Details"
-msgstr ""
-
 #: includes/class-advaipbl-main.php:3064
 msgid "URI"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3065
-msgid "User Agent"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:1918
@@ -3421,7 +3373,7 @@ msgstr ""
 msgid "Are you sure you want to unblock ALL IPs from ALL blocklists? This will also clear all active block transients. This action cannot be undone."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3565
+#: includes/class-advaipbl-main.php:3565 js/advaipbl-admin.js:365
 msgid "Yes, Unblock All IPs"
 msgstr ""
 
@@ -3457,22 +3409,19 @@ msgstr ""
 msgid "How long to block IPs that make suspicious XML-RPC requests. Set to 0 for a permanent block."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3587
-#: includes/class-advaipbl-main.php:3646
+#: includes/class-advaipbl-main.php:3587 includes/class-advaipbl-main.php:3646
 msgid "Select bulk action"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3589
-#: includes/class-advaipbl-main.php:3648
+#: includes/class-advaipbl-main.php:3589 includes/class-advaipbl-main.php:3648
 msgid "Bulk actions"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3592
-#: includes/class-advaipbl-main.php:3651
+#: includes/class-advaipbl-main.php:3592 includes/class-advaipbl-main.php:3651
 msgid "Apply"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4838
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:4838
 msgid "%d entry has been unblocked."
 msgid_plural "%d entries have been unblocked."
 msgstr[0] ""
@@ -3482,7 +3431,7 @@ msgstr[1] ""
 msgid "No valid entries were selected for unblocking."
 msgstr ""
 
-#: js/advaipbl-admin.js:347
+#: includes/class-advaipbl-main.php:1221 js/advaipbl-admin.js:347
 msgid "Confirm Bulk Action"
 msgstr ""
 
@@ -3490,20 +3439,12 @@ msgstr ""
 msgid "Are you sure you want to unblock the selected entries? This will remove them from all blocklists."
 msgstr ""
 
-#: js/advaipbl-admin.js:349
+#: includes/class-advaipbl-main.php:1223 js/advaipbl-admin.js:349
 msgid "Yes, Unblock Selected"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:1221
-msgid "Confirm Bulk Action"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:1222
 msgid "Are you sure you want to unblock the selected %d entries? This action cannot be undone."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:1223
-msgid "Yes, Unblock Selected"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:1224
@@ -3514,26 +3455,16 @@ msgstr ""
 msgid "Please select at least one item to apply the action."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1226
+#: includes/class-advaipbl-main.php:1226 js/advaipbl-admin.js:364
 msgid "Are you sure you want to unblock ALL IPs from ALL blocklists? This action cannot be undone."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3600
-#: includes/class-advaipbl-main.php:3662
+#: includes/class-advaipbl-main.php:3600 includes/class-advaipbl-main.php:3662
 msgid "Unblock Selected"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3601
-#: includes/class-advaipbl-main.php:3663
+#: includes/class-advaipbl-main.php:3601 includes/class-advaipbl-main.php:3663
 msgid "Unblock ALL IPs"
-msgstr ""
-
-#: js/advaipbl-admin.js:364
-msgid "Are you sure you want to unblock ALL IPs from ALL blocklists? This action cannot be undone."
-msgstr ""
-
-#: js/advaipbl-admin.js:365
-msgid "Yes, Unblock All IPs"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:3600
@@ -3556,43 +3487,43 @@ msgstr ""
 msgid "IP / Location"
 msgstr ""
 
-#: includes/class-advaipbl-main.php:4050
-msgid "User"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 # translators: 1: Current score, 2: Threshold score.
+#: includes/class-advaipbl-main.php
 msgid "Threat score threshold exceeded: %1$d/%2$d"
 msgstr ""
 
-#: includes/class-advaipbl-main.php (en register_settings y callbacks)
+#: (en callbacks) includes/class-advaipbl-main.php register_settings y
 msgid "IP Trust & Threat Scoring"
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "Enable Threat Scoring System"
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "Activate the dynamic IP threat scoring system."
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "When enabled, the plugin will assign threat points to IPs for malicious actions instead of using simple thresholds. An IP will be blocked only when its total score reaches the configured threshold."
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "Blocking Threshold"
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "An IP will be blocked when its threat score reaches or exceeds this value."
-msgstr ""
-
-msgid "Block Duration (minutes)"
 msgstr ""
 
 msgid "How long an IP will be blocked after reaching the threshold. Set to 0 for a permanent block."
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "Threat Event Points"
 msgstr ""
 
+#: includes/class-advaipbl-main.php
 msgid "Assign the number of threat points for each event. An event with 100 or more points will trigger an instant block, regardless of the threshold."
 msgstr ""
 
@@ -3620,18 +3551,18 @@ msgstr ""
 msgid "Configure the dynamic threat scoring system. Assign points for different malicious events and define when an IP should be blocked."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Current score, 2: Threshold score.
+#: includes/class-advaipbl-main.php
 msgid "Score %1$d/%2$d"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Score summary (e.g., "Score 105/100"), 2: Triggering event type (e.g., "404 Error"), 3: Specific detail (e.g., the URL).
+#: includes/class-advaipbl-main.php
 msgid "%1$s via %2$s | Trigger: %3$s"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Number of scores reduced, 2: Number of scores reset to zero.
+#: includes/class-advaipbl-main.php
 msgid "Threat score decay process ran. Reduced: %1$d IPs, Reset: %2$d IPs."
 msgstr ""
 
@@ -3680,14 +3611,10 @@ msgid "Current Score"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Last Activity"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Last Event Details"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:2061
 msgid "ago"
 msgstr ""
 
@@ -3711,28 +3638,28 @@ msgstr ""
 msgid "Threat Scoring System"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Status tag (Active/Inactive), 2: Link to settings page.
+#: includes/class-advaipbl-main.php
 msgid "The Threat Scoring System is currently %1$s. You can change this in the <a href="%2$s">Settings</a>."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: %s is a link to the telemetry setting checkbox.
+#: includes/class-advaipbl-main.php
 msgid "Psst! Help us improve the plugin. <a href=\"%s\">Enable anonymous usage tracking</a>."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Status (Enabled/Disabled), 2: Link to settings page.
+#: includes/class-advaipbl-main.php
 msgid "Web Application Firewall (WAF) is currently %1$s. You can change this in the <a href="%2$s">Settings</a>."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Status tag (Active/Inactive), 2: Link to settings page.
+#: includes/class-advaipbl-main.php
 msgid "User-Agent Protection is currently %1$s. You can change this in the <a href="%2$s">Settings</a>."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Status tag (Active/Inactive), 2: Link to settings page.
+#: includes/class-advaipbl-main.php
 msgid "Honeypot Protection is currently %1$s. You can change this in the <a href="%2$s">Settings</a>.'
 msgstr ""
 
@@ -3829,14 +3756,10 @@ msgid "Signature Hash"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Reason"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Expires In"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:2062
 msgid "from now"
 msgstr ""
 
@@ -3844,8 +3767,8 @@ msgstr ""
 msgid "No malicious signatures are currently active."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Status tag (Active/Inactive), 2: Link to settings page.
+#: includes/class-advaipbl-main.php
 msgid "The Attack Signature Blocking system is currently %1$s. You can change this in the <a href="%2$s">Settings</a>."
 msgstr ""
 
@@ -3888,83 +3811,8 @@ msgid "You can view and manage all active signatures from the dashboard."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-notification-manager.php
 msgid "Manage Signatures"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "IP Trust & Threat Scoring"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Enable Threat Scoring System"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Activate the dynamic IP threat scoring system."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "When enabled, the plugin will assign threat points to IPs for malicious actions instead of using simple thresholds. An IP will be blocked only when its total score reaches the configured threshold."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Blocking Threshold"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "An IP will be blocked when its threat score reaches or exceeds this value."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Threat Event Points"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Assign the number of threat points for each event. An event with 100 or more points will trigger an instant block, regardless of the threshold."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Score Decay Rate"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Number of points to subtract from an inactive IP's score during each decay cycle."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Score Decay Frequency (Hours)"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "How often (in hours) to run the decay process. The score of an IP will only decay if it has been inactive for at least this period."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Attack Signature Engine"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "This is an advanced defense system to detect and stop distributed attacks (botnets) by analyzing request patterns rather than individual IPs."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Enable Signature Logging"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "<strong>Warning:</strong> This is an advanced feature for data collection. Activating it will log details of incoming requests to a new database table. Use only if you are aware of the potential performance impact on high-traffic sites."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Enable Signature Analysis"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Activate automatic analysis of request signatures."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "When enabled, a background process will analyze the collected logs to find patterns of a distributed attack."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -3976,63 +3824,7 @@ msgid "Activate blocking based on malicious signatures."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "<strong>Enable this to activate protection.</strong> When a request matches a known malicious signature, the plugin will present a JavaScript challenge to filter out bots."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Signature IP Threshold"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "The minimum number of different IPs that must use the same attack signature to be flagged as malicious."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Analysis Window (Hours)"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "How far back (in hours) the analysis process should look for patterns."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Signature Rule Lifetime (Hours)"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "How long a malicious signature will remain active before it expires."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "IP Trust Log"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "IP Trust Log & Status"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "This table shows all IPs that currently have a threat score greater than zero. The score is automatically reduced over time if the IP remains inactive."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Current Score"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "History & Last Event"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "No IPs currently have an active threat score."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "ago"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "points"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4040,46 +3832,14 @@ msgid "View History"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Threat Score History for"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Blocked Signatures"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Blocked Attack Signatures"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "This table lists all attack \"fingerprints\" that are currently being challenged by the JavaScript verifier. These rules are generated automatically by the Signature Analysis engine and expire on their own."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Signature Hash"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Reason"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Expires In"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "from now"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "No malicious signatures are currently active."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Delete"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:2231
 msgid "View Details"
 msgstr ""
 
@@ -4087,63 +3847,13 @@ msgstr ""
 msgid "Signature Details:"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: 1: Status (Enabled/Disabled), 2: Link to settings page.
+#: includes/class-advaipbl-main.php
 msgid "The Attack Signature Blocking system is currently <strong>%1$s</strong>. You can change this in the <a href=\"%2$s\">Settings</a>."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Score reset and IP unblocked successfully."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Threat score for IP %1$s was manually reset by %2$s."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Malicious signature %1$s... was manually deleted by %2$s."
-msgstr ""
-
-#: includes/class-advaipbl-fingerprint-manager.php
-msgid "Signature analysis flagged %d new malicious signature."
-msgid_plural "Signature analysis flagged %d new malicious signatures."
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/class-advaipbl-main.php
-msgid "Signature Challenge"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "[%s] Security Alert: New Attack Signature Identified"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "New Attack Signature Identified"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "The plugin's analysis engine has automatically identified a new distributed attack pattern. Requests matching this signature will now be challenged."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "You can view and manage all active signatures from the dashboard."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Manage Signatures"
-msgstr ""
-
-#: js/advaipbl-dashboard.js
-msgid "Signature Logging"
-msgstr ""
-
-#: js/advaipbl-dashboard.js
-msgid "Signature Analysis"
-msgstr ""
-
-#: js/advaipbl-dashboard.js
-msgid "Signature Blocking"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4203,19 +3913,7 @@ msgid "Verification Code (if enabled)"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Verify"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Two-Factor Authentication (2FA)"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Status"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Active"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4223,15 +3921,7 @@ msgid "Enabled %s."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "ago"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Deactivate 2FA"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Inactive"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4276,10 +3966,6 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Activate"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Cancel"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4403,10 +4089,6 @@ msgid "<strong>ERROR</strong>: The recovery code is incorrect or has already bee
 msgstr ""
 
 #: includes/class-advaipbl-2fa-users-list-table.php
-msgid "User"
-msgstr ""
-
-#: includes/class-advaipbl-2fa-users-list-table.php
 msgid "Users"
 msgstr ""
 
@@ -4423,15 +4105,7 @@ msgid "Email"
 msgstr ""
 
 #: includes/class-advaipbl-2fa-users-list-table.php
-msgid "Role"
-msgstr ""
-
-#: includes/class-advaipbl-2fa-users-list-table.php
 msgid "2FA Status"
-msgstr ""
-
-#: includes/class-advaipbl-2fa-users-list-table.php
-msgid "Actions"
 msgstr ""
 
 #: includes/class-advaipbl-2fa-users-list-table.php
@@ -4566,18 +4240,7 @@ msgstr ""
 msgid "Are you sure you want to delete all WP-Cron logs?"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
-msgid "Confirm Log Deletion"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Yes, Delete Logs"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Clear this Log"
-msgstr ""
-
+#: includes/class-advaipbl-admin-pages.php:1501
 #: includes/class-advaipbl-main.php
 msgid "IP Address"
 msgstr ""
@@ -4650,7 +4313,7 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-admin-pages.php includes/class-advaipbl-main.php
 msgid "Not Found"
 msgstr ""
 
@@ -4699,10 +4362,6 @@ msgid "Access denied by security policy."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Access denied by security policy."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Entry %s was already blocked."
 msgstr ""
 
@@ -4715,21 +4374,7 @@ msgid "Entry %s has been unblocked."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "%d entry has been unblocked."
-msgid_plural "%d entries have been unblocked."
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/class-advaipbl-main.php
 msgid "Entry %1$s manually blocked by %2$s."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s added to whitelist and unblocked."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s was already in the whitelist or is invalid."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4741,19 +4386,11 @@ msgid "Manually blocked by an administrator."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Access denied by security policy."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Endpoint Challenge"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Endpoint challenge served."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Manually blocked by an administrator."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4816,7 +4453,7 @@ msgstr ""
 msgid "Number of unique IP blocks on <code>xmlrpc.php</code> needed to trigger the lockdown."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1247
 msgid "Lockdown Detection Window (min)"
 msgstr ""
 
@@ -4824,46 +4461,13 @@ msgstr ""
 msgid "The time frame (in minutes) in which the threshold must be reached."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1256
+#: includes/class-advaipbl-settings-manager.php
 msgid "Lockdown Duration (min)"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:1262
 msgid "How long the lockdown mode will remain active (in minutes)."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s was already blocked."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s has been blocked."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s has been unblocked."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "%d entry has been unblocked."
-msgid_plural "%d entries have been unblocked."
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %1$s manually blocked by %2$s."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s added to whitelist and unblocked."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %s was already in the whitelist or is invalid."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Entry %1$s manually unblocked by %2$s."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -4887,39 +4491,11 @@ msgid "Enter the code generated by your authenticator app."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Enter Verification Code"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Authentication Code:"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Use a recovery code"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Invalid recovery code request."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Please enter one of your recovery codes."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Enter Recovery Code"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Recovery Code"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Verify"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Use an authenticator app code"
 msgstr ""
 
 #: readme.txt
@@ -4958,40 +4534,8 @@ msgstr ""
 msgid "Distributed XML-RPC attacks protection."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1964
-msgid "Blocking %s malicious networks."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:1976
-msgid "List updated %s ago."
-msgstr ""
-
 #: includes/class-advaipbl-main.php:2043
 msgid "The number of items per page."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2061
-msgid "ago"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2062
-msgid "from now"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2186
-msgid "ASN Whitelist"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2187
-msgid "Add one ASN per line to always allow traffic from that network. This will override ALL other blocking rules, including the WAF and Signature Engine."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2188
-msgid "Useful for trusted services like Google (AS15169) or Cloudflare (AS13335) to prevent false positives."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2192
-msgid "Save ASN Lists"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:2209
@@ -5018,20 +4562,8 @@ msgstr ""
 msgid "No endpoints are currently in lockdown mode."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:2231
-msgid "View Details"
-msgstr ""
-
 #: includes/class-advaipbl-main.php:2244
 msgid "Cancel Lockdown"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2370
-msgid "ASN lists updated by %s."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2371
-msgid "ASN lists saved successfully."
 msgstr ""
 
 #: includes/class-advaipbl-main.php:2446
@@ -5074,24 +4606,12 @@ msgstr ""
 msgid "Minimum number of unique IPs that must contribute to the failed logins."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1247
-msgid "Lockdown Detection Window (min)"
-msgstr ""
-
 #: includes/class-advaipbl-main.php:1253
 msgid "The time frame (in minutes) in which the thresholds must be reached."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:1256
-msgid "Lockdown Duration (min)"
-msgstr ""
-
-#: includes/class-advaipbl-main.php:1262
-msgid "How long the lockdown mode will remain active (in minutes)."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:2691
 # translators: 1: The number of failed logins. 2: The number of unique IPs. 3: The number of minutes in the detection window.
+#: includes/class-advaipbl-main.php:2691
 msgid "Exceeded threshold: %1$d failed logins from %2$d unique IPs in %3$d minutes."
 msgstr ""
 
@@ -5119,10 +4639,6 @@ msgstr ""
 msgid "Secure user accounts with TOTP authentication, backup codes, and role enforcement. Fully manageable via UI and WP-CLI."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:3835
-msgid "Get a real-time visual overview of all threats with interactive charts and a live attack map."
-msgstr ""
-
 #: includes/class-advaipbl-main.php:3836
 msgid "High-Performance Geolocation:"
 msgstr ""
@@ -5145,10 +4661,6 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php:3845
 msgid "Harden your login page by disabling user enumeration, protecting XML-RPC, and restricting access to whitelisted IPs."
-msgstr ""
-
-#: includes/class-advaipbl-main.php:3901
-msgid "Credits and Attributions"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:3903
@@ -5191,8 +4703,8 @@ msgstr ""
 msgid "Two-Factor Authentication (2FA) is currently %1$s. You can change this in the <a href="%2$s">Settings</a>. When enabled, users will see the 2FA setup section in their <a href="%3$s">Profile</a>."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:5221
 # translators: %s: Username.
+#: includes/class-advaipbl-main.php:5221
 msgid "All threat scores have been manually reset to 0 by %s."
 msgstr ""
 
@@ -5200,8 +4712,8 @@ msgstr ""
 msgid "All active threat scores have been reset to 0."
 msgstr ""
 
-#: includes/class-advaipbl-main.php:5230
 # translators: %s: Username.
+#: includes/class-advaipbl-main.php:5230
 msgid "All malicious signatures have been manually deleted by %s."
 msgstr ""
 
@@ -5297,8 +4809,8 @@ msgstr ""
 msgid "Country:"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: %s: Country name
+#: includes/class-advaipbl-main.php
 msgid "Visitor from %s was challenged."
 msgstr ""
 
@@ -5318,8 +4830,8 @@ msgstr ""
 msgid "Yes, Remove Selected"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: %d: Number of entries.
+#: includes/class-advaipbl-main.php
 msgid "%d entry removed from whitelist."
 msgid_plural "%d entries removed from whitelist."
 msgstr[0] ""
@@ -5329,8 +4841,8 @@ msgstr[1] ""
 msgid "No valid entries were selected for removal."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
 # translators: %d: The number of entries.
+#: includes/class-advaipbl-main.php
 msgid "Are you sure you want to remove the selected %d entries from the whitelist?"
 msgstr ""
 
@@ -5367,10 +4879,6 @@ msgid "Verification failed. Please ensure JavaScript and cookies are enabled in 
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Access Denied"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Session Expired"
 msgstr ""
 
@@ -5384,46 +4892,6 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Time remaining: "
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Security Check Required"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "To proceed, please prove you are human. This verification protects the website from automated attacks."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Time remaining: "
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Verify and Continue"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "I am not a robot."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Session Expired"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "The security challenge has expired. Click the button below to get a new challenge."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Start New Challenge"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Verification failed. Please ensure JavaScript and cookies are enabled in your browser."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Access Denied"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -5454,7 +4922,7 @@ msgstr ""
 msgid "needs to review the security of your connection before proceeding."
 msgstr ""
 
-#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-admin-pages.php includes/class-advaipbl-main.php
 msgid "Setup Wizard"
 msgstr ""
 
@@ -5615,10 +5083,6 @@ msgid "Automatically blocks thousands of the most malicious networks on the inte
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
-msgid "Setup Wizard"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
 msgid "If you need to re-apply the recommended default settings or ensure your current IPs are whitelisted, you can run the setup wizard again at any time."
 msgstr ""
 
@@ -5775,6 +5239,7 @@ msgid "This command forces the plugin to analyze the recent request logs to iden
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:50
+#: includes/class-advaipbl-settings-manager.php
 msgid "Advanced Rules"
 msgstr ""
 
@@ -5791,6 +5256,7 @@ msgid "Existing Rules"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:1443
+#: includes/class-advaipbl-settings-manager.php
 msgid "Add New Rule"
 msgstr ""
 
@@ -5822,11 +5288,8 @@ msgstr ""
 msgid "Action"
 msgstr ""
 
-#: includes/class-advaipbl-admin-pages.php:1476
-msgid "Block"
-msgstr ""
-
 #: includes/class-advaipbl-admin-pages.php:1477
+#: includes/class-advaipbl-settings-manager.php
 msgid "Challenge with JavaScript"
 msgstr ""
 
@@ -5838,16 +5301,8 @@ msgstr ""
 msgid "Parameters"
 msgstr ""
 
-#: includes/class-advaipbl-admin-pages.php:1493
-msgid "Cancel"
-msgstr ""
-
 #: includes/class-advaipbl-admin-pages.php:1494
 msgid "Save Rule"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php:1501
-msgid "IP Address"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:1502
@@ -5864,10 +5319,6 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:1505
 msgid "Request URI"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php:1506
-msgid "User-Agent"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:1510
@@ -5942,10 +5393,6 @@ msgstr ""
 msgid "Access Restricted"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
-msgid "Your request was blocked by the security firewall."
-msgstr ""
-
 #: includes/class-advaipbl-admin-pages.php
 msgid "Incorrectly configured rules can lock you out of your site or break functionality. A rule that is too broad (e.g., `/` or `a`) can block all traffic. Always test new rules carefully from a different browser or device."
 msgstr ""
@@ -6013,10 +5460,12 @@ msgid "Blocked by AbuseIPDB with a confidence score of %d%%."
 msgstr ""
 
 #: includes/class-advaipbl-main.php:2310
+#: includes/class-advaipbl-site-scanner.php
 msgid "AbuseIPDB"
 msgstr ""
 
 #: includes/class-advaipbl-main.php:4171
+#: includes/class-advaipbl-settings-manager.php:434
 msgid "AbuseIPDB Integration"
 msgstr ""
 
@@ -6030,10 +5479,6 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:432
 msgid "Integrate with real-time threat databases to proactively block known malicious IPs."
-msgstr ""
-
-#: includes/class-advaipbl-settings-manager.php:434
-msgid "AbuseIPDB Integration"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:437
@@ -6061,10 +5506,6 @@ msgstr ""
 msgid "Block IPs with an abuse confidence score of this value or higher (0-100). Recommended: 90 or 100."
 msgstr ""
 
-#: includes/class-advaipbl-settings-manager.php:486
-msgid "Block Duration (minutes)"
-msgstr ""
-
 #: includes/class-advaipbl-settings-manager.php:492
 msgid "How long to block an IP flagged by AbuseIPDB. Set to 0 for a permanent block."
 msgstr ""
@@ -6073,16 +5514,8 @@ msgstr ""
 msgid "API Key is empty."
 msgstr ""
 
-#: includes/class-advaipbl-abuseipdb-manager.php:116
-msgid "API Key is valid!"
-msgstr ""
-
 #: includes/class-advaipbl-abuseipdb-manager.php:120
 msgid "Authentication failed. The API Key is incorrect."
-msgstr ""
-
-#: includes/class-advaipbl-main.php
-msgid "Advanced Rule (Allow)"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
@@ -6091,10 +5524,6 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
 msgid "Block IP Instantly (Recommended)"
-msgstr ""
-
-#: includes/class-advaipbl-settings-manager.php
-msgid "Challenge with JavaScript"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
@@ -6147,7 +5576,7 @@ msgstr ""
 msgid "Real-time IP reputation checking will be temporarily paused."
 msgstr ""
 
-#: includes/class-advaipbl-main.php: (nÃºmero de lÃ­nea de la funciÃ³n)
+#: (nÃºmero de funciÃ³n) includes/class-advaipbl-main.php: la lÃ­nea
 #, php-format
 msgid "> â€¢ *Action Required:* Consider <%1$s|verifying your domain> to triple your free quota or <%2$s|upgrading your plan>."
 msgstr ""
@@ -6505,11 +5934,8 @@ msgid "WordPress Core"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-site-scanner.php:100
 msgid "Pending Updates"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "PHP Version"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
@@ -6518,10 +5944,6 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "SSL (HTTPS)"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "Version"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
@@ -6541,6 +5963,7 @@ msgid "Update Now"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-site-scanner.php:361
 msgid "All plugins and themes are up to date."
 msgstr ""
 
@@ -6692,14 +6115,6 @@ msgstr ""
 msgid "Blocklist / Service"
 msgstr ""
 
-#: includes/class-advaipbl-admin-pages.php
-msgid "Status"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "Details"
-msgstr ""
-
 #: includes/class-advaipbl-site-scanner.php
 msgid "Could not determine server IP address."
 msgstr ""
@@ -6710,10 +6125,6 @@ msgstr ""
 
 #: includes/class-advaipbl-site-scanner.php
 msgid "Spamhaus ASN DROP"
-msgstr ""
-
-#: includes/class-advaipbl-site-scanner.php
-msgid "AbuseIPDB"
 msgstr ""
 
 #: includes/class-advaipbl-site-scanner.php
@@ -6764,10 +6175,6 @@ msgstr ""
 msgid "Warning"
 msgstr ""
 
-#: includes/class-advaipbl-main.php
-msgid "Unknown"
-msgstr ""
-
 #: includes/class-advaipbl-admin-pages.php:2351
 msgid "For crowdsourced IP reputation checking."
 msgstr ""
@@ -6775,13 +6182,6 @@ msgstr ""
 #: includes/class-advaipbl-admin-pages.php:2352
 msgid "For vulnerability database (production)."
 msgstr ""
-
-
-
-
-
-
-
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "Security Headers"
@@ -6912,10 +6312,6 @@ msgid "...within this many minutes."
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
-msgid "Lockdown Duration (min)"
-msgstr ""
-
-#: includes/class-advaipbl-settings-manager.php
 msgid "How long the Lockdown Mode stays active."
 msgstr ""
 
@@ -6963,10 +6359,6 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
 msgid "Weekly"
-msgstr ""
-
-#: includes/class-advaipbl-settings-manager.php
-msgid "Notification Email"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
@@ -7030,36 +6422,13 @@ msgstr ""
 msgid "Powered by Advanced IP Blocker"
 msgstr ""
 
-#: includes/class-advaipbl-site-scanner.php
-msgid "Manage Settings"
-msgstr ""
-
-
-msgid "Site Scanner Automation"
-msgstr ""
-
 msgid "Configure automatic deep scans and email reports."
-msgstr ""
-
-msgid "Enable Scheduled Scans"
 msgstr ""
 
 msgid "Automatically run Deep Scans and email the report."
 msgstr ""
 
-msgid "Scan Frequency"
-msgstr ""
-
-msgid "Daily"
-msgstr ""
-
-msgid "Weekly"
-msgstr ""
-
 msgid "How often to run the automated security audit."
-msgstr ""
-
-msgid "Notification Email"
 msgstr ""
 
 msgid "Where to send the scan reports (leave blank for admin email)."
@@ -7091,10 +6460,6 @@ msgstr ""
 msgid "Manual Scan"
 msgstr ""
 
-#: includes/class-advaipbl-site-scanner.php:100
-msgid "Pending Updates"
-msgstr ""
-
 #: includes/class-advaipbl-site-scanner.php:103
 #, php-format
 msgid "Warning: Found %1$d outdated plugins and %2$d outdated themes."
@@ -7112,10 +6477,6 @@ msgstr ""
 
 #: includes/class-advaipbl-site-scanner.php:360
 msgid "Updates Status"
-msgstr ""
-
-#: includes/class-advaipbl-site-scanner.php:361
-msgid "All plugins and themes are up to date."
 msgstr ""
 
 #: js/advaipbl-admin.js:1800
@@ -7141,7 +6502,6 @@ msgstr ""
 #: includes/class-advaipbl-main.php:6670
 msgid "Are you sure you want to clear the audit log?"
 msgstr ""
-
 
 #: includes/class-advaipbl-main.php:3478
 #, php-format
@@ -7201,9 +6561,7 @@ msgid "Error occurred during scan."
 msgstr ""
 #: includes/class-advaipbl-main.php:1685
 msgid "Please provide a reason/detail for these IPs (Required)."
-msgstr ""
 msgid "Check SSL Certificate"
-msgstr ""
 
 msgid "Enable SSL/TLS certificate validation."
 msgstr ""
@@ -7230,11 +6588,6 @@ msgid "Check Debug Mode"
 msgstr ""
 
 msgid "Enable WP_DEBUG status checks."
-msgstr ""
-
-
-#: includes/class-advaipbl-settings-manager.php
-msgid "Notification Frequency"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php
@@ -7318,10 +6671,6 @@ msgid "%d IPs"
 msgstr ""
 
 #: includes/class-advaipbl-notification-manager.php
-msgid "Manage Signatures"
-msgstr ""
-
-#: includes/class-advaipbl-notification-manager.php
 #, php-format
 msgid "*:dna: [%s] Attack Signatures Identified*"
 msgstr ""
@@ -7364,27 +6713,7 @@ msgid "FAILED to send security summary (%s) to %s."
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
-msgid "Import / Export"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
 msgid "Export Blocked IPs"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "Export Whitelist"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "Export Configuration"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "Export Template (No API Keys)"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "Export Full Backup (With API Keys)"
 msgstr ""
 
 #: includes/class-advaipbl-ajax-handler.php
@@ -7393,19 +6722,6 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "Import Blocked IPs"
-msgstr ""
-
-#: includes/class-advaipbl-ajax-handler.php
-msgid "Bulk Import"
-msgstr ""
-
-#: includes/class-advaipbl-ajax-handler.php
-#, php-format
-msgid "Import complete. Imported: %1$d. Skipped/Invalid/Duplicate: %2$d."
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
-msgid "All Block Types"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
@@ -7420,7 +6736,7 @@ msgstr ""
 msgid "Select CSV File"
 msgstr ""
 
-#: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-admin-pages.php includes/class-advaipbl-main.php
 msgid "Duration:"
 msgstr ""
 
@@ -7450,10 +6766,6 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:1638
 msgid "Apply to List"
-msgstr ""
-
-#: includes/class-advaipbl-settings-manager.php:1639
-msgid "Cancel"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:1651
@@ -7746,10 +7058,6 @@ msgid "Read-Only"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
-msgid "Not Found"
-msgstr ""
-
-#: includes/class-advaipbl-admin-pages.php
 msgid "Time Synchronization"
 msgstr ""
 
@@ -7817,9 +7125,6 @@ msgstr ""
 msgid "IP Inspector"
 msgstr ""
 
-msgid "Permission denied."
-msgstr ""
-
 msgid "Please enter an IP address or ASN."
 msgstr ""
 
@@ -7827,9 +7132,6 @@ msgid "Invalid IP address or ASN format."
 msgstr ""
 
 msgid "Geolocation Data"
-msgstr ""
-
-msgid "Country:"
 msgstr ""
 
 msgid "City:"
@@ -7856,16 +7158,10 @@ msgstr ""
 msgid "Yes (Manual Whitelist)"
 msgstr ""
 
-msgid "No"
-msgstr ""
-
 msgid "Verified Bot:"
 msgstr ""
 
 msgid "Yes (Global Immunity)"
-msgstr ""
-
-msgid "Blocked:"
 msgstr ""
 
 msgid "Yes (Actively Blocked)"
@@ -7883,19 +7179,10 @@ msgstr ""
 msgid "JS Challenge Pass:"
 msgstr ""
 
-msgid "Active"
-msgstr ""
-
-msgid "None"
-msgstr ""
-
 msgid "AIB Community Network:"
 msgstr ""
 
 msgid "Listed (Malicious)"
-msgstr ""
-
-msgid "Clean"
 msgstr ""
 
 msgid "Spamhaus ASN DROP:"
@@ -7904,13 +7191,11 @@ msgstr ""
 msgid "An error occurred while running the diagnostic."
 msgstr ""
 
-
 msgid "High Risk (Exceeds Threshold)"
 msgstr ""
 
 msgid "Clean / Under Threshold"
 msgstr ""
-
 
 msgid "ISP/Org:"
 msgstr ""
@@ -7921,13 +7206,11 @@ msgstr ""
 msgid "Location Map"
 msgstr ""
 
-
 msgid "External maps are used to comply with strict Content Security Policies (CSP)."
 msgstr ""
 
 msgid "View Map on OpenStreetMap"
 msgstr ""
-
 
 #: includes/class-advaipbl-main.php
 msgid "Site is under heavy attack. Please complete the security check to access the content."
@@ -7994,10 +7277,6 @@ msgid "Auto-Panic Mode engaged automatically due to %d blocks in 60s."
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Manual"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Automatic"
 msgstr ""
 
@@ -8026,13 +7305,8 @@ msgid "Status:"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "Duration:"
-msgstr ""
-
-#: includes/class-advaipbl-main.php
 msgid "Bypassed:"
 msgstr ""
-
 
 #: includes/class-advaipbl-main.php
 msgid "Visitor challenged due to Manual Auto-Panic mode."
@@ -8046,7 +7320,6 @@ msgstr ""
 msgid "Panic Challenge"
 msgstr ""
 
-
 #: includes/class-advaipbl-admin-pages.php
 msgid "Automatic JS Check"
 msgstr ""
@@ -8058,7 +7331,6 @@ msgstr ""
 #: includes/class-advaipbl-admin-pages.php
 msgid "Challenge Type:"
 msgstr ""
-
 
 #: includes/class-advaipbl-main.php:7415
 msgid "Global JS Challenge ACTIVE"
@@ -8144,7 +7416,6 @@ msgstr ""
 msgid "Downloads official IP lists from monitoring services to allow legitimate pings and block impersonators."
 msgstr ""
 
-
 #: includes/class-advaipbl-main.php:4048
 msgid "Panic Mode manually disabled by administrator."
 msgstr ""
@@ -8165,15 +7436,6 @@ msgstr ""
 msgid "Failed to download official bot IP lists. This could be due to a firewall blocking outgoing HTTP requests or an API outage. Retrying in 1 hour."
 msgstr ""
 
-
-#: includes/class-advaipbl-settings-manager.php
-msgid "Advanced Rules"
-msgstr ""
-
-#: includes/class-advaipbl-settings-manager.php
-msgid "Add New Rule"
-msgstr ""
-
 #: includes/class-advaipbl-settings-manager.php
 msgid "Define specific limits for different endpoints."
 msgstr ""
@@ -8190,7 +7452,6 @@ msgstr ""
 msgid "You have sent too many requests in a given amount of time. Please slow down."
 msgstr ""
 
-
 #: includes/class-advaipbl-main.php
 msgid "Rate Limit Challenge Served (%s)"
 msgstr ""
@@ -8198,7 +7459,6 @@ msgstr ""
 #: includes/class-advaipbl-main.php
 msgid "Rate Limit Challenge"
 msgstr ""
-
 
 #: includes/class-advaipbl-settings-manager.php
 msgid "Turnstile Site Key"
@@ -8259,7 +7519,6 @@ msgstr ""
 msgid "JS Challenge (Automatic / Transparent)"
 msgstr ""
 
-
 #: includes/class-advaipbl-js-challenge.php:261
 #, php-format
 msgid "Missing API keys for %s. Falling back to JS Automatic Challenge to prevent lockout."
@@ -8275,7 +7534,6 @@ msgstr ""
 msgid "You have selected %1$s as a challenge method but the API keys are missing. The system will automatically fall back to the JS Challenge to prevent locking out legitimate users. Please %2$sconfigure your keys%3$s."
 msgstr ""
 
-
 msgid "All Challenge VIP passes were manually revoked globally by %s."
 msgstr ""
 
@@ -8288,9 +7546,6 @@ msgstr ""
 msgid "Invalidates all currently active Security Challenge VIP passes globally. Use this "Panic Button" if you suspect a bypass or if you just changed your challenge configurations."
 msgstr ""
 
-msgid "Rate Limit Challenge"
-msgstr ""
-
 #: includes/class-advaipbl-admin-pages.php:2685
 msgid "Captcha Integrations (Turnstile & hCaptcha):"
 msgstr ""
@@ -8298,7 +7553,6 @@ msgstr ""
 #: includes/class-advaipbl-admin-pages.php:2685
 msgid "Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts."
 msgstr ""
-
 
 msgid "Block Ghost IPs (No ASN & No rDNS)"
 msgstr ""

@@ -1378,6 +1378,48 @@ public function ajax_verify_abuseipdb_key() {
         wp_die();
     }
 
+    public function ajax_export_selected_advanced_rules() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+        check_ajax_referer('advaipbl_export_adv_rules_nonce', 'nonce');
+
+        $rule_ids = isset($_POST['rule_ids']) && is_array($_POST['rule_ids']) ? array_map('sanitize_text_field', wp_unslash($_POST['rule_ids'])) : [];
+        if (empty($rule_ids)) {
+            wp_send_json_error(['message' => __('No rules selected.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+
+        $all_rules = $this->plugin->rules_engine->get_rules();
+        $selected_rules = [];
+        
+        foreach ($all_rules as $rule) {
+            if (in_array($rule['id'], $rule_ids, true)) {
+                $selected_rules[] = $rule;
+            }
+        }
+
+        if (empty($selected_rules)) {
+            wp_send_json_error(['message' => __('Selected rules could not be found.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+
+        $export_payload = [
+            '_advaipbl_export' => true,
+            'export_version' => '1.0',
+            'generated_at' => current_time('mysql'),
+            'source_site' => site_url(),
+            'rules' => $selected_rules
+        ];
+
+        wp_send_json_success([
+            'payload' => $export_payload,
+            'filename' => 'aib-selected-rules-export-' . gmdate('Y-m-d') . '.json'
+        ]);
+        wp_die();
+    }
+
     /**
      * AJAX callback for Importing Advanced Rules securely.
      */

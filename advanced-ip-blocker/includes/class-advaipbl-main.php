@@ -374,6 +374,7 @@ private function __construct() {
 		add_action('wp_ajax_advaipbl_reorder_rules', [$this->ajax_handler, 'ajax_reorder_advanced_rules']);
 		add_action('wp_ajax_advaipbl_bulk_delete_advanced_rules', [$this->ajax_handler, 'ajax_bulk_delete_advanced_rules']);
         add_action('wp_ajax_advaipbl_export_advanced_rules', [$this->ajax_handler, 'ajax_export_advanced_rules']);
+        add_action('wp_ajax_advaipbl_export_selected_advanced_rules', [$this->ajax_handler, 'ajax_export_selected_advanced_rules']);
         add_action('wp_ajax_advaipbl_import_advanced_rules', [$this->ajax_handler, 'ajax_import_advanced_rules']);
         add_action('wp_ajax_advaipbl_verify_abuseipdb_key', [$this->ajax_handler, 'ajax_verify_abuseipdb_key']);
 		add_action('wp_ajax_advaipbl_bulk_import_whitelist', [$this->ajax_handler, 'ajax_bulk_import_whitelist']);
