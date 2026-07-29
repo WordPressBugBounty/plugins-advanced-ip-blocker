@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-07-26 10:51+0200\n"
+"PO-Revision-Date: 2026-07-28 10:00+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -9253,6 +9253,22 @@ msgid ""
 msgstr ""
 "Útil para servicios de confianza como Stripe (AS5091) o PayPal (AS17012) "
 "para evitar falsos positivos."
+
+#: includes/class-advaipbl-settings-manager.php:940
+msgid "Cloudflare Safe-Guard"
+msgstr "Cloudflare Safe-Guard"
+
+#: includes/class-advaipbl-settings-manager.php:946
+msgid ""
+"Protect official Cloudflare infrastructure, CDN perimeter nodes, and "
+"internal scanners (e.g., CloudflareWebScanner) from being blacklisted by "
+"local WAF rules, User-Agent pattern matching, or Threat Scoring."
+msgstr ""
+"Proteja la infraestructura oficial de Cloudflare, los nodos perimetrales de "
+"la CDN y los escáneres internos (p. ej., CloudflareWebScanner) para evitar "
+"que sean incluidos en listas negras por reglas locales de WAF, coincidencias "
+"de patrones de User-Agent o sistemas de puntuación de amenazas (Threat "
+"Scoring)."
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

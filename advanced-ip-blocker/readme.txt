@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.11
+Stable tag: 8.11.12
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -257,6 +257,12 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.12 =
+*   **NEW FEATURE:** Cloudflare Safe-Guard (Anti-Self-DoS Protection). An intelligent edge-infrastructure shield that automatically prevents official Cloudflare CDN perimeter IPs, routing servers, and internal scanners (e.g., `CloudflareWebScanner`) from triggering local WAF rules, Rate Limiting, or User-Agent blocklists.
+*   **BUG FIX:** Resolved a high-concurrency race condition in Rate Limiting that could cause duplicate entries in the Security Log during rapid-fire request bursts.
+*   **SECURITY HARDENING:** Added new zero-day WAF signatures to instantly block Remote Code Execution (RCE) attempts and common PHP WebShell injections (e.g., `wp2shell`, `base64_decode`).
+*   **ENHANCEMENT:** Synchronized CDN immunity arrays across all core engines and central APIs to include Cloudflare DNS/Edge infrastructure (`AS209242`).
+
 = 8.11.11 =
 *   **ENHANCEMENT:** Added 'Export Selected' option to the Advanced Rules Bulk Actions menu, allowing power users to easily backup or share specific rule subsets.
 *   **ENHANCEMENT:** Added the 'Block Ghost IPs / Anonymous Traffic' setting to Step 2 of the initial Setup Wizard, enabling out-of-the-box protection against HTTP/1.0 scanner bots with missing Host headers.
@@ -313,6 +319,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.12 =
+**NEW FEATURE:** Introduces Cloudflare Safe-Guard to protect CDN perimeter nodes and internal scanners from accidental WAF/Rate-Limiting blocks, preventing self-imposed DDoS lockouts, and resolves a race condition in Rate Limiting logging.
 
 = 8.11.11 =
 **ENHANCEMENT:** Adds a new Bulk Action in the Advanced Rules manager to selectively export specific rules, and includes the Ghost IP Shield inside Step 2 of the initial Setup Wizard for easier out-of-the-box hardening.

@@ -936,6 +936,18 @@ add_settings_field(
         );
 
         add_settings_field(
+            'advaipbl_cf_safe_guard',
+            __('Cloudflare Safe-Guard', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_cloudflare_section',
+            [
+                'name' => 'cf_safe_guard',
+                'label' => __('Protect official Cloudflare infrastructure, CDN perimeter nodes, and internal scanners (e.g., CloudflareWebScanner) from being blacklisted by local WAF rules, User-Agent pattern matching, or Threat Scoring.', 'advanced-ip-blocker')
+            ]
+        );
+
+        add_settings_field(
             'advaipbl_cf_api_token',
             __('Cloudflare API Token', 'advanced-ip-blocker'),
             [$this, 'text_field_callback'],
@@ -1216,7 +1228,7 @@ add_settings_field(
 			'enable_abuseipdb',
 			'enable_community_network',
 			'enable_htaccess_write',
-			'enable_cloudflare', 'cf_sync_manual', 'cf_sync_temporary',
+			'enable_cloudflare', 'cf_safe_guard', 'cf_sync_manual', 'cf_sync_temporary',
 			'enable_htaccess_ip_blocking',
 			'enable_htaccess_all_ips',
             'htaccess_protect_system_files',

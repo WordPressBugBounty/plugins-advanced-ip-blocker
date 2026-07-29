@@ -99,13 +99,8 @@ class ADVAIPBL_Rate_Limiting_Manager {
                 'action'  => $action
             ];
             
-            // Log as warning for 429, critical for 403 block. For challenge, we log it below as info.
-            if (strpos($action, 'challenge') !== 0) {
-                $log_level = ($action === '403') ? 'critical' : 'warning';
-                $this->main_class->log_specific_error('rate_limit', $ip, $log_data, $log_level);
-            }
-            
             if ($action === '403') {
+                // block_ip_instantly handles atomic DB locking and logs the event (including duration_seconds) as 'critical'.
                 $this->main_class->block_ip_instantly($ip, 'rate_limit', $reason, $log_data);
             } elseif (strpos($action, 'challenge') === 0) {
                 $this->main_class->log_specific_error('rate_limit_challenge', $ip, $log_data, 'info');
@@ -119,10 +114,12 @@ class ADVAIPBL_Rate_Limiting_Manager {
                         exit;
                     }
                 } else {
+                    $this->main_class->log_specific_error('rate_limit', $ip, $log_data, 'warning');
                     $this->serve_429_response();
                 }
             } else {
-                // Default is 429
+                // Default is 429 - Log as warning
+                $this->main_class->log_specific_error('rate_limit', $ip, $log_data, 'warning');
                 $this->serve_429_response();
             }
         }

@@ -2611,10 +2611,61 @@ return $status_header;
         }
     } 
 
+    /**
+     * Verifies if an IP belongs to trusted Cloudflare infrastructure or edge proxies,
+     * protecting against self-DoS when Cloudflare Safe-Guard is enabled.
+     */
+    public function is_cdn_safeguard_ip($ip = null) {
+        if (empty($this->options['cf_safe_guard']) || $this->options['cf_safe_guard'] === '0') {
+            return false;
+        }
+
+        if (empty($ip)) {
+            $ip = $this->get_client_ip();
+        }
+
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
+        // 1. Official Cloudflare IPv4 and IPv6 Subnets
+        static $cf_cidrs = [
+            // IPv4
+            '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+            '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+            '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+            '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+            // IPv6
+            '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+            '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'
+        ];
+
+        foreach ($cf_cidrs as $cidr) {
+            if ($this->is_ip_in_range($ip, $cidr)) {
+                return true;
+            }
+        }
+
+        // 2. ASN Check fallback (in case Cloudflare adds new subnets dynamically)
+        if (isset($this->geolocation_manager) && isset($this->asn_manager)) {
+            $location_data = $this->geolocation_manager->fetch_location($ip);
+            $source_asn = $this->asn_manager->extract_asn_from_data($location_data);
+            if ($source_asn && in_array(strtoupper($source_asn), ['AS13335', 'AS209242'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function is_whitelisted($ip) {
         // Quitamos la restricción de NO_PRIV_RANGE para permitir whitelisting en localhost (::1, 127.0.0.1) o intranets.
         if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
             return false;
+        }
+
+        if ( $this->is_cdn_safeguard_ip($ip) ) {
+            return true;
         }
 
     $whitelist = get_option( self::OPTION_WHITELIST, [] );
@@ -2718,6 +2769,11 @@ return $status_header;
             } else {
                 return;
             }
+        }
+
+        // Cloudflare Safe-Guard: Prevent self-DoS by refusing to blacklist official CDN edge proxies or internal scanners.
+        if ( $this->is_cdn_safeguard_ip($ip) ) {
+            return;
         }
 
         global $wpdb;
@@ -4978,6 +5034,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             'signature_challenge_mode'    => 'block',
 			// Cloudflare Integration
         'enable_cloudflare' => '0',
+        'cf_safe_guard' => '1', // Protect official Cloudflare CDN infrastructure and internal scanners
         'cf_api_token' => '',
         'cf_zone_id' => '',
         'cf_sync_manual' => '0', // Sincronizar bloqueos manuales
@@ -5064,7 +5121,11 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             '# === Sensitive Files & Backups ===',
             '/(wp-config\.php|\.env)',
             '\.sql$',
-            '\.log$'
+            '\.log$',
+            '# === RCE & WebShells ===',
+            'wp2shell',
+            'base64_decode\s*\(',
+            'eval\s*\('
         ];
     }
 	
@@ -6168,6 +6229,7 @@ private function get_first_public_ip_from_string($ip_string) {
             'htaccess_hardening_config'   => !empty($this->options['htaccess_protect_wp_config']),
             'htaccess_hardening_readme'   => !empty($this->options['htaccess_protect_readme']),
             'cloudflare_enabled'          => !empty($this->options['enable_cloudflare']),
+            'cloudflare_safeguard'        => !empty($this->options['cf_safe_guard']),
             'cloudflare_sync_manual'      => !empty($this->options['cf_sync_manual']),
             'cloudflare_sync_temp'        => !empty($this->options['cf_sync_temporary']),
             'aib_network_join'            => !empty($this->options['enable_community_network']),

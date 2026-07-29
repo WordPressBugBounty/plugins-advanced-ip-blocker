@@ -1,9 +1,9 @@
-﻿# Copyright (C) 2024 IniLerm
+# Copyright (C) 2024 IniLerm
 # This file is distributed under the same license as the Advanced IP Blocker package.
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.11\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.12\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7585,4 +7585,12 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:427
 msgid "Useful for trusted services like Stripe (AS5091) or PayPal (AS17012) to prevent false positives."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:940
+msgid "Cloudflare Safe-Guard"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:946
+msgid "Protect official Cloudflare infrastructure, CDN perimeter nodes, and internal scanners (e.g., CloudflareWebScanner) from being blacklisted by local WAF rules, User-Agent pattern matching, or Threat Scoring."
 msgstr ""
