@@ -49,11 +49,17 @@ class ADVAIPBL_Waf_Manager {
     
         // El resto del escaneo para las reglas personalizadas continúa como antes.
         $raw_rules = get_option(ADVAIPBL_Main::OPTION_WAF_RULES, '');
-        if (empty(trim($raw_rules))) {
-            return false;
-        }
-    
+        
         $rules = array_filter(array_map('trim', explode("\n", $raw_rules)));
+
+        // Inject Intelligent Zero-Day WAF Rules
+        if (!empty($options['enable_intelligent_waf']) && '1' === $options['enable_intelligent_waf']) {
+            $zeroday_rules = get_option('advaipbl_zeroday_waf_rules', []);
+            if (is_array($zeroday_rules) && !empty($zeroday_rules)) {
+                $rules = array_merge($rules, $zeroday_rules);
+            }
+        }
+
         if (empty($rules)) {
             return false;
         }

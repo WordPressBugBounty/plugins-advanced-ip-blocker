@@ -267,6 +267,7 @@ class ADVAIPBL_Dashboard_Manager {
             // Level 5: Core Blocking Engine (WAF & Static Rules)
             'honeypot'           => !empty($options['enable_honeypot_blocking']),
             'waf'                => !empty($options['enable_waf']),
+            'intelligent_waf'    => !empty($options['enable_intelligent_waf']),
             'geoblock'           => !empty($options['enable_geoblocking']),
             'user_agent'         => !empty($options['enable_user_agent_blocking']),
             'spamhaus_asn'       => !empty($options['enable_spamhaus_asn']),

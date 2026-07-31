@@ -1218,6 +1218,53 @@ public function handle_spamhaus_refresh_action() {
 }
 
 /**
+ * Downloads and applies zero-day WAF rules from the Central Server.
+ */
+public function sync_zeroday_waf_rules() {
+    if (empty($this->options['enable_intelligent_waf']) || '1' !== $this->options['enable_intelligent_waf']) {
+        return;
+    }
+
+    $api_token = $this->options['api_token_v3'] ?? '';
+    if (empty($api_token)) {
+        $this->log_event('Intelligent WAF Sync skipped: Central API Token V3 not configured.', 'warning');
+        return;
+    }
+
+    $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/zero-day';
+    
+    $response = wp_remote_get($api_url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_token,
+            'Accept'        => 'application/json'
+        ],
+        'timeout' => 30
+    ]);
+
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($response);
+        $this->log_event('Intelligent WAF Sync failed. Reason: ' . $error_msg, 'error');
+        return;
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || !isset($data['rules'])) {
+        $this->log_event('Intelligent WAF Sync failed: Invalid JSON response.', 'error');
+        return;
+    }
+
+    $rules = is_array($data['rules']) ? $data['rules'] : [];
+    
+    // Solo guardamos si el array es válido
+    update_option('advaipbl_zeroday_waf_rules', $rules);
+    update_option('advaipbl_zeroday_waf_last_sync', time());
+    
+    $this->log_event(sprintf('Intelligent WAF Sync successful: Downloaded %d zero-day signatures.', count($rules)), 'info');
+}
+
+/**
  * Displays the reCAPTCHA field on the login form.
  */
 public function display_recaptcha_field() {
@@ -4912,7 +4959,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         // Protección de Login y Módulos
         'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'restrict_login_page' => '0',
 		'auto_whitelist_admin' => '0',
-		'enable_waf' => '0', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
+		'enable_waf' => '0', 'enable_intelligent_waf' => '1', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
         'rate_limiting_window' => 60, 'rate_limiting_advanced_rules' => '[]', 'xmlrpc_protection_mode' => 'smart',
         'enable_geoblocking' => '1', 'enable_honeypot_blocking' => '1', 'enable_user_agent_blocking' => '1',
         'enable_spamhaus_asn' => '1', 'block_ghost_ips' => '0',
@@ -6187,6 +6234,7 @@ private function get_first_public_ip_from_string($ip_string) {
         // Array de settings completo que refleja todos los módulos principales.
         $telemetry_data['settings'] = [
             'enable_waf'                  => !empty($this->options['enable_waf']),
+            'enable_intelligent_waf'      => !empty($this->options['enable_intelligent_waf']),
             'rate_limiting_enable'        => !empty($this->options['rate_limiting_enable']),
             'enable_geoblocking'          => !empty($this->options['enable_geoblocking']),
             'block_ghost_ips'             => !empty($this->options['block_ghost_ips']),
@@ -6340,7 +6388,9 @@ public function handle_export_settings_ajax() {
             'advaipbl_fim_baseline_hashes',
             'advaipbl_vip_salt_modifier',
             'advaipbl_last_cron_ip',
-            'advaipbl_autoload_version'
+            'advaipbl_autoload_version',
+            'advaipbl_zeroday_waf_rules',
+            'advaipbl_zeroday_waf_last_sync'
         ];
 
         $options = $wpdb->get_results( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE 'advaipbl_%'" );
@@ -6439,7 +6489,9 @@ public function handle_import_settings() {
                             'advaipbl_autoload_version',
                             'advaipbl_spamhaus_last_update',
                             'advaipbl_community_last_update',
-                            'advaipbl_flush_firewalls_needed'
+                            'advaipbl_flush_firewalls_needed',
+                            'advaipbl_zeroday_waf_rules',
+                            'advaipbl_zeroday_waf_last_sync'
                         ];
                         
                         if (!in_array($key, $skip_import_keys, true)) {

@@ -37,6 +37,7 @@ class ADVAIPBL_Cron_Manager {
         add_action('advaipbl_update_community_list_event', [$this->plugin->community_manager, 'update_list']);
         add_action('advaipbl_community_report_event_v2', [$this->plugin, 'execute_community_report']); // Activated hook
         add_action('advaipbl_update_bot_lists_event', [$this->plugin->bot_verifier, 'fetch_and_cache_bot_lists']);
+        add_action('advaipbl_zeroday_sync_event', [$this->plugin, 'sync_zeroday_waf_rules']);
     }
 
     /**
@@ -225,6 +226,16 @@ class ADVAIPBL_Cron_Manager {
             }
         } else {
             wp_clear_scheduled_hook('advaipbl_update_bot_lists_event');
+        }
+
+        // 12.6 Intelligent Zero-Day WAF Sync (Daily)
+        if (!empty($this->plugin->options['enable_intelligent_waf']) && '1' === $this->plugin->options['enable_intelligent_waf']) {
+            if (!wp_next_scheduled('advaipbl_zeroday_sync_event')) {
+                // Jitter to prevent all clients hitting central API simultaneously
+                wp_schedule_event(time() + wp_rand(0, 4 * HOUR_IN_SECONDS), 'daily', 'advaipbl_zeroday_sync_event');
+            }
+        } else {
+            wp_clear_scheduled_hook('advaipbl_zeroday_sync_event');
         }
 
         // 13. Community List Update (Missing logic fixed)

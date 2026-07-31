@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.12
+Stable tag: 8.11.13
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Intelligent Zero-Day WAF Sync:** Automatically download and apply critical WAF signatures from the AIB Central Server every day. Stay protected against zero-day vulnerabilities (like wp2shell) without needing to update the plugin manually! The rules run completely independent of your custom WAF configuration.
 *   **(NEW) Block Ghost IPs:** Automatically block IPs without ASN and Reverse DNS to stop anonymous traffic (Warning: Could cause false positives if rDNS is misconfigured by ISPs).
 *   **(NEW) Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
 *   **(NEW) Rate Limiting Advanced Rules:** Create highly specific rate limits for different endpoints. For example, set a strict limit with a Turnstile challenge for `/login`, while keeping a more generous limit with a temporary block for your main API, all without affecting the rest of the site.
@@ -74,6 +75,9 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+
+= What is the Intelligent Zero-Day WAF Sync? =
+This is a game-changing feature that automatically synchronizes your site's Web Application Firewall with our Central Security Server. Once a day, the plugin securely downloads the latest zero-day vulnerability signatures (e.g., for critical CVEs or widespread exploits) and injects them directly into the scanning engine. This means your site is protected instantly against new threats without waiting for a plugin update. Importantly, these rules run in a dedicated, invisible layer and will NEVER overwrite or interfere with your own custom WAF rules.
 
 = What is Block Ghost IPs? =
 This feature automatically blocks incoming traffic from IP addresses that lack an Autonomous System Number (ASN) and Reverse DNS (rDNS) record. Since legitimate traffic almost always has these identifiers, Ghost IPs are often malicious actors trying to hide. Please note that this can cause false positives if a legitimate Internet Service Provider (ISP) has misconfigured their rDNS.
@@ -257,6 +261,10 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.13 =
+*   **NEW FEATURE:** Intelligent Zero-Day WAF Sync. A completely new autonomous defense layer that securely connects to the AIB Central Server via API V3 to download and apply critical vulnerability signatures (like wp2shell) daily, without requiring a plugin update.
+*   **ENHANCEMENT:** Zero-Day WAF rules are injected dynamically into the runtime scanner, ensuring they never overwrite, clutter, or interfere with your custom WAF rules. Includes a new read-only UI in the settings to display the actively synced rules.
+
 = 8.11.12 =
 *   **NEW FEATURE:** Cloudflare Safe-Guard (Anti-Self-DoS Protection). An intelligent edge-infrastructure shield that automatically prevents official Cloudflare CDN perimeter IPs, routing servers, and internal scanners (e.g., `CloudflareWebScanner`) from triggering local WAF rules, Rate Limiting, or User-Agent blocklists.
 *   **BUG FIX:** Resolved a high-concurrency race condition in Rate Limiting that could cause duplicate entries in the Security Log during rapid-fire request bursts.
@@ -319,6 +327,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.13 =
+**NEW MAJOR FEATURE:** Introduces Intelligent Zero-Day WAF Sync! Your firewall can now automatically download critical vulnerability signatures directly from our central threat intelligence server daily, protecting you from zero-day attacks without needing a plugin update.
 
 = 8.11.12 =
 **NEW FEATURE:** Introduces Cloudflare Safe-Guard to protect CDN perimeter nodes and internal scanners from accidental WAF/Rate-Limiting blocks, preventing self-imposed DDoS lockouts, and resolves a race condition in Rate Limiting logging.

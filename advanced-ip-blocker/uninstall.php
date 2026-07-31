@@ -131,6 +131,8 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_advanced_rules',
             'advaipbl_advanced_rules_metrics',
             'advaipbl_challenge_stats',
+            'advaipbl_zeroday_waf_rules',
+            'advaipbl_zeroday_waf_last_sync',
             
             // Opciones de sistema y estado
             'advaipbl_db_version',
@@ -238,7 +240,8 @@ function advaipbl_process_site_uninstallation() {
         'advaipbl_update_bot_lists_event',
         'advaipbl_send_signature_summary_email',
         'advaipbl_aggregate_rules_metrics',
-        'advaipbl_aggregate_challenge_metrics'
+        'advaipbl_aggregate_challenge_metrics',
+        'advaipbl_zeroday_sync_event'
     ];
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     foreach ($cron_hooks as $hook) {

@@ -172,6 +172,7 @@ jQuery(document).ready(function ($) {
             // Level 5: Core Blocking Engine (WAF & Static Rules)
             'honeypot': 'Honeypot Protection',
             'waf': 'Web Application Firewall (WAF)',
+            'intelligent_waf': 'Intelligent Zero-Day WAF',
             'geoblock': 'Geoblocking',
             'user_agent': 'User-Agent Blocking',
             'spamhaus_asn': 'Spamhaus ASN Protection',

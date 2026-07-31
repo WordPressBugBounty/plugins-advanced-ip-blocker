@@ -544,8 +544,17 @@ add_settings_field(
                 'help_url' => 'https://advaipbl.com/waf-rules-guide/'
             ]
         );
+    add_settings_field('advaipbl_enable_intelligent_waf', __('Intelligent Zero-Day Sync', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'enable_intelligent_waf', 'label' => __('Automatically download and apply critical WAF zero-day signatures from the AIB Central Server (Daily).', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_duration_waf', __('WAF Block Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'duration_waf', 'default' => 1440, 'description' => __('Duration to block IPs that trigger a WAF rule. Set to 0 for a permanent block.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_waf_excluded_urls', __('Excluded URLs for WAF', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'waf_excluded_urls', 'label' => __('Add one URL fragment per line. Requests to URLs containing these strings will not be scanned by the WAF. Use this for payment gateway webhooks or problematic AJAX actions.', 'advanced-ip-blocker')]);
+    
+    // Read-only display of synchronized Zero-Day rules
+    add_settings_field('advaipbl_zeroday_waf_rules_display', __('Active Zero-Day Signatures', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_waf_settings_section', [
+        'name' => 'zeroday_waf_rules_display',
+        'readonly' => true,
+        'value' => implode("\n", get_option('advaipbl_zeroday_waf_rules', [])),
+        'description' => __('These signatures are actively synchronized from the Central Server and injected seamlessly into the WAF engine. They do NOT interfere with your custom rules above.', 'advanced-ip-blocker')
+    ]);
     
     add_settings_section('advaipbl_404_settings_section', null, null, $page);
 
@@ -1206,7 +1215,7 @@ add_settings_field(
         $checkbox_fields = [
             'prevent_author_scanning', 'disable_user_enumeration', 'restrict_login_page',
             'enable_logging', 'delete_data_on_uninstall', 'enable_email_notifications',			
-            'enable_waf', 'enable_geoblocking', 'enable_honeypot_blocking',
+            'enable_waf', 'enable_intelligent_waf', 'enable_geoblocking', 'enable_honeypot_blocking',
             'enable_user_agent_blocking', 'rate_limiting_enable', 'show_admin_bar_menu',
             'enable_spamhaus_asn', 'enable_manual_asn', 
             'enable_push_notifications', 'push_critical_only', 'auto_whitelist_admin',
@@ -1586,18 +1595,21 @@ add_settings_field(
 		 echo $this->get_help_link_html($args);
     }
 	
-        public function textarea_field_callback($args){
-        $value = $this->plugin->options[$args['name']] ?? '';
+    public function textarea_field_callback($args){
+        // If a specific value is passed, use it; otherwise read from plugin options.
+        $value = isset($args['value']) ? $args['value'] : ($this->plugin->options[$args['name']] ?? '');
         $rows = $args['rows'] ?? 5;
         $class = $args['class'] ?? 'large-text';
+        $readonly_attr = !empty($args['readonly']) ? 'readonly' : '';
         
         // 1. Imprimir Textarea
         printf(
-            '<textarea name="%1$s" rows="%2$d" class="%4$s">%3$s</textarea>',
+            '<textarea name="%1$s" rows="%2$d" class="%4$s" %5$s>%3$s</textarea>',
             esc_attr( 'advaipbl_settings[' . $args['name'] . ']' ),
             esc_attr( $rows ),
             esc_textarea( $value ),
-            esc_attr( $class )
+            esc_attr( $class ),
+            esc_attr( $readonly_attr )
         );
 
         // 2. Imprimir Icono de Ayuda (si hay URL)
