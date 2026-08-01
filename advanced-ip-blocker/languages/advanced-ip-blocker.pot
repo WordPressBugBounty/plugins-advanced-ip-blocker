@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.13\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.14\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7608,3 +7608,14 @@ msgstr ""
 msgid "These signatures are actively synchronized from the Central Server and injected seamlessly into the WAF engine. They do NOT interfere with your custom rules above."
 msgstr ""
 
+#: includes/class-advaipbl-main.php:5429
+msgid "Cancel Auto-Panic Now"
+msgstr ""
+
+#: includes/class-advaipbl-action-handler.php:63
+msgid "Auto-Panic mode was manually cancelled by %s."
+msgstr ""
+
+#: includes/class-advaipbl-action-handler.php:64
+msgid "Auto-Panic mode has been successfully cancelled."
+msgstr ""

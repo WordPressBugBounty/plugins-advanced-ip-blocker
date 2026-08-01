@@ -544,7 +544,7 @@ add_settings_field(
                 'help_url' => 'https://advaipbl.com/waf-rules-guide/'
             ]
         );
-    add_settings_field('advaipbl_enable_intelligent_waf', __('Intelligent Zero-Day Sync', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'enable_intelligent_waf', 'label' => __('Automatically download and apply critical WAF zero-day signatures from the AIB Central Server (Daily).', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_enable_intelligent_waf', __('Intelligent Zero-Day Sync', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'enable_intelligent_waf', 'label' => __('Automatically download and apply critical WAF zero-day signatures from the AIB Central Server (Daily).', 'advanced-ip-blocker'), 'help_url' => 'https://advaipbl.com/intelligent-zero-day-waf-sync/']);
     add_settings_field('advaipbl_duration_waf', __('WAF Block Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'duration_waf', 'default' => 1440, 'description' => __('Duration to block IPs that trigger a WAF rule. Set to 0 for a permanent block.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_waf_excluded_urls', __('Excluded URLs for WAF', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'waf_excluded_urls', 'label' => __('Add one URL fragment per line. Requests to URLs containing these strings will not be scanned by the WAF. Use this for payment gateway webhooks or problematic AJAX actions.', 'advanced-ip-blocker')]);
     

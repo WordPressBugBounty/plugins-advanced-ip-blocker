@@ -64,14 +64,24 @@ class ADVAIPBL_Waf_Manager {
             return false;
         }
     
+        $headers = [];
+        foreach ($_SERVER as $key => $value) {
+            if (strpos($key, 'HTTP_') === 0) {
+                $headers[$key] = $value;
+            }
+        }
+
         $request_data_to_scan = [
             // phpcs:disable WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing
             'GET'         => $_GET,
             'POST'        => $_POST,
             'COOKIE'      => $_COOKIE,
+            'FILES'       => $_FILES,
             // phpcs:enable WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing
+            'HEADERS'     => $headers,
             'REQUEST_URI' => $request_uri,
             'USER_AGENT'  => $main_class->get_user_agent(),
+            'RAW_BODY'    => @file_get_contents('php://input'),
         ];
     
         foreach ($rules as $rule) {
@@ -95,7 +105,11 @@ class ADVAIPBL_Waf_Manager {
      */
     private function scan_data_recursively($data, $pattern) {
         if (is_array($data)) {
-            foreach ($data as $value) {
+            foreach ($data as $key => $value) {
+                // Escanear también las claves del array (ej: payloads en parámetros POST)
+                if (is_string($key) && @preg_match($pattern, $key)) {
+                    return true;
+                }
                 if ($this->scan_data_recursively($value, $pattern)) {
                     return true;
                 }

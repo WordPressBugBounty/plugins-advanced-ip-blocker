@@ -56,6 +56,17 @@ class ADVAIPBL_Action_Handler {
             wp_safe_redirect( remove_query_arg( ['action', 'lockdown_id', '_wpnonce'] ) );
             exit;
         }
+		elseif ( isset( $_GET['action'] ) && $_GET['action'] === 'advaipbl_cancel_auto_panic' ) {
+            $nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) );
+            if ( wp_verify_nonce( $nonce, 'advaipbl_cancel_auto_panic' ) && current_user_can('manage_options') ) {
+                delete_transient('advaipbl_is_under_attack');
+                /* translators: %s: Username. */
+                $this->plugin->log_event(sprintf(__('Auto-Panic mode was manually cancelled by %s.', 'advanced-ip-blocker'), $this->plugin->get_current_admin_username()), 'warning');
+                set_transient( ADVAIPBL_Main::TRANSIENT_ADMIN_NOTICE, ['message' => __('Auto-Panic mode has been successfully cancelled.', 'advanced-ip-blocker'), 'type' => 'success'], 30 );
+            }
+            wp_safe_redirect( remove_query_arg( ['action', '_wpnonce'] ) );
+            exit;
+        }
 	  
         $nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ?? '' ) );
         $action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';

@@ -5410,8 +5410,9 @@ public function admin_menu() {
 
         if ($is_active) {
             $settings_link = admin_url('admin.php?page=advaipbl_settings_page-settings&sub-tab=general_settings#sub-section-under-attack');
+            $cancel_link = wp_nonce_url(admin_url('admin.php?page=advaipbl_settings_page&action=advaipbl_cancel_auto_panic'), 'advaipbl_cancel_auto_panic');
             ?>
-            <div class="notice notice-error" style="border-left-color: #d63638;">
+            <div class="notice notice-error" style="border-left-color: #d63638; display: flex; align-items: center; justify-content: space-between;">
                 <p>
                     <strong><?php esc_html_e('⚠️ URGENT:', 'advanced-ip-blocker'); ?></strong> 
                     <?php 
@@ -5425,6 +5426,11 @@ public function admin_menu() {
                     ); 
                     ?>
                 </p>
+                <?php if ($mode === 'auto') : ?>
+                <p>
+                    <a href="<?php echo esc_url($cancel_link); ?>" class="button button-primary" style="background: #d63638; border-color: #a02022; text-shadow: none;"><?php esc_html_e('Cancel Auto-Panic Now', 'advanced-ip-blocker'); ?></a>
+                </p>
+                <?php endif; ?>
             </div>
             <?php
         }
@@ -7734,7 +7740,7 @@ public function handle_import_settings() {
             
             // Native API Immunity (Internal Network Sync)
             $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-            if (strpos($request_uri, '/wp-json/aib-api/v3/') !== false || strpos($request_uri, '/wp-json/advaipbl/v1/') !== false) {
+            if (strpos($request_uri, '/wp-json/aib-api/v3/') !== false || strpos($request_uri, '/wp-json/advaipbl/v1/') !== false || strpos($request_uri, '/wp-json/aib-network/') !== false) {
                 return;
             }
 

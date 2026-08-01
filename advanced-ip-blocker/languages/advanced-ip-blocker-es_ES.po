@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-07-30 13:28+0200\n"
+"PO-Revision-Date: 2026-08-01 12:20+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -9291,6 +9291,18 @@ msgstr ""
 "Estas firmas se sincronizan activamente desde el servidor central y se "
 "integran de forma transparente en el motor del WAF. NO interfieren con las "
 "reglas personalizadas mencionadas anteriormente."
+
+#: includes/class-advaipbl-main.php:5429
+msgid "Cancel Auto-Panic Now"
+msgstr "Cancelar Auto-Panic Ahora"
+
+#: includes/class-advaipbl-action-handler.php:63
+msgid "Auto-Panic mode was manually cancelled by %s."
+msgstr "El modo de pánico automático fue cancelado manualmente por %s."
+
+#: includes/class-advaipbl-action-handler.php:64
+msgid "Auto-Panic mode has been successfully cancelled."
+msgstr "El modo de pánico automático se ha cancelado correctamente."
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

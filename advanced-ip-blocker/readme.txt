@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.13
+Stable tag: 8.11.14
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,11 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.14 =
+*   **NEW FEATURE:** Added a "Cancel Auto-Panic Now" button directly in the active alert banner, allowing administrators to instantly deactivate the Distributed Attack Protection global challenge without navigating through settings.
+*   **ENHANCEMENT:** Expanded Native API Immunity in Distributed Attack Protection (Auto-Panic) to automatically exclude legacy AIB Network V1 and V2 endpoints, preventing false positives on older nodes.
+*   **SECURITY HARDENING:** Upgraded the WAF Engine to recursively scan POST array keys and the raw HTTP stream (`php://input`). This provides an impenetrable defense against complex zero-day exploits that inject payloads via array keys (e.g., CVE-2026-16610).
+
 = 8.11.13 =
 *   **NEW FEATURE:** Intelligent Zero-Day WAF Sync. A completely new autonomous defense layer that securely connects to the AIB Central Server via API V3 to download and apply critical vulnerability signatures (like wp2shell) daily, without requiring a plugin update.
 *   **ENHANCEMENT:** Zero-Day WAF rules are injected dynamically into the runtime scanner, ensuring they never overwrite, clutter, or interfere with your custom WAF rules. Includes a new read-only UI in the settings to display the actively synced rules.
@@ -327,6 +332,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.14 =
+**SECURITY HARDENING & ENHANCEMENT:** Upgrades the WAF Engine to deeply scan POST array keys and raw payloads for advanced zero-day protection (CVE-2026-16610), and fixes false positive blocks on legacy telemetry endpoints during Auto-Panic.
 
 = 8.11.13 =
 **NEW MAJOR FEATURE:** Introduces Intelligent Zero-Day WAF Sync! Your firewall can now automatically download critical vulnerability signatures directly from our central threat intelligence server daily, protecting you from zero-day attacks without needing a plugin update.
