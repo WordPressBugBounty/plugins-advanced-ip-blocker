@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.14
+Stable tag: 8.11.15
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.15 =
+*   **NEW FEATURE:** Expanded Advanced Rules Engine. Added full support for inspecting raw HTTP Payloads (`php://input`), `POST` body data, and `Query String` parameters. Administrators can now build surgical firewall rules to block advanced zero-day exploits targeting specific query strings or POST payloads.
+*   **NEW FEATURE:** Dynamic Admin Session Protection. The plugin now reads administrator sessions instantaneously in the early `init` phase, ensuring traveling admins with dynamic IPs are never locked out by WAF or Geo-Block rules.
+*   **ENHANCEMENT:** Advanced Rules UI update to seamlessly integrate new Target Variables with full Export/Import support.
+*   **ENHANCEMENT:** Integrated ipquery.io as a high-performance secondary fallback for missing ASN data to prevent false positives in the Ghost IP protection shield.
+*   **ENHANCEMENT:** Reordered the Login Protection engine to prioritize local Geo/Whitelist checks before API lookups, drastically saving AbuseIPDB API limits.
+*   **SECURITY HARDENING:** Added surgical WAF rule targeting directory traversal variations (CVE-2026-13152) and refined JS challenges.
+
 = 8.11.14 =
 *   **NEW FEATURE:** Added a "Cancel Auto-Panic Now" button directly in the active alert banner, allowing administrators to instantly deactivate the Distributed Attack Protection global challenge without navigating through settings.
 *   **ENHANCEMENT:** Expanded Native API Immunity in Distributed Attack Protection (Auto-Panic) to automatically exclude legacy AIB Network V1 and V2 endpoints, preventing false positives on older nodes.
@@ -332,6 +340,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 
 == Upgrade Notice ==
+
+= 8.11.15 =
+**MAJOR UPDATE:** The Advanced Rules Engine now supports deep inspection of raw HTTP Payloads, POST bodies, and Query Strings. We've also introduced Dynamic Admin Session Protection to completely eliminate accidental lockouts for traveling admins, and improved Ghost IP accuracy.
 
 = 8.11.14 =
 **SECURITY HARDENING & ENHANCEMENT:** Upgrades the WAF Engine to deeply scan POST array keys and raw payloads for advanced zero-day protection (CVE-2026-16610), and fixes false positive blocks on legacy telemetry endpoints during Auto-Panic.

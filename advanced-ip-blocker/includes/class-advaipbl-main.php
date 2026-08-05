@@ -231,6 +231,7 @@ private function __construct() {
         
         // Ejecutar chequeo de base de datos muy temprano en init
         add_action('init', [$this, 'check_database_version'], -9999);
+		add_action('init', [$this, 'auto_whitelist_admin_on_session'], -9998); // Protección para administradores con sesión activa
 
         // Ejecutamos las validaciones de inmunidad (Bots y ASN) ANTES que cualquier otra cosa
 		add_action('init', [$this, 'is_visitor_asn_whitelisted'], -1000);
@@ -278,8 +279,8 @@ private function __construct() {
 		add_filter('the_author_login', [$this, 'prevent_user_enumeration_via_feeds']);
         add_filter('get_the_author_login', [$this, 'prevent_user_enumeration_via_feeds']);
         add_action('wp_login_failed', [$this, 'registrar_intento_login_fallido']);
-        add_action('login_init', [ $this, 'handle_login_page_restriction' ], 1 );
-		add_action('login_init', [ $this, 'handle_login_geo_restriction' ], 2 );
+        add_action('init', [ $this, 'handle_login_page_restriction' ], 5 );
+		add_action('init', [ $this, 'handle_login_geo_restriction' ], 6 );
         add_action('wp_login', [$this, 'auto_whitelist_admin_on_login'], 10, 2);
         add_filter('rest_endpoints', [ $this, 'disable_rest_api_user_endpoints' ] );
 		add_filter('oembed_response_data', [$this, 'prevent_user_enumeration_via_oembed'], 99, 4);
@@ -2238,6 +2239,11 @@ return $status_header;
      * Hooked to 'login_init'.
      */
     public function handle_login_page_restriction() {
+        global $pagenow;
+        if ( $pagenow !== 'wp-login.php' ) {
+            return;
+        }
+
         // Solo actuar si la opción está activada
         if ( ! empty( $this->options['restrict_login_page'] ) ) {
             $client_ip = $this->get_client_ip();
@@ -2262,6 +2268,11 @@ return $status_header;
      * Hooked to 'login_init' with priority 2.
      */
     public function handle_login_geo_restriction() {
+        global $pagenow;
+        if ( $pagenow !== 'wp-login.php' ) {
+            return;
+        }
+
         if ( ! empty( $this->options['login_restrict_countries'] ) && is_array( $this->options['login_restrict_countries'] ) ) {
             $client_ip = $this->get_client_ip();
             
@@ -4872,6 +4883,31 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
                         set_transient('advaipbl_blocked_ip_' . md5($ip_or_range), true, $time_left);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Auto-whitelists an admin if they have an active session, protecting them from early blocks (e.g., Geo, ASN).
+     * Hooked to 'init' early on.
+     */
+    public function auto_whitelist_admin_on_session() {
+        if (empty($this->options['auto_whitelist_admin']) || '1' !== $this->options['auto_whitelist_admin']) {
+            return;
+        }
+
+        // is_user_logged_in() is safe to use early in init because wp_get_current_user() parses the cookie on-demand.
+        if (is_user_logged_in() && current_user_can('manage_options')) {
+            $ip = $this->get_client_ip();
+            if (filter_var($ip, FILTER_VALIDATE_IP) && !$this->is_whitelisted($ip)) {
+                $user = wp_get_current_user();
+                $detail = sprintf(
+                    /* translators: %1$s: Username, %2$s: Email */
+                    __('Auto-whitelisted admin session: %1$s (%2$s)', 'advanced-ip-blocker'),
+                    $user->user_login,
+                    $user->user_email
+                );
+                $this->add_to_whitelist_and_unblock($ip, $detail);
             }
         }
     }

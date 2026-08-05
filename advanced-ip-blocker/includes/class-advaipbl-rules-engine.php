@@ -87,7 +87,7 @@ private function sanitize_rule(array $rule_data) {
     }
 
     $sanitized_rule['conditions'] = [];
-    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header'];
+    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header', 'payload', 'query_string'];
     $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex', 'is_empty', 'is_not_empty'];
 
     foreach ($rule_data['conditions'] as $condition) {
@@ -348,6 +348,14 @@ private function check_condition($condition, $ip) {
                 $header_key = 'HTTP_' . strtoupper(str_replace('-', '_', $target));
                 $subject = isset($_SERVER[$header_key]) ? $_SERVER[$header_key] : '';
             }
+            break;
+        case 'payload':
+            $raw_body = @file_get_contents('php://input');
+            $post_data = !empty($_POST) ? wp_json_encode($_POST) : '';
+            $subject = $raw_body . "\n" . $post_data;
+            break;
+        case 'query_string':
+            $subject = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
             break;
         default:
             return false;

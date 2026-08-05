@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-08-01 12:20+0200\n"
+"PO-Revision-Date: 2026-08-05 09:53+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8823,8 +8823,6 @@ msgid "CRITICAL SECURITY ALERT"
 msgstr "ALERTA DE SEGURIDAD CRÍTICA"
 
 #: includes/class-advaipbl-main.php
-#, fuzzy
-#| msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) 🚨"
 msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) ðŸš¨"
 msgstr "[%s] URGENTE: El sitio está BAJO ATAQUE (Pánico-automático %s) 🚨"
 
@@ -9303,6 +9301,25 @@ msgstr "El modo de pánico automático fue cancelado manualmente por %s."
 #: includes/class-advaipbl-action-handler.php:64
 msgid "Auto-Panic mode has been successfully cancelled."
 msgstr "El modo de pánico automático se ha cancelado correctamente."
+
+#: includes/class-advaipbl-main.php:4904
+msgid "Auto-whitelisted admin session: %1$s (%2$s)"
+msgstr ""
+"Sesión de administrador incluida automáticamente en la lista blanca: %1$s "
+"(%2$s)"
+
+#: includes/class-advaipbl-admin-pages.php:2694
+msgid "Zero-Day Vulnerability Prevention:"
+msgstr "Prevención de vulnerabilidades Zero-Day:"
+
+#: includes/class-advaipbl-admin-pages.php:2694
+msgid ""
+"Deploys surgical WAF rules to block exploits targeting newly discovered and "
+"unpatched vulnerabilities before they compromise your site."
+msgstr ""
+"Implementa reglas de WAF quirúrgicas para bloquear exploits dirigidos a "
+"vulnerabilidades recién descubiertas y sin parchear, antes de que "
+"comprometan su sitio."
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

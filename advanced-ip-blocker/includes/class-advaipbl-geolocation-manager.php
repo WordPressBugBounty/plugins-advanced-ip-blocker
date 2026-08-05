@@ -18,27 +18,8 @@ class ADVAIPBL_Geolocation_Manager {
     public function fetch_location( $ip ) {
         $main_instance = $this->plugin;
         $method = $main_instance->options['geolocation_method'] ?? 'api';
-
-        if ( 'local_db' === $method ) {
-            // Nos aseguramos de que geoip_manager es una instancia válida y no una stdClass.
-            if ( $main_instance->geoip_manager instanceof ADVAIPBL_GeoIP_Manager ) {
-                $location = $main_instance->geoip_manager->lookup_ip( $ip );
-                
-                // Si encontramos la IP en la BD local, devolvemos el resultado.
-                if ( $location && empty($location['error']) ) {
-                    return $location; 
-                }
-                
-                // Si la BD local falla (IP no encontrada), hacemos fallback a la API.
-                // Esto es crucial para IPs nuevas o IPv6 que pueden faltar en la BD gratuita.
-                // Continuamos hacia el bloque de la API...
-            } else {
-                // Si el método es 'local_db' pero estamos en PHP < 8.1...
-                 // Fallback to API logic below
-            }
-        }  
         
-        // --- MÉTODO 2: API EN TIEMPO REAL (CON CACHÉ) ---
+        // --- API EN TIEMPO REAL (CON CACHÉ) ---
         $cache_key = 'advaipbl_geo_loc_' . md5($ip);
         $cached_location = get_transient($cache_key);
 
@@ -46,12 +27,74 @@ class ADVAIPBL_Geolocation_Manager {
             return $cached_location;
         }
 
-        $location = $this->fetch_location_from_api( $ip );
+        $location = null;
+        $used_api = false;
 
-        // Solo cacheamos si obtenemos una respuesta válida (no error) o si el error es permanente.
-        // Cacheamos por 7 días para minimizar costos de API y latencia.
-        if ( $location && ! isset( $location['error'] ) ) {
-            set_transient( $cache_key, $location, 7 * DAY_IN_SECONDS );
+        if ( 'local_db' === $method ) {
+            // Nos aseguramos de que geoip_manager es una instancia válida y no una stdClass.
+            if ( $main_instance->geoip_manager instanceof ADVAIPBL_GeoIP_Manager ) {
+                $location = $main_instance->geoip_manager->lookup_ip( $ip );
+            }
+        }  
+        
+        // Si no tenemos ubicación válida (fallo local o modo api), llamamos a la API principal
+        if ( empty($location) || !empty($location['error']) ) {
+            $location = $this->fetch_location_from_api( $ip );
+            $used_api = true;
+        }
+
+        // --- FALLBACK IPQUERY.IO PARA ASN VACÍO ---
+        if ( $location && empty($location['error']) && empty($location['as']) ) {
+            $location = $this->fetch_fallback_asn_from_ipquery( $ip, $location );
+            $used_api = true; // Forzamos el cacheo si hemos usado el fallback
+        }
+
+        // Solo cacheamos si hemos usado una API (para no llenar transients si solo leemos local_db rápido)
+        // Cacheamos por 24 horas para mantener datos actualizados.
+        if ( $used_api && $location && ! isset( $location['error'] ) ) {
+            set_transient( $cache_key, $location, DAY_IN_SECONDS );
+        }
+
+        return $location;
+    }
+
+    /**
+     * Fallback to ipquery.io if the primary provider did not return an ASN.
+     *
+     * @param string $ip
+     * @param array $location
+     * @return array
+     */
+    private function fetch_fallback_asn_from_ipquery( $ip, $location ) {
+        if ( get_transient( 'advaipbl_geo_fallback_down' ) ) {
+            return $location; // Return original if fallback is circuit-broken
+        }
+
+        $url = 'https://api.ipquery.io/' . $ip;
+        $response = wp_remote_get($url, ['timeout' => 3]);
+
+        if (is_wp_error($response)) {
+            set_transient( 'advaipbl_geo_fallback_down', true, 5 * MINUTE_IN_SECONDS );
+            return $location;
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        if ($code !== 200) {
+            if (in_array($code, [400, 429, 500])) {
+                $this->plugin->log_event("IPQuery Fallback Error: HTTP $code for IP $ip", 'warning', ['ip' => $ip]);
+                set_transient( 'advaipbl_geo_fallback_down', true, 5 * MINUTE_IN_SECONDS );
+            }
+            return $location;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($data && !empty($data['isp']['asn'])) {
+            $location['as'] = $data['isp']['asn'];
+            if (empty($location['isp']) && !empty($data['isp']['isp'])) {
+                $location['isp'] = $data['isp']['isp'];
+            }
         }
 
         return $location;

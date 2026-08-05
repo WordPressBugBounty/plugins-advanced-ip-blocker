@@ -363,6 +363,8 @@ jQuery(document).ready(function ($) {
                 if (type === 'referer') placeholder = 'e.g., badsite.com';
                 if (type === 'cookie') placeholder = 'e.g., cookie_value';
                 if (type === 'header') placeholder = 'e.g., header_value';
+                if (type === 'payload') placeholder = 'e.g., cfar_custom_fields';
+                if (type === 'query_string') placeholder = 'e.g., author=1';
                 valueContainer.append($('<input>', { type: 'text', class: 'condition-value', placeholder: placeholder }));
             }
         }

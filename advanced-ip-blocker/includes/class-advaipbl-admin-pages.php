@@ -2691,6 +2691,7 @@ public function display_credits_tab() {
                 
                 <h4><?php esc_html_e('Key Features Overview:', 'advanced-ip-blocker'); ?></h4>
                 <div class="advaipbl-features-grid">
+                    <div class="advaipbl-feature-item"><strong><?php esc_html_e('Zero-Day Vulnerability Prevention:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Deploys surgical WAF rules to block exploits targeting newly discovered and unpatched vulnerabilities before they compromise your site.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Site Health & Vulnerability Scanner:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Audit your WordPress environment for weaknesses and check installed plugins against a database of 30,000+ known security vulnerabilities.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Community Defense Network:', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('A global collaborative network that shares verified attack data to block emerging threats in real-time across all participating sites.', 'advanced-ip-blocker'); ?></div>
                     <div class="advaipbl-feature-item"><strong><?php esc_html_e('Distributed Attack Protection (Auto-Panic):', 'advanced-ip-blocker'); ?></strong> <?php esc_html_e('Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.', 'advanced-ip-blocker'); ?></div>
@@ -2805,7 +2806,7 @@ wp advaipbl spamhaus-update
                 </ul>
                 <p><strong><?php esc_html_e('Geolocation API Providers', 'advanced-ip-blocker'); ?></strong></p>
                 <ul>
-                    <li><a href="https://ip-api.com/" target="_blank" rel="noopener">ip-api.com</a>, <a href="https://ipinfo.io/" target="_blank" rel="noopener">ipinfo.io</a>, <a href="https://ipapi.com/" target="_blank" rel="noopener">ipapi.com</a>, <a href="https://ipstack.com/" target="_blank" rel="noopener">ipstack.com</a>, and <a href="http://geoiplookup.net/" target="_blank" rel="noopener">geoiplookup.net</a>.</li>
+                    <li><a href="https://ip-api.com/" target="_blank" rel="noopener">ip-api.com</a>, <a href="https://ipinfo.io/" target="_blank" rel="noopener">ipinfo.io</a>, <a href="https://ipapi.com/" target="_blank" rel="noopener">ipapi.com</a>, <a href="https://ipstack.com/" target="_blank" rel="noopener">ipstack.com</a>, <a href="https://ipquery.io/" target="_blank" rel="noopener">ipquery.io</a>, and <a href="http://geoiplookup.net/" target="_blank" rel="noopener">geoiplookup.net</a>.</li>
                 </ul>
             </div>
             <style>
@@ -3729,6 +3730,8 @@ $status_parts[] = sprintf(
                 <option value="referer"><?php esc_html_e('Referer', 'advanced-ip-blocker'); ?></option>
                 <option value="cookie"><?php esc_html_e('Cookie', 'advanced-ip-blocker'); ?></option>
                 <option value="header"><?php esc_html_e('Request Header', 'advanced-ip-blocker'); ?></option>
+                <option value="payload"><?php esc_html_e('Payload / Request Body', 'advanced-ip-blocker'); ?></option>
+                <option value="query_string"><?php esc_html_e('Query String', 'advanced-ip-blocker'); ?></option>
             </select>
             <div class="condition-target-container" style="display:none; margin-right: 5px;"></div>
             <select class="condition-operator"></select>

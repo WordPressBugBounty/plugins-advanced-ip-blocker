@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.14\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.15\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7618,4 +7618,16 @@ msgstr ""
 
 #: includes/class-advaipbl-action-handler.php:64
 msgid "Auto-Panic mode has been successfully cancelled."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:4904
+msgid "Auto-whitelisted admin session: %1$s (%2$s)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:2694
+msgid "Zero-Day Vulnerability Prevention:"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:2694
+msgid "Deploys surgical WAF rules to block exploits targeting newly discovered and unpatched vulnerabilities before they compromise your site."
 msgstr ""
