@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.16
+Stable tag: 8.11.17
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.17 =
+*   **BUGFIX:** Resolved an issue where unchecked plugin settings (like Whitelist Login Access) would not save properly and remained persistently activated.
+
 = 8.11.16 =
 *   **NEW FEATURE:** WP-Cron Manager. A new diagnostic tool in the WP-Cron Logs tab that allows administrators to manually force the synchronous execution of any scheduled WP-Cron event directly from the dashboard, simulating a native cron environment for maximum plugin compatibility.
 *   **ENHANCEMENT:** Upgraded Bot Verification Engine. Moved AhrefsBot, BingBot, and AmazonBot verification to a high-speed dynamic JSON/HTML crawler list engine. Fixed MJ12Bot Reverse DNS schema and addressed a ClaudeBot / OpenAI bot collision issue.
@@ -270,6 +273,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **BUGFIX:** Added missing legacy and telemetry options to the uninstallation wipe routine for a complete data cleanup.
 
 == Upgrade Notice ==
+
+= 8.11.17 =
+**MAINTENANCE UPDATE:** Fixes a minor bug affecting the save state of specific settings checkboxes in the admin panel.
 
 = 8.11.16 =
 **DIAGNOSTIC UPDATE:** Introduces the WP-Cron Manager to manually run background tasks. Enhances bot verification using high-speed JSON lists (Ahrefs, Bing, Amazon). Adds cryptographic auto-whitelisting for internal IPs and patches a Zero-Day WAF sync bug during settings import.

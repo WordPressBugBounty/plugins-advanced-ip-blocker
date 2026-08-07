@@ -98,7 +98,7 @@ class ADVAIPBL_Bot_Verifier {
             $is_google_bot = true;
         } elseif (in_array($ua_keyword, ['uptimerobot', 'pingdom'])) {
             $is_monitoring_bot = true;
-        } elseif (in_array($ua_keyword, ['ahrefsbot', 'bingbot', 'adidxbot'])) {
+        } elseif (in_array($ua_keyword, ['ahrefsbot', 'bingbot', 'adidxbot', 'duckduckbot'])) {
             $is_seo_cidr_bot = true;
         }
 
@@ -228,7 +228,8 @@ class ADVAIPBL_Bot_Verifier {
                 'https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json',
                 'https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json'
             ],
-            'bingbot' => 'https://www.bing.com/toolbox/bingbot.json'
+            'bingbot' => 'https://www.bing.com/toolbox/bingbot.json',
+            'duckduckbot' => 'https://duckduckgo.com/duckduckbot.json'
         ];
 
         $txt_endpoints = [
@@ -361,6 +362,8 @@ class ADVAIPBL_Bot_Verifier {
             $bot_key = 'ahrefsbot';
         } elseif (in_array($ua_keyword, ['bingbot', 'adidxbot'])) {
             $bot_key = 'bingbot';
+        } elseif ($ua_keyword === 'duckduckbot') {
+            $bot_key = 'duckduckbot';
         } elseif (in_array($ua_keyword, ['amazonbot', 'amzn-searchbot'])) {
             $bot_key = 'amazonbot';
         }

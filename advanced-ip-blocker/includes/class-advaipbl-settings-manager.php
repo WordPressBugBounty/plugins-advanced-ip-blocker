@@ -1457,8 +1457,10 @@ add_settings_field(
         $id_attr = isset($args['id']) ? 'id="' . esc_attr($args['id']) . '"' : '';
 
         // Generamos el HTML del checkbox y su label
+        // Se inyecta un input oculto para que la Settings API siempre reciba el campo aunque esté desmarcado (evitando que se quede atascado en ON).
         $html = sprintf(
-            '<label><input type="checkbox" name="%s" value="1" %s %s/> %s</label>',
+            '<input type="hidden" name="%s" value="0" /><label><input type="checkbox" name="%s" value="1" %s %s/> %s</label>',
+            esc_attr( 'advaipbl_settings[' . $args['name'] . ']' ),
             esc_attr( 'advaipbl_settings[' . $args['name'] . ']' ),
             $checked,
             $id_attr,
