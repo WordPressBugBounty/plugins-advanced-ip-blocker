@@ -1521,4 +1521,78 @@ public function ajax_verify_abuseipdb_key() {
         wp_die();
     }
 
+    /**
+     * AJAX callback to forcefully run a specific WP-Cron event.
+     */
+    public function ajax_force_run_cron() {
+        check_ajax_referer('advaipbl_admin_nonce_action', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+        }
+
+        $hook = isset($_POST['hook']) ? sanitize_text_field(wp_unslash($_POST['hook'])) : '';
+        $sig  = isset($_POST['sig']) ? sanitize_text_field(wp_unslash($_POST['sig'])) : '';
+
+        if (empty($hook)) {
+            wp_send_json_error(['message' => __('Invalid cron hook.', 'advanced-ip-blocker')]);
+        }
+
+        // Recuperar los argumentos originales de la firma si están disponibles
+        $args = [];
+        if (!empty($sig)) {
+            $crons = _get_cron_array();
+            foreach ($crons as $timestamp => $hooks) {
+                if (isset($hooks[$hook][$sig])) {
+                    $args = $hooks[$hook][$sig]['args'] ?? [];
+                    break;
+                }
+            }
+        }
+
+        try {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
+            if (!defined('DOING_CRON')) {
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
+                define('DOING_CRON', true);
+            }
+            
+            // Ejecutamos la acción síncronamente con los parámetros descubiertos
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+            do_action_ref_array($hook, $args);
+            
+            /* translators: %s: Cron hook name */
+            $msg = sprintf(__('Cron event "%s" successfully executed.', 'advanced-ip-blocker'), $hook);
+            
+            /* translators: 1: Cron hook name, 2: Username */
+            $log_msg = sprintf(__('Manual WP-Cron trigger: %1$s was forced to run by %2$s.', 'advanced-ip-blocker'), $hook, $this->plugin->get_current_admin_username());
+            $this->plugin->log_event($log_msg, 'info');
+            
+            // Insertar también en la tabla de WP-Cron Logs para una mejor UX
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->insert(
+                $wpdb->prefix . 'advaipbl_logs',
+                [
+                    'timestamp' => current_time('mysql', 1),
+                    'ip' => $this->plugin->get_client_ip(),
+                    'log_type' => 'wp_cron',
+                    'details' => wp_json_encode([
+                        'source' => 'Manual (Admin)',
+                        'url' => 'wp-admin/admin-ajax.php (Forced)',
+                        'due_hooks' => [$hook],
+                        'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '',
+                    ])
+                ]
+            );
+
+            wp_send_json_success(['message' => $msg]);
+        } catch (Throwable $e) {
+            /* translators: 1: Cron hook name, 2: Error message */
+            $error_msg = sprintf(__('Error forcing WP-Cron %1$s: %2$s', 'advanced-ip-blocker'), $hook, $e->getMessage());
+            $this->plugin->log_event($error_msg, 'error');
+            wp_send_json_error(['message' => __('An error occurred while running the task. Check the plugin error log.', 'advanced-ip-blocker')]);
+        }
+    }
+
 }

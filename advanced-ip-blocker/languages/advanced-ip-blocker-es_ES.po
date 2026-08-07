@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-08-05 09:53+0200\n"
+"PO-Revision-Date: 2026-08-06 13:26+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -4423,6 +4423,7 @@ msgid "Expires In"
 msgstr "Vence en"
 
 #: includes/class-advaipbl-main.php includes/class-advaipbl-main.php:2062
+#: includes/class-advaipbl-admin-pages.php
 msgid "from now"
 msgstr "desde ahora"
 
@@ -9320,6 +9321,96 @@ msgstr ""
 "Implementa reglas de WAF quirúrgicas para bloquear exploits dirigidos a "
 "vulnerabilidades recién descubiertas y sin parchear, antes de que "
 "comprometan su sitio."
+
+#: includes/class-advaipbl-main.php:4926
+msgid ""
+"Internal Loopback Auto-Discovery: Server IP %s successfully identified and "
+"whitelisted."
+msgstr ""
+"Internal Loopback Auto-Discovery: la IP del servidor %s se ha identificado y "
+"añadido a la lista blanca correctamente."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WP-Cron Manager"
+msgstr "Administrador de WP-Cron"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Use this tool to manually force the execution of scheduled WP-Cron events. "
+"Warning: Running heavy tasks synchronously (like backups or bulk emails) may "
+"result in a server timeout, although the task will usually continue running "
+"in the background."
+msgstr ""
+"Utilice esta herramienta para forzar manualmente la ejecución de los eventos "
+"programados de WP-Cron. Advertencia: La ejecución síncrona de tareas pesadas "
+"(como copias de seguridad o envíos masivos de correos electrónicos) puede "
+"provocar un tiempo de espera agotado (*timeout*) en el servidor, aunque por "
+"lo general la tarea continuará ejecutándose en segundo plano."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Hook Name"
+msgstr "Nombre del Hook"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Next Run"
+msgstr "Siguiente ejecución"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Recurrence"
+msgstr "Recurrencia"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "No scheduled cron events found."
+msgstr "No se encontraron eventos cron programados."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Non-repeating"
+msgstr "No repetitivo"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Now (Pending)"
+msgstr "Ahora (Pendiente)"
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Invalid cron hook."
+msgstr "Hook de cron no válido."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Cron event \"%s\" successfully executed."
+msgstr "Evento cron \"%s\" ejecutado correctamente."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Manual WP-Cron trigger: %1$s was forced to run by %2$s."
+msgstr ""
+"Activación manual de WP-Cron: se forzó la ejecución de %1$s por parte de "
+"%2$s."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Error forcing WP-Cron %1$s: %2$s"
+msgstr "Error al forzar WP-Cron %1$s: %2$s"
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "An error occurred while running the task. Check the plugin error log."
+msgstr ""
+"Se produjo un error al ejecutar la tarea. Consulte el registro de errores "
+"del plugin."
+
+#: includes/class-advaipbl-main.php
+msgid ""
+"You are about to force a WP-Cron task to run synchronously. If this task is "
+"very heavy (e.g., backups, bulk emails), it may cause a PHP Timeout and this "
+"page will freeze, although the task will likely continue running on the "
+"server. Do you want to proceed?"
+msgstr ""
+"Está a punto de forzar la ejecución síncrona de una tarea de WP-Cron. Si "
+"esta tarea es muy pesada (por ejemplo, copias de seguridad o envíos masivos "
+"de correos electrónicos), podría provocar un tiempo de espera agotado "
+"(timeout) de PHP y hacer que la página se bloquee, aunque es probable que la "
+"tarea continúe ejecutándose en el servidor. ¿Desea continuar?"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Manual (Admin)"
+msgstr "Manual (Admin)"
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

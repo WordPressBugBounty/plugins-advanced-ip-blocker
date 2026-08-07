@@ -37,6 +37,13 @@ class ADVAIPBL_Bot_Verifier {
             // Applebot: Aceptamos infraestructura oficial y iCloud
             'applebot'          => ['.applebot.apple.com', '.apple.com', '.icloud.com'],
             'baiduspider'       => ['.baidu.com', '.baidu.jp'],
+            'seznambot'         => '.seznam.cz',
+            
+            // --- Herramientas SEO y Crawlers Comerciales ---
+            'ahrefsbot'         => ['.ahrefs.com', '.ahrefs.net'],
+            'semrushbot'        => '.semrush.com',
+            'mj12bot'           => '.mj12bot.com',
+            'iboubot'           => '.ibou.io', // Babbar
             
             // --- Bots de Redes Sociales ---
             // Facebook usa tfbnw.net para infraestructura
@@ -50,8 +57,9 @@ class ADVAIPBL_Bot_Verifier {
             'chatgpt-user'        => '.outbound-customer.openai.com',
             'oai/openai'          => '.outbound-customer.openai.com',
             'gptbot'              => '.outbound-customer.openai.com',
-            'searchbot'           => '.outbound-customer.openai.com',
+            'oai-searchbot'       => '.outbound-customer.openai.com',
             'amazonbot'           => ['.amazonbot.amazon.com', '.crawl.amazonbot.amazon.com'],
+            'amzn-searchbot'      => ['.amazonbot.amazon.com', '.crawl.amazonbot.amazon.com'],
 
             // --- Otros Bots de Confianza ---
             'yahoo! slurp'        => '.yahoo.com',
@@ -82,13 +90,16 @@ class ADVAIPBL_Bot_Verifier {
         $is_ai_bot = false;
         $is_google_bot = false;
         $is_monitoring_bot = false;
+        $is_seo_cidr_bot = false;
         
-        if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'searchbot', 'applebot'])) {
+        if (in_array($ua_keyword, ['chatgpt-user', 'oai/openai', 'gptbot', 'oai-searchbot', 'applebot', 'amazonbot', 'amzn-searchbot'])) {
             $is_ai_bot = true;
         } elseif (in_array($ua_keyword, ['googlebot', 'google.com/bot', 'adsbot-google'])) {
             $is_google_bot = true;
         } elseif (in_array($ua_keyword, ['uptimerobot', 'pingdom'])) {
             $is_monitoring_bot = true;
+        } elseif (in_array($ua_keyword, ['ahrefsbot', 'bingbot', 'adidxbot'])) {
+            $is_seo_cidr_bot = true;
         }
 
         // Si es un bot de IA y la opción está activa, o si es de Google, verificamos por CIDR en lugar de DNS
@@ -96,7 +107,7 @@ class ADVAIPBL_Bot_Verifier {
         $ai_bot_enabled = isset($this->plugin->options['enable_ai_bot_verification']) ? $this->plugin->options['enable_ai_bot_verification'] : '1';
         $monitoring_bot_enabled = isset($this->plugin->options['enable_monitoring_bot_verification']) ? $this->plugin->options['enable_monitoring_bot_verification'] : '1';
         
-        if (($is_ai_bot && $ai_bot_enabled === '1') || $is_google_bot || ($is_monitoring_bot && $monitoring_bot_enabled === '1')) {
+        if (($is_ai_bot && $ai_bot_enabled === '1') || $is_google_bot || ($is_monitoring_bot && $monitoring_bot_enabled === '1') || $is_seo_cidr_bot) {
             if (!get_transient('advaipbl_bot_ips_cached')) {
                 $this->fetch_and_cache_bot_lists();
             }
@@ -177,8 +188,13 @@ class ADVAIPBL_Bot_Verifier {
             'chatgpt-user'  => '.outbound-customer.openai.com',
             'oai/openai'    => '.outbound-customer.openai.com',
             'gptbot'        => '.outbound-customer.openai.com',
-            'searchbot'     => '.outbound-customer.openai.com',
+            'oai-searchbot' => '.outbound-customer.openai.com',
             'amazonbot'     => '.amazonbot.amazon.com',
+            'ahrefsbot'     => '.ahrefs.com',
+            'semrushbot'    => '.semrush.com',
+            'mj12bot'       => '.majestic12.co.uk',
+            'iboubot'       => '.ibou.io',
+            'seznambot'     => '.seznam.cz',
             'uptimerobot'   => '',
             'pingdom'       => '',
         ];
@@ -196,6 +212,11 @@ class ADVAIPBL_Bot_Verifier {
      */
     public function fetch_and_cache_bot_lists() {
         $endpoints = [
+            'ahrefsbot' => 'https://api.ahrefs.com/v3/public/crawler-ips',
+            'amazonbot' => [
+                'https://developer.amazon.com/amazonbot/searchbot-ip-addresses/',
+                'https://developer.amazon.com/amazonbot/ip-addresses/'
+            ],
             'gptbot' => 'https://openai.com/gptbot.json',
             'searchbot' => 'https://openai.com/searchbot.json',
             'chatgpt-user' => 'https://openai.com/chatgpt-user.json',
@@ -206,7 +227,8 @@ class ADVAIPBL_Bot_Verifier {
                 'https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers.json',
                 'https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json',
                 'https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json'
-            ]
+            ],
+            'bingbot' => 'https://www.bing.com/toolbox/bingbot.json'
         ];
 
         $txt_endpoints = [
@@ -232,14 +254,48 @@ class ADVAIPBL_Bot_Verifier {
                 $response = wp_remote_get($url, ['timeout' => 5]);
                 if (!is_wp_error($response)) {
                     $body = wp_remote_retrieve_body($response);
-                    $data = json_decode($body, true);
-                    if (is_array($data) && !empty($data['prefixes'])) {
-                        foreach ($data['prefixes'] as $prefix) {
-                            if (!empty($prefix['ipv4Prefix'])) {
-                                $all_cidrs[$bot][] = $prefix['ipv4Prefix'];
+                    
+                    if ($bot === 'amazonbot') {
+                        // Amazon publishes the JSON embedded inside an HTML page
+                        if (preg_match('/<code[^>]*>\s*(\{[\s\S]*?"prefixes"[\s\S]*?\})\s*<\/code>/i', $body, $matches)) {
+                            $amz_data = json_decode($matches[1], true);
+                            if (is_array($amz_data) && !empty($amz_data['prefixes'])) {
+                                foreach ($amz_data['prefixes'] as $prefix) {
+                                    if (!empty($prefix['ip_prefix'])) {
+                                        $all_cidrs[$bot][] = $prefix['ip_prefix'];
+                                    } elseif (!empty($prefix['ipv4Prefix'])) {
+                                        $all_cidrs[$bot][] = $prefix['ipv4Prefix'];
+                                    }
+                                    
+                                    if (!empty($prefix['ipv6_prefix'])) {
+                                        $all_cidrs[$bot][] = $prefix['ipv6_prefix'];
+                                    } elseif (!empty($prefix['ipv6Prefix'])) {
+                                        $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
+                                    }
+                                }
                             }
-                            if (!empty($prefix['ipv6Prefix'])) {
-                                $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
+                        }
+                    } else {
+                        $data = json_decode($body, true);
+                        
+                        if ($bot === 'ahrefsbot') {
+                            if (is_array($data) && !empty($data['ips'])) {
+                                foreach ($data['ips'] as $item) {
+                                    if (!empty($item['ip_address'])) {
+                                        $all_cidrs[$bot][] = $item['ip_address'];
+                                    }
+                                }
+                            }
+                        } else {
+                            if (is_array($data) && !empty($data['prefixes'])) {
+                                foreach ($data['prefixes'] as $prefix) {
+                                    if (!empty($prefix['ipv4Prefix'])) {
+                                        $all_cidrs[$bot][] = $prefix['ipv4Prefix'];
+                                    }
+                                    if (!empty($prefix['ipv6Prefix'])) {
+                                        $all_cidrs[$bot][] = $prefix['ipv6Prefix'];
+                                    }
+                                }
                             }
                         }
                     }
@@ -289,7 +345,7 @@ class ADVAIPBL_Bot_Verifier {
         $bot_key = '';
         if ($ua_keyword === 'gptbot' || $ua_keyword === 'oai/openai') {
             $bot_key = 'gptbot';
-        } elseif ($ua_keyword === 'searchbot') {
+        } elseif ($ua_keyword === 'oai-searchbot') {
             $bot_key = 'searchbot';
         } elseif ($ua_keyword === 'chatgpt-user') {
             $bot_key = 'chatgpt-user';
@@ -301,6 +357,12 @@ class ADVAIPBL_Bot_Verifier {
             $bot_key = 'uptimerobot';
         } elseif ($ua_keyword === 'pingdom') {
             $bot_key = 'pingdom';
+        } elseif ($ua_keyword === 'ahrefsbot') {
+            $bot_key = 'ahrefsbot';
+        } elseif (in_array($ua_keyword, ['bingbot', 'adidxbot'])) {
+            $bot_key = 'bingbot';
+        } elseif (in_array($ua_keyword, ['amazonbot', 'amzn-searchbot'])) {
+            $bot_key = 'amazonbot';
         }
 
         if (empty($bot_key) || empty($bot_ips[$bot_key])) {

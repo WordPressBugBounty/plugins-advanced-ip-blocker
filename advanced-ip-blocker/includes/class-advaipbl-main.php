@@ -78,6 +78,7 @@ class ADVAIPBL_Main {
      */
     public $is_advanced_rule_allowed = false;
     public $is_bot_impersonator = false;
+    public $is_loopback_request = false;
 	private $block_response_initiated = false;
     public static function get_instance() {
         if (null === self::$instance) {
@@ -231,7 +232,10 @@ private function __construct() {
         
         // Ejecutar chequeo de base de datos muy temprano en init
         add_action('init', [$this, 'check_database_version'], -9999);
+        add_action('init', [$this, 'detect_and_whitelist_loopback'], -10000); // Detectar llamadas internas antes que nada
 		add_action('init', [$this, 'auto_whitelist_admin_on_session'], -9998); // Protección para administradores con sesión activa
+
+        add_filter('http_request_args', [$this, 'inject_loopback_token'], 10, 2);
 
         // Ejecutamos las validaciones de inmunidad (Bots y ASN) ANTES que cualquier otra cosa
 		add_action('init', [$this, 'is_visitor_asn_whitelisted'], -1000);
@@ -356,6 +360,7 @@ private function __construct() {
 			add_action('wp_ajax_advaipbl_whitelist_signature', [$this->ajax_handler, 'ajax_whitelist_signature']);
 			add_action('wp_ajax_advaipbl_get_lockdown_details', [$this->ajax_handler, 'ajax_get_lockdown_details']);
             add_action('wp_ajax_advaipbl_inspect_ip', [$this->ajax_handler, 'ajax_inspect_ip']);
+            add_action('wp_ajax_advaipbl_force_run_cron', [$this->ajax_handler, 'ajax_force_run_cron']);
             add_action('admin_post_advaipbl_import_settings', [ $this, 'handle_import_settings' ] );
             add_action('admin_post_advaipbl_clear_location_cache_action', [$this, 'handle_clear_cache_action']);
             add_action('admin_post_advaipbl_revoke_vip_passes_action', [$this, 'handle_revoke_vip_passes_action']);
@@ -1949,6 +1954,7 @@ public function get_blocked_endpoints_count() {
                     'bulk_export_nonce' => wp_create_nonce('advaipbl_bulk_export_whitelist_nonce'),
                     'bulk_import_blocked_nonce' => wp_create_nonce('advaipbl_bulk_import_blocked_ips_nonce'),
                     'bulk_export_blocked_nonce' => wp_create_nonce('advaipbl_bulk_export_blocked_ips_nonce'),
+                    'force_run_cron' => wp_create_nonce('advaipbl_admin_nonce_action'),
                 ],
                 'text' => [ /* translators: 1: Country, 2:IP. */
                     'server_whitelisted'       => __( 'Info: Your server is located in %1$s and its IP (%2$s) is correctly whitelisted. You can safely block this country.', 'advanced-ip-blocker' ),
@@ -1963,6 +1969,7 @@ public function get_blocked_endpoints_count() {
                     /* translators: 1: IP, 2:Country. */
 					'remove_admin_ip_warning'  => __( 'CAUTION: This is your current IP address (%1$s) from a blocked country (%2$s). REMOVING THIS IP FROM THE WHITELIST MAY LOCK YOU OUT OF YOUR ADMIN PANEL.', 'advanced-ip-blocker' ),
                     'confirm_removal'          => __( 'Are you absolutely sure you want to proceed?', 'advanced-ip-blocker' ),
+                    'cron_timeout_warning'     => __( 'You are about to force a WP-Cron task to run synchronously. If this task is very heavy (e.g., backups, bulk emails), it may cause a PHP Timeout and this page will freeze, although the task will likely continue running on the server. Do you want to proceed?', 'advanced-ip-blocker' ),
                     'add_to_whitelist_btn'     => __( 'Add to Whitelist', 'advanced-ip-blocker' ),
                     'adding_to_whitelist'      => __( 'Adding...', 'advanced-ip-blocker' ),
                     'added_to_whitelist'       => __( 'Successfully Added!', 'advanced-ip-blocker' ),
@@ -2253,6 +2260,10 @@ return $status_header;
                 /* translators: %s: The IP address that was denied access. */
                 $this->log_event( sprintf( __( 'Access to wp-login.php denied for non-whitelisted IP: %s', 'advanced-ip-blocker' ), $client_ip ), 'critical', ['ip' => $client_ip] );
                 
+                if (!empty($this->options['enable_login_lockdown'])) {
+                    $this->increment_login_lockdown_counter();
+                }
+
                 // Mostramos un mensaje genérico de acceso denegado y terminamos.
                 wp_die(
                     esc_html__( 'Access to this page has been restricted by the administrator.', 'advanced-ip-blocker' ),
@@ -2297,6 +2308,10 @@ return $status_header;
                 // Prevent duplicate generic 403 error from global error handler
                 $this->error_handled_this_request = true;
                 
+                if (!empty($this->options['enable_login_lockdown'])) {
+                    $this->increment_login_lockdown_counter();
+                }
+
                 // Show a generic access denied message
                 wp_die(
                     esc_html__( 'Login access from your location is not allowed.', 'advanced-ip-blocker' ),
@@ -2717,6 +2732,10 @@ return $status_header;
     }
 
     public function is_whitelisted($ip) {
+        if ($this->is_loopback_request) {
+            return true;
+        }
+
         // Quitamos la restricción de NO_PRIV_RANGE para permitir whitelisting en localhost (::1, 127.0.0.1) o intranets.
         if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
             return false;
@@ -4888,11 +4907,60 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     }
 
     /**
+     * Injects a secret token into outbound HTTP requests made by the server to itself.
+     */
+    public function inject_loopback_token($parsed_args, $url) {
+        if (strpos($url, site_url()) !== false) {
+            $secret = get_option('advaipbl_loopback_secret');
+            if (empty($secret)) {
+                $secret = wp_generate_password(32, false);
+                update_option('advaipbl_loopback_secret', $secret, false);
+            }
+            if (!isset($parsed_args['headers'])) {
+                $parsed_args['headers'] = [];
+            }
+            $parsed_args['headers']['X-Advaipbl-Loopback'] = $secret;
+        }
+        return $parsed_args;
+    }
+
+    /**
+     * Detects incoming loopback requests and auto-whitelists the connecting IP.
+     */
+    public function detect_and_whitelist_loopback() {
+        if (!empty($_SERVER['HTTP_X_ADVAIPBL_LOOPBACK'])) {
+            $secret = get_option('advaipbl_loopback_secret');
+            if (!empty($secret) && hash_equals($secret, sanitize_text_field(wp_unslash($_SERVER['HTTP_X_ADVAIPBL_LOOPBACK'])))) {
+                $ip = $this->get_client_ip();
+                if (filter_var($ip, FILTER_VALIDATE_IP) && !$this->is_whitelisted($ip)) {
+                    $this->add_to_whitelist_and_unblock($ip, __('Server IP (Auto-detected via Loopback)', 'advanced-ip-blocker'));
+                    /* translators: %s: IP Address */
+                    $this->log_event( sprintf( __('Internal Loopback Auto-Discovery: Server IP %s successfully identified and whitelisted.', 'advanced-ip-blocker'), $ip ), 'info' );
+                }
+                
+                // Set the flag AFTER checking the whitelist to avoid short-circuiting the DB save
+                $this->is_loopback_request = true;
+            }
+        }
+    }
+
+    /**
      * Auto-whitelists an admin if they have an active session, protecting them from early blocks (e.g., Geo, ASN).
      * Hooked to 'init' early on.
      */
     public function auto_whitelist_admin_on_session() {
         if (empty($this->options['auto_whitelist_admin']) || '1' !== $this->options['auto_whitelist_admin']) {
+            return;
+        }
+
+        // Ignorar peticiones en segundo plano y APIs (evita que Jetpack/Automattic auto-listen sus IPs)
+        $req_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        if ( (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) || 
+             (defined('DOING_CRON') && DOING_CRON) || 
+             (defined('DOING_AJAX') && DOING_AJAX) || 
+             (function_exists('wp_is_json_request') && wp_is_json_request()) ||
+             strpos($req_uri, '/wp-json/') !== false ||
+             strpos($req_uri, 'rest_route=') !== false ) {
             return;
         }
 
@@ -6597,6 +6665,12 @@ public function handle_import_settings() {
                      if (!empty($imported_settings['maxmind_license_key'])) {
                          wp_clear_scheduled_hook('advaipbl_update_geoip_db_event');
                          wp_schedule_event(time() + 60, 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
+                     }
+                     
+                     // Check if Intelligent WAF is enabled and reschedule sync to run almost instantly (1 minute).
+                     if (!empty($imported_settings['enable_intelligent_waf']) && '1' === $imported_settings['enable_intelligent_waf']) {
+                         wp_clear_scheduled_hook('advaipbl_zeroday_sync_event');
+                         wp_schedule_event(time() + 60, 'daily', 'advaipbl_zeroday_sync_event');
                      }
 
                 } else {

@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.15
+Stable tag: 8.11.16
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,130 +261,15 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
-= 8.11.15 =
-*   **NEW FEATURE:** Expanded Advanced Rules Engine. Added full support for inspecting raw HTTP Payloads (`php://input`), `POST` body data, and `Query String` parameters. Administrators can now build surgical firewall rules to block advanced zero-day exploits targeting specific query strings or POST payloads.
-*   **NEW FEATURE:** Dynamic Admin Session Protection. The plugin now reads administrator sessions instantaneously in the early `init` phase, ensuring traveling admins with dynamic IPs are never locked out by WAF or Geo-Block rules.
-*   **ENHANCEMENT:** Advanced Rules UI update to seamlessly integrate new Target Variables with full Export/Import support.
-*   **ENHANCEMENT:** Integrated ipquery.io as a high-performance secondary fallback for missing ASN data to prevent false positives in the Ghost IP protection shield.
-*   **ENHANCEMENT:** Reordered the Login Protection engine to prioritize local Geo/Whitelist checks before API lookups, drastically saving AbuseIPDB API limits.
-*   **SECURITY HARDENING:** Added surgical WAF rule targeting directory traversal variations (CVE-2026-13152) and refined JS challenges.
-
-= 8.11.14 =
-*   **NEW FEATURE:** Added a "Cancel Auto-Panic Now" button directly in the active alert banner, allowing administrators to instantly deactivate the Distributed Attack Protection global challenge without navigating through settings.
-*   **ENHANCEMENT:** Expanded Native API Immunity in Distributed Attack Protection (Auto-Panic) to automatically exclude legacy AIB Network V1 and V2 endpoints, preventing false positives on older nodes.
-*   **SECURITY HARDENING:** Upgraded the WAF Engine to recursively scan POST array keys and the raw HTTP stream (`php://input`). This provides an impenetrable defense against complex zero-day exploits that inject payloads via array keys (e.g., CVE-2026-16610).
-
-= 8.11.13 =
-*   **NEW FEATURE:** Intelligent Zero-Day WAF Sync. A completely new autonomous defense layer that securely connects to the AIB Central Server via API V3 to download and apply critical vulnerability signatures (like wp2shell) daily, without requiring a plugin update.
-*   **ENHANCEMENT:** Zero-Day WAF rules are injected dynamically into the runtime scanner, ensuring they never overwrite, clutter, or interfere with your custom WAF rules. Includes a new read-only UI in the settings to display the actively synced rules.
-
-= 8.11.12 =
-*   **NEW FEATURE:** Cloudflare Safe-Guard (Anti-Self-DoS Protection). An intelligent edge-infrastructure shield that automatically prevents official Cloudflare CDN perimeter IPs, routing servers, and internal scanners (e.g., `CloudflareWebScanner`) from triggering local WAF rules, Rate Limiting, or User-Agent blocklists.
-*   **BUG FIX:** Resolved a high-concurrency race condition in Rate Limiting that could cause duplicate entries in the Security Log during rapid-fire request bursts.
-*   **SECURITY HARDENING:** Added new zero-day WAF signatures to instantly block Remote Code Execution (RCE) attempts and common PHP WebShell injections (e.g., `wp2shell`, `base64_decode`).
-*   **ENHANCEMENT:** Synchronized CDN immunity arrays across all core engines and central APIs to include Cloudflare DNS/Edge infrastructure (`AS209242`).
-
-= 8.11.11 =
-*   **ENHANCEMENT:** Added 'Export Selected' option to the Advanced Rules Bulk Actions menu, allowing power users to easily backup or share specific rule subsets.
-*   **ENHANCEMENT:** Added the 'Block Ghost IPs / Anonymous Traffic' setting to Step 2 of the initial Setup Wizard, enabling out-of-the-box protection against HTTP/1.0 scanner bots with missing Host headers.
-
-= 8.11.10 =
-*   **NEW FEATURE:** Asynchronous Challenge & Advanced Rules Metrics. Dashboard now displays real-time performance analytics for challenges served/passed/failed and top Advanced Rules triggered with zero database write-locking overhead.
-*   **CRITICAL FIX:** Resolved an interception conflict where AIB would mistakenly attempt to validate third-party Turnstile/hCaptcha responses (e.g. from WP Simple Membership or standard WP Login implementations). AIB now strictly validates its own hidden fields.
-*   **SECURITY HARDENING:** Fixed a vulnerability in the Rules Engine where an attacker could bypass a WAF challenge by injecting standard captcha response fields into a POST request.
-*   **ENHANCEMENT:** Changed the generic Google recommendation message to suggest Stripe or PayPal when users seek alternative payment options, improving international clarity.
-*   **ENHANCEMENT:** Adjusted and improved multiple translations for clarity (backported from previous 8.11.4).
-
-= 8.11.9 =
-*   **ENHANCEMENT:** Expanded default WAF exclusions to automatically cover generic WooCommerce REST API webhooks (`?wc-api=`) to natively support gateways like Mollie, Square, and Coinbase without false positives.
-*   **ENHANCEMENT:** Added common mobile icons (like `apple-touch-icon.png`) and crawler paths (`robots.txt`, `sitemap.xml`) to the default global 404/403 exclusions to prevent accidental blocking of legitimate traffic.
-*   **ENHANCEMENT:** Included an automatic database migration routine to safely inject these new default exclusions into existing installations without overwriting user customizations.
-*   **ENHANCEMENT:** Improved UX for the Two-Factor Authentication (2FA) module by adding automatic focus to the verification code input fields.
-
-= 8.11.8 =
-*   **SECURITY HARDENING:** Synchronized the internal early-detection transient arrays (`detect_http_error_status`) with modern block types (`abuseipdb`, `advanced_rule`, `impersonation`, `aib_network`) to guarantee absolute impermeability against re-entrant loops.
-
-= 8.11.7 =
-*   **CRITICAL FIX:** Resolved an infinite recursion bug in the firewall block pipeline that could cause an empty HTTP 200 response and poison Nginx/FastCGI page caches (such as Kinsta). This update ensures X-Accel-Expires headers are strictly enforced to prevent cache poisoning. Thanks to @thewatchman3 for the excellent report!
-
-= 8.11.6 =
-*   **NEW FEATURE:** Added "Block Ghost IPs" global option to automatically block IPs without ASN and Reverse DNS.
-*   **ENHANCEMENT:** Added 'is empty' and 'is not empty' conditions to the ASN field in Advanced Rules, and improved 'Hostname / rDNS' targeting for strict custom rules.
-*   **ENHANCEMENT:** Added a new toggle switch in the Advanced Rules list to easily activate or deactivate individual rules.
-
-= 8.11.5 =
-*   **NEW FEATURE:** Added 'Request Method' (GET, POST, etc.) and 'Referer' conditions to the Advanced Rules Engine to effectively block referrer spam and targeted attack vectors.
-*   **PERFORMANCE FIX:** Implemented native in-memory caching for bulk-imported CIDR blocks. This prevents "double blocks" by evaluating CIDR ranges natively in PHP before triggering third-party APIs like AbuseIPDB.
-*   **ENHANCEMENT:** Advanced Rules that trigger Captcha or JS Challenges are now properly logged and badged in the Live Feed and Challenge Logs.
-*   **ENHANCEMENT:** Log retention policies now comprehensively clean up all secondary tracking tables to minimize database footprint on high-traffic sites.
-*   **BUG FIX:** Fully resolved Edge Firewall compatibility issues with native redirect exits for early Captcha/Challenge interception.
-*   **BUG FIX:** Ensures complete removal of dynamic caches and community network options upon clean uninstallation.
-
-= 8.11.4 =
-*   **NEW FEATURE:** Captcha Integrations. Native support for Cloudflare Turnstile and hCaptcha, alongside our proprietary invisible JS Challenge. Includes granular control per security module and a smart emergency fallback to prevent accidental lockouts.
-*   **NEW FEATURE:** Rate Limiting Advanced Rules. Define custom request limits, time windows, and specific actions (like presenting a Captcha or blocking) for individual URLs and endpoints independently from the global rate limit.
-
-= 8.11.3 =
-*   **SECURITY HARDENING:** Protected the local GeoIP database folder to prevent unauthorized direct downloads of MaxMind `.mmdb` files, ensuring full compliance with MaxMind EULA and saving server bandwidth.
-*   **PERFORMANCE FIX:** Added a circuit-breaker to the bot IP verification engine. Prevents an infinite loop of HTTP timeout delays (potential DoS) if the server is unable to fetch the official bot IP lists due to firewall restrictions.
-
-= 8.11.2 =
-*   **SECURITY HARDENING:** Added a randomized cryptographic token to `.htaccess` backup filenames to prevent unauthorized enumeration, as recommended by the WordPress Plugin Review Team.
-
-= 8.11.1 =
-*   **NEW FEATURE:** Verify Monitoring Bots (IP List). The plugin now automatically downloads and verifies official IP lists from monitoring services like Pingdom and UptimeRobot, allowing legitimate pings and safely preventing them from being blocked.
-
-= 8.11.0 =
-*   **NEW MAJOR FEATURE:** Distributed Attack Protection (Auto-Panic). Automatically shields your entire site with a global JS challenge during massive traffic spikes to prevent server overload.
-*   **ENHANCEMENT:** Granular control over Panic Mode alerts. Choose between receiving both Email & Push notifications, Push-only, or completely disabling them for silent operation.
-
+= 8.11.16 =
+*   **NEW FEATURE:** WP-Cron Manager. A new diagnostic tool in the WP-Cron Logs tab that allows administrators to manually force the synchronous execution of any scheduled WP-Cron event directly from the dashboard, simulating a native cron environment for maximum plugin compatibility.
+*   **ENHANCEMENT:** Upgraded Bot Verification Engine. Moved AhrefsBot, BingBot, and AmazonBot verification to a high-speed dynamic JSON/HTML crawler list engine. Fixed MJ12Bot Reverse DNS schema and addressed a ClaudeBot / OpenAI bot collision issue.
+*   **ENHANCEMENT:** Advanced WP-Cron Loopback Auto-Whitelisting. The plugin now uses cryptographic loopback tokens to autonomously detect and whitelist internal server IP addresses executing cron jobs, completely eliminating false positive internal blocks.
+*   **SECURITY HARDENING:** Expanded the Zero-Day WAF ruleset. Implemented strict signature patterns to block modern LFI (Local File Inclusion), File Upload backdoors, and specific exploits like CVE-2026-13152 directly at the firewall perimeter.
+*   **BUGFIX:** Resolved a vulnerability window during global settings import that delayed Zero-Day WAF rule synchronization.
+*   **BUGFIX:** Added missing legacy and telemetry options to the uninstallation wipe routine for a complete data cleanup.
 
 == Upgrade Notice ==
 
-= 8.11.15 =
-**MAJOR UPDATE:** The Advanced Rules Engine now supports deep inspection of raw HTTP Payloads, POST bodies, and Query Strings. We've also introduced Dynamic Admin Session Protection to completely eliminate accidental lockouts for traveling admins, and improved Ghost IP accuracy.
-
-= 8.11.14 =
-**SECURITY HARDENING & ENHANCEMENT:** Upgrades the WAF Engine to deeply scan POST array keys and raw payloads for advanced zero-day protection (CVE-2026-16610), and fixes false positive blocks on legacy telemetry endpoints during Auto-Panic.
-
-= 8.11.13 =
-**NEW MAJOR FEATURE:** Introduces Intelligent Zero-Day WAF Sync! Your firewall can now automatically download critical vulnerability signatures directly from our central threat intelligence server daily, protecting you from zero-day attacks without needing a plugin update.
-
-= 8.11.12 =
-**NEW FEATURE:** Introduces Cloudflare Safe-Guard to protect CDN perimeter nodes and internal scanners from accidental WAF/Rate-Limiting blocks, preventing self-imposed DDoS lockouts, and resolves a race condition in Rate Limiting logging.
-
-= 8.11.11 =
-**ENHANCEMENT:** Adds a new Bulk Action in the Advanced Rules manager to selectively export specific rules, and includes the Ghost IP Shield inside Step 2 of the initial Setup Wizard for easier out-of-the-box hardening.
-
-= 8.11.10 =
-**CRITICAL FIX:** Fixes a third-party Captcha interception conflict that could block WP Login, patches a potential WAF challenge bypass, and introduces new real-time performance analytics for challenges and Advanced Rules.
-
-= 8.11.9 =
-**ENHANCEMENT:** Expands default protection rules for WooCommerce API endpoints, adds mobile/crawler exclusions to prevent 404 blocks, and includes an automatic database migrator for existing users.
-
-= 8.11.8 =
-**SECURITY HARDENING:** Minor update to synchronize internal transient cooldowns across all firewall layers, ensuring modern block types never trigger false positives during error detection.
-
-= 8.11.7 =
-**CRITICAL FIX:** Resolves a major cache poisoning vulnerability that could cause a blank page to be cached by Nginx/FastCGI on high-traffic sites during a block event. Update immediately.
-
-= 8.11.6 =
-**NEW FEATURE & ENHANCEMENT:** Introduces the "Block Ghost IPs" global option to stop anonymous traffic, adds new condition checks (is empty) for ASN and Hostname/rDNS in Advanced Rules, and includes a toggle switch to easily deactivate rules.
-
-= 8.11.5 =
-**NEW FEATURE & ENHANCEMENT:** Added 'Request Method' and 'Referer' conditions to Advanced Rules. Resolves "double blocks" for bulk-imported CIDR ranges, and improves Edge Firewall compatibility.
-
-= 8.11.4 =
-**NEW FEATURE:** Introduces Captcha Integrations (Turnstile & hCaptcha) and Rate Limiting Advanced Rules for granular endpoint protection.
-
-= 8.11.3 =
-**SECURITY HARDENING:** Minor update to protect the GeoIP directory from direct external access.
-
-= 8.11.2 =
-**SECURITY HARDENING:** Minor update to improve the security of internal `.htaccess` backup files.
-
-= 8.11.1 =
-**NEW FEATURE:** Added "Verify Monitoring Bots (IP List)" to explicitly whitelist official uptime monitoring services based on dynamic IP lists, avoiding false positives.
-
-= 8.11.0 =
-**NEW MAJOR FEATURE:** Introduces Distributed Attack Protection (Auto-Panic). The plugin can now automatically engage a global JS challenge to protect your server resources during massive traffic spikes. Configurable thresholds, durations, exclusions, and notification preferences.
+= 8.11.16 =
+**DIAGNOSTIC UPDATE:** Introduces the WP-Cron Manager to manually run background tasks. Enhances bot verification using high-speed JSON lists (Ahrefs, Bing, Amazon). Adds cryptographic auto-whitelisting for internal IPs and patches a Zero-Day WAF sync bug during settings import.

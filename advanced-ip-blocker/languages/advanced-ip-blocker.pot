@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.15\n"
+"Project-Id-Version: Advanced IP Blocker 8.11.16\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7630,4 +7630,72 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:2694
 msgid "Deploys surgical WAF rules to block exploits targeting newly discovered and unpatched vulnerabilities before they compromise your site."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:4926
+msgid "Internal Loopback Auto-Discovery: Server IP %s successfully identified and whitelisted."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "WP-Cron Manager"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Use this tool to manually force the execution of scheduled WP-Cron events. Warning: Running heavy tasks synchronously (like backups or bulk emails) may result in a server timeout, although the task will usually continue running in the background."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Hook Name"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Next Run"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Recurrence"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "No scheduled cron events found."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Non-repeating"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Now (Pending)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "from now"
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Invalid cron hook."
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Cron event \"%s\" successfully executed."
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Manual WP-Cron trigger: %1$s was forced to run by %2$s."
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Error forcing WP-Cron %1$s: %2$s"
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "An error occurred while running the task. Check the plugin error log."
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "You are about to force a WP-Cron task to run synchronously. If this task is very heavy (e.g., backups, bulk emails), it may cause a PHP Timeout and this page will freeze, although the task will likely continue running on the server. Do you want to proceed?"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Manual (Admin)"
 msgstr ""

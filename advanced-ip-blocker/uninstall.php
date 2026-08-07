@@ -207,6 +207,11 @@ function advaipbl_process_site_uninstallation() {
             
             // System Flags
             'advaipbl_flush_firewalls_needed',
+            'advaipbl_telemetry_notice_dismissed',
+            'advaipbl_legacy_options_cleaned',
+            'advaipbl_ip_table_migration_complete',
+            'advaipbl_loopback_secret',
+            'advaipbl_usm_sessions_per_page',
         ];
         
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound

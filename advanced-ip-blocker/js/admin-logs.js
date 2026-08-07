@@ -433,6 +433,61 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    /**
+     * WP-Cron Manager Actions
+     */
+    function initCronManagerActions() {
+        // Live Filter
+        $('#advaipbl-cron-search').on('keyup', function() {
+            const value = $(this).val().toLowerCase();
+            $('#advaipbl-cron-table tbody tr').each(function() {
+                const text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(value) > -1);
+            });
+        });
+
+        $('.advaipbl-run-cron-btn').on('click', function(e) {
+            e.preventDefault();
+            const btn = $(this);
+            const hook = btn.data('hook');
+            const sig = btn.data('sig');
+
+            showConfirmModal({
+                title: 'Force Run Cron Task',
+                message: adminData.text.cron_timeout_warning,
+                confirmText: 'Yes, Run Now',
+                onConfirm: function() {
+                    const originalHtml = btn.html();
+                    btn.prop('disabled', true).html('<span class="dashicons dashicons-update-alt" style="animation: spin 2s linear infinite;"></span> Running...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'advaipbl_force_run_cron',
+                            nonce: adminData.nonces.force_run_cron,
+                            hook: hook,
+                            sig: sig
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                showAdminNotice('success', response.data.message);
+                                setTimeout(function() { location.reload(); }, 2000);
+                            } else {
+                                showAdminNotice('error', response.data.message || 'Error occurred.');
+                                btn.prop('disabled', false).html(originalHtml);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            showAdminNotice('warning', 'Timeout or Network Error. The task may have been too heavy, but it likely executed on the server. Please check your logs.');
+                            btn.prop('disabled', false).html(originalHtml);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     // Initialize Logs Logic
     initIpTrustLogActions();
     initBlockedSignaturesActions();
@@ -440,4 +495,5 @@ jQuery(document).ready(function ($) {
     initClearLogModal();
     initAuditLogActions();
     initCopyIpActions();
+    initCronManagerActions();
 });

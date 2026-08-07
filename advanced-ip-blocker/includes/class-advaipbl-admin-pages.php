@@ -311,6 +311,8 @@ class ADVAIPBL_Admin_Pages {
                         <td>
                             <?php if ($source === 'Server'): ?>
                                 <span style="color: #0073aa; font-weight: bold;"><?php esc_html_e('Server', 'advanced-ip-blocker'); ?></span>
+                            <?php elseif ($source === 'Manual (Admin)'): ?>
+                                <span style="color: #46b450; font-weight: bold;"><?php esc_html_e('Manual (Admin)', 'advanced-ip-blocker'); ?></span>
                             <?php else: ?>
                                 <span style="color: #d63638;"><?php esc_html_e('External', 'advanced-ip-blocker'); ?></span>
                             <?php endif; ?>
@@ -335,8 +337,72 @@ class ADVAIPBL_Admin_Pages {
             </tbody>
         </table>
 		</div>
+        
+        <!-- WP-Cron Manager Section -->
+        <hr style="margin: 40px 0;">
+        <h2><?php esc_html_e('WP-Cron Manager', 'advanced-ip-blocker'); ?></h2>
+        <div class="notice notice-warning inline"><p>
+            <?php esc_html_e('Use this tool to manually force the execution of scheduled WP-Cron events. Warning: Running heavy tasks synchronously (like backups or bulk emails) may result in a server timeout, although the task will usually continue running in the background.', 'advanced-ip-blocker'); ?>
+        </p></div>
+        
+        <div class="tablenav top" style="margin-top: 15px;">
+            <div class="alignleft actions">
+                <input type="text" id="advaipbl-cron-search" placeholder="<?php esc_attr_e('Filter hooks (e.g. advaipbl_)...', 'advanced-ip-blocker'); ?>" style="width: 300px; max-width: 100%;">
+            </div>
+            <br class="clear">
+        </div>
+
+        <div class="advaipbl-table-responsive-wrapper">
+            <table class="widefat fixed striped" id="advaipbl-cron-table" style="margin-top:0;">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;"><?php esc_html_e('Hook Name', 'advanced-ip-blocker'); ?></th>
+                        <th style="width: 25%;"><?php esc_html_e('Next Run', 'advanced-ip-blocker'); ?></th>
+                        <th style="width: 25%;"><?php esc_html_e('Recurrence', 'advanced-ip-blocker'); ?></th>
+                        <th style="width: 20%;"><?php esc_html_e('Actions', 'advanced-ip-blocker'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $crons = _get_cron_array();
+                    if (empty($crons)) {
+                        echo '<tr><td colspan="4">' . esc_html__('No scheduled cron events found.', 'advanced-ip-blocker') . '</td></tr>';
+                    } else {
+                        $now = time();
+                        foreach ($crons as $timestamp => $hooks) {
+                            foreach ($hooks as $hook => $events) {
+                                foreach ($events as $sig => $event) {
+                                    $schedule = $event['schedule'] ? $event['schedule'] : __('Non-repeating', 'advanced-ip-blocker');
+                                    $time_diff = $timestamp - $now;
+                                    
+                                    if ($time_diff < 0) {
+                                        $next_run = '<span style="color: #d63638;">' . __('Now (Pending)', 'advanced-ip-blocker') . '</span>';
+                                    } else {
+                                        $next_run = human_time_diff($now, $timestamp) . ' ' . __('from now', 'advanced-ip-blocker');
+                                    }
+                                    
+                                    echo '<tr>';
+                                    echo '<td><code>' . esc_html($hook) . '</code></td>';
+                                    echo '<td>' . wp_kses_post($next_run) . '<br><small style="color:#777;">' . esc_html(ADVAIPBL_Main::get_formatted_datetime($timestamp)) . '</small></td>';
+                                    echo '<td>' . esc_html($schedule) . '</td>';
+                                    echo '<td>
+                                        <button type="button" class="button advaipbl-run-cron-btn" data-hook="' . esc_attr($hook) . '" data-sig="' . esc_attr($sig) . '">
+                                            <span class="dashicons dashicons-controls-play" style="margin-top: 3px;"></span> ' . esc_html__('Run Now', 'advanced-ip-blocker') . '
+                                        </button>
+                                    </td>';
+                                    echo '</tr>';
+                                }
+                            }
+                        }
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+        
         <?php
     }
+
 	/**
  * Muestra la pestaÃ±a para gestionar el bloqueo por ASN, ahora con estados separados.
  */
@@ -1530,7 +1596,7 @@ public function display_general_settings_tab() {
                     <?php foreach ($definitions as $type => $def) : ?>
                         <?php
                         // Solo mostramos en el filtro los tipos que realmente generan un bloqueo persistente en la tabla.
-                        $is_persistent_block = ($type === 'manual' || $type === 'advanced_rule' || !empty($def['duration_key']));
+                        $is_persistent_block = ($type === 'manual' || $type === 'advanced_rule' || $type === 'ghost_ip' || $type === 'bulk_import' || !empty($def['duration_key']));
                         if ( ! $is_persistent_block ) continue;
                         ?>
                         <option value="<?php echo esc_attr($type); ?>" <?php selected($filter_type, $type); ?>><?php echo esc_html($def['label']); ?></option>
