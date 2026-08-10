@@ -331,13 +331,16 @@ private function check_condition($condition, $ip) {
             $subject = $this->plugin->get_user_agent();
             break;
         case 'request_method':
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $subject = $_SERVER['REQUEST_METHOD'] ?? '';
             break;
         case 'referer':
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $subject = $_SERVER['HTTP_REFERER'] ?? '';
             break;
         case 'cookie':
             $target = $condition['target'] ?? '';
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $subject = (!empty($target) && isset($_COOKIE[$target])) ? $_COOKIE[$target] : '';
             break;
         case 'header':
@@ -346,15 +349,18 @@ private function check_condition($condition, $ip) {
                 $subject = '';
             } else {
                 $header_key = 'HTTP_' . strtoupper(str_replace('-', '_', $target));
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
                 $subject = isset($_SERVER[$header_key]) ? $_SERVER[$header_key] : '';
             }
             break;
         case 'payload':
             $raw_body = @file_get_contents('php://input');
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
             $post_data = !empty($_POST) ? wp_json_encode($_POST) : '';
             $subject = $raw_body . "\n" . $post_data;
             break;
         case 'query_string':
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $subject = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
             break;
         default:
@@ -466,6 +472,11 @@ private function execute_action($rule, $ip) {
         case 'challenge_automatic':
         case 'challenge_turnstile':
         case 'challenge_hcaptcha':
+            // Si el usuario ya tiene un VIP pass válido, pasamos de largo.
+            if (isset($this->plugin->js_challenge_manager) && $this->plugin->js_challenge_manager->is_vip_pass_valid()) {
+                return false;
+            }
+
             // Si el usuario está enviando el resultado del desafío, permitimos que el flujo
             // continúe para que verify_submission lo valide, en lugar de servir el desafío de nuevo (bucle).
             // phpcs:ignore WordPress.Security.NonceVerification.Missing

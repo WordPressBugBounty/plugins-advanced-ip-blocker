@@ -19,12 +19,7 @@ class ADVAIPBL_2fa_Manager {
 
     public function __construct( ADVAIPBL_Main $main_class ) {
         $this->main_class = $main_class;        
-        $renderer = new \BaconQrCode\Renderer\ImageRenderer(
-            new \BaconQrCode\Renderer\RendererStyle\RendererStyle(300),
-            new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
-        );
-        $writer = new \BaconQrCode\Writer($renderer);       
-        $qrProvider = new \RobThree\Auth\Providers\Qr\BaconQrCodeProvider($writer);
+        $qrProvider = new \RobThree\Auth\Providers\Qr\BaconQrCodeProvider(4, '#ffffff', '#000000', 'svg');
         
         $rngProvider = new \RobThree\Auth\Providers\Rng\CSRNGProvider();
         $issuer = get_bloginfo( 'name' );
@@ -44,7 +39,7 @@ class ADVAIPBL_2fa_Manager {
         $secret = $this->tfa->createSecret();
         update_user_meta( $user->ID, self::META_TEMP_SECRET, $secret );
         $label = $user->user_login;
-        $qr_url = $this->tfa->getQRCodeImageAsDataUri( $label, $secret );
+        $qr_url = $this->tfa->getQRCodeImageAsDataUri( $label, $secret, 300 );
         $backup_codes = $this->generate_backup_codes();
         return [ 'secret' => $secret, 'qr_url' => $qr_url, 'backup_codes' => $backup_codes ];
     }

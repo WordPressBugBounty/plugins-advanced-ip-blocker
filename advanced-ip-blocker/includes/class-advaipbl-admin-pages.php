@@ -2517,6 +2517,7 @@ public function display_general_log_tab() {
                                     $detail_display .= '<br><small>' . $uri . '</small>';
                                 }
                                 break;	
+                            case 'rate_limit_challenge':
                             case 'under_attack_challenge':
                                 $detail_display = esc_html($entry['message']);
                                 if (!empty($uri)) { $detail_display .= '<br><small>' . $uri . '</small>'; }
@@ -2559,11 +2560,25 @@ public function display_general_log_tab() {
                                 break;
                         }
 
-                        // 1. Mostrar Panic Trigger si existe (solo para under_attack_challenge)
+                        // 1. Mostrar Trigger (Panic, Rate Limit, etc)
                         if (!empty($details['panic_trigger'])) {
-                            $trigger_text = ($details['panic_trigger'] === 'manual') ? __('Manual', 'advanced-ip-blocker') : __('Automatic', 'advanced-ip-blocker');
-                            $trigger_bg = ($details['panic_trigger'] === 'manual') ? '#fef7e0' : '#e6f4ea';
-                            $trigger_color = ($details['panic_trigger'] === 'manual') ? '#b08d00' : '#1e8e3e';
+                            if ($details['panic_trigger'] === 'manual') {
+                                $trigger_text = __('Manual', 'advanced-ip-blocker');
+                                $trigger_bg = '#fef7e0';
+                                $trigger_color = '#b08d00';
+                            } elseif ($details['panic_trigger'] === 'automatic') {
+                                $trigger_text = __('Automatic', 'advanced-ip-blocker');
+                                $trigger_bg = '#e6f4ea';
+                                $trigger_color = '#1e8e3e';
+                            } elseif ($details['panic_trigger'] === 'advanced_rule') {
+                                $trigger_text = __('Advanced Rule', 'advanced-ip-blocker');
+                                $trigger_bg = '#e3f2fd';
+                                $trigger_color = '#1976d2';
+                            } else {
+                                $trigger_text = $details['panic_trigger'];
+                                $trigger_bg = '#e3f2fd';
+                                $trigger_color = '#1976d2';
+                            }
                             $detail_display .= '<br><span style="display: inline-block; margin-top: 4px; margin-right: 4px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; background-color: ' . esc_attr($trigger_bg) . '; color: ' . esc_attr($trigger_color) . '; border: 1px solid ' . esc_attr($trigger_color) . '40;">' . esc_html__('Trigger:', 'advanced-ip-blocker') . ' ' . esc_html($trigger_text) . '</span>';
                         }
 

@@ -1241,7 +1241,7 @@ public function sync_zeroday_waf_rules() {
     
     $response = wp_remote_get($api_url, [
         'headers' => [
-            'Authorization' => 'Bearer ' . $api_token,
+            'X-AIB-Auth' => 'Bearer ' . $api_token,
             'Accept'        => 'application/json'
         ],
         'timeout' => 30
@@ -1268,6 +1268,48 @@ public function sync_zeroday_waf_rules() {
     update_option('advaipbl_zeroday_waf_last_sync', time());
     
     $this->log_event(sprintf('Intelligent WAF Sync successful: Downloaded %d zero-day signatures.', count($rules)), 'info');
+}
+
+/**
+ * Lightweight ping to check if new WAF rules are available.
+ */
+public function check_zeroday_waf_version() {
+    if (empty($this->options['enable_intelligent_waf']) || '1' !== $this->options['enable_intelligent_waf']) {
+        return;
+    }
+
+    $api_token = $this->options['api_token_v3'] ?? '';
+    if (empty($api_token)) {
+        return;
+    }
+
+    $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/version';
+    
+    $response = wp_remote_get($api_url, [
+        'headers' => [
+            'X-AIB-Auth' => 'Bearer ' . $api_token,
+            'Accept'        => 'application/json'
+        ],
+        'timeout' => 10
+    ]);
+
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        return; // Fallo silencioso en el ping ligero
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if (json_last_error() === JSON_ERROR_NONE && isset($data['version'])) {
+        $remote_version = (int) $data['version'];
+        $local_version = (int) get_option('advaipbl_zeroday_waf_version', 0);
+        
+        if ($remote_version > $local_version) {
+            // Version nueva detectada, forzar sincronizacion pesada
+            $this->sync_zeroday_waf_rules();
+            update_option('advaipbl_zeroday_waf_version', $remote_version);
+        }
+    }
 }
 
 /**
@@ -2505,9 +2547,14 @@ return $status_header;
                 foreach ($automattic_ua_patterns as $pattern) { if (preg_match($pattern, $user_agent)) { $is_trusted_service = true; break; } }
                 
                 if (!$is_trusted_service) {
-                    $mode = $this->options['xmlrpc_lockdown_challenge_mode'] ?? 'default';
-                    $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => 'xmlrpc.php', 'reason' => 'XML-RPC Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
-                    $this->js_challenge_manager->serve_challenge('endpoint', $mode);
+                    if (isset($this->js_challenge_manager) && $this->js_challenge_manager->is_vip_pass_valid()) {
+                        // User passed challenge, they can proceed
+                    } else {
+                        $mode = $this->options['xmlrpc_lockdown_challenge_mode'] ?? 'default';
+                        $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => 'xmlrpc.php', 'reason' => 'XML-RPC Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
+                        $this->js_challenge_manager->serve_challenge('endpoint', $mode);
+                        exit; // Always exit after challenge
+                    }
                 }
             }
         }
@@ -5062,8 +5109,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 		
         // Protección de Login y Módulos
         'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'restrict_login_page' => '0',
-		'auto_whitelist_admin' => '0',
-		'enable_waf' => '0', 'enable_intelligent_waf' => '1', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
+		'auto_whitelist_admin' => '1',
+		'enable_waf' => '1', 'enable_intelligent_waf' => '1', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
         'rate_limiting_window' => 60, 'rate_limiting_advanced_rules' => '[]', 'xmlrpc_protection_mode' => 'smart',
         'enable_geoblocking' => '1', 'enable_honeypot_blocking' => '1', 'enable_user_agent_blocking' => '1',
         'enable_spamhaus_asn' => '1', 'block_ghost_ips' => '0',
@@ -5091,7 +5138,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 		'excluded_error_urls' => implode( "\n", $default_exclusions_404_403 ),
         'waf_excluded_urls' => implode("\n", $default_waf_exclusions),
         'rows_per_page' => 20, 'delete_data_on_uninstall' => '0', 'show_admin_bar_menu' => '1',
-		'trusted_proxies'    => "# Cloudflare\nAS13335\nAS209242\n# Local Nginx/Varnish Proxy\n127.0.0.1\n::1",
+		'trusted_proxies'    => "# Cloudflare\nAS13335\nAS209242\n# Fastly\nAS54113\n# Local Nginx/Varnish Proxy\n127.0.0.1\n::1",
 		
         // Notificaciones
         'enable_email_notifications' => '0', 'notification_frequency' => 'disabled', 'notification_email' => '',
@@ -8056,15 +8103,21 @@ public function handle_import_settings() {
             }
             
             if (!$is_trusted_service) {
-                $mode = $this->options[$endpoint_key . '_lockdown_challenge_mode'] ?? 'managed';
-                $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => $endpoint_key, 'reason' => ucfirst($endpoint_key) . ' Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
-                // AIB Community Network Reporting
-       if ( ! empty( $this->options['enable_community_network'] ) ) {
-           $report_type = ($endpoint_key === 'xmlrpc') ? 'xmlrpc_block' : 'login_lockdown';
-           $this->reporter_manager->queue_report( $ip, $report_type, ['uri' => $request_uri] );
-       }
+                if (isset($this->js_challenge_manager) && $this->js_challenge_manager->is_vip_pass_valid()) {
+                    // User passed the challenge, proceed
+                } else {
+                    $mode = $this->options[$endpoint_key . '_lockdown_challenge_mode'] ?? 'managed';
+                    $this->log_specific_error('endpoint_challenge', $ip, ['endpoint' => $endpoint_key, 'reason' => ucfirst($endpoint_key) . ' Lockdown Mode Active', 'uri' => $request_uri, 'mode' => $mode], 'warning');
+                    
+                    // AIB Community Network Reporting
+                    if ( ! empty( $this->options['enable_community_network'] ) ) {
+                        $report_type = ($endpoint_key === 'xmlrpc') ? 'xmlrpc_block' : 'login_lockdown';
+                        $this->reporter_manager->queue_report( $ip, $report_type, ['uri' => $request_uri] );
+                    }
 
-       $this->js_challenge_manager->serve_challenge('endpoint', $mode);
+                    $this->js_challenge_manager->serve_challenge('endpoint', $mode);
+                    exit; // Ensure execution stops after challenge
+                }
             }
         }
     }
@@ -8183,12 +8236,18 @@ public function check_ip_with_abuseipdb() {
         ];
 
         if (strpos($action_to_take, 'challenge') !== false) {
+            // Si el usuario ya resolvió el desafío (VIP Pass válido), le permitimos pasar sin registrar más logs
+            if (isset($this->js_challenge_manager) && $this->js_challenge_manager->is_vip_pass_valid()) {
+                return;
+            }
+
             // Si la acción es 'challenge' o 'challenge_automatic', registramos el evento y mostramos el desafío.
             $mode = ($action_to_take === 'challenge_automatic') ? 'automatic' : 'managed';
             $log_data['mode'] = $mode;
             $this->log_specific_error('abuseipdb_challenge', $ip, $log_data, 'warning');
             
             $this->js_challenge_manager->serve_challenge('abuseipdb', $mode); // El tipo y modo son importantes
+            exit; // serve_challenge usually exits, but just in case
         } else {
             // Si no, procedemos con el bloqueo como antes.
             $reason = sprintf(

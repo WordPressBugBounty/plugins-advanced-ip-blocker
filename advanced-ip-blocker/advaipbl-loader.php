@@ -5,6 +5,7 @@
 
 // Explicit check for direct access to satisfy Plugin Check while allowing auto_prepend_file.
 if ( ! defined( 'ABSPATH' ) ) {
+    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
     $advaipbl_script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';
     if ( basename( $advaipbl_script_filename ) === basename( __FILE__ ) ) {
         exit( 'Restricted access.' );

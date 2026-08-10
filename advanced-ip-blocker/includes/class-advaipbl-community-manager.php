@@ -157,6 +157,7 @@ class ADVAIPBL_Community_Manager {
 
         // Actualizar timestamp y limpiar opción legacy si existe
         update_option($this->last_update_option, time());
+        delete_transient('advaipbl_community_ips_count');
         delete_option('advaipbl_community_blocklist'); // Limpieza legacy
         
         return $total_ips;
@@ -185,9 +186,12 @@ class ADVAIPBL_Community_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_community_ips';
         
-        // Usamos get_var con COUNT rápido
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+        $count = get_transient('advaipbl_community_ips_count');
+        if (false === $count) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+            set_transient('advaipbl_community_ips_count', $count, 24 * HOUR_IN_SECONDS);
+        }
 
         return [
             'count' => (int) $count,

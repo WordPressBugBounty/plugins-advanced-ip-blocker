@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.0
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.17
+Stable tag: 8.11.18
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,16 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
+= 8.11.18 =
+*   **NEW FEATURE:** Intelligent Zero-Day WAF Lightweight Ping. An ultra-fast hourly check via edge caches that dynamically triggers a full WAF signature download only when the central server indicates a new rule version is available, ensuring immediate protection with near-zero server impact.
+*   **SECURITY HARDENING:** Enhanced PCRE WAF Signatures. Deployed precision regex rules to counter BdThemes supply chain attacks (Biggopti XSS/Webshells), CVE-2026-64638 (WP-Login Reflected XSS), and strict CGI Argument Injection vectors (`-d`, `--`, `-s`) eliminating earlier false positives.
+*   **ENHANCEMENT:** Upgraded default security postures. The WAF module (`enable_waf`) and the Administrator Auto-Whitelist feature (`auto_whitelist_admin`) are now enabled by default to provide immediate protection and prevent accidental lockouts out-of-the-box.
+*   **ENHANCEMENT:** Expanded Bot Verification Engine. Added UptimeRobot, Pingdom, SemrushBot, and SeznamBot to the list of verified good bots to prevent false positive impersonation blocks.
+*   **ENHANCEMENT:** Infrastructure Protection. Added Fastly ASNs to default trusted proxies and AIB Community Network critical infrastructure list to prevent accidental global blocks of Fastly edge nodes.
+*   **BUGFIX:** Resolved PHP Fatal Errors triggered during QR code rendering in the 2FA Manager due to strict typing mismatches introduced by updated dependencies (`RobThree` and `BaconQrCode`).
+*   **BUGFIX:** Fixed a critical log spam issue in challenge systems (Rate Limiting, Advanced Rules, AbuseIPDB, Endpoint Lockdown) where events were repeatedly logged even after users had obtained a valid VIP Pass.
+*   **BUGFIX:** Addressed over 20+ internal `UnescapedDBParameter` CodeSniffer alerts to maintain clean, standardized database interactions.
+
 = 8.11.17 =
 *   **BUGFIX:** Resolved an issue where unchecked plugin settings (like Whitelist Login Access) would not save properly and remained persistently activated.
 
@@ -273,6 +283,9 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **BUGFIX:** Added missing legacy and telemetry options to the uninstallation wipe routine for a complete data cleanup.
 
 == Upgrade Notice ==
+
+= 8.11.18 =
+**CRITICAL UPDATE:** Adds Lightweight Ping for instant WAF updates. Fixes severe 2FA Fatal Error & massive Log Spam in challenge engines. Updates PCRE signatures. Adds Fastly CDN to trusted infrastructure, and expands Bot Verification (Pingdom, Semrush, UptimeRobot). Update immediately.
 
 = 8.11.17 =
 **MAINTENANCE UPDATE:** Fixes a minor bug affecting the save state of specific settings checkboxes in the admin panel.

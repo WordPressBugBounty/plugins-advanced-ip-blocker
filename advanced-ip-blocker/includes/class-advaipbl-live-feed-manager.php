@@ -29,13 +29,7 @@ class ADVAIPBL_Live_Feed_Manager {
         register_rest_route('advaipbl/v1', '/live-attacks', [
             'methods'  => 'GET',
             'callback' => [$this, 'get_live_attacks'],
-            'permission_callback' => '__return_true', // Public endpoint (read-only logs)
-        ]);
-
-        register_rest_route('advaipbl/v1', '/live-feed-nonce', [
-            'methods'             => 'GET',
-            'callback'            => [$this, 'get_nonce'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => '__return_true', // Access control is handled within the callback via static token
         ]);
     }
 
@@ -46,6 +40,13 @@ class ADVAIPBL_Live_Feed_Manager {
      * @return WP_REST_Response
      */
     public function get_live_attacks( WP_REST_Request $request ) {
+        $token = $request->get_param('token');
+        $stored_token = get_option('advaipbl_live_feed_token');
+        
+        if (empty($token) || empty($stored_token) || !hash_equals($stored_token, $token)) {
+            return new WP_REST_Response(['message' => 'Unauthorized or Live Feed inactive.'], 403);
+        }
+
         global $wpdb;
 
         $since_id = $request->get_param('since');
@@ -184,25 +185,22 @@ class ADVAIPBL_Live_Feed_Manager {
     }
 
     /**
-     * API Callback for Nonce.
-     */
-    public function get_nonce() {
-        return new WP_REST_Response( [
-            'nonce' => wp_create_nonce( 'wp_rest' )
-        ], 200 );
-    }
-
-    /**
      * Shortcode renderer [advaipbl_live_feed]
      */
     public function render_shortcode($atts) {
         $root_url = plugins_url( '/', dirname( __FILE__ ) ); 
 
+        $token = get_option('advaipbl_live_feed_token');
+        if (empty($token)) {
+            $token = wp_generate_password(32, false);
+            update_option('advaipbl_live_feed_token', $token);
+        }
+
         wp_enqueue_script('advaipbl-live-feed-js', $root_url . 'js/advaipbl-live-feed.js', ['jquery'], ADVAIPBL_VERSION, true);
 
         wp_localize_script('advaipbl-live-feed-js', 'advaipbl_feed_data', [
             'api_url' => get_rest_url(null, 'advaipbl/v1/live-attacks'),
-            'nonce_url' => get_rest_url(null, 'advaipbl/v1/live-feed-nonce'),
+            'token'   => $token,
             'text'    => [
                 'blocked_from' => __('blocked from', 'advanced-ip-blocker'),
                 'type'         => __('Type', 'advanced-ip-blocker'),

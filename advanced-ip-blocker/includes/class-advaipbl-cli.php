@@ -1007,11 +1007,11 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
             $order = 'desc';
         }
 
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $items = $wpdb->get_results(
             "SELECT ip, score, FROM_UNIXTIME(last_event_timestamp) as last_activity FROM {$table_name} WHERE score > 0 ORDER BY " . esc_sql($orderby) . " " . esc_sql($order)
         );
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
         if ( empty( $items ) ) {
             WP_CLI::line( 'No IPs currently have an active threat score.' );
@@ -1090,7 +1090,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
             WP_CLI::confirm('Are you sure you want to reset ALL threat scores? This will not unblock IPs, only reset their scores to 0.');
             global $wpdb;
             $table_name = $wpdb->prefix . 'advaipbl_ip_scores';
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->query( "TRUNCATE TABLE {$table_name}" );
             WP_CLI::success( 'All threat scores have been reset to 0.' );
         }
@@ -1497,7 +1497,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
             case 'list':
                 global $wpdb;
                 $table_name = $wpdb->prefix . 'advaipbl_malicious_signatures';
-                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
                 $items = $wpdb->get_results("SELECT signature_hash, reason, FROM_UNIXTIME(last_seen) as last_seen, FROM_UNIXTIME(expires_at) as expires_at FROM {$table_name}", ARRAY_A);
                 
                 if (empty($items)) {
@@ -1559,5 +1559,216 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
         $main_instance->execute_signature_analysis();
         WP_CLI::success('Signature analysis process finished. Check the General Log for details and the Blocked Signatures page for any newly flagged signatures.');
     }
-	
+
+    /**
+     * Displays the current status of all major security modules.
+     *
+     * ## EXAMPLES
+     *
+     *     $ wp advaipbl status
+     *
+     * @subcommand status
+     */
+    public function status( $args, $assoc_args ) {
+        $main_instance = ADVAIPBL_Main::get_instance();
+        $options = $main_instance->options;
+
+        $modules = [
+            'Web Application Firewall (WAF)' => !empty($options['enable_waf']),
+            'Intelligent Zero-Day Sync' => !empty($options['enable_intelligent_waf']),
+            'Attack Signature Engine' => !empty($options['enable_signature_engine']),
+            'Bot Verification' => !empty($options['enable_bot_verification']),
+            'Community Protection Network' => !empty($options['enable_community_network']),
+            '404 Lockdown Mode' => !empty($options['enable_404_lockdown']),
+            '403 Lockdown Mode' => !empty($options['enable_403_lockdown']),
+            'Login Protection (Lockdown)' => !empty($options['enable_login_lockdown']),
+            'Spamhaus ASN Blocklist' => !empty($options['enable_spamhaus_asn']),
+            'Geoblocking' => !empty($options['enable_geoblocking']),
+            'AbuseIPDB Integration' => !empty($options['enable_abuseipdb']),
+            'Cloudflare Sync' => !empty($options['enable_cloudflare']),
+            'File Integrity Monitoring (FIM)' => !empty($options['enable_fim']),
+            'Audit Logging' => !empty($options['enable_audit_log']),
+        ];
+
+        $items = [];
+        foreach ($modules as $name => $is_enabled) {
+            $items[] = [
+                'Module' => $name,
+                'Status' => $is_enabled ? 'Enabled' : 'Disabled',
+            ];
+        }
+
+        WP_CLI\Utils\format_items( 'table', $items, ['Module', 'Status'] );
+    }
+
+    /**
+     * Manages File Integrity Monitoring (FIM).
+     *
+     * ## OPTIONS
+     *
+     * <scan|create-baseline>
+     * : The action to perform.
+     *
+     * ## EXAMPLES
+     *
+     *     # Run a manual FIM scan
+     *     $ wp advaipbl fim scan
+     *
+     *     # Recreate the baseline hashes (use carefully!)
+     *     $ wp advaipbl fim create-baseline
+     *
+     * @subcommand fim
+     */
+    public function fim( $args, $assoc_args ) {
+        $subcommand = array_shift( $args );
+        $main_instance = ADVAIPBL_Main::get_instance();
+        if (empty($main_instance->options['enable_fim'])) {
+            WP_CLI::error( "File Integrity Monitoring is currently disabled in the settings." );
+            return;
+        }
+
+        if ( ! isset( $main_instance->file_verifier ) ) {
+            WP_CLI::error( "File Verifier module is not loaded." );
+            return;
+        }
+
+        if ( 'scan' === $subcommand ) {
+            WP_CLI::line('Starting File Integrity scan...');
+            $main_instance->file_verifier->scan_files();
+            WP_CLI::success('FIM scan complete. Check Audit Logs for any alerts.');
+        } elseif ( 'create-baseline' === $subcommand ) {
+            WP_CLI::confirm('Are you sure you want to recreate the baseline hashes for all monitored files?');
+            $main_instance->file_verifier->create_baseline();
+            WP_CLI::success('Baseline created successfully.');
+        } else {
+            WP_CLI::error( "Invalid subcommand. Use 'scan' or 'create-baseline'." );
+        }
+    }
+
+    /**
+     * Manages Cloudflare Sync operations.
+     *
+     * ## OPTIONS
+     *
+     * <sync|clear>
+     * : The action to perform.
+     *
+     * ## EXAMPLES
+     *
+     *     # Manually push blocked IPs to Cloudflare WAF
+     *     $ wp advaipbl cloudflare sync
+     *
+     *     # Clear all IP rules created by the plugin from Cloudflare
+     *     $ wp advaipbl cloudflare clear
+     *
+     * @subcommand cloudflare
+     */
+    public function cloudflare( $args, $assoc_args ) {
+        $subcommand = array_shift( $args );
+        $main_instance = ADVAIPBL_Main::get_instance();
+        if (empty($main_instance->options['enable_cloudflare'])) {
+            WP_CLI::error( "Cloudflare integration is currently disabled." );
+            return;
+        }
+
+        if ( ! isset( $main_instance->cloudflare_manager ) ) {
+            WP_CLI::error( "Cloudflare manager is not loaded." );
+            return;
+        }
+
+        if ( 'sync' === $subcommand ) {
+            WP_CLI::line('Starting Cloudflare sync...');
+            $main_instance->cloudflare_manager->sync_blocked_ips();
+            WP_CLI::success('Cloudflare sync complete.');
+        } elseif ( 'clear' === $subcommand ) {
+            WP_CLI::confirm('Are you sure you want to remove ALL plugin-created rules from Cloudflare?');
+            $main_instance->cloudflare_manager->clear_all_aib_rules();
+            WP_CLI::success('Cloudflare rules cleared.');
+        } else {
+            WP_CLI::error( "Invalid subcommand. Use 'sync' or 'clear'." );
+        }
+    }
+
+    /**
+     * Runs the Site Security Scanner.
+     *
+     * ## EXAMPLES
+     *
+     *     $ wp advaipbl scan
+     *
+     * @subcommand scan
+     */
+    public function scan( $args, $assoc_args ) {
+        $main_instance = ADVAIPBL_Main::get_instance();
+        if ( ! isset( $main_instance->site_scanner ) ) {
+            WP_CLI::error( "Site Scanner module is not loaded." );
+            return;
+        }
+
+        WP_CLI::line('Starting Security Scanner...');
+        $results = $main_instance->site_scanner->run_local_scan();
+        
+        $items = [];
+        if (!empty($results['issues'])) {
+            foreach ($results['issues'] as $issue) {
+                $items[] = [ 'Status' => 'Warning', 'Message' => $issue ];
+            }
+        }
+        if (!empty($results['passed'])) {
+            foreach ($results['passed'] as $pass) {
+                $items[] = [ 'Status' => 'Passed', 'Message' => $pass ];
+            }
+        }
+        
+        if (empty($items)) {
+            WP_CLI::line('Scan finished with no results.');
+        } else {
+            WP_CLI\Utils\format_items( 'table', $items, ['Status', 'Message'] );
+        }
+        WP_CLI::success('Site security scan complete.');
+    }
+
+    /**
+     * Manages the Audit Logs (FIM and Config changes).
+     *
+     * ## OPTIONS
+     *
+     * <list|clear>
+     * : The action to perform.
+     *
+     * [--count=<count>]
+     * : Number of logs to show.
+     * ---
+     * default: 20
+     * ---
+     *
+     * ## EXAMPLES
+     *
+     *     $ wp advaipbl audit list --count=50
+     *
+     * @subcommand audit
+     */
+    public function audit( $args, $assoc_args ) {
+        $subcommand = array_shift( $args );
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'advaipbl_activity_log';
+
+        if ( 'list' === $subcommand ) {
+            $count = $assoc_args['count'] ?? 20;
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $logs = $wpdb->get_results( $wpdb->prepare( "SELECT timestamp as time, event_type, severity, user_id, ip_address FROM $table_name ORDER BY timestamp DESC LIMIT %d", $count ), ARRAY_A );
+            if ( empty( $logs ) ) {
+                WP_CLI::line( 'No audit logs found.' );
+                return;
+            }
+            WP_CLI\Utils\format_items( 'table', $logs, [ 'time', 'event_type', 'severity', 'user_id', 'ip_address' ] );
+        } elseif ( 'clear' === $subcommand ) {
+            WP_CLI::confirm( 'Are you sure you want to clear ALL audit logs?' );
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $wpdb->query( "TRUNCATE TABLE $table_name" );
+            WP_CLI::success( 'Audit logs cleared.' );
+        } else {
+            WP_CLI::error( "Invalid subcommand. Use 'list' or 'clear'." );
+        }
+    }
 }

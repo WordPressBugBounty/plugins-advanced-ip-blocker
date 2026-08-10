@@ -103,32 +103,35 @@ class ADVAIPBL_Rate_Limiting_Manager {
                 // block_ip_instantly handles atomic DB locking and logs the event (including duration_seconds) as 'critical'.
                 $this->main_class->block_ip_instantly($ip, 'rate_limit', $reason, $log_data);
             } elseif (strpos($action, 'challenge') === 0) {
-                $this->main_class->log_specific_error('rate_limit_challenge', $ip, $log_data, 'info');
-                
                 if (isset($this->main_class->js_challenge_manager)) {
                     if (!$this->main_class->js_challenge_manager->is_vip_pass_valid()) {
                         $mode = str_replace('challenge_', '', $action);
                         if ($mode === 'managed') $mode = 'js_managed';
                         if ($mode === 'automatic') $mode = 'js_automatic';
+                        
+                        $log_data['engine'] = $mode;
+                        $log_data['panic_trigger'] = ($rule_name === 'Global') ? 'automatic' : 'advanced_rule';
+                        
+                        $this->main_class->log_specific_error('rate_limit_challenge', $ip, $log_data, 'info');
                         $this->main_class->js_challenge_manager->serve_challenge('rate_limit', $mode);
                         exit;
                     }
                 } else {
                     $this->main_class->log_specific_error('rate_limit', $ip, $log_data, 'warning');
-                    $this->serve_429_response();
+                    $this->serve_429_response(max(1, ($first_request_time + $window) - $current_time));
                 }
             } else {
                 // Default is 429 - Log as warning
                 $this->main_class->log_specific_error('rate_limit', $ip, $log_data, 'warning');
-                $this->serve_429_response();
+                $this->serve_429_response(max(1, ($first_request_time + $window) - $current_time));
             }
         }
     }
     
-    private function serve_429_response() {
+    private function serve_429_response($retry_after = 60) {
         if (!headers_sent()) {
             header('HTTP/1.1 429 Too Many Requests', true, 429);
-            header('Retry-After: 60');
+            header('Retry-After: ' . (int)$retry_after);
             header('Content-Type: text/html; charset=utf-8');
         }
         echo '<!DOCTYPE html><html><head><title>429 Too Many Requests</title></head><body style="font-family: sans-serif; padding: 2rem;">';

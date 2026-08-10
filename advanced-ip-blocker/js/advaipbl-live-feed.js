@@ -7,12 +7,11 @@ jQuery(document).ready(function ($) {
 
     const feedList = $('#advaipbl-live-feed-list');
     const apiUrl = window.advaipbl_feed_data.api_url || '';
-    const nonceUrl = window.advaipbl_feed_data.nonce_url || '';
+    const feedToken = window.advaipbl_feed_data.token || '';
     const texts = window.advaipbl_feed_data.text || {};
 
     let lastId = 0;
     let isFetching = false;
-    let freshNonce = null; // Almacenaremos el nonce fresco aquí
 
     function createFeedItemHtml(attack) {
         let detailsHtml = '<div class="feed-details-grid">';
@@ -34,13 +33,13 @@ jQuery(document).ready(function ($) {
     }
 
     function fetchAttacks() {
-        if (isFetching || !apiUrl || !freshNonce) {
+        if (isFetching || !apiUrl || !feedToken) {
             return;
         }
         isFetching = true;
 
         const params = new URLSearchParams();
-        params.append('nonce', freshNonce);
+        params.append('token', feedToken);
 
         if (lastId > 0) {
             params.append('since', lastId);
@@ -64,24 +63,13 @@ jQuery(document).ready(function ($) {
     }
 
     function initializeFeed() {
-        if (!nonceUrl) {
-            console.error('Live Feed: Nonce URL is missing.');
+        if (!feedToken) {
+            console.error('Live Feed: Access token is missing.');
             return;
         }
-        // 1. Primero, obtenemos un nonce fresco que no esté cacheado.
-        $.get(nonceUrl, function (response) {
-            if (response && response.nonce) {
-                freshNonce = response.nonce;
-                // 2. Una vez tenemos el nonce, hacemos la primera llamada para obtener datos.
-                fetchAttacks();
-                // 3. Y ahora programamos las llamadas periódicas.
-                setInterval(fetchAttacks, 10000);
-            } else {
-                console.error('Live Feed: Failed to fetch a valid nonce.');
-            }
-        }).fail(function () {
-            console.error('Live Feed: AJAX error while fetching nonce.');
-        });
+        
+        fetchAttacks();
+        setInterval(fetchAttacks, 10000);
     }
 
     initializeFeed();

@@ -127,25 +127,30 @@ class ADVAIPBL_Htaccess_Manager {
         $options = $this->plugin->options;
 
         // 1. Hardening Rules
-        $hardening_active = false;
+        $hardening_files = [];
         if ( ! empty( $options['htaccess_protect_system_files'] ) ) {
-            $rules[] = 'RedirectMatch 403 (?i)\.(7z|bak|bz2|com|conf|dist|fla|git|env|inc|ini|log|old|psd|rar|tar|tgz|save|sh|sql|svn|swo|swp)$';
-            $rules[] = 'RedirectMatch 403 (?i)/\.ds_store$';
-            $hardening_active = true;
+            $hardening_files[] = '\.(7z|bak|bz2|com|conf|dist|fla|git|env|inc|ini|log|old|psd|rar|tar|tgz|save|sh|sql|svn|swo|swp)$';
+            $hardening_files[] = '^\.ds_store$';
         }
         if ( ! empty( $options['htaccess_protect_wp_config'] ) ) {
-            $rules[] = 'RedirectMatch 403 (?i)/wp-config\.php$';
-            $rules[] = 'RedirectMatch 403 (?i)/wp-config-sample\.php$';
-            $hardening_active = true;
+            $hardening_files[] = '^wp-config(-sample)?\.php$';
         }
         if ( ! empty( $options['htaccess_protect_readme'] ) ) {
-            $rules[] = 'RedirectMatch 403 (?i)/readme\.(html|txt)$';
-            $hardening_active = true;
+            $hardening_files[] = '^(readme\.(html|txt)|license\.txt)$';
         }
 
-        if ( $hardening_active ) {
-            array_unshift( $rules, '<IfModule mod_alias.c>' );
-            $rules[] = '</IfModule>';
+        if ( ! empty($hardening_files) ) {
+            $regex = '(?i)(' . implode('|', $hardening_files) . ')';
+            
+            $rules[] = '<FilesMatch "' . $regex . '">';
+            $rules[] = '    <IfModule mod_authz_core.c>';
+            $rules[] = '        Require all denied';
+            $rules[] = '    </IfModule>';
+            $rules[] = '    <IfModule !mod_authz_core.c>';
+            $rules[] = '        Order allow,deny';
+            $rules[] = '        Deny from all';
+            $rules[] = '    </IfModule>';
+            $rules[] = '</FilesMatch>';
             $rules[] = ''; 
         }
 
@@ -212,8 +217,6 @@ class ADVAIPBL_Htaccess_Manager {
                     $safe_value = str_replace('"', '\"', trim($header['value']));
                     if ($key === 'hsts') {
                         $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . $safe_value . '" env=HTTPS';
-                    } elseif ($key === 'server_header' && trim($header['value']) === 'remove') {
-                        $header_rules[] = '    Header unset Server';
                     } else {
                         $header_rules[] = '    Header set ' . trim($header['name']) . ' "' . $safe_value . '"';
                     }

@@ -42,6 +42,9 @@ class ADVAIPBL_Bot_Verifier {
             // --- Herramientas SEO y Crawlers Comerciales ---
             'ahrefsbot'         => ['.ahrefs.com', '.ahrefs.net'],
             'semrushbot'        => '.semrush.com',
+            'splitsignalbot'    => '.semrush.com',
+            'siteauditbot'      => '.semrush.com',
+            'contentanalyzerbot'=> '.semrush.com',
             'mj12bot'           => '.mj12bot.com',
             'iboubot'           => '.ibou.io', // Babbar
             
@@ -62,13 +65,14 @@ class ADVAIPBL_Bot_Verifier {
             'amzn-searchbot'      => ['.amazonbot.amazon.com', '.crawl.amazonbot.amazon.com'],
 
             // --- Otros Bots de Confianza ---
-            'yahoo! slurp'        => '.yahoo.com',
-            'yahoofaqbot'         => '.yahoo.com',
+            'yahoo! slurp'        => ['.yahoo.com', '.crawl.yahoo.net'],
+            'yahoofaqbot'         => ['.yahoo.com', '.crawl.yahoo.net'],
             'petalbot'            => ['.aspiegel.com', '.petalsearch.com'],
 
             // --- Servicios de Monitoreo (Verificados por IP) ---
-            'uptimerobot'         => [], // Uptime Robot (Sin rDNS)
-            'pingdom'             => [], // Pingdom (Sin rDNS)
+            'uptimerobot'         => '.uptimerobot.com', // Uptime Robot
+            'pingdom'             => '.pingdom.com', // Pingdom
+            'pingbot'             => '.pingdom.com',
         ];
 
         $is_known_bot = false;
@@ -96,9 +100,9 @@ class ADVAIPBL_Bot_Verifier {
             $is_ai_bot = true;
         } elseif (in_array($ua_keyword, ['googlebot', 'google.com/bot', 'adsbot-google'])) {
             $is_google_bot = true;
-        } elseif (in_array($ua_keyword, ['uptimerobot', 'pingdom'])) {
+        } elseif (in_array($ua_keyword, ['uptimerobot', 'pingdom', 'pingbot'])) {
             $is_monitoring_bot = true;
-        } elseif (in_array($ua_keyword, ['ahrefsbot', 'bingbot', 'adidxbot', 'duckduckbot'])) {
+        } elseif (in_array($ua_keyword, ['ahrefsbot', 'bingbot', 'adidxbot', 'duckduckbot', 'seznambot', 'iboubot'])) {
             $is_seo_cidr_bot = true;
         }
 
@@ -114,16 +118,12 @@ class ADVAIPBL_Bot_Verifier {
             $is_verified = $this->verify_bot_ip($ip, $ua_keyword);
             
             // Fallback a DNS si la lista CIDR está vacía por algún error de API, o no está en la lista JSON (raro)
-            if (!$is_verified && !$is_monitoring_bot) {
+            if (!$is_verified) {
                 $is_verified = $this->verify_dns($ip, $expected_domains);
             }
         } else {
-            // Ahora realizamos la verificación de DNS clásica (omitido para bots de monitoreo que no tienen rDNS)
-            if ($is_monitoring_bot) {
-                $is_verified = false;
-            } else {
-                $is_verified = $this->verify_dns($ip, $expected_domains);
-            }
+            // Ahora realizamos la verificación de DNS clásica
+            $is_verified = $this->verify_dns($ip, $expected_domains);
         }
 
         self::$verified_cache[$ip] = $is_verified;
@@ -192,11 +192,15 @@ class ADVAIPBL_Bot_Verifier {
             'amazonbot'     => '.amazonbot.amazon.com',
             'ahrefsbot'     => '.ahrefs.com',
             'semrushbot'    => '.semrush.com',
+            'splitsignalbot'=> '.semrush.com',
+            'siteauditbot'  => '.semrush.com',
+            'contentanalyzerbot' => '.semrush.com',
             'mj12bot'       => '.majestic12.co.uk',
             'iboubot'       => '.ibou.io',
             'seznambot'     => '.seznam.cz',
-            'uptimerobot'   => '',
-            'pingdom'       => '',
+            'uptimerobot'   => '.uptimerobot.com',
+            'pingdom'       => '.pingdom.com',
+            'pingbot'       => '.pingdom.com',
         ];
 
         foreach ($known_bots as $ua_keyword => $domain) {
@@ -229,13 +233,14 @@ class ADVAIPBL_Bot_Verifier {
                 'https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json'
             ],
             'bingbot' => 'https://www.bing.com/toolbox/bingbot.json',
-            'duckduckbot' => 'https://duckduckgo.com/duckduckbot.json'
+            'duckduckbot' => 'https://duckduckgo.com/duckduckbot.json',
+            'seznambot' => 'https://search.seznam.cz/ipranges/seznambot.json',
+            'iboubot' => 'https://ibou.io/iboubot-ip-ranges.json'
         ];
 
         $txt_endpoints = [
             'uptimerobot' => [
-                'https://uptimerobot.com/inc/files/ips/IPv4.txt',
-                'https://uptimerobot.com/inc/files/ips/IPv6.txt'
+                'https://cdn.uptimerobot.com/api/IPv4andIPv6.txt'
             ],
             'pingdom' => [
                 'https://my.pingdom.com/probes/ipv4',
@@ -356,7 +361,7 @@ class ADVAIPBL_Bot_Verifier {
             $bot_key = 'google';
         } elseif ($ua_keyword === 'uptimerobot') {
             $bot_key = 'uptimerobot';
-        } elseif ($ua_keyword === 'pingdom') {
+        } elseif (in_array($ua_keyword, ['pingdom', 'pingbot'])) {
             $bot_key = 'pingdom';
         } elseif ($ua_keyword === 'ahrefsbot') {
             $bot_key = 'ahrefsbot';
@@ -366,6 +371,10 @@ class ADVAIPBL_Bot_Verifier {
             $bot_key = 'duckduckbot';
         } elseif (in_array($ua_keyword, ['amazonbot', 'amzn-searchbot'])) {
             $bot_key = 'amazonbot';
+        } elseif ($ua_keyword === 'seznambot') {
+            $bot_key = 'seznambot';
+        } elseif ($ua_keyword === 'iboubot') {
+            $bot_key = 'iboubot';
         }
 
         if (empty($bot_key) || empty($bot_ips[$bot_key])) {

@@ -80,7 +80,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT log_type, COUNT(*) as count
@@ -114,7 +114,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT DATE(timestamp) as day, COUNT(*) as count
@@ -154,7 +154,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT ip, COUNT(*) as count
@@ -180,7 +180,7 @@ class ADVAIPBL_Dashboard_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT JSON_UNQUOTE(JSON_EXTRACT(details, '$.country')) as country, 
@@ -213,7 +213,7 @@ class ADVAIPBL_Dashboard_Manager {
 
         $spamhaus_asns = get_option('advaipbl_spamhaus_asn_list', []);
         
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $blocked_count = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COUNT(DISTINCT ip)

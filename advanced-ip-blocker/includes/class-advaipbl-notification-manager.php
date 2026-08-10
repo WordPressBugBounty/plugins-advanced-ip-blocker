@@ -35,7 +35,7 @@ class ADVAIPBL_Notification_Manager {
         $table_name = $wpdb->prefix . 'advaipbl_notifications_queue';
         
         // Fetch only standard notifications
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $notifications = $wpdb->get_results("SELECT * FROM $table_name WHERE block_type != 'signature' ORDER BY timestamp ASC");
         
         if (empty($notifications)) {
@@ -51,7 +51,7 @@ class ADVAIPBL_Notification_Manager {
         $ids = array_map(function($n) { return (int) $n->id; }, $notifications);
         if (!empty($ids)) {
             $ids_placeholder = implode(',', $ids);
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->query("DELETE FROM $table_name WHERE id IN ($ids_placeholder)");
         }
     }
@@ -64,7 +64,7 @@ class ADVAIPBL_Notification_Manager {
         $table_name = $wpdb->prefix . 'advaipbl_notifications_queue';
         
         // Fetch only signature notifications
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $notifications = $wpdb->get_results("SELECT * FROM $table_name WHERE block_type = 'signature' ORDER BY timestamp ASC");
         
         if (empty($notifications)) {
@@ -93,7 +93,7 @@ class ADVAIPBL_Notification_Manager {
         $ids = array_map(function($n) { return (int) $n->id; }, $notifications);
         if (!empty($ids)) {
             $ids_placeholder = implode(',', $ids);
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $wpdb->query("DELETE FROM $table_name WHERE id IN ($ids_placeholder)");
         }
     }

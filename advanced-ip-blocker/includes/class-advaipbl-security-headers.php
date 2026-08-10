@@ -40,9 +40,6 @@ class ADVAIPBL_Security_Headers {
                 }
                 header(trim($header['name']) . ': ' . trim($header['value']), true);
             }
-            if ($key === 'server_header' && !empty($header['enabled']) && $header['value'] === 'remove') {
-                header_remove('Server');
-            }
         }
     }
 
@@ -62,7 +59,6 @@ class ADVAIPBL_Security_Headers {
             'hsts' => ['name' => 'Strict-Transport-Security', 'value' => 'max-age=31536000; includeSubDomains; preload', 'enabled' => true, 'description' => __('<strong>Warning:</strong> Only use if your site is fully on HTTPS.', 'advanced-ip-blocker')],
             'csp' => ['name' => 'Content-Security-Policy', 'value' => "", 'enabled' => false, 'description' => __('<strong>Enforcing CSP.</strong> Build your policy using the Report-Only mode below first. <strong>Warning:</strong> Incorrect CSP can break your site.', 'advanced-ip-blocker')],
             'csp_report_only' => ['name' => 'Content-Security-Policy-Report-Only', 'value' => "default-src 'self';", 'enabled' => false, 'description' => __('<strong>CSP Report-Only Mode.</strong> Use this to test your policy.', 'advanced-ip-blocker')],
-            'server_header' => ['name' => 'Server', 'value' => '', 'enabled' => false, 'description' => __('Modify or remove the "Server" header. To remove, set value to "remove". Obfuscates server technology.', 'advanced-ip-blocker')],
             'custom_1' => ['name' => '', 'value' => '', 'enabled' => false, 'description' => __('Define a custom header. Example: X-Forwarded-For', 'advanced-ip-blocker')],
             'custom_2' => ['name' => '', 'value' => '', 'enabled' => false, 'description' => __('Define another custom header.', 'advanced-ip-blocker')],
             'custom_3' => ['name' => '', 'value' => '', 'enabled' => false, 'description' => __('Define a third custom header.', 'advanced-ip-blocker')],
@@ -140,8 +136,12 @@ class ADVAIPBL_Security_Headers {
             $options = get_option(self::OPTION_NAME, $this->get_default_options());
             $defaults = $this->get_default_options();
             
-            // Merge defaults to ensure all keys exist
-            $options = array_merge($defaults, is_array($options) ? $options : []);
+            // Merge defaults but ignore obsolete keys from DB (like removed server_header)
+            $db_options = is_array($options) ? $options : [];
+            $options = [];
+            foreach ($defaults as $k => $v) {
+                $options[$k] = isset($db_options[$k]) ? $db_options[$k] : $v;
+            }
             ?>
             <div class="shc-container">
                 <?php foreach ($options as $key => $header): ?>
