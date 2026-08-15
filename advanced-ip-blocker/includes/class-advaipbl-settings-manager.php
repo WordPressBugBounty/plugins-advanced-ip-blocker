@@ -77,6 +77,92 @@ class ADVAIPBL_Settings_Manager {
     add_settings_field('advaipbl_push_critical_only', __('Send Critical Alerts Only', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_push_notifications_section', ['name' => 'push_critical_only', 'label' => __('Only send alerts for instant blocks (WAF, Honeypot, etc.), not for threshold-based blocks (404, Login).', 'advanced-ip-blocker')]);
     add_settings_field( 'advaipbl_send_test_push_button', __( 'Send Test Notification', 'advanced-ip-blocker' ), [ $this, 'send_test_push_button_callback' ], $page, 'advaipbl_push_notifications_section' );
 	
+		// --- Hardening & Core Protection ---
+		$is_imagick_active = extension_loaded('imagick') || class_exists('Imagick');
+		$imagick_status_msg = $is_imagick_active
+			? '<br><span style="color: #d63638;">' . __('We have detected that Imagick is active on your server. We strongly recommend enabling this option to force the use of GD and prevent image processing vulnerabilities.', 'advanced-ip-blocker') . '</span>'
+			: '<br><span style="color: #46b450;">' . __('Your server already has Imagick disabled at the system level. You are protected by default.', 'advanced-ip-blocker') . '</span>';
+
+        add_settings_section('advaipbl_hardening_settings_section', __('Hardening & Core Protection', 'advanced-ip-blocker'), null, $page);
+
+        add_settings_field(
+            'advaipbl_disable_imagick',
+            __('Disable Imagick', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'disable_imagick',
+                'label' => __('Disable Imagick and force GD Library for image processing.', 'advanced-ip-blocker'),
+                'description' => __('Mitigates critical Remote Code Execution (RCE) vulnerabilities in ImageMagick/Ghostscript (like CVE-2026-65640).', 'advanced-ip-blocker') . $imagick_status_msg
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_hide_wp_version',
+            __('Hide WordPress Version', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'hide_wp_version',
+                'label' => __('Remove WordPress version generator meta tag and query strings from scripts/styles.', 'advanced-ip-blocker'),
+                'description' => __('Prevents automated scanners from easily detecting outdated/vulnerable WordPress versions.', 'advanced-ip-blocker')
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_disable_app_passwords',
+            __('Disable Application Passwords', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'disable_app_passwords',
+                'label' => __('Disable the REST API Application Passwords feature.', 'advanced-ip-blocker'),
+                'description' => __('Closes a common vector for brute-force attacks via the WP REST API if you do not use them.', 'advanced-ip-blocker')
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_disable_file_editor',
+            __('Disable File Editor', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'disable_file_editor',
+                'label' => __('Disable the built-in WordPress theme and plugin editor.', 'advanced-ip-blocker'),
+                'description' => __('Prevents attackers from injecting malicious PHP code directly from the dashboard if an admin account is compromised.', 'advanced-ip-blocker')
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_block_php_uploads',
+            __('Block PHP in Uploads', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'block_php_uploads',
+                'label' => __('Block execution of PHP files in the `/wp-content/uploads/` directory.', 'advanced-ip-blocker'),
+                'description' => __('Creates an isolated .htaccess file to immunize your media folder against PHP shell execution.', 'advanced-ip-blocker')
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_allowed_admin_users',
+            __('Authorized Administrators', 'advanced-ip-blocker'),
+            [$this, 'admin_users_select_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'allowed_admin_users',
+                'label' => __('Select which Administrators are allowed to view and configure this plugin.', 'advanced-ip-blocker'),
+                'description' => __('By default, all administrators can manage the plugin. The primary admin (ID 1) can never be locked out.', 'advanced-ip-blocker')
+            ]
+        );
+
 	// --- Site Scanner Automation Settings ---
         add_settings_section('advaipbl_scanner_settings_section', __('Site Scanner Automation', 'advanced-ip-blocker'), null, $page);
 
@@ -158,7 +244,7 @@ class ADVAIPBL_Settings_Manager {
     add_settings_field(
         'advaipbl_trusted_proxies',
         __('Trusted Proxies', 'advanced-ip-blocker'),
-        [$this, 'textarea_field_callback'],
+        [$this, 'trusted_proxies_callback'],
         $page,
         'advaipbl_ip_detection_section',
         [
@@ -609,6 +695,11 @@ add_settings_field(
     add_settings_field('advaipbl_auto_whitelist_admin', __('Auto-Whitelist Admins', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', ['name' => 'auto_whitelist_admin', 'label' => __('Automatically add administrator IPs to the whitelist on successful login.', 'advanced-ip-blocker'), 'description' => __('Ideal for admins who travel or have dynamic IP addresses.', 'advanced-ip-blocker')]);
 	add_settings_field('advaipbl_disable_user_enumeration', __( 'REST API User Protection', 'advanced-ip-blocker' ), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', ['name'  => 'disable_user_enumeration', 'label' => __( 'Disable User Enumeration via REST API', 'advanced-ip-blocker' )]);
     add_settings_field('advaipbl_prevent_author_scanning', __( 'Author Scan Protection', 'advanced-ip-blocker' ), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', ['name'  => 'prevent_author_scanning', 'label' => __( 'Prevent user enumeration via author scans', 'advanced-ip-blocker' )]);
+    add_settings_field('advaipbl_block_author_scanning_403', __('Strict Author Scan Block', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', [
+        'name'  => 'block_author_scanning_403',
+        'label' => __('Block author scans with 403 Error', 'advanced-ip-blocker'),
+        'description' => __('Instead of a 301 redirect, return a 403 Access Denied error. This will log the event and sum Threat Score points (as a 403 Error).', 'advanced-ip-blocker')
+    ]);
     add_settings_field(
         'advaipbl_prevent_login_hinting',
         __( 'Prevent Login Hinting', 'advanced-ip-blocker' ),
@@ -1213,7 +1304,7 @@ add_settings_field(
         }
         
         $checkbox_fields = [
-            'prevent_author_scanning', 'disable_user_enumeration', 'restrict_login_page',
+            'prevent_author_scanning', 'block_author_scanning_403', 'disable_user_enumeration', 'restrict_login_page',
             'enable_logging', 'delete_data_on_uninstall', 'enable_email_notifications',			
             'enable_waf', 'enable_intelligent_waf', 'enable_geoblocking', 'enable_honeypot_blocking',
             'enable_user_agent_blocking', 'rate_limiting_enable', 'show_admin_bar_menu',
@@ -1248,7 +1339,7 @@ add_settings_field(
             'enable_audit_log',
             'enable_fim',
             'scan_check_ssl', 'scan_check_updates', 'scan_check_php', 'scan_check_wp', 'scan_check_debug',
-            'block_ghost_ips'
+            'block_ghost_ips', 'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads'
         ];
         
         foreach ($checkbox_fields as $field) {
@@ -1265,6 +1356,12 @@ add_settings_field(
             $new_input['tfa_force_roles'] = is_array($input['tfa_force_roles']) ? array_map('sanitize_key', $input['tfa_force_roles']) : [];
         } else {
             $new_input['tfa_force_roles'] = []; // Si no se envía nada, es un array vacío.
+        }
+
+        if (isset($input['allowed_admin_users'])) {
+            $new_input['allowed_admin_users'] = is_array($input['allowed_admin_users']) ? array_map('sanitize_text_field', $input['allowed_admin_users']) : [];
+        } else {
+            $new_input['allowed_admin_users'] = [];
         }
 
         $text_fields = [
@@ -1566,6 +1663,57 @@ add_settings_field(
      * Muestra un campo de tipo interruptor (toggle/switch) para los ajustes.
      * Utiliza la estructura HTML necesaria para ser estilizado con CSS.
      */
+    public function admin_users_select_callback($args) {
+        $selected_users = $this->plugin->options[$args['name']] ?? [];
+        $id_attr = isset($args['id']) ? 'id="' . esc_attr($args['id']) . '"' : 'advaipbl_' . esc_attr($args['name']);
+        
+        // Get all users with administrator role
+        $admin_users = get_users(['role' => 'administrator']);
+        
+        $html = '<fieldset class="advaipbl-admin-users-fieldset" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccd0d4; padding: 10px; background: #fff; max-width: 400px; border-radius: 4px;">';
+
+        $hidden_inputs = '';
+        foreach ($admin_users as $user) {
+            $is_super = ($user->ID == 1 || (is_multisite() && is_super_admin($user->ID)));
+            $is_selected = in_array((string)$user->ID, $selected_users, true) || in_array($user->ID, $selected_users, true) || empty($selected_users);
+            
+            // If the user is the primary/super admin, force them to be selected and disabled (cannot be unchecked)
+            $disabled_attr = $is_super ? 'disabled="disabled"' : '';
+            if ($is_super) {
+                $is_selected = true;
+                // Add a hidden field to ensure their ID is always submitted
+                $hidden_inputs .= sprintf('<input type="hidden" name="%s[]" value="%d" />', esc_attr('advaipbl_settings[' . $args['name'] . ']'), esc_attr($user->ID));
+            }
+            
+            $checked_attr = $is_selected ? 'checked="checked"' : '';
+            
+            // Label will be "Username (Email)"
+            $label = esc_html($user->user_login . ' (' . $user->user_email . ')');
+            if ($is_super) {
+                $label .= ' - <strong>' . __('Protected', 'advanced-ip-blocker') . '</strong>';
+            }
+
+            $html .= sprintf(
+                '<label style="display: block; margin-bottom: 8px; cursor: pointer;"><input type="checkbox" name="%s[]" value="%s" %s %s> %s</label>',
+                esc_attr('advaipbl_settings[' . $args['name'] . ']'),
+                esc_attr($user->ID),
+                $checked_attr,
+                $disabled_attr,
+                $label
+            );
+        }
+
+        $html .= '</fieldset>';
+        $html .= $hidden_inputs;
+
+        if (!empty($args['description'])) {
+            $html .= '<p class="description">' . wp_kses_post($args['description']) . '</p>';
+        }
+        
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $html;
+    }
+
     public function switch_field_callback($args){
         $default = $args['default'] ?? '0';
         $value = $this->plugin->options[$args['name']] ?? $default;
@@ -1624,6 +1772,77 @@ add_settings_field(
         } elseif (isset($args['label'])) {
              echo '<p class="description">' . esc_html($args['label']) . '</p>';
         }
+    }
+
+    public function trusted_proxies_callback($args){
+        $value = isset($args['value']) ? $args['value'] : ($this->plugin->options[$args['name']] ?? '');
+        $rows = $args['rows'] ?? 10;
+        $class = $args['class'] ?? 'large-text';
+        $textarea_id = 'advaipbl_settings_' . $args['name'];
+        
+        printf(
+            '<textarea id="%1$s" name="%2$s" rows="%3$d" class="%4$s">%5$s</textarea>',
+            esc_attr( $textarea_id ),
+            esc_attr( 'advaipbl_settings[' . $args['name'] . ']' ),
+            esc_attr( $rows ),
+            esc_attr( $class ),
+            esc_textarea( $value )
+        );
+
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->get_help_link_html($args);
+        
+        if (isset($args['description'])) {
+            echo '<p class="description" style="margin-top: 5px;">' . wp_kses_post($args['description']) . '</p>';
+        }
+
+        $presets = $this->plugin->cdn_manager->get_presets();
+        
+        echo '<div class="advaipbl-cdn-presets" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border: 1px solid #ccd0d4; border-radius: 4px; display: inline-block;">';
+        echo '<strong>' . esc_html__('Quick Add CDN/Proxy:', 'advanced-ip-blocker') . '</strong><br>';
+        echo '<select id="advaipbl_cdn_preset_select" style="margin-top: 8px; margin-bottom: 8px;">';
+        foreach ($presets as $preset_value => $preset_label) {
+            echo '<option value="' . esc_attr($preset_value) . '">' . esc_html($preset_label) . '</option>';
+        }
+        echo '</select> ';
+        echo '<button type="button" class="button button-secondary" id="advaipbl_add_cdn_preset_btn">' . esc_html__('Add to List', 'advanced-ip-blocker') . '</button>';
+        echo '<p class="description" style="margin: 0;">' . esc_html__('Select a service to automatically append its known IP ranges/ASNs to your trusted list.', 'advanced-ip-blocker') . '</p>';
+        echo '</div>';
+
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            $('#advaipbl_add_cdn_preset_btn').on('click', function(e) {
+                e.preventDefault();
+                var presetValue = $('#advaipbl_cdn_preset_select').val();
+                if (!presetValue) return;
+
+                var $textarea = $('#<?php echo esc_js($textarea_id); ?>');
+                var currentVal = $textarea.val();
+                
+                if (currentVal.indexOf(presetValue) === -1) {
+                    var newVal = currentVal;
+                    if (newVal.length > 0 && !newVal.endsWith('\n')) {
+                        newVal += '\n';
+                    }
+                    if (newVal.length > 0 && !newVal.endsWith('\n\n')) {
+                        newVal += '\n';
+                    }
+                    newVal += presetValue;
+                    $textarea.val(newVal);
+                    
+                    $(this).text('<?php echo esc_js(__('Added!', 'advanced-ip-blocker')); ?>').css('color', 'green');
+                    var btn = $(this);
+                    setTimeout(function() {
+                        btn.text('<?php echo esc_js(__('Add to List', 'advanced-ip-blocker')); ?>').css('color', '');
+                    }, 2000);
+                } else {
+                    alert('<?php echo esc_js(__('This preset is already in your list.', 'advanced-ip-blocker')); ?>');
+                }
+            });
+        });
+        </script>
+        <?php
     }
 	
     public function email_field_callback($args){

@@ -1,6 +1,6 @@
 /**
  * Advanced IP Blocker - Admin Panel Styles
- * Version: 8.11.18
+ * Version: 8.12.0
  */
 
 /* ==========================================================================
@@ -113,7 +113,8 @@
 @keyframes advaipbl-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .advaipbl-dashboard-row { display: flex; flex-wrap: wrap; gap: 20px; box-sizing: border-box; margin-bottom: 20px; align-items: stretch; }
 #advaipbl-map-wrapper { flex-grow: 1; position: relative; }
-.advaipbl-dashboard-widget { background: var(--advaipbl-color-text-light); border: 1px solid var(--advaipbl-color-border); padding: 20px; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04); display: flex; flex-direction: column; width: auto; box-sizing: border-box; }
+.advaipbl-dashboard-widget { background: #ffffff; border: 1px solid #e2e8f0; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; width: auto; box-sizing: border-box; transition: box-shadow 0.2s ease; }
+.advaipbl-dashboard-widget:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05); }
 .widget-full { flex: 1 1 100%; }
 .widget-third { flex: 1 1 0; min-width: 0; }
 .widget-two-thirds { flex: 2 1 0; min-width: 0; }
@@ -137,14 +138,22 @@
 .advaipbl-top-list td:last-child { text-align: right; font-weight: 600; }
 .advaipbl-top-list code { background: var(--advaipbl-color-background-alt); padding: 2px 5px; border-radius: 3px; }
 .advaipbl-top-list .country-cell { display: flex; align-items: center; gap: 8px; }
-.advaipbl-top-list .country-flag { border: 1px solid #eee; flex-shrink: 0; }
-.advaipbl-status-list { display: flex; flex-direction: column; gap: 12px; }
-.advaipbl-status-item { display: flex; align-items: center; font-size: 13px; }
-.advaipbl-status-item .dashicons { font-size: 20px; width: 20px; height: 20px; margin-right: 8px; }
-.advaipbl-status-label { flex-grow: 1; }
-.advaipbl-status-tag { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 3px; }
-.advaipbl-status-tag.enabled { background-color: #e7f7e7; color: #006400; }
-.advaipbl-status-tag.disabled { background-color: var(--advaipbl-color-background-alt); color: #555; }
+.advaipbl-status-list { display: flex; flex-direction: column; gap: 16px; max-height: 420px; overflow-y: auto; padding-right: 12px; }
+/* Custom Scrollbar for status list */
+.advaipbl-status-list::-webkit-scrollbar { width: 6px; }
+.advaipbl-status-list::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+.advaipbl-status-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.advaipbl-status-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.advaipbl-status-group { display: flex; flex-direction: column; gap: 6px; }
+.advaipbl-status-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748b; margin-bottom: 2px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
+.advaipbl-status-item { display: flex; align-items: center; font-size: 13px; color: #334155; padding: 4px 0; }
+.advaipbl-status-item .dashicons { font-size: 18px; width: 18px; height: 18px; margin-right: 10px; display: flex; align-items: center; justify-content: center; }
+.advaipbl-status-item .advaipbl-status-icon-success { color: #10b981; }
+.advaipbl-status-item .advaipbl-status-icon-disabled { color: #94a3b8; }
+.advaipbl-status-label { flex-grow: 1; font-weight: 500; }
+.advaipbl-status-tag { font-weight: 600; font-size: 11px; padding: 4px 10px; border-radius: 12px; letter-spacing: 0.02em; }
+.advaipbl-status-tag.enabled { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.advaipbl-status-tag.disabled { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 .advaipbl-status-widget { display: flex; align-items: center; gap: 15px; margin: 10px 0; }
 .advaipbl-status-widget .dashicons { font-size: 40px; width: 40px; height: 40px; }
 .advaipbl-status-icon-success { color: var(--advaipbl-color-success); }

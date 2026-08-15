@@ -136,99 +136,117 @@ jQuery(document).ready(function ($) {
     function renderTopLists(topIps, topCountries) { const ipsListContainer = $('#advaipbl-top-ips-list'); const countriesListContainer = $('#advaipbl-top-countries-list'); const attacksLabel = advaipbl_admin_data.text.attacks_label || 'attacks'; const blocksLabel = advaipbl_admin_data.text.blocks_label || 'blocks'; let ipsHtml = '<table>'; if (topIps && topIps.length > 0) { topIps.forEach(item => { ipsHtml += `<tr><td><code>${item.ip}</code></td><td class="count-cell">${item.count} ${attacksLabel}</td></tr>`; }); } else { ipsHtml += '<tr><td>No data available.</td></tr>'; } ipsHtml += '</table>'; ipsListContainer.html(ipsHtml); let countriesHtml = '<table>'; if (topCountries && topCountries.length > 0) { topCountries.forEach(item => { const countryCode = item.country_code ? item.country_code.toLowerCase() : ''; const countryName = item.country || item.country_code || 'Unknown'; let flagHtml = ''; if (countryCode) { const flagUrl = `https://flagcdn.com/w20/${countryCode}.png`; flagHtml = `<img src="${flagUrl}" width="20" height="15" alt="${countryCode.toUpperCase()}" class="country-flag">`; } countriesHtml += `<tr><td class="country-cell">${flagHtml}<span>${countryName}</span></td><td class="count-cell">${item.count} ${blocksLabel}</td></tr>`; }); } else { countriesHtml += '<tr><td>No data available.</td></tr>'; } countriesHtml += '</table>'; countriesListContainer.html(countriesHtml); }
 
     /**
-* Renderiza el widget de estado del sistema.
-* @param {object} statusData - Datos del estado de los módulos.
-*/
+     * Renderiza el widget de estado del sistema agrupado.
+     * @param {object} statusData - Datos del estado de los mÃ³dulos.
+     */
     function renderSystemStatus(statusData) {
         const container = $('#advaipbl-system-status-list');
         if (!container.length || !statusData) return;
 
-        // Actualizamos el mapa de etiquetas para reflejar los nuevos estados.
-        const statusMap = {
-            // Level 1: Absolute Bypass & Infrastructure
-            'cloudflare_sync': 'Cloud Edge Defense (Cloudflare)',
-            'htaccess_firewall': 'Server-Level Firewall (.htaccess)',
-            'community_network': 'AIB Community Network',
-            
-            // Level 2: Bot Verification
-            'bot_verification': 'Verify Known Bots',
-            'ai_bot_verification': 'Verify AI Bots (CIDR)',
-            'monitoring_bot_verification': 'Verify Monitoring Bots (IP List)',
-            
-            // Level 3: Advanced Rules Engine
-            'advanced_rule': 'Advanced Rules',
-            
-            // Level 4: Global & Automated Shields
-            'under_attack_mode': 'Distributed Attack Protection (Auto-Panic)',
-            'block_ghost_ips': 'Block Ghost IPs',
-            'xmlrpc_lockdown': 'XML-RPC Lockdown',
-            'login_lockdown': 'Login Lockdown',
-            'signature_logging': 'Signature Logging',
-            'signature_analysis': 'Signature Analysis',
-            'signature_blocking': 'Signature Blocking',
-            'geo_challenge': 'Geo Challenge',
-            'rate_limit': 'Rate Limiting',
-            
-            // Level 5: Core Blocking Engine (WAF & Static Rules)
-            'honeypot': 'Honeypot Protection',
-            'waf': 'Web Application Firewall (WAF)',
-            'intelligent_waf': 'Intelligent Zero-Day WAF',
-            'geoblock': 'Geoblocking',
-            'user_agent': 'User-Agent Blocking',
-            'spamhaus_asn': 'Spamhaus ASN Protection',
-            'manual_asn': 'Manual ASN Protection',
-            '404_blocking': '404 Error Blocking',
-            '403_blocking': '403 Error Blocking',
-            'login_blocking': 'Failed Login Blocking',
-            '404_lockdown': '404 Error Lockdown',
-            '403_lockdown': '403 Error Lockdown',
-            'enable_2fa': 'Two-Factor Authentication (2FA)',
-            
-            // Level 6: External Intelligence & Auditing
-            'abuseipdb': 'AbuseIPDB Protection',
-            'threat_scoring': 'Threat Scoring System',
-            'activity_audit': 'Activity Audit Log'
+        // Mapa de estados agrupados por categorÃ­as lÃ³gicas
+        const groupedStatusMap = {
+            'Infrastructure & Edge': {
+                'cloudflare_sync': 'Cloud Edge Defense',
+                'htaccess_firewall': 'Server-Level Firewall',
+                'community_network': 'AIB Community Network'
+            },
+            'Bot & Automated Threats': {
+                'bot_verification': 'Verify Known Bots',
+                'ai_bot_verification': 'Verify AI Bots (CIDR)',
+                'monitoring_bot_verification': 'Verify Monitoring Bots',
+                'xmlrpc_lockdown': 'XML-RPC Protection', // LÃ³gica especial inyectada abajo
+                'under_attack_mode': 'Auto-Panic Mode'
+            },
+            'Core Protection Engine': {
+                'waf': 'Web Application Firewall',
+                'intelligent_waf': 'Zero-Day WAF',
+                'honeypot': 'Honeypot Protection',
+                'advanced_rule': 'Advanced Rules',
+                'signature_blocking': 'Signature Blocking',
+                'block_ghost_ips': 'Block Ghost IPs'
+            },
+            'Access Control & Thresholds': {
+                'geoblock': 'Geoblocking',
+                'geo_challenge': 'Geo Challenge',
+                'user_agent': 'User-Agent Blocking',
+                'spamhaus_asn': 'Spamhaus ASN',
+                'manual_asn': 'Manual ASN',
+                'rate_limit': 'Rate Limiting',
+                '404_blocking': '404 Error Blocking',
+                '403_blocking': '403 Error Blocking',
+                'login_blocking': 'Failed Login Blocking',
+                '404_lockdown': '404 Lockdown',
+                '403_lockdown': '403 Lockdown',
+                'login_lockdown': 'Login Lockdown',
+                'enable_2fa': 'Two-Factor Auth (2FA)'
+            },
+            'Hardening & Auditing': {
+                'abuseipdb': 'AbuseIPDB Protection',
+                'threat_scoring': 'Threat Scoring System',
+                'signature_analysis': 'Signature Analysis',
+                'signature_logging': 'Signature Logging',
+                'activity_audit': 'Activity Audit Log',
+                'disable_imagick': 'Disable Imagick',
+                'hide_wp_version': 'Hide WP Version',
+                'disable_app_passwords': 'Disable App Passwords',
+                'disable_file_editor': 'Disable File Editor',
+                'block_php_uploads': 'Block PHP Uploads',
+                'restricted_admins': 'Admin Access Control'
+            }
         };
 
         let html = '<div class="advaipbl-status-list">';
 
-        // Lógica especial para XML-RPC
-        if (typeof statusData.xmlrpc_mode !== 'undefined') {
-            const mode = statusData.xmlrpc_mode;
-            let icon = 'dashicons-yes-alt advaipbl-status-icon-success';
-            let text = 'Smart Protection';
-            let tagClass = 'enabled';
+        for (const [groupName, features] of Object.entries(groupedStatusMap)) {
+            let groupHtml = '';
+            
+            for (const [key, label] of Object.entries(features)) {
+                // Caso especial para XML-RPC
+                if (key === 'xmlrpc_lockdown' && typeof statusData.xmlrpc_mode !== 'undefined') {
+                    const mode = statusData.xmlrpc_mode;
+                    let icon = 'dashicons-yes-alt advaipbl-status-icon-success';
+                    let text = 'Smart Protection';
+                    let tagClass = 'enabled';
 
-            if (mode === 'disabled') {
-                text = 'Fully Disabled';
-            } else if (mode === 'enabled') {
-                text = 'Not Protected';
-                icon = 'dashicons-warning advaipbl-status-icon-disabled';
-                tagClass = 'disabled';
+                    if (mode === 'disabled') {
+                        text = 'Fully Disabled';
+                    } else if (mode === 'enabled') {
+                        text = 'Not Protected';
+                        icon = 'dashicons-warning advaipbl-status-icon-disabled';
+                        tagClass = 'disabled';
+                    }
+
+                    groupHtml += `
+                        <div class="advaipbl-status-item">
+                            <span class="dashicons ${icon}"></span>
+                            <span class="advaipbl-status-label">${label}</span>
+                            <span class="advaipbl-status-tag ${tagClass}">${text}</span>
+                        </div>`;
+                } 
+                // Casos estÃ¡ndar
+                else if (typeof statusData[key] !== 'undefined') {
+                    const isEnabled = statusData[key];
+                    const icon = isEnabled ? 'dashicons-yes-alt advaipbl-status-icon-success' : 'dashicons-no-alt advaipbl-status-icon-disabled';
+                    const text = isEnabled ? 'Enabled' : 'Disabled';
+                    groupHtml += `
+                        <div class="advaipbl-status-item">
+                            <span class="dashicons ${icon}"></span>
+                            <span class="advaipbl-status-label">${label}</span>
+                            <span class="advaipbl-status-tag ${isEnabled ? 'enabled' : 'disabled'}">${text}</span>
+                        </div>`;
+                }
             }
 
-            html += `
-                <div class="advaipbl-status-item">
-                    <span class="dashicons ${icon}"></span>
-                    <span class="advaipbl-status-label">XML-RPC Protection</span>
-                    <span class="advaipbl-status-tag ${tagClass}">${text}</span>
-                </div>`;
-        }
-
-        // Bucle para el resto de las protecciones
-        for (const [key, label] of Object.entries(statusMap)) {
-            if (typeof statusData[key] !== 'undefined') {
-                const isEnabled = statusData[key];
-                const icon = isEnabled ? 'dashicons-yes-alt advaipbl-status-icon-success' : 'dashicons-no-alt advaipbl-status-icon-disabled';
-                const text = isEnabled ? 'Enabled' : 'Disabled';
+            // Si hay elementos activos en este grupo, aÃ±adimos el encabezado y los elementos
+            if (groupHtml !== '') {
                 html += `
-                    <div class="advaipbl-status-item">
-                        <span class="dashicons ${icon}"></span>
-                        <span class="advaipbl-status-label">${label}</span>
-                        <span class="advaipbl-status-tag ${isEnabled ? 'enabled' : 'disabled'}">${text}</span>
+                    <div class="advaipbl-status-group">
+                        <div class="advaipbl-status-group-title">${groupName}</div>
+                        ${groupHtml}
                     </div>`;
             }
         }
+
         html += '</div>';
         container.html(html);
     }

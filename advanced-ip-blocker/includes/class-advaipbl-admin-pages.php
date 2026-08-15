@@ -963,6 +963,7 @@ public function display_general_settings_tab() {
             'ip_detection' => __('IP Detection', 'advanced-ip-blocker'),
             'geolocation' => __('Geolocation', 'advanced-ip-blocker'),
             'threat_intelligence' => __('Threat Intelligence', 'advanced-ip-blocker'),
+            'hardening' => __('Hardening & Core Protection', 'advanced-ip-blocker'),
             'protections' => __('Core Protections', 'advanced-ip-blocker'),
             'blocking_rules' => __('Threshold Blocking', 'advanced-ip-blocker'),
             'ip_trust' => __('IP Trust & Scoring', 'advanced-ip-blocker'),
@@ -1144,6 +1145,14 @@ public function display_general_settings_tab() {
                         </div>
                     </div>
                     
+                    <div id="section-hardening" class="advaipbl-settings-section">
+                        <div class="advaipbl-card">
+                            <h2><?php esc_html_e('Hardening & Core Protection', 'advanced-ip-blocker'); ?></h2>
+                            <p><?php esc_html_e('Settings to harden WordPress against critical vulnerabilities.', 'advanced-ip-blocker'); ?></p>
+                            <table class="form-table"><?php do_settings_fields('advaipbl_settings_page', 'advaipbl_hardening_settings_section'); ?></table>
+                        </div>
+                    </div>
+
                     <div id="section-protections" class="advaipbl-settings-section">
                          <div class="advaipbl-card">
                             <h2><?php esc_html_e('Core Protection Modules', 'advanced-ip-blocker'); ?></h2>

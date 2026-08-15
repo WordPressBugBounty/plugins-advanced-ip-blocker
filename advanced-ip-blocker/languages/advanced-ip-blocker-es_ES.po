@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-08-09 13:49+0200\n"
+"PO-Revision-Date: 2026-08-15 10:37+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8824,8 +8824,8 @@ msgid "CRITICAL SECURITY ALERT"
 msgstr "ALERTA DE SEGURIDAD CRÍTICA"
 
 #: includes/class-advaipbl-main.php
-msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) ðŸš¨"
-msgstr "[%s] URGENTE: El sitio está BAJO ATAQUE (Pánico-automático %s) 🚨"
+msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s)"
+msgstr "[%s] URGENTE: El sitio está BAJO ATAQUE (Pánico-automático %s)"
 
 #: includes/class-advaipbl-main.php
 msgid ""
@@ -9412,6 +9412,182 @@ msgstr ""
 msgid "Manual (Admin)"
 msgstr "Manual (Admin)"
 
+#: includes/class-advaipbl-main.php:2430 includes/class-advaipbl-main.php:4597
+msgid "Block Author Scans with 403"
+msgstr "Bloquear Author Scans con un error 403"
+
+#: includes/class-advaipbl-main.php:2433
+msgid "Author enumeration attempt blocked."
+msgstr "Intento de enumeración de autores bloqueado."
+
+#: includes/class-advaipbl-settings-manager.php:612
+msgid "Strict Author Scan Block"
+msgstr "Bloqueo estricto de escaneo de autores"
+
+#: includes/class-advaipbl-settings-manager.php:614
+msgid "Block author scans with 403 Error"
+msgstr "Bloquear los escaneos de autores con un error 403"
+
+#: includes/class-advaipbl-settings-manager.php:615
+msgid ""
+"Instead of a 301 redirect, return a 403 Access Denied error. This will log "
+"the event and sum Threat Score points (as a 403 Error)."
+msgstr ""
+"En lugar de una redirección 301, devuelva un error 403 de acceso denegado. "
+"Esto registrará el evento y sumará puntos a la puntuación de amenaza (como "
+"un error 403)."
+
+msgid "Hardening & Core Protection"
+msgstr "Endurecimiento y protección del núcleo"
+
+msgid "Settings to harden WordPress against critical vulnerabilities."
+msgstr ""
+"Configuraciones para reforzar WordPress frente a vulnerabilidades críticas."
+
+msgid ""
+"We have detected that Imagick is active on your server. We strongly "
+"recommend enabling this option to force the use of GD and prevent image "
+"processing vulnerabilities."
+msgstr ""
+"Hemos detectado que Imagick está activo en su servidor. Recomendamos "
+"encarecidamente habilitar esta opción para forzar el uso de GD y prevenir "
+"vulnerabilidades en el procesamiento de imágenes."
+
+msgid ""
+"Your server already has Imagick disabled at the system level. You are "
+"protected by default."
+msgstr ""
+"Tu servidor ya tiene Imagick deshabilitado a nivel de sistema. Estás "
+"protegido por defecto."
+
+msgid "Disable Imagick"
+msgstr "Desactivar Imagick"
+
+msgid "Disable Imagick and force GD Library for image processing."
+msgstr ""
+"Deshabilita Imagick y fuerza el uso de la biblioteca GD para el "
+"procesamiento de imágenes."
+
+msgid ""
+"Mitigates critical Remote Code Execution (RCE) vulnerabilities in "
+"ImageMagick/Ghostscript (like CVE-2026-65640)."
+msgstr ""
+"Mitiga vulnerabilidades críticas de ejecución remota de código (RCE) en "
+"ImageMagick/Ghostscript (como CVE-2026-65640)."
+
+msgid "Hide WordPress Version"
+msgstr "Ocultar la versión de WordPress"
+
+msgid ""
+"Remove WordPress version generator meta tag and query strings from scripts/"
+"styles."
+msgstr ""
+"Elimina la etiqueta meta que indica la versión de WordPress y las cadenas de "
+"consulta de los scripts y estilos."
+
+msgid ""
+"Prevents automated scanners from easily detecting outdated/vulnerable "
+"WordPress versions."
+msgstr ""
+"Evita que los escáneres automatizados detecten fácilmente versiones de "
+"WordPress obsoletas o vulnerables."
+
+msgid "Disable Application Passwords"
+msgstr "Desactivar contraseñas de aplicación"
+
+msgid "Disable the REST API Application Passwords feature."
+msgstr "Deshabilite la función de contraseñas de aplicación de la API REST."
+
+msgid ""
+"Closes a common vector for brute-force attacks via the WP REST API if you do "
+"not use them."
+msgstr ""
+"Cierra una vía común para ataques de fuerza bruta a través de la API REST de "
+"WordPress si no la utilizas."
+
+msgid "Disable File Editor"
+msgstr "Desactivar el editor de archivos"
+
+msgid "Disable the built-in WordPress theme and plugin editor."
+msgstr "Desactiva el editor de temas y plugins integrado de WordPress."
+
+msgid ""
+"Prevents attackers from injecting malicious PHP code directly from the "
+"dashboard if an admin account is compromised."
+msgstr ""
+"Evita que los atacantes inyecten código PHP malicioso directamente desde el "
+"panel de control si se ve comprometida una cuenta de administrador."
+
+msgid "Block PHP in Uploads"
+msgstr "Bloquear PHP en las subidas"
+
+msgid "Block execution of PHP files in the /wp-content/uploads/ directory."
+msgstr ""
+"Bloquea la ejecución de archivos PHP en el directorio /wp-content/uploads/."
+
+msgid ""
+"Creates an isolated .htaccess file to immunize your media folder against PHP "
+"shell execution."
+msgstr ""
+"Crea un archivo .htaccess aislado para inmunizar tu carpeta de medios contra "
+"la ejecución de shells PHP."
+
+msgid "Hide WP Version"
+msgstr "Ocultar la versión de WordPress"
+
+msgid "Disable App Passwords"
+msgstr "Desactivar contraseñas de aplicación"
+
+msgid "Authorized Administrators"
+msgstr "Administradores autorizados"
+
+msgid ""
+"Select which Administrators are allowed to view and configure this plugin."
+msgstr ""
+"Seleccione qué administradores tienen permiso para ver y configurar este "
+"plugin."
+
+msgid ""
+"By default, all administrators can manage the plugin. The primary admin (ID "
+"1) can never be locked out."
+msgstr ""
+"Por defecto, todos los administradores pueden gestionar el plugin. El "
+"administrador principal (ID 1) nunca puede quedar bloqueado."
+
+msgid "Protected"
+msgstr "Protegido"
+
+msgid "Admin Access Control"
+msgstr "Control de acceso administrativo"
+
+#: includes/class-advaipbl-cdn-manager.php:33
+msgid "Select a CDN/Proxy to add..."
+msgstr "Seleccione un CDN / Proxy para agregar ..."
+
+#: includes/class-advaipbl-settings-manager.php:1800
+msgid "Quick Add CDN/Proxy:"
+msgstr "Agregar rápidamente CDN/Proxy:"
+
+#: includes/class-advaipbl-settings-manager.php:1806
+msgid "Add to List"
+msgstr "Añadir a la lista"
+
+#: includes/class-advaipbl-settings-manager.php:1807
+msgid ""
+"Select a service to automatically append its known IP ranges/ASNs to your "
+"trusted list."
+msgstr ""
+"Select a service to automatically append its known IP ranges/ASNs to your "
+"trusted list."
+
+#: includes/class-advaipbl-settings-manager.php:1833
+msgid "Added!"
+msgstr "¡Agregado!"
+
+#: includes/class-advaipbl-settings-manager.php:1839
+msgid "This preset is already in your list."
+msgstr "Este ajuste preestablecido ya está en tu lista."
+
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."
 #~ msgstr ""
@@ -9539,10 +9715,6 @@ msgstr "Manual (Admin)"
 #, php-format
 #~ msgid "IP %s added to whitelist and unblocked."
 #~ msgstr "IP %s añadida a la lista blanca y desbloqueada."
-
-#, php-format
-#~ msgid "IP %s was already in the whitelist."
-#~ msgstr "La IP %s ya estaba en la lista blanca."
 
 #~ msgid "404 Log"
 #~ msgstr "Registro 404"
@@ -9798,9 +9970,6 @@ msgstr "Manual (Admin)"
 #~ msgid "Honeypot URLs Blocking"
 #~ msgstr "Bloqueo de URL de honeypot"
 
-#~ msgid "Enable Web Application Firewall"
-#~ msgstr "Habilitar el firewall de aplicaciones web"
-
 #~ msgid "Manage WAF rules in the <a href=\"%s\">Firewall (WAF)</a> tab."
 #~ msgstr ""
 #~ "Administre las reglas de WAF en la pestaña <a href=\"%s\">Firewall (WAF)</"
@@ -9814,9 +9983,6 @@ msgstr "Manual (Admin)"
 
 #~ msgid "WAF Block Log"
 #~ msgstr "WAF Block Log"
-
-#~ msgid "Disables the Web Application Firewall (WAF)."
-#~ msgstr "Desactiva el Firewall de aplicaciones web (WAF)."
 
 #~ msgid "Manages the Web Application Firewall (WAF) rules."
 #~ msgstr "Administra las reglas del firewall de aplicaciones web (WAF)."

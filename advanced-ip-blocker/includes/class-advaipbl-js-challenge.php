@@ -311,7 +311,7 @@ class ADVAIPBL_JS_Challenge {
         // 3. Seguridad Standard
         header('X-Frame-Options: DENY');
         header('X-Content-Type-Options: nosniff');
-        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline';");
         
         $num1   = wp_rand(1, 9);
         $num2   = wp_rand(1, 9);

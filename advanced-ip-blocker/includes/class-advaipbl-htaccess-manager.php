@@ -191,6 +191,7 @@ class ADVAIPBL_Htaccess_Manager {
             $rules[] = '        Require all granted';
             $rules[] = '        Require not env DenyAccess';
             foreach ( $ips_to_block as $ip ) {
+                if ( empty(trim($ip)) ) continue;
                 $rules[] = '        Require not ip ' . $ip;
             }
             $rules[] = '    </RequireAll>';

@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.11.18\n"
+"Project-Id-Version: Advanced IP Blocker 8.12.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7285,7 +7285,7 @@ msgid "CRITICAL SECURITY ALERT"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
-msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s) ðŸš¨"
+msgid "[%s] URGENT: Site is UNDER ATTACK (Auto-Panic %s)"
 msgstr ""
 
 #: includes/class-advaipbl-main.php
@@ -7698,4 +7698,128 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "Manual (Admin)"
+msgstr ""
+
+#: includes/class-advaipbl-main.php:2430
+#: includes/class-advaipbl-main.php:4597
+msgid "Block Author Scans with 403"
+msgstr ""
+
+#: includes/class-advaipbl-main.php:2433
+msgid "Author enumeration attempt blocked."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:612
+msgid "Strict Author Scan Block"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:614
+msgid "Block author scans with 403 Error"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:615
+msgid "Instead of a 301 redirect, return a 403 Access Denied error. This will log the event and sum Threat Score points (as a 403 Error)."
+msgstr ""
+
+msgid "Hardening & Core Protection"
+msgstr ""
+
+msgid "Settings to harden WordPress against critical vulnerabilities."
+msgstr ""
+
+msgid "We have detected that Imagick is active on your server. We strongly recommend enabling this option to force the use of GD and prevent image processing vulnerabilities."
+msgstr ""
+
+msgid "Your server already has Imagick disabled at the system level. You are protected by default."
+msgstr ""
+
+msgid "Disable Imagick"
+msgstr ""
+
+msgid "Disable Imagick and force GD Library for image processing."
+msgstr ""
+
+msgid "Mitigates critical Remote Code Execution (RCE) vulnerabilities in ImageMagick/Ghostscript (like CVE-2026-65640)."
+msgstr ""
+
+msgid "Hide WordPress Version"
+msgstr ""
+
+msgid "Remove WordPress version generator meta tag and query strings from scripts/styles."
+msgstr ""
+
+msgid "Prevents automated scanners from easily detecting outdated/vulnerable WordPress versions."
+msgstr ""
+
+msgid "Disable Application Passwords"
+msgstr ""
+
+msgid "Disable the REST API Application Passwords feature."
+msgstr ""
+
+msgid "Closes a common vector for brute-force attacks via the WP REST API if you do not use them."
+msgstr ""
+
+msgid "Disable File Editor"
+msgstr ""
+
+msgid "Disable the built-in WordPress theme and plugin editor."
+msgstr ""
+
+msgid "Prevents attackers from injecting malicious PHP code directly from the dashboard if an admin account is compromised."
+msgstr ""
+
+msgid "Block PHP in Uploads"
+msgstr ""
+
+msgid "Block execution of PHP files in the /wp-content/uploads/ directory."
+msgstr ""
+
+msgid "Creates an isolated .htaccess file to immunize your media folder against PHP shell execution."
+msgstr ""
+
+msgid "Hide WP Version"
+msgstr ""
+
+msgid "Disable App Passwords"
+msgstr ""
+
+
+msgid "Authorized Administrators"
+msgstr ""
+
+msgid "Select which Administrators are allowed to view and configure this plugin."
+msgstr ""
+
+msgid "By default, all administrators can manage the plugin. The primary admin (ID 1) can never be locked out."
+msgstr ""
+
+msgid "Protected"
+msgstr ""
+
+msgid "Admin Access Control"
+msgstr ""
+
+#: includes/class-advaipbl-cdn-manager.php:33
+msgid "Select a CDN/Proxy to add..."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1800
+msgid "Quick Add CDN/Proxy:"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1806
+msgid "Add to List"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1807
+msgid "Select a service to automatically append its known IP ranges/ASNs to your trusted list."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1833
+msgid "Added!"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1839
+msgid "This preset is already in your list."
 msgstr ""

@@ -139,6 +139,7 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
         $reason = sprintf(__('Used by %1$d IPs. Common target: "%2$s"', 'advanced-ip-blocker'), $sig->ip_count, $common_target);
 
         // 3. Marcar la firma como maliciosa
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->insert(
             $signatures_table,
             [
@@ -191,6 +192,7 @@ public function analyze_and_flag_signatures($ip_threshold, $analysis_window_seco
         global $wpdb;
         $signatures_table = $wpdb->prefix . 'advaipbl_malicious_signatures';
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $result = $wpdb->delete(
             $signatures_table,
             ['signature_hash' => $signature_hash],

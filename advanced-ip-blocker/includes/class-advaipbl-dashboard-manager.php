@@ -284,6 +284,14 @@ class ADVAIPBL_Dashboard_Manager {
             'abuseipdb'          => !empty($options['enable_abuseipdb']),
             'threat_scoring'     => !empty($options['enable_threat_scoring']),
             'activity_audit'     => !empty($options['enable_audit_log']),
+            
+            // Level 7: Hardening & Core Protection
+            'disable_imagick'        => !empty($options['disable_imagick']),
+            'hide_wp_version'        => !empty($options['hide_wp_version']),
+            'disable_app_passwords'  => !empty($options['disable_app_passwords']),
+            'disable_file_editor'    => !empty($options['disable_file_editor']),
+            'block_php_uploads'      => !empty($options['block_php_uploads']),
+            'restricted_admins'      => !empty($options['allowed_admin_users']),
         ];
     }
 

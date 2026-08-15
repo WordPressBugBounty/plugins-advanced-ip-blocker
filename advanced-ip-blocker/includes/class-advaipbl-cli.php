@@ -1008,6 +1008,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
         }
 
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $items = $wpdb->get_results(
             "SELECT ip, score, FROM_UNIXTIME(last_event_timestamp) as last_activity FROM {$table_name} WHERE score > 0 ORDER BY " . esc_sql($orderby) . " " . esc_sql($order)
         );
@@ -1498,6 +1499,7 @@ class ADVAIPBL_CLI extends WP_CLI_Command {
                 global $wpdb;
                 $table_name = $wpdb->prefix . 'advaipbl_malicious_signatures';
                 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                 $items = $wpdb->get_results("SELECT signature_hash, reason, FROM_UNIXTIME(last_seen) as last_seen, FROM_UNIXTIME(expires_at) as expires_at FROM {$table_name}", ARRAY_A);
                 
                 if (empty($items)) {

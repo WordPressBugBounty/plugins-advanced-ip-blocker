@@ -37,9 +37,10 @@ class ADVAIPBL_Threat_Score_Manager {
     public function get_score($ip) {
         global $wpdb;
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $score = $wpdb->get_var($wpdb->prepare(
-            "SELECT score FROM {$this->table_name} WHERE ip = %s",
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            "SELECT score FROM " . $this->table_name . " WHERE ip = %s",
             $ip
         ));
 
@@ -76,9 +77,10 @@ class ADVAIPBL_Threat_Score_Manager {
         ];
         
         // Obtenemos el log existente para poder añadir la nueva entrada.
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $existing_log_json = $wpdb->get_var($wpdb->prepare(
-            "SELECT log_details FROM {$this->table_name} WHERE ip = %s",
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            "SELECT log_details FROM " . $this->table_name . " WHERE ip = %s",
             $ip
         ));
 
@@ -98,21 +100,22 @@ class ADVAIPBL_Threat_Score_Manager {
         $new_log_json = wp_json_encode($log_history);
 
         // Usamos una única consulta eficiente para insertar o actualizar.
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query($wpdb->prepare(
-            "INSERT INTO {$this->table_name} (ip, score, last_event_timestamp, log_details)
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            "INSERT INTO " . $this->table_name . " (ip, score, last_event_timestamp, log_details)
              VALUES (%s, %d, %d, %s)
              ON DUPLICATE KEY UPDATE 
                 score = score + %d, 
                 last_event_timestamp = %d,
                 log_details = %s",
-            $ip,                        // Para INSERT: ip
-            $points_to_add,             // Para INSERT: score inicial
-            $current_timestamp,         // Para INSERT: last_event_timestamp
-            $new_log_json,              // Para INSERT: log_details
-            $points_to_add,             // Para UPDATE: valor a sumar a score
-            $current_timestamp,         // Para UPDATE: nuevo last_event_timestamp
-            $new_log_json               // Para UPDATE: nuevo log_details
+            $ip,
+            $points_to_add,
+            $current_timestamp,
+            $new_log_json,
+            $points_to_add,
+            $current_timestamp,
+            $new_log_json
         ));
         
         // Devolvemos la puntuación actualizada.
@@ -139,9 +142,10 @@ class ADVAIPBL_Threat_Score_Manager {
 
         // 1. Reducimos la puntuación de las IPs inactivas.
         // Usamos una consulta SQL para restar los puntos, asegurándonos de que nunca baje de 0.
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $updated = $wpdb->query($wpdb->prepare(
-            "UPDATE {$this->table_name}  
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            "UPDATE " . $this->table_name . "  
             SET score = GREATEST(0, score - %d) 
              WHERE last_event_timestamp < %d",
             $decay_points,
@@ -150,9 +154,10 @@ class ADVAIPBL_Threat_Score_Manager {
 
         // 2. Eliminamos las filas cuya puntuación ha llegado a 0.
         // Esto mantiene la tabla limpia y eficiente.
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $deleted = $wpdb->query(
-            "DELETE FROM {$this->table_name} WHERE score <= 0"
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            "DELETE FROM " . $this->table_name . " WHERE score <= 0"
         );
 
         return [
@@ -191,9 +196,10 @@ class ADVAIPBL_Threat_Score_Manager {
     public function get_log_details($ip) {
         global $wpdb;
         
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $log_json = $wpdb->get_var($wpdb->prepare(
-            "SELECT log_details FROM {$this->table_name} WHERE ip = %s",
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            "SELECT log_details FROM " . $this->table_name . " WHERE ip = %s",
             $ip
         ));
 

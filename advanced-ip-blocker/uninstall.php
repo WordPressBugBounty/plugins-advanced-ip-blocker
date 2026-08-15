@@ -8,7 +8,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-// Función auxiliar para borrado recursivo
+// FunciÃ³n auxiliar para borrado recursivo
 // phpcs:disable WordPress.WP.AlternativeFunctions
 function advaipbl_uninstall_recursive_rmdir( $dir ) {
     if (!is_dir($dir)) return;
@@ -20,7 +20,7 @@ function advaipbl_uninstall_recursive_rmdir( $dir ) {
 }
 // phpcs:enable WordPress.WP.AlternativeFunctions
 
-// Función auxiliar simple para peticiones CF
+// FunciÃ³n auxiliar simple para peticiones CF
 if (!function_exists('advaipbl_uninstall_cf_req')) {
     function advaipbl_uninstall_cf_req($method, $endpoint, $token) {
         $url = 'https://api.cloudflare.com/client/v4/' . $endpoint;
@@ -38,16 +38,15 @@ if (!function_exists('advaipbl_uninstall_cf_req')) {
     }
 }
 
-// Función principal de limpieza para un sitio específico
+// FunciÃ³n principal de limpieza para un sitio especÃ­fico
 function advaipbl_process_site_uninstallation() {
     global $wpdb;
 
-    // Obtener la opción de borrado de forma segura
+    // Obtener la opciÃ³n de borrado de forma segura
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $settings_option = get_option( 'advaipbl_settings' );
     
-    // Verificamos si el valor de borrado está marcado (aceptando '1', 1, true, 'on', etc.)
-    $should_delete = is_array( $settings_option ) && ! empty( $settings_option['delete_data_on_uninstall'] ) && in_array( $settings_option['delete_data_on_uninstall'], [ 1, '1', true, 'on', 'yes' ], true );
+    $should_delete = is_array( $settings_option ) && isset( $settings_option['delete_data_on_uninstall'] ) && (bool) $settings_option['delete_data_on_uninstall'];
 
     if ( $should_delete ) {
 
@@ -76,11 +75,11 @@ function advaipbl_process_site_uninstallation() {
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
         foreach ( $tables_to_drop as $table_name ) {
             $full_table_name = $wpdb->prefix . $table_name;
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $wpdb->query( "DROP TABLE IF EXISTS `{$full_table_name}`" );
         }
 
-        // --- 1.5. Limpiar Cloudflare (Si está habilitado) ---
+        // --- 1.5. Limpiar Cloudflare (Si estÃ¡ habilitado) ---
         if ( ! empty( $settings_option['enable_cloudflare'] ) && '1' === $settings_option['enable_cloudflare'] &&
              ! empty( $settings_option['cf_api_token'] ) && ! empty( $settings_option['cf_zone_id'] ) ) {
             
@@ -119,7 +118,7 @@ function advaipbl_process_site_uninstallation() {
         // --- 2. Borrar Opciones de la Tabla `wp_options` ---
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
         $options_to_delete = [
-            // Opciones principales y de configuración
+            // Opciones principales y de configuraciÃ³n
             'advaipbl_settings',
             'advaipbl_waf_rules',
             'advaipbl_blocked_asns',
@@ -246,7 +245,8 @@ function advaipbl_process_site_uninstallation() {
         'advaipbl_send_signature_summary_email',
         'advaipbl_aggregate_rules_metrics',
         'advaipbl_aggregate_challenge_metrics',
-        'advaipbl_zeroday_sync_event'
+        'advaipbl_zeroday_sync_event',
+        'advaipbl_zeroday_version_check_event'
     ];
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     foreach ($cron_hooks as $hook) {
@@ -255,8 +255,15 @@ function advaipbl_process_site_uninstallation() {
 }
 
 // -----------------------------------------------------------------------------------------
-// EJECUCIÓN PRINCIPAL DEL SCRIPT DE UNINSTALL
+// EJECUCIÃ“N PRINCIPAL DEL SCRIPT DE UNINSTALL
 // -----------------------------------------------------------------------------------------
+
+// Guardamos la configuraciÃ³n global ANTES de empezar a borrar opciones, 
+// de lo contrario el paso 2 fallarÃ­a al intentar leer una opciÃ³n ya borrada.
+// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$advaipbl_global_settings = get_option( 'advaipbl_settings' );
+// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$advaipbl_global_should_delete = is_array($advaipbl_global_settings) && isset($advaipbl_global_settings['delete_data_on_uninstall']) && (bool) $advaipbl_global_settings['delete_data_on_uninstall'];
 
 // 1. Procesar bases de datos (soporte completo para Multisite)
 if ( is_multisite() ) {
@@ -276,10 +283,8 @@ if ( is_multisite() ) {
 }
 
 // 2. Limpieza de Archivos y Directorios (Solo se hace una vez, a nivel global)
-// Obtener la opción principal del sitio base para saber si borramos archivos físicos
-// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-$global_settings = get_option( 'advaipbl_settings' );
-if ( is_array($global_settings) && ! empty( $global_settings['delete_data_on_uninstall'] ) && in_array( $global_settings['delete_data_on_uninstall'], [ 1, '1', true, 'on', 'yes' ], true ) ) {
+// Usamos la variable $advaipbl_global_should_delete obtenida al principio del script
+if ( $advaipbl_global_should_delete ) {
     
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $upload_dir = wp_upload_dir();
@@ -306,11 +311,24 @@ if ( is_array($global_settings) && ! empty( $global_settings['delete_data_on_uni
         if ( file_exists( $htaccess_path ) && is_writable( $htaccess_path ) ) {
             $advaipbl_content = file_get_contents($htaccess_path);
             if ($advaipbl_content !== false) {
-                // Regex para eliminar todo el bloque, incluídos los marcadores.
+                // Regex para eliminar todo el bloque, incluÃ­dos los marcadores.
                 $advaipbl_new_content = preg_replace('/# BEGIN Advanced IP Blocker.*?# END Advanced IP Blocker\s*/s', '', $advaipbl_content);
                 if ($advaipbl_new_content !== null && $advaipbl_new_content !== $advaipbl_content) {
                     file_put_contents($htaccess_path, $advaipbl_new_content);
                 }
+            }
+        }
+    }
+    
+    // D. Limpiar reglas del .htaccess de Uploads
+    $advaipbl_uploads_htaccess_path = trailingslashit($upload_dir['basedir']) . '.htaccess';
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+    if ( file_exists( $advaipbl_uploads_htaccess_path ) && is_writable( $advaipbl_uploads_htaccess_path ) ) {
+        $advaipbl_uploads_content = file_get_contents($advaipbl_uploads_htaccess_path);
+        if ($advaipbl_uploads_content !== false) {
+            $advaipbl_new_uploads_content = preg_replace('/# BEGIN Advanced IP Blocker - Block PHP in Uploads.*?# END Advanced IP Blocker - Block PHP in Uploads\s*/s', '', $advaipbl_uploads_content);
+            if ($advaipbl_new_uploads_content !== null && $advaipbl_new_uploads_content !== $advaipbl_uploads_content) {
+                file_put_contents($advaipbl_uploads_htaccess_path, $advaipbl_new_uploads_content);
             }
         }
     }

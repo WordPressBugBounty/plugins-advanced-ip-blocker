@@ -4,9 +4,9 @@ Author URI: https://advaipbl.com/
 Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
 Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
-Tested up to: 7.0
+Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.11.18
+Stable tag: 8.12.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,8 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) Admin Access Control:** Granular control over which administrators can access the plugin's configuration dashboard. Restrict plugin management while keeping firewall rules intact for all editors and admins.
+*   **(NEW) Hardening & Core Protection:** Powerful tools to disable WordPress application passwords, turn off the dangerous built-in file editor, block PHP execution in the uploads folder, and hide the WordPress version from attackers.
 *   **(NEW) Intelligent Zero-Day WAF Sync:** Automatically download and apply critical WAF signatures from the AIB Central Server every day. Stay protected against zero-day vulnerabilities (like wp2shell) without needing to update the plugin manually! The rules run completely independent of your custom WAF configuration.
 *   **(NEW) Block Ghost IPs:** Automatically block IPs without ASN and Reverse DNS to stop anonymous traffic (Warning: Could cause false positives if rDNS is misconfigured by ISPs).
 *   **(NEW) Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
@@ -75,6 +77,12 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+
+= How does Admin Access Control work? =
+By default, all users with the Administrator role can access and configure Advanced IP Blocker. If you have multiple administrators but only want specific users to manage security settings, you can explicitly select them in the "Hardening & Core Protection" tab. The primary admin (ID 1) is always protected from lockouts. Other admins will not even see the "Security" menu.
+
+= Can I block PHP execution in the Uploads folder? =
+Yes! In the "Hardening & Core Protection" section, you can enable "Block PHP in Uploads". The plugin will automatically place a specialized .htaccess file in your uploads directory to prevent any uploaded scripts from being executed, which is a common backdoor technique used by attackers.
 
 = What is the Intelligent Zero-Day WAF Sync? =
 This is a game-changing feature that automatically synchronizes your site's Web Application Firewall with our Central Security Server. Once a day, the plugin securely downloads the latest zero-day vulnerability signatures (e.g., for critical CVEs or widespread exploits) and injects them directly into the scanning engine. This means your site is protected instantly against new threats without waiting for a plugin update. Importantly, these rules run in a dedicated, invisible layer and will NEVER overwrite or interfere with your own custom WAF rules.
@@ -261,34 +269,20 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Changelog ==
 
-= 8.11.18 =
-*   **NEW FEATURE:** Intelligent Zero-Day WAF Lightweight Ping. An ultra-fast hourly check via edge caches that dynamically triggers a full WAF signature download only when the central server indicates a new rule version is available, ensuring immediate protection with near-zero server impact.
-*   **SECURITY HARDENING:** Enhanced PCRE WAF Signatures. Deployed precision regex rules to counter BdThemes supply chain attacks (Biggopti XSS/Webshells), CVE-2026-64638 (WP-Login Reflected XSS), and strict CGI Argument Injection vectors (`-d`, `--`, `-s`) eliminating earlier false positives.
-*   **ENHANCEMENT:** Upgraded default security postures. The WAF module (`enable_waf`) and the Administrator Auto-Whitelist feature (`auto_whitelist_admin`) are now enabled by default to provide immediate protection and prevent accidental lockouts out-of-the-box.
-*   **ENHANCEMENT:** Expanded Bot Verification Engine. Added UptimeRobot, Pingdom, SemrushBot, and SeznamBot to the list of verified good bots to prevent false positive impersonation blocks.
-*   **ENHANCEMENT:** Infrastructure Protection. Added Fastly ASNs to default trusted proxies and AIB Community Network critical infrastructure list to prevent accidental global blocks of Fastly edge nodes.
-*   **BUGFIX:** Resolved PHP Fatal Errors triggered during QR code rendering in the 2FA Manager due to strict typing mismatches introduced by updated dependencies (`RobThree` and `BaconQrCode`).
-*   **BUGFIX:** Fixed a critical log spam issue in challenge systems (Rate Limiting, Advanced Rules, AbuseIPDB, Endpoint Lockdown) where events were repeatedly logged even after users had obtained a valid VIP Pass.
-*   **BUGFIX:** Addressed over 20+ internal `UnescapedDBParameter` CodeSniffer alerts to maintain clean, standardized database interactions.
-
-= 8.11.17 =
-*   **BUGFIX:** Resolved an issue where unchecked plugin settings (like Whitelist Login Access) would not save properly and remained persistently activated.
-
-= 8.11.16 =
-*   **NEW FEATURE:** WP-Cron Manager. A new diagnostic tool in the WP-Cron Logs tab that allows administrators to manually force the synchronous execution of any scheduled WP-Cron event directly from the dashboard, simulating a native cron environment for maximum plugin compatibility.
-*   **ENHANCEMENT:** Upgraded Bot Verification Engine. Moved AhrefsBot, BingBot, and AmazonBot verification to a high-speed dynamic JSON/HTML crawler list engine. Fixed MJ12Bot Reverse DNS schema and addressed a ClaudeBot / OpenAI bot collision issue.
-*   **ENHANCEMENT:** Advanced WP-Cron Loopback Auto-Whitelisting. The plugin now uses cryptographic loopback tokens to autonomously detect and whitelist internal server IP addresses executing cron jobs, completely eliminating false positive internal blocks.
-*   **SECURITY HARDENING:** Expanded the Zero-Day WAF ruleset. Implemented strict signature patterns to block modern LFI (Local File Inclusion), File Upload backdoors, and specific exploits like CVE-2026-13152 directly at the firewall perimeter.
-*   **BUGFIX:** Resolved a vulnerability window during global settings import that delayed Zero-Day WAF rule synchronization.
-*   **BUGFIX:** Added missing legacy and telemetry options to the uninstallation wipe routine for a complete data cleanup.
-
-== Upgrade Notice ==
-
-= 8.11.18 =
-**CRITICAL UPDATE:** Adds Lightweight Ping for instant WAF updates. Fixes severe 2FA Fatal Error & massive Log Spam in challenge engines. Updates PCRE signatures. Adds Fastly CDN to trusted infrastructure, and expands Bot Verification (Pingdom, Semrush, UptimeRobot). Update immediately.
-
-= 8.11.17 =
-**MAINTENANCE UPDATE:** Fixes a minor bug affecting the save state of specific settings checkboxes in the admin panel.
-
-= 8.11.16 =
-**DIAGNOSTIC UPDATE:** Introduces the WP-Cron Manager to manually run background tasks. Enhances bot verification using high-speed JSON lists (Ahrefs, Bing, Amazon). Adds cryptographic auto-whitelisting for internal IPs and patches a Zero-Day WAF sync bug during settings import.
+= 8.12.0 =
+*   **ENHANCEMENT:** Tested and verified full compatibility with the upcoming WordPress 7.1 core release.
+*   **ENHANCEMENT:** Brand new CDN Manager architecture with a Quick Add dropdown to easily auto-fill trusted proxies like Cloudflare and QUIC.cloud.
+*   **SECURITY:** Added Zero-Day WAF rules for recent critical vulnerabilities including Wishlist Member X (CVE-2026-12949) and User Profile Builder (CVE-2026-15826).
+*   **NEW FEATURE:** Admin Access Control. You can now restrict access to the plugin's configuration dashboard to specific administrators. Users not on the allowed list will not see the Security menu, while User ID 1 is always protected against lockouts.
+*   **NEW FEATURE:** Hardening & Core Protections. Added a new section to securely hide the WordPress version, disable the built-in file editor, disable application passwords, disable ImageMagick (Imagick), and block PHP execution in the uploads folder via a managed `.htaccess`.
+*   **ENHANCEMENT:** Central Telemetry Update. The plugin now securely transmits the adoption rate of the new Hardening features (including Restricted Admins) for aggregated community statistics.
+*   **ENHANCEMENT:** Audit Logging. Changes to the authorized administrators list are now tracked and logged in the Activity Audit Log.
+*   **BUGFIX:** Resolved HTML rendering bug in the Admin Access Control multi-select field.
+*   **BUGFIX:** Fixed PHPCS warnings in the uninstaller file regarding interpolated variables and standard filesystem writes.
+*   **BUGFIX:** Resolved Content Security Policy (CSP) console errors on challenge pages caused by Cloudflare Web Analytics (beacon.min.js) auto-injection.
+*   **BUGFIX:** Ensured the Zero-Day WAF Lightweight Ping cron task is properly cleared upon plugin deactivation and uninstallation.
+*   **BUGFIX:** Zero-Day WAF synchronization now preserves informational comments for the UI while correctly excluding them from both the active WAF engine evaluation and the rules count log.
+*   **BUGFIX:** Fixed an issue where importing settings templates failed on Windows server environments (like XAMPP) due to backslashes being stripped from temporary upload file paths.
+*   **BUGFIX:** Updated hardcoded URLs in email templates and system redirects to correctly point to the new top-level `admin.php` menu structure instead of the legacy `options-general.php` location.
+*   **IMPROVEMENT:** Removed emojis from WordPress admin notices and email templates to prevent character encoding issues on certain server environments, keeping them exclusively for push webhook notifications (Slack, Discord, etc.).
+*   **IMPROVEMENT:** The "Unblock ALL IPs" bulk action now properly resets the Threat Score of all unblocked IPs to 0, ensuring consistent UX with individual unblocking and preventing immediate re-blocking upon minor infractions.

@@ -166,7 +166,7 @@ class ADVAIPBL_File_Verifier {
         $trigger_source = 'Scheduled Cron';
         $user_info = '';
         
-        if (is_admin() && current_user_can('manage_options') && wp_doing_ajax()) {
+        if (is_admin() && current_user_can('advaipbl_manage_settings') && wp_doing_ajax()) {
             $current_user = wp_get_current_user();
             $trigger_source = 'Manual Scan';
             $user_info = sprintf(' (%s)', $current_user->user_login);

@@ -61,6 +61,7 @@ class ADVAIPBL_Main {
 	public $abuseipdb_manager;
 	public $htaccess_manager;
 	public $cloudflare_manager;
+	public $cdn_manager;
 	public $reporter_manager;
 	public $community_manager;
 	public $site_scanner;
@@ -98,6 +99,7 @@ private function __construct() {
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-geoip-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-session-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-asn-manager.php';
+    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cdn-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-waf-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rate-limiting-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-dashboard-manager.php';
@@ -149,6 +151,7 @@ private function __construct() {
     $this->abuseipdb_manager = new ADVAIPBL_AbuseIPDB_Manager($this);
     $this->htaccess_manager = new ADVAIPBL_Htaccess_Manager($this);
 	$this->cloudflare_manager = new ADVAIPBL_Cloudflare_Manager($this);
+    $this->cdn_manager = new ADVAIPBL_CDN_Manager($this);
 	$this->reporter_manager = new ADVAIPBL_Reporter_Manager($this);
     $this->security_headers_manager = new ADVAIPBL_Security_Headers($this);
     $this->audit_logger = new ADVAIPBL_Audit_Logger($this);
@@ -173,8 +176,8 @@ private function __construct() {
             
             require_once plugin_dir_path(__FILE__) . 'class-advaipbl-2fa-manager.php';
             
-            // Verificación de seguridad: ¿Están las librerías cargadas?
-            // Esto evita el error fatal si la instalación falló y faltan archivos.
+            // VerificaciÃƒÆ’Ã‚Â³n de seguridad: Ãƒâ€šÃ‚Â¿EstÃƒÆ’Ã‚Â¡n las librerÃƒÆ’Ã‚Â­as cargadas?
+            // Esto evita el error fatal si la instalaciÃƒÆ’Ã‚Â³n fallÃƒÆ’Ã‚Â³ y faltan archivos.
             if ( class_exists('BaconQrCode\Renderer\ImageRenderer') ) {
                 $this->tfa_manager = new ADVAIPBL_2FA_Manager($this);
             } else {
@@ -228,21 +231,22 @@ private function __construct() {
         $initialized = true;
     }
     
-    private function add_hooks() {
-        
-        // Ejecutar chequeo de base de datos muy temprano en init
+    private function add_hooks() {        // Ejecutar chequeo de base de datos muy temprano en init
         add_action('init', [$this, 'check_database_version'], -9999);
         add_action('init', [$this, 'detect_and_whitelist_loopback'], -10000); // Detectar llamadas internas antes que nada
-		add_action('init', [$this, 'auto_whitelist_admin_on_session'], -9998); // Protección para administradores con sesión activa
+		add_action('init', [$this, 'auto_whitelist_admin_on_session'], -9998); // Proteccin para administradores con sesin activa
+
+        // Control de acceso dinÃƒÂ¡mico
+        add_filter('user_has_cap', [$this, 'filter_advaipbl_capabilities'], 10, 4);
 
         add_filter('http_request_args', [$this, 'inject_loopback_token'], 10, 2);
 
         // Ejecutamos las validaciones de inmunidad (Bots y ASN) ANTES que cualquier otra cosa
 		add_action('init', [$this, 'is_visitor_asn_whitelisted'], -1000);
 		add_action('init', [$this, 'verify_known_bots'], -999);
-		add_action('init', [$this->rules_engine, 'evaluate'], -998); // Reglas avanzadas (ALLOW/BLOCK) evalúan antes de las validaciones de challenge
+		add_action('init', [$this->rules_engine, 'evaluate'], -998); // Reglas avanzadas (ALLOW/BLOCK) evalÃƒÆ’Ã‚Âºan antes de las validaciones de challenge
 
-        // Intercepción global y obligatoria para todos los JS Challenges
+        // IntercepciÃƒÆ’Ã‚Â³n global y obligatoria para todos los JS Challenges
         add_action('init', [$this, 'check_for_under_attack_mode'], -996);
         add_action('init', [$this->js_challenge_manager, 'verify_submission'], -997);
         add_action('init', [$this->captcha_manager, 'verify_submission'], -997);
@@ -331,11 +335,11 @@ private function __construct() {
         add_action('admin_notices', [$this, 'display_under_attack_notice']);
 
         // CSS Hiding Strategy:
-        // Ocultar visualmente el enlace del Setup Wizard del menú lateral
+        // Ocultar visualmente el enlace del Setup Wizard del menÃƒÆ’Ã‚Âº lateral
         add_action('admin_head', function() {
             ?>
             <style>
-                /* Ocultar el enlace del Setup Wizard en el submenú */
+                /* Ocultar el enlace del Setup Wizard en el submenÃƒÆ’Ã‚Âº */
                 #toplevel_page_advaipbl_settings_page .wp-submenu a[href$="page=advaipbl-setup-wizard"],
                 li.current a[href$="page=advaipbl-setup-wizard"] { 
                     display: none !important; 
@@ -367,7 +371,7 @@ private function __construct() {
             add_action('admin_post_advaipbl_send_test_email', [ $this, 'handle_send_test_email' ] );
             add_action('admin_post_advaipbl_send_test_push', [ $this, 'handle_send_test_push' ] );
             add_action('admin_post_advaipbl_run_manual_scan', [ $this, 'handle_run_manual_scan' ] );
-			// Hooks para el asistente de configuración
+			// Hooks para el asistente de configuraciÃƒÆ’Ã‚Â³n
             add_action( 'admin_post_advaipbl_wizard_step_1', [ $this->action_handler, 'handle_wizard_step_1' ] );
 			add_action( 'admin_post_advaipbl_wizard_step_2', [ $this->action_handler, 'handle_wizard_step_2' ] );
 			add_action( 'admin_post_advaipbl_wizard_step_3', [ $this->action_handler, 'handle_wizard_step_3' ] );
@@ -394,6 +398,28 @@ private function __construct() {
            remove_action( 'wp_head', 'wlwmanifest_link' );
         }
         
+        if ( ! empty( $this->options['disable_imagick'] ) ) {
+            add_filter( 'wp_image_editors', [$this, 'force_gd_image_editor'] );
+        }
+        
+        if ( ! empty( $this->options['hide_wp_version'] ) ) {
+            remove_action('wp_head', 'wp_generator');
+            add_filter('the_generator', '__return_empty_string');
+            add_filter('style_loader_src', [$this, 'remove_wp_version_strings'], 10, 2);
+            add_filter('script_loader_src', [$this, 'remove_wp_version_strings'], 10, 2);
+        }
+
+        if ( ! empty( $this->options['disable_app_passwords'] ) ) {
+            add_filter('wp_is_application_passwords_available', '__return_false');
+        }
+
+        if ( ! empty( $this->options['disable_file_editor'] ) ) {
+            if ( ! defined('DISALLOW_FILE_EDIT') ) {
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
+                define('DISALLOW_FILE_EDIT', true);
+            }
+        }
+        
         if ( !empty($this->options['recaptcha_enable']) && '1' === $this->options['recaptcha_enable'] && !empty($this->options['recaptcha_site_key']) && !empty($this->options['recaptcha_secret_key']) ) {
             // Frontend & Backend Script Registration
             add_action('login_enqueue_scripts', array($this, 'enqueue_recaptcha_script'));
@@ -416,15 +442,119 @@ private function __construct() {
     }
     
     /**
-     * Comprueba si la versión de la base de datos coincide con la versión definida en el plugin.
-     * Si no coincide, o si es forzada, ejecuta la configuración de tablas.
+     * Fuerza el uso de la libreria GD para el procesamiento de imagenes, desactivando Imagick.
+     * @param array $editors Array of available image editors.
+     * @return array
+     */
+    public function force_gd_image_editor( $editors ) {
+        return [ 'WP_Image_Editor_GD' ];
+    }
+    
+    /**
+     * Removes 'ver=' query string from scripts and styles if hide_wp_version is active.
+     */
+    public function remove_wp_version_strings( $src ) {
+        if ( strpos( $src, 'ver=' ) ) {
+            $src = remove_query_arg( 'ver', $src );
+        }
+        return $src;
+    }
+
+    /**
+     * Creates or removes an .htaccess file in the uploads directory to block PHP execution.
+     */
+    public function manage_uploads_htaccess($enable) {
+        $upload_dir = wp_upload_dir();
+        if ( ! empty( $upload_dir['error'] ) ) {
+            return;
+        }
+        
+        $htaccess_path = trailingslashit($upload_dir['basedir']) . '.htaccess';
+        $marker = 'Advanced IP Blocker - Block PHP in Uploads';
+        
+        if (!function_exists('insert_with_markers')) {
+            require_once ABSPATH . 'wp-admin/includes/misc.php';
+        }
+        
+        if ($enable) {
+            $rules = [
+                '<Files *.php>',
+                'Deny from all',
+                '</Files>'
+            ];
+            insert_with_markers($htaccess_path, $marker, $rules);
+        } else {
+            if (file_exists($htaccess_path)) {
+                insert_with_markers($htaccess_path, $marker, []);
+            }
+        }
+    }
+    
+    /**
+     * Comprueba si la versiÃƒÆ’Ã‚Â³n de la base de datos coincide con la versiÃƒÆ’Ã‚Â³n definida en el plugin.
+     * Si no coincide, o si es forzada, ejecuta la configuraciÃƒÆ’Ã‚Â³n de tablas.
      */
     public function check_database_version() {
         $installed_ver = get_option('advaipbl_db_version');
 
         if ( version_compare( $installed_ver, ADVAIPBL_DB_VERSION, '<' ) ) {
             self::setup_database_tables();
+    // 3. Inicializar lista blanca de ASN por defecto con ejemplos comentados
+    $default_asns = [
+        '# Essential Crawlers and Services',
+        '# Google LLC',
+        '#AS15169',
+        '# Microsoft Corporation',
+        '#AS8075',
+        '# Automattic Inc.',
+        'AS2635',
+        '# Facebook, Inc.',
+        'AS32934',
+        '# Stripe, Inc.',
+        'AS5091',
+        '# Stripe, Inc.',
+        'AS394562',
+        '# PayPal, Inc.',
+        'AS17012',
+        '# Apple Inc.',
+        '#AS714'
+    ];
+    add_option( self::OPTION_WHITELISTED_ASNS, $default_asns );
+
         }
+    }
+    
+    /**
+     * Filters user capabilities to dynamically grant 'advaipbl_manage_settings'.
+     */
+    public function filter_advaipbl_capabilities($allcaps, $caps, $args, $user) {
+        if (in_array('advaipbl_manage_settings', $caps)) {
+            $user_id = $user->ID;
+            $allowed = false;
+
+            if ($user_id == 1) {
+                $allowed = true;
+            } elseif (is_multisite() && is_super_admin($user_id)) {
+                $allowed = true;
+            } else {
+                $allowed_admins = $this->options['allowed_admin_users'] ?? [];
+                if (empty($allowed_admins)) {
+                    // Fallback to manage_options if no specific admins selected
+                    if (!empty($allcaps['manage_options'])) {
+                        $allowed = true;
+                    }
+                } else {
+                    if (in_array((string)$user_id, $allowed_admins, true) || in_array($user_id, $allowed_admins, true)) {
+                        $allowed = true;
+                    }
+                }
+            }
+
+            if ($allowed) {
+                $allcaps['advaipbl_manage_settings'] = true;
+            }
+        }
+        return $allcaps;
     }
     
     /**
@@ -455,8 +585,8 @@ private function __construct() {
     }
 	
 	  /**
-     * @param string $key La clave de la caché.
-     * @return mixed El valor de la caché, o false si no existe o ha caducado.
+     * @param string $key La clave de la cachÃƒÆ’Ã‚Â©.
+     * @return mixed El valor de la cachÃƒÆ’Ã‚Â©, o false si no existe o ha caducado.
      */
     public function get_from_custom_cache( $key, $get_full_object = false ) {
         if ( ! isset($this->cache_manager) ) {
@@ -466,11 +596,11 @@ private function __construct() {
     }
 
     /**
-     * Guarda un valor en tabla de caché personalizada.
+     * Guarda un valor en tabla de cachÃƒÆ’Ã‚Â© personalizada.
      *
-     * @param string $key        La clave de la caché.
-     * @param mixed  $value      El valor a guardar (será serializado).
-     * @param int    $expiration Duración de la caché en segundos.
+     * @param string $key        La clave de la cachÃƒÆ’Ã‚Â©.
+     * @param mixed  $value      El valor a guardar (serÃƒÆ’Ã‚Â¡ serializado).
+     * @param int    $expiration DuraciÃƒÆ’Ã‚Â³n de la cachÃƒÆ’Ã‚Â© en segundos.
      */
     public function set_in_custom_cache( $key, $value, $expiration ) {
         if ( ! isset($this->cache_manager) ) {
@@ -480,8 +610,8 @@ private function __construct() {
     }
 	
 	    /**
-     * Limpia todas las entradas caducadas de la tabla de caché personalizada.
-     * Diseñado para ser llamado por un WP-Cron job para el mantenimiento de la base de datos.
+     * Limpia todas las entradas caducadas de la tabla de cachÃƒÆ’Ã‚Â© personalizada.
+     * DiseÃƒÆ’Ã‚Â±ado para ser llamado por un WP-Cron job para el mantenimiento de la base de datos.
      */
     public function cleanup_expired_cache_entries() {
         if ( ! isset($this->cache_manager) ) {
@@ -520,7 +650,7 @@ private function __construct() {
     }
 
      /**
-     * Registra la firma de la petición actual si la opción está activada.
+     * Registra la firma de la peticiÃƒÆ’Ã‚Â³n actual si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada.
      */
     public function log_request_signature() {
         if (empty($this->options['enable_signature_engine'])) { return; }
@@ -562,9 +692,9 @@ private function __construct() {
             }
         }
 
-        // Ya no mantenemos firmas hardcoded debido a la fragilidad y rotación continua (Crawler Spoofing y cambios de versión).
-        // Los bots buenos legítimos (Google, Bing, etc.) ya han sido excluidos más arriba mediante ASN y rDNS.
-        // Aquí solo aplicamos las firmas "custom" añadidas bajo la responsabilidad del usuario.
+        // Ya no mantenemos firmas hardcoded debido a la fragilidad y rotaciÃƒÆ’Ã‚Â³n continua (Crawler Spoofing y cambios de versiÃƒÆ’Ã‚Â³n).
+        // Los bots buenos legÃƒÆ’Ã‚Â­timos (Google, Bing, etc.) ya han sido excluidos mÃƒÆ’Ã‚Â¡s arriba mediante ASN y rDNS.
+        // AquÃƒÆ’Ã‚Â­ solo aplicamos las firmas "custom" aÃƒÆ’Ã‚Â±adidas bajo la responsabilidad del usuario.
         $trusted_signature_hashes = apply_filters('advaipbl_trusted_signature_hashes', $user_whitelisted_hashes);
 
         if (in_array($signature_hash, $trusted_signature_hashes, true)) {
@@ -663,7 +793,7 @@ private function __construct() {
  * Se ejecuta temprano para verificar bots conocidos y tomar acciones.
  */
 public function verify_known_bots() {
-    // 1. Salir si la función está desactivada o no aplica a esta petición.
+    // 1. Salir si la funciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ desactivada o no aplica a esta peticiÃƒÆ’Ã‚Â³n.
     if (empty($this->options['enable_bot_verification']) || is_admin() || wp_doing_cron() || (defined('WP_CLI') && WP_CLI)) {
         return;
     }
@@ -671,24 +801,24 @@ public function verify_known_bots() {
     $ip = $this->get_client_ip();
     $user_agent = $this->get_user_agent();
     
-    // 2. Comprobar si la IP ya ha sido verificada en una petición anterior (cacheado en transient).
+    // 2. Comprobar si la IP ya ha sido verificada en una peticiÃƒÆ’Ã‚Â³n anterior (cacheado en transient).
     if (get_transient('advaipbl_verified_bot_' . md5($ip))) {
         $this->request_is_asn_whitelisted = true; // Reutilizamos esta bandera para saltar otras comprobaciones.
         return;
     }
 
-    // 3. Realizar la verificación de DNS (solo si el User-Agent parece de un bot conocido).
+    // 3. Realizar la verificaciÃƒÆ’Ã‚Â³n de DNS (solo si el User-Agent parece de un bot conocido).
     $is_verified = $this->bot_verifier->is_verified_bot($ip, $user_agent);
 
     if ($is_verified) {
-        // -- ÉXITO: Es un bot legítimo --
+        // -- ÃƒÆ’Ã¢â‚¬Â°XITO: Es un bot legÃƒÆ’Ã‚Â­timo --
         
-        // Verificar si el usuario quiere bloquearlo explícitamente por IP
+        // Verificar si el usuario quiere bloquearlo explÃƒÆ’Ã‚Â­citamente por IP
         if ( $this->is_visitor_actively_blocked() ) {
             return; // Bloqueado por IP manual/activa
         }
 
-        // Verificar si el usuario quiere bloquearlo explícitamente por ASN
+        // Verificar si el usuario quiere bloquearlo explÃƒÆ’Ã‚Â­citamente por ASN
         if (!empty($this->options['enable_spamhaus_asn']) || !empty($this->options['enable_manual_asn'])) {
             $provider = $this->options['geolocation_provider'] ?? '';
             if (in_array($provider, ['ip-api.com', 'ipinfo.io'], true)) {
@@ -698,25 +828,25 @@ public function verify_known_bots() {
             }
         }
 
-        // Verificar si el usuario quiere bloquearlo explícitamente por User-Agent
+        // Verificar si el usuario quiere bloquearlo explÃƒÆ’Ã‚Â­citamente por User-Agent
             $blocked_uas = get_option('advaipbl_blocked_user_agents', []);
             foreach ($blocked_uas as $blocked_ua) {
                 // Eliminar comentarios
                 $blocked_ua = trim(preg_replace('/#.*$/', '', $blocked_ua));
                 if (!empty($blocked_ua) && stripos($user_agent, $blocked_ua) !== false) {
-                    // El usuario lo ha bloqueado explícitamente. NO damos inmunidad.
-                    // Dejamos que siga el flujo normal, donde será bloqueado por la regla de User-Agent.
+                    // El usuario lo ha bloqueado explÃƒÆ’Ã‚Â­citamente. NO damos inmunidad.
+                    // Dejamos que siga el flujo normal, donde serÃƒÆ’Ã‚Â¡ bloqueado por la regla de User-Agent.
                     return; 
                 }
             }
 
-            // Si no está bloqueado explícitamente, damos inmunidad y cacheamos
+            // Si no estÃƒÆ’Ã‚Â¡ bloqueado explÃƒÆ’Ã‚Â­citamente, damos inmunidad y cacheamos
             set_transient('advaipbl_verified_bot_' . md5($ip), true, DAY_IN_SECONDS);
             $this->request_is_asn_whitelisted = true;
 
     } elseif ($this->bot_verifier->is_known_bot_impersonator($ip, $user_agent)) {
         // -- FALLO: Es un impostor conocido --
-        // Guardamos el estado para bloquearlo en el hook -1 (después de evaluar Inmunidad Global)
+        // Guardamos el estado para bloquearlo en el hook -1 (despuÃƒÆ’Ã‚Â©s de evaluar Inmunidad Global)
         $this->is_bot_impersonator = true;
         return;
     }
@@ -774,9 +904,9 @@ public function verify_known_bots() {
         
         $duration_minutes = 1440; // Default fallback
 
-        // 1. Si el sistema de Puntuación (Threat Scoring) está activo:
+        // 1. Si el sistema de PuntuaciÃƒÆ’Ã‚Â³n (Threat Scoring) estÃƒÆ’Ã‚Â¡ activo:
         //    a) Registramos los puntos para que conste en el Log de Confianza.
-        //    b) Usamos su duración configurada.
+        //    b) Usamos su duraciÃƒÆ’Ã‚Â³n configurada.
         if (!empty($this->options['enable_threat_scoring'])) {
              // Registrar Puntos
              $points_impersonation = (int) ($this->options['score_impersonation'] ?? 100);
@@ -790,10 +920,10 @@ public function verify_known_bots() {
                  ]
              );
 
-             // Usar Duración
+             // Usar DuraciÃƒÆ’Ã‚Â³n
              $duration_minutes = (int) ($this->options['duration_threat_score'] ?? 1440);
         } else {
-             // 2. Si no, usamos la duración configurada para User-Agents "malos" 
+             // 2. Si no, usamos la duraciÃƒÆ’Ã‚Â³n configurada para User-Agents "malos" 
              $duration_minutes = (int) ($this->options['duration_user_agent'] ?? 1440);
         }
 
@@ -813,8 +943,8 @@ public function verify_known_bots() {
     }
 	  
      /**
-     * Se ejecuta en un hook muy temprano para comprobar la firma de la petición.
-     * Si la firma es maliciosa, sirve un desafío JavaScript.
+     * Se ejecuta en un hook muy temprano para comprobar la firma de la peticiÃƒÆ’Ã‚Â³n.
+     * Si la firma es maliciosa, sirve un desafÃƒÆ’Ã‚Â­o JavaScript.
      */
       public function check_for_malicious_signature() {
 		if ($this->is_request_uri_excluded()) { return; }	
@@ -824,7 +954,7 @@ public function verify_known_bots() {
         if (wp_doing_ajax() || wp_is_json_request() || is_admin() || wp_doing_cron() || (defined('WP_CLI') && WP_CLI)) {
             return;
         }
-		// Si el usuario acaba de pasar un desafío, le damos un pase de gracia de 15s.
+		// Si el usuario acaba de pasar un desafÃƒÆ’Ã‚Â­o, le damos un pase de gracia de 15s.
         if (get_transient('advaipbl_grace_pass_' . md5($this->get_client_ip()))) {
            return;
         }
@@ -834,7 +964,8 @@ public function verify_known_bots() {
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_js_token'])) {
-            // Parámetros para el desafío de firmas: cookie 'advaipbl_js_verified', duración global o 4 horas.
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            // ParÃƒÆ’Ã‚Â¡metros para el desafÃƒÆ’Ã‚Â­o de firmas: cookie 'advaipbl_js_verified', duraciÃƒÆ’Ã‚Â³n global o 4 horas.
             $global_duration_hours = (int)($this->options['global_challenge_cookie_duration'] ?? 4);
             $duration_seconds = ($global_duration_hours > 0) ? $global_duration_hours * HOUR_IN_SECONDS : 0;
             $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', $duration_seconds);
@@ -863,7 +994,7 @@ public function verify_known_bots() {
 
         if ($is_malicious) {
             $mode = $this->options['signature_challenge_mode'] ?? 'default';
-            // 1. Registramos el evento aquí, en el punto de decisión.
+            // 1. Registramos el evento aquÃƒÆ’Ã‚Â­, en el punto de decisiÃƒÆ’Ã‚Â³n.
             $this->log_specific_error(
                 'signature_challenge', 
                 $this->get_client_ip(), 
@@ -875,13 +1006,13 @@ public function verify_known_bots() {
                 'warning'
             );
             
-            // 2. Luego, servimos el desafío.
+            // 2. Luego, servimos el desafÃƒÆ’Ã‚Â­o.
             $this->js_challenge_manager->serve_challenge('signature', $mode);
         }
     }
 	
         /**
-     * Comprueba si el visitante proviene de un país que requiere un desafío geográfico.
+     * Comprueba si el visitante proviene de un paÃƒÆ’Ã‚Â­s que requiere un desafÃƒÆ’Ã‚Â­o geogrÃƒÆ’Ã‚Â¡fico.
      * Se ejecuta en un hook 'init' temprano.
      */
     public function check_for_geo_challenge() {
@@ -936,14 +1067,14 @@ public function verify_known_bots() {
     }
 
      /**
-     * Envía notificaciones (Email/Push) cuando una nueva firma maliciosa es identificada.
+     * EnvÃƒÆ’Ã‚Â­a notificaciones (Email/Push) cuando una nueva firma maliciosa es identificada.
      *
      * @param string $signature_hash El hash de la firma.
-     * @param string $reason La razón por la que fue marcada.
+     * @param string $reason La razÃƒÆ’Ã‚Â³n por la que fue marcada.
      * @param string $user_agent El User-Agent de ejemplo asociado a la firma.
      */
     /**
-     * Envía notificaciones (Email/Push) cuando una nueva firma maliciosa es identificada.
+     * EnvÃƒÆ’Ã‚Â­a notificaciones (Email/Push) cuando una nueva firma maliciosa es identificada.
      */
     public function send_signature_flagged_notification($signature_hash, $reason, $user_agent = 'N/A') {
         if ( isset($this->notification_manager) ) {
@@ -952,10 +1083,10 @@ public function verify_known_bots() {
     }
 
     /**
-     * Callback para el evento de cron que ejecuta el decaimiento de la puntuación de amenaza.
+     * Callback para el evento de cron que ejecuta el decaimiento de la puntuaciÃƒÆ’Ã‚Â³n de amenaza.
      */
     public function execute_threat_score_decay() {
-        // Solo se ejecuta si el sistema de puntuación está activado.
+        // Solo se ejecuta si el sistema de puntuaciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activado.
         if (empty($this->options['enable_threat_scoring'])) {
             return;
         }
@@ -980,7 +1111,7 @@ public function verify_known_bots() {
     }
 	
 	 /**
-     * Callback para el evento de cron que ejecuta el análisis de firmas de ataque.
+     * Callback para el evento de cron que ejecuta el anÃƒÆ’Ã‚Â¡lisis de firmas de ataque.
      */
     public function execute_signature_analysis() {
         if (empty($this->options['enable_signature_analysis'])) {
@@ -1009,7 +1140,7 @@ public function verify_known_bots() {
     }
 
 /**
- * Callback para el endpoint de la API. Devuelve los últimos ataques.
+ * Callback para el endpoint de la API. Devuelve los ÃƒÆ’Ã‚Âºltimos ataques.
  *
  * @param WP_REST_Request $request
  * @return WP_REST_Response
@@ -1023,7 +1154,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
 
      /**
      * Endpoint de la API REST para obtener un nonce fresco para el feed en vivo.
-     * Esto evita problemas de caché de página.
+     * Esto evita problemas de cachÃƒÆ’Ã‚Â© de pÃƒÆ’Ã‚Â¡gina.
      */
     public function get_live_feed_nonce() {
         if ( ! isset($this->live_feed_manager) ) {
@@ -1033,7 +1164,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
     }
 
      /**
-     * Función del shortcode [advaipbl_live_feed].
+     * FunciÃƒÆ’Ã‚Â³n del shortcode [advaipbl_live_feed].
      * Genera el HTML y el CSS necesario para el feed, y encola el script JS.
      *
      * @param array $atts Atributos del shortcode.
@@ -1077,6 +1208,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
                 foreach ( $cron_array as $timestamp => $hooks ) {
                     if ( $timestamp <= $current_time ) {
                         foreach ( $hooks as $hook_name => $events ) {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                             $due_hooks[] = $hook_name;
                         }
                     }
@@ -1096,7 +1228,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
                 'method'     => $this->get_request_method(),
                 'user_agent' => $this->get_user_agent(),
                 'due_hooks'  => $due_hooks,
-                'source'     => $source, // Añadimos la nueva información
+                'source'     => $source, // AÃƒÆ’Ã‚Â±adimos la nueva informaciÃƒÆ’Ã‚Â³n
             ];
 
             @$wpdb->insert(
@@ -1117,7 +1249,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
      * Enqueues the Google reCAPTCHA API script on the login page.
      */
       public function enqueue_recaptcha_script() {
-    // No encolar si el usuario ya está conectado
+    // No encolar si el usuario ya estÃƒÆ’Ã‚Â¡ conectado
     if ( function_exists('is_user_logged_in') && is_user_logged_in() ) {
         return;
     }
@@ -1125,8 +1257,8 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
     $version = $this->options['recaptcha_version'] ?? 'v3';
     $site_key = $this->options['recaptcha_site_key'] ?? '';
 
-    // La comprobación de si la clave está vacía ya se hace en add_hooks,
-    // pero una doble comprobación no hace daño.
+    // La comprobaciÃƒÆ’Ã‚Â³n de si la clave estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­a ya se hace en add_hooks,
+    // pero una doble comprobaciÃƒÆ’Ã‚Â³n no hace daÃƒÆ’Ã‚Â±o.
     if (empty($site_key)) {
         return;
     }
@@ -1147,17 +1279,17 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
 }
 
     /**
-    * Se dispara cuando las reglas del WAF son actualizadas desde la página de ajustes.
+    * Se dispara cuando las reglas del WAF son actualizadas desde la pÃƒÆ’Ã‚Â¡gina de ajustes.
     * Registra el evento en el log general.
     *
-    * @param mixed $old_value El valor antiguo de la opción.
-    * @param mixed $new_value El nuevo valor de la opción.
+    * @param mixed $old_value El valor antiguo de la opciÃƒÆ’Ã‚Â³n.
+    * @param mixed $new_value El nuevo valor de la opciÃƒÆ’Ã‚Â³n.
     */
      public function on_waf_rules_update($old_value, $new_value) {
     // Solo registramos si el valor ha cambiado realmente.
     if ($old_value !== $new_value) {
         $message = sprintf(
-            /* translators: %s: El nombre de usuario del administrador que realizó el cambio. */
+            /* translators: %s: El nombre de usuario del administrador que realizÃƒÆ’Ã‚Â³ el cambio. */
             __('WAF rules list updated by %s.', 'advanced-ip-blocker'),
             $this->get_current_admin_username()
         );
@@ -1167,7 +1299,7 @@ public function get_live_attacks_for_feed(WP_REST_Request $request) {
 
 /**
  * Descarga y procesa la lista Spamhaus ASN DROP y la guarda en la base de datos.
- * Es llamada por el WP-Cron y por la acción de refresco manual.
+ * Es llamada por el WP-Cron y por la acciÃƒÆ’Ã‚Â³n de refresco manual.
  */
 public function update_spamhaus_list() {
     $url = 'https://www.spamhaus.org/drop/asndrop.json';
@@ -1181,9 +1313,9 @@ public function update_spamhaus_list() {
 
     $body_string = wp_remote_retrieve_body($response);
     
-    // El archivo de Spamhaus es una secuencia de objetos JSON, no un único array JSON.
+    // El archivo de Spamhaus es una secuencia de objetos JSON, no un ÃƒÆ’Ã‚Âºnico array JSON.
     // Lo dividimos en objetos individuales.
-    // Usamos una expresión regular para encontrar cada objeto JSON { ... }
+    // Usamos una expresiÃƒÆ’Ã‚Â³n regular para encontrar cada objeto JSON { ... }
     preg_match_all('/\{.*?\}/', $body_string, $matches);
 
     if (empty($matches[0])) {
@@ -1214,7 +1346,7 @@ public function update_spamhaus_list() {
 }
 
 public function handle_spamhaus_refresh_action() {
-    if (!current_user_can('manage_options') || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'advaipbl-refresh-spamhaus')) {
+    if (!current_user_can('advaipbl_manage_settings') || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'advaipbl-refresh-spamhaus')) {
         wp_die('Security check failed.');
     }
     $this->update_spamhaus_list();
@@ -1261,13 +1393,22 @@ public function sync_zeroday_waf_rules() {
         return;
     }
 
-    $rules = is_array($data['rules']) ? $data['rules'] : [];
+    $raw_rules = is_array($data['rules']) ? $data['rules'] : [];
     
-    // Solo guardamos si el array es válido
-    update_option('advaipbl_zeroday_waf_rules', $rules);
+    // Contamos solo las reglas activas para el log, pero guardamos todas (incluyendo comentarios) para la UI
+    $active_rules_count = 0;
+    foreach ($raw_rules as $rule) {
+        $rule = trim((string) $rule);
+        if (!empty($rule) && strpos($rule, '#') !== 0) {
+            $active_rules_count++;
+        }
+    }
+    
+    // Guardamos el array original validado
+    update_option('advaipbl_zeroday_waf_rules', $raw_rules);
     update_option('advaipbl_zeroday_waf_last_sync', time());
     
-    $this->log_event(sprintf('Intelligent WAF Sync successful: Downloaded %d zero-day signatures.', count($rules)), 'info');
+    $this->log_event(sprintf('Intelligent WAF Sync successful: Downloaded %d zero-day signatures.', $active_rules_count), 'info');
 }
 
 /**
@@ -1358,8 +1499,8 @@ public function validate_recaptcha_response($user, $username, $password) {
     }
 
     $secret_key = $this->options['recaptcha_secret_key'] ?? '';   
-    // La comprobación principal ya se hace en add_hooks,
-    // pero si alguien modificara la opción mientras tanto, esto es un seguro.
+    // La comprobaciÃƒÆ’Ã‚Â³n principal ya se hace en add_hooks,
+    // pero si alguien modificara la opciÃƒÆ’Ã‚Â³n mientras tanto, esto es un seguro.
     if (empty($secret_key)) {
         return $user;
     }
@@ -1424,9 +1565,9 @@ public function validate_recaptcha_response($user, $username, $password) {
     /**
     * Detecta plugins activos que probablemente usan la interfaz XML-RPC.
     *
-    * Utiliza una combinación de una lista de plugins conocidos y un análisis de los hooks de XML-RPC.
+    * Utiliza una combinaciÃƒÆ’Ã‚Â³n de una lista de plugins conocidos y un anÃƒÆ’Ã‚Â¡lisis de los hooks de XML-RPC.
     *
-    * @return array Un array con los nombres de los plugins detectados. Vacío si no se encuentra ninguno.
+    * @return array Un array con los nombres de los plugins detectados. VacÃƒÆ’Ã‚Â­o si no se encuentra ninguno.
     */
     public function get_xmlrpc_dependent_plugins() {
     $dependent_plugins = [];
@@ -1435,7 +1576,7 @@ public function validate_recaptcha_response($user, $username, $password) {
     // 1. Lista de plugins conocidos que dependen de XML-RPC.
     $known_slugs = [
     'jetpack/jetpack.php',
-    // Si encuentras más en el futuro, como la app de WooCommerce si usa un plugin puente.
+    // Si encuentras mÃƒÆ’Ã‚Â¡s en el futuro, como la app de WooCommerce si usa un plugin puente.
     'xmlrpc-debugger/xmlrpc-debugger.php' 
     ];
 
@@ -1451,7 +1592,7 @@ public function validate_recaptcha_response($user, $username, $password) {
         }
     }
 
-    // 2. Análisis de Hooks (Heurística).
+    // 2. AnÃƒÆ’Ã‚Â¡lisis de Hooks (HeurÃƒÆ’Ã‚Â­stica).
     // Buscamos plugins que se enganchen a los eventos de XML-RPC.
     global $wp_filter;
     $xmlrpc_hooks = [
@@ -1482,7 +1623,7 @@ public function validate_recaptcha_response($user, $username, $password) {
 
                     if ($reflection) {
                         $file_path = $reflection->getFileName();
-                        // Comprobamos si la ruta del archivo está dentro del directorio de plugins.
+                        // Comprobamos si la ruta del archivo estÃƒÆ’Ã‚Â¡ dentro del directorio de plugins.
                         if ($file_path && strpos($file_path, WP_PLUGIN_DIR) !== false) {
                             $plugin_dir_path = str_replace('\\', '/', WP_PLUGIN_DIR);
                             $file_path = str_replace('\\', '/', $file_path);
@@ -1513,17 +1654,17 @@ public function validate_recaptcha_response($user, $username, $password) {
 }
 
 /**
- * Obtiene el número de IPs/rangos bloqueados.
+ * Obtiene el nÃƒÆ’Ã‚Âºmero de IPs/rangos bloqueados.
  * Cachea el resultado para mejorar el rendimiento.
  *
- * @return int El número total de entradas de IP bloqueadas.
+ * @return int El nÃƒÆ’Ã‚Âºmero total de entradas de IP bloqueadas.
  */
 public function get_blocked_count() {
     if ( null !== $this->blocked_count ) {
         return $this->blocked_count;
     }
 
-    // Usamos la caché de objetos de WP para un mejor rendimiento
+    // Usamos la cachÃƒÆ’Ã‚Â© de objetos de WP para un mejor rendimiento
     $count = wp_cache_get('blocked_ips_count', 'advaipbl');
     if (false === $count) {
         $this->limpiar_ips_expiradas(); // La limpieza es crucial antes de contar
@@ -1539,13 +1680,13 @@ public function get_blocked_count() {
 }
 
     /**
- * Obtiene el número de firmas de ataque activas.
+ * Obtiene el nÃƒÆ’Ã‚Âºmero de firmas de ataque activas.
  * @return int
  */
 public function get_blocked_signatures_count() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'advaipbl_malicious_signatures';
-    // Usamos cache para evitar consultas repetidas en la misma petición
+    // Usamos cache para evitar consultas repetidas en la misma peticiÃƒÆ’Ã‚Â³n
     $count = wp_cache_get('blocked_signatures_count', 'advaipbl');
     if (false === $count) {
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -1556,7 +1697,7 @@ public function get_blocked_signatures_count() {
 }
 
 /**
- * Obtiene el número de endpoints actualmente en lockdown.
+ * Obtiene el nÃƒÆ’Ã‚Âºmero de endpoints actualmente en lockdown.
  * @return int
  */
 public function get_blocked_endpoints_count() {
@@ -1581,17 +1722,17 @@ public function get_blocked_endpoints_count() {
      */
     public function get_current_admin_username() {
         $user = wp_get_current_user();
-        // Si el usuario existe y tiene un ID, devuelve su login. Si no, devuelve un texto genérico.
+        // Si el usuario existe y tiene un ID, devuelve su login. Si no, devuelve un texto genÃƒÆ’Ã‚Â©rico.
         return ( $user && $user->ID ) ? $user->user_login : __( 'an unknown user', 'advanced-ip-blocker' );
     }
 
     /**
-    * Añade una entrada (IP o rango) a la whitelist y se asegura de que sea eliminada
-    * de todas las listas de bloqueo. Este es el método centralizado para esta acción.
+    * AÃƒÆ’Ã‚Â±ade una entrada (IP o rango) a la whitelist y se asegura de que sea eliminada
+    * de todas las listas de bloqueo. Este es el mÃƒÆ’Ã‚Â©todo centralizado para esta acciÃƒÆ’Ã‚Â³n.
     *
-    * @param string $entry_to_whitelist La IP o rango a añadir a la whitelist.
-    * @param string $detail Una descripción de por qué se añadió.
-    * @return bool True si la entrada se añadió con éxito, false si ya existía.
+    * @param string $entry_to_whitelist La IP o rango a aÃƒÆ’Ã‚Â±adir a la whitelist.
+    * @param string $detail Una descripciÃƒÆ’Ã‚Â³n de por quÃƒÆ’Ã‚Â© se aÃƒÆ’Ã‚Â±adiÃƒÆ’Ã‚Â³.
+    * @return bool True si la entrada se aÃƒÆ’Ã‚Â±adiÃƒÆ’Ã‚Â³ con ÃƒÆ’Ã‚Â©xito, false si ya existÃƒÆ’Ã‚Â­a.
     */
     public function add_to_whitelist_and_unblock( $entry_to_whitelist, $detail ) {
     if ( ! $this->is_valid_ip_or_range( $entry_to_whitelist ) ) {
@@ -1645,10 +1786,10 @@ public function get_blocked_endpoints_count() {
         if (!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'advaipbl_clear_location_cache_nonce')) {
             wp_die('Invalid nonce.');
         }
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_die('Permission denied.');
         }
-        // Vaciamos la tabla de caché.
+        // Vaciamos la tabla de cachÃƒÆ’Ã‚Â©.
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_cache';
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -1667,7 +1808,7 @@ public function get_blocked_endpoints_count() {
         if (!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'advaipbl_revoke_vip_passes_nonce')) {
             wp_die('Invalid nonce.');
         }
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_die('Permission denied.');
         }
         
@@ -1692,14 +1833,14 @@ public function get_blocked_endpoints_count() {
         if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'advaipbl_send_test_email_nonce' ) ) {
             wp_die( 'Invalid nonce.' );
         }
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'advaipbl_manage_settings' ) ) {
             wp_die( 'Permission denied.' );
         }
 
         // 2. Preparar variables
         $to = ! empty( $this->options['notification_email'] ) && is_email( $this->options['notification_email'] ) ? $this->options['notification_email'] : get_option( 'admin_email' );
         $site_name = get_bloginfo( 'name' );
-        $settings_url = admin_url( 'options-general.php?page=advaipbl_settings_page' );
+        $settings_url = admin_url( 'admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-notifications' );
 
         if ( isset($this->notification_manager) ) {
             $sent = $this->notification_manager->send_test_email($to);
@@ -1707,7 +1848,7 @@ public function get_blocked_endpoints_count() {
              $sent = false;
         }
 
-        // 5. Lógica de notificación y redirección
+        // 5. LÃƒÆ’Ã‚Â³gica de notificaciÃƒÆ’Ã‚Â³n y redirecciÃƒÆ’Ã‚Â³n
         if ( $sent ) {
             $message = __( 'The setup guide has been sent successfully to your configured email address.', 'advanced-ip-blocker' );
             $type    = 'success';
@@ -1720,14 +1861,14 @@ public function get_blocked_endpoints_count() {
             $this->log_event( sprintf( __( 'FAILED to send setup guide to %1$s. Action by %2$s.', 'advanced-ip-blocker' ), $to, $this->get_current_admin_username() ), 'error' );
         }
         set_transient( 'advaipbl_admin_notice', [ 'message' => $message, 'type' => $type ], 30 );
-        wp_safe_redirect( wp_get_referer() );
+        wp_safe_redirect( $settings_url );
         exit;
     }
 
     public function handle_send_test_push() {
         check_admin_referer('advaipbl_send_test_push_nonce');
         
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'advaipbl_manage_settings' ) ) {
             wp_die( esc_html__( 'Cheatin&#8217; uh?', 'advanced-ip-blocker' ) );
         }
 
@@ -1751,11 +1892,11 @@ public function get_blocked_endpoints_count() {
             $failed_count = count($webhook_urls);
         }
 
-        // Redireccionar de vuelta con un mensaje de éxito
+        // Redireccionar de vuelta con un mensaje de ÃƒÆ’Ã‚Â©xito
         wp_safe_redirect( add_query_arg( 
-            ['page' => 'advaipbl_settings_page', 'settings-updated' => 'true', 'push-test-sent' => $sent_count, 'push-test-failed' => $failed_count], 
+            ['page' => 'advaipbl_settings_page', 'tab' => 'settings', 'sub-tab' => 'general_settings', 'settings-updated' => 'true', 'push-test-sent' => $sent_count, 'push-test-failed' => $failed_count], 
             admin_url( 'admin.php' ) 
-        ) );
+        ) . '#section-notifications' );
         exit;
     }
     
@@ -1778,7 +1919,7 @@ public function get_blocked_endpoints_count() {
     public function handle_run_manual_scan() {
         check_admin_referer('advaipbl_run_manual_scan_nonce');
         
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'advaipbl_manage_settings' ) ) {
             wp_die( esc_html__( 'Cheatin&#8217; uh?', 'advanced-ip-blocker' ) );
         }
         
@@ -1797,7 +1938,7 @@ public function get_blocked_endpoints_count() {
     }
 
         public function load_admin_scripts($hook) {
-        // Cargar scripts en nuestras páginas Y en las páginas de perfil/edición de usuario.
+        // Cargar scripts en nuestras pÃƒÆ’Ã‚Â¡ginas Y en las pÃƒÆ’Ã‚Â¡ginas de perfil/ediciÃƒÆ’Ã‚Â³n de usuario.
         $allowed_hooks = ['profile.php', 'user-edit.php'];
         $is_plugin_page = strpos($hook, 'advaipbl_settings_page') !== false || strpos($hook, 'advaipbl-setup-wizard') !== false;
 
@@ -1805,7 +1946,7 @@ public function get_blocked_endpoints_count() {
             return;
         }
 
-        // --- 1. Determinar la pestaña y sub-pestaña activas ---
+        // --- 1. Determinar la pestaÃƒÆ’Ã‚Â±a y sub-pestaÃƒÆ’Ã‚Â±a activas ---
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $current_page_slug = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
         
@@ -1836,7 +1977,7 @@ public function get_blocked_endpoints_count() {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $active_sub_tab = isset($_GET['sub-tab']) ? sanitize_key($_GET['sub-tab']) : null;
 
-        // Si no hay sub-pestaña en la URL, la deducimos de la pestaña principal.
+        // Si no hay sub-pestaÃƒÆ’Ã‚Â±a en la URL, la deducimos de la pestaÃƒÆ’Ã‚Â±a principal.
         if (is_null($active_sub_tab)) {
             switch ($active_main_tab) {
                 case 'dashboard':
@@ -1868,9 +2009,9 @@ public function get_blocked_endpoints_count() {
             }
         }
         
-        // --- 2. Cargar Assets Comunes (siempre necesarios en nuestras páginas) ---
+        // --- 2. Cargar Assets Comunes (siempre necesarios en nuestras pÃƒÆ’Ã‚Â¡ginas) ---
         if ($is_plugin_page || in_array($hook, $allowed_hooks)) {
-            $this->session_manager->enqueue_scripts_styles(); // Asumiendo que es necesario en el perfil también.
+            $this->session_manager->enqueue_scripts_styles(); // Asumiendo que es necesario en el perfil tambiÃƒÆ’Ã‚Â©n.
             wp_enqueue_style( 'advaipbl-styles-main', plugin_dir_url( dirname( __FILE__ ) ) . 'css/advaipbl-styles.css', [], ADVAIPBL_VERSION );
             wp_enqueue_style( 'advaipbl-select2-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/select2.min.css', [], '4.1.0-rc.0' );
             wp_enqueue_script( 'advaipbl-select2-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/select2.min.js', [ 'jquery' ], '4.1.0-rc.0', true );
@@ -1899,7 +2040,7 @@ public function get_blocked_endpoints_count() {
             wp_add_inline_style('advaipbl-styles-main', $floating_bar_css);
         }
 
-        // --- 3. Cargar Assets Específicos (solo cuando sea necesario) ---
+        // --- 3. Cargar Assets EspecÃƒÆ’Ã‚Â­ficos (solo cuando sea necesario) ---
         if ($is_plugin_page) {
             
             // Cargar assets del Dashboard Principal
@@ -1923,7 +2064,7 @@ public function get_blocked_endpoints_count() {
                 wp_enqueue_script('leaflet-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/leaflet.js', [], '1.9.4', true);
             }
 
-            // Cargar assets de la página "About"
+            // Cargar assets de la pÃƒÆ’Ã‚Â¡gina "About"
             // STRICT CHECK: Ensure we are explicitly on the about tab to avoid loading Stripe/Sift on other pages (CSP issues)
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             if (isset($_GET['tab']) && $_GET['tab'] === 'about') {
@@ -1932,9 +2073,9 @@ public function get_blocked_endpoints_count() {
             }
         }
         
-        // --- 4. Localizar Datos para JS (siempre necesario en nuestras páginas) ---
+        // --- 4. Localizar Datos para JS (siempre necesario en nuestras pÃƒÆ’Ã‚Â¡ginas) ---
         if ($is_plugin_page) {
-            // --- Procesar información del servidor ---
+            // --- Procesar informaciÃƒÆ’Ã‚Â³n del servidor ---
             $server_ip = $this->get_server_ip();
             $server_info = [ 'ip' => $server_ip, 'country_code' => '', 'country_name' => '', 'is_whitelisted' => false ];
             if ( $server_ip ) {
@@ -1946,7 +2087,7 @@ public function get_blocked_endpoints_count() {
                 $server_info['is_whitelisted'] = $this->is_whitelisted( $server_ip );
             }
 
-            // --- Procesar información del administrador (usuario actual) ---
+            // --- Procesar informaciÃƒÆ’Ã‚Â³n del administrador (usuario actual) ---
             $admin_ip = $this->get_client_ip();
             $admin_info = [ 'ip' => $admin_ip, 'country_code' => '', 'country_name' => '', 'is_whitelisted' => false ];
             if ( $admin_ip && filter_var( $admin_ip, FILTER_VALIDATE_IP ) ) {
@@ -2127,7 +2268,7 @@ public function get_blocked_endpoints_count() {
                     if (!empty($trap_url) && stripos($requested_url, strtolower(trim($trap_url))) !== false) {
                         /* translators: %d: Honeypot URL accessed. */
 						$reason = sprintf(__('Honeypot URL accessed: %s', 'advanced-ip-blocker'), $trap_url);
-                        // Llamamos a nuestra función central y LUEGO terminamos.
+                        // Llamamos a nuestra funciÃƒÆ’Ã‚Â³n central y LUEGO terminamos.
                         $this->handle_threat_event($ip, 'honeypot', $reason, ['url' => $requested_url]);
                         return $status_header; 
                     }
@@ -2136,13 +2277,13 @@ public function get_blocked_endpoints_count() {
         }
 
         // --- SMART 404 CHALLENGE ---
-        // Si la opción está activada, verificamos si es humano antes de procesar el error 404.
+        // Si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada, verificamos si es humano antes de procesar el error 404.
         if (!empty($this->options['enable_404_challenge'])) {
-             // Si ya está verificado, pasamos (y se registrará como un 404 normal de humano).
+             // Si ya estÃƒÆ’Ã‚Â¡ verificado, pasamos (y se registrarÃƒÆ’Ã‚Â¡ como un 404 normal de humano).
              if ($this->js_challenge_manager->is_vip_pass_valid()) {
-                 // Humano confirmado. Dejamos que el flujo continúe hacia handle_error('404') abajo.
+                 // Humano confirmado. Dejamos que el flujo continÃƒÆ’Ã‚Âºe hacia handle_error('404') abajo.
              } else {
-                 // No está verificado. Servimos el desafío e interrumpimos la ejecución.
+                 // No estÃƒÆ’Ã‚Â¡ verificado. Servimos el desafÃƒÆ’Ã‚Â­o e interrumpimos la ejecuciÃƒÆ’Ã‚Â³n.
                  $this->js_challenge_manager->serve_challenge('404_challenge');
                  exit;
              }
@@ -2200,7 +2341,7 @@ public function get_blocked_endpoints_count() {
     $this->error_handled_this_request = true;
     $ip = $this->get_client_ip();
 
-        // Comprobación de whitelist.
+        // ComprobaciÃƒÆ’Ã‚Â³n de whitelist.
         if ($this->is_whitelisted($ip)) return $status_header;
 
         $all_block_types = ['geoblock', 'honeypot', 'manual', '404', '403', 'login', 'user_agent', 'waf', 'rate_limit', 'asn', 'xmlrpc_block', 'threat_score', 'impersonation', 'aib_network', 'abuseipdb', 'advanced_rule'];
@@ -2217,21 +2358,21 @@ return $status_header;
 }
 
     /**
-     * Bloquea de forma temprana y completa todas las peticiones a xmlrpc.php si la opción está en modo 'disabled'.
-     * Enganchado a un hook 'init' temprano para máxima eficacia.
+     * Bloquea de forma temprana y completa todas las peticiones a xmlrpc.php si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ en modo 'disabled'.
+     * Enganchado a un hook 'init' temprano para mÃƒÆ’Ã‚Â¡xima eficacia.
      */
     public function block_xmlrpc_requests_if_disabled() {
-        // Bypass global: Si la IP está en la whitelist, puede saltarse este bloqueo estricto
+        // Bypass global: Si la IP estÃƒÆ’Ã‚Â¡ en la whitelist, puede saltarse este bloqueo estricto
         if ($this->is_whitelisted($this->get_client_ip()) || !empty($this->request_is_asn_whitelisted) || !empty($this->is_advanced_rule_allowed)) {
             return;
         }
 
-        // Solo actuar si la opción está explícitamente en modo 'disabled'.
+        // Solo actuar si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ explÃƒÆ’Ã‚Â­citamente en modo 'disabled'.
         if ( empty( $this->options['xmlrpc_protection_mode'] ) || 'disabled' !== $this->options['xmlrpc_protection_mode'] ) {
             return;
         }
 
-        // Comprobamos si la petición actual es para xmlrpc.php.
+        // Comprobamos si la peticiÃƒÆ’Ã‚Â³n actual es para xmlrpc.php.
         $request_uri = $this->get_current_request_uri();
         if ( strpos( $request_uri, 'xmlrpc.php' ) !== false ) {
             $ip = $this->get_client_ip();
@@ -2248,7 +2389,7 @@ return $status_header;
              $this->reporter_manager->queue_report( $ip, 'xmlrpc_block', ['uri' => $request_uri] );
         }
 
-            // Enviamos una respuesta 403 Forbidden y terminamos la ejecución de forma robusta.
+            // Enviamos una respuesta 403 Forbidden y terminamos la ejecuciÃƒÆ’Ã‚Â³n de forma robusta.
             if (!headers_sent()) {
                 header('HTTP/1.1 403 Forbidden');
                // Prevenimos que los navegadores intenten cachear esta respuesta de error.
@@ -2256,7 +2397,7 @@ return $status_header;
                header('Pragma: no-cache');
                header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
             }
-           // Usamos exit() con un mensaje simple, que es más fiable que wp_die() en un hook tan temprano.
+           // Usamos exit() con un mensaje simple, que es mÃƒÆ’Ã‚Â¡s fiable que wp_die() en un hook tan temprano.
            exit('XML-RPC services are disabled on this site.');
         }
     }
@@ -2273,7 +2414,7 @@ return $status_header;
             // Pasamos el username al motor de reglas
             $this->rules_engine->set_context(['username' => $username]);
             
-            // Evaluamos. Si hay un bloqueo, evaluate() terminará la ejecución (exit).
+            // Evaluamos. Si hay un bloqueo, evaluate() terminarÃƒÆ’Ã‚Â¡ la ejecuciÃƒÆ’Ã‚Â³n (exit).
             // Si devuelve false, es que no hubo coincidencia.
             $this->rules_engine->evaluate();
             
@@ -2293,11 +2434,11 @@ return $status_header;
             return;
         }
 
-        // Solo actuar si la opción está activada
+        // Solo actuar si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada
         if ( ! empty( $this->options['restrict_login_page'] ) ) {
             $client_ip = $this->get_client_ip();
             
-            // Si la IP del visitante no está en la whitelist...
+            // Si la IP del visitante no estÃƒÆ’Ã‚Â¡ en la whitelist...
             if ( ! $this->is_whitelisted( $client_ip ) ) {
                 /* translators: %s: The IP address that was denied access. */
                 $this->log_event( sprintf( __( 'Access to wp-login.php denied for non-whitelisted IP: %s', 'advanced-ip-blocker' ), $client_ip ), 'critical', ['ip' => $client_ip] );
@@ -2306,7 +2447,7 @@ return $status_header;
                     $this->increment_login_lockdown_counter();
                 }
 
-                // Mostramos un mensaje genérico de acceso denegado y terminamos.
+                // Mostramos un mensaje genÃƒÆ’Ã‚Â©rico de acceso denegado y terminamos.
                 wp_die(
                     esc_html__( 'Access to this page has been restricted by the administrator.', 'advanced-ip-blocker' ),
                     esc_html__( 'Access Denied', 'advanced-ip-blocker' ),
@@ -2377,7 +2518,7 @@ return $status_header;
             return $endpoints;
         }
 
-        // Solo actuar si la opción está activada
+        // Solo actuar si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada
         if ( empty( $this->options['disable_user_enumeration'] ) ) {
             return $endpoints;
         }
@@ -2398,7 +2539,7 @@ return $status_header;
             }
         }
 
-        // Si llegamos aquí, aplicamos el bloqueo
+        // Si llegamos aquÃƒÆ’Ã‚Â­, aplicamos el bloqueo
         if ( isset( $endpoints['/wp/v2/users'] ) ) {
             unset( $endpoints['/wp/v2/users'] );
         }
@@ -2419,13 +2560,23 @@ return $status_header;
         return;
     }
 
-    // Solo actuar si la opción está activada y no estamos en el admin.
+    // Solo actuar si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada y no estamos en el admin.
     if ( ! empty( $this->options['prevent_author_scanning'] ) && ! is_admin() ) {
-        // Comprobamos directamente el parámetro GET 'author'. Es mucho más fiable.
+        // Comprobamos directamente el parÃƒÆ’Ã‚Â¡metro GET 'author'. Es mucho mÃƒÆ’Ã‚Â¡s fiable.
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if ( isset( $_GET['author'] ) && is_numeric( $_GET['author'] ) ) {
-            wp_safe_redirect( home_url(), 301 );
-            exit;
+            if ( ! empty( $this->options['block_author_scanning_403'] ) ) {
+                $ip = $this->get_client_ip();
+                $this->handle_threat_event($ip, '403', 'Author enumeration attempt', ['uri' => $this->get_current_request_uri()]);
+                // Si la IP no fue bloqueada instÃƒÆ’Ã‚Â¡ntaneamente (porque no alcanzÃƒÆ’Ã‚Â³ el umbral de puntos), mostramos 403 igualmente
+                if (!isset(self::$block_queue) || empty(self::$block_queue)) {
+                    $this->access_denied_page(__('403 - Access Denied', 'advanced-ip-blocker'), __('Author enumeration attempt blocked.', 'advanced-ip-blocker'));
+                    exit;
+                }
+            } else {
+                wp_safe_redirect( home_url(), 301 );
+                exit;
+            }
         }
       }
     }
@@ -2442,14 +2593,14 @@ return $status_header;
         $ip = trim($ip);
         $range = trim($range);
 
-        // 1. IP Única (Comparación directa)
+        // 1. IP ÃƒÆ’Ã…Â¡nica (ComparaciÃƒÆ’Ã‚Â³n directa)
         if ( $ip === $range ) {
             return true;
         }
 
         // 2. Rango con guion (Solo IPv4 por simplicidad y rendimiento, raro en IPv6)
         if ( strpos( $range, '-' ) !== false ) {
-            // Si alguno es IPv6, saltamos la lógica de guiones (compleja de calcular)
+            // Si alguno es IPv6, saltamos la lÃƒÆ’Ã‚Â³gica de guiones (compleja de calcular)
             if ( strpos($ip, ':') !== false || strpos($range, ':') !== false ) {
                 return false; 
             }
@@ -2465,7 +2616,7 @@ return $status_header;
             list( $subnet, $bits ) = explode( '/', $range );
             $bits = (int) $bits;
             
-            // Detectar versión de IP
+            // Detectar versiÃƒÆ’Ã‚Â³n de IP
             $ip_is_v6 = (strpos($ip, ':') !== false);
             $subnet_is_v6 = (strpos($subnet, ':') !== false);
 
@@ -2474,7 +2625,7 @@ return $status_header;
                 return false;
             }
 
-            // Lógica IPv4
+            // LÃƒÆ’Ã‚Â³gica IPv4
             if ( ! $ip_is_v6 ) {
                 $ip_long = ip2long( $ip );
                 $subnet_long = ip2long( $subnet );
@@ -2483,13 +2634,13 @@ return $status_header;
                 return ( $ip_long & $mask ) === $subnet_masked;
             }
 
-            // Lógica IPv6 (Matemática binaria)
+            // LÃƒÆ’Ã‚Â³gica IPv6 (MatemÃƒÆ’Ã‚Â¡tica binaria)
             if ( $ip_is_v6 ) {
                 $ip_bin = inet_pton( $ip );
                 $subnet_bin = inet_pton( $subnet );
                 
                 if ( $ip_bin === false || $subnet_bin === false ) {
-                    return false; // IP inválida
+                    return false; // IP invÃƒÆ’Ã‚Â¡lida
                 }
 
                 // Convertir a string binario de 128 bits
@@ -2538,7 +2689,7 @@ return $status_header;
         $request_uri = $this->get_current_request_uri();
         $is_xmlrpc_request = (strpos($request_uri, 'xmlrpc.php') !== false);
         
-        // ENDPOINT LOCKDOWN (PRIMERA ACCIÓN)
+        // ENDPOINT LOCKDOWN (PRIMERA ACCIÃƒÆ’Ã¢â‚¬Å“N)
         if ($is_xmlrpc_request && !empty($this->options['enable_xmlrpc_lockdown'])) {
             if (get_transient('advaipbl_lockdown_active_xmlrpc')) {
                 $user_agent = $this->get_user_agent();
@@ -2561,7 +2712,7 @@ return $status_header;
         if ($is_xmlrpc_request && ($this->options['xmlrpc_protection_mode'] ?? 'smart') === 'smart') {            
             $is_trusted_request = false;
 
-            // Capa 2: Confianza en la Infraestructura (ASN de la conexión directa)
+            // Capa 2: Confianza en la Infraestructura (ASN de la conexiÃƒÆ’Ã‚Â³n directa)
             $remote_addr = $this->get_remote_addr();
             if ($remote_addr) {
                 $location_data_remote = $this->geolocation_manager->fetch_location($remote_addr);
@@ -2574,7 +2725,7 @@ return $status_header;
                 }
             }
 
-            // Capa 3: Confianza en el User-Agent (si la capa de infraestructura no lo confirmó)
+            // Capa 3: Confianza en el User-Agent (si la capa de infraestructura no lo confirmÃƒÆ’Ã‚Â³)
             if (!$is_trusted_request) {				
                 $user_agent = $this->get_user_agent();
                 $automattic_ua_patterns = ['/^WordPress\/\d+\.\d+/i', '/jetpack by wordpress\.com/i', '/woocommerce/i'];
@@ -2586,7 +2737,7 @@ return $status_header;
                 }
             }
             
-            // Capa 4: Decisión final de bloqueo
+            // Capa 4: DecisiÃƒÆ’Ã‚Â³n final de bloqueo
             if (!$is_trusted_request) {				
                 /* translators: %s: User-Agent. */
                 $reason = sprintf(__('Blocked untrusted XML-RPC request from User-Agent: %s', 'advanced-ip-blocker'), $this->get_user_agent());
@@ -2599,10 +2750,10 @@ return $status_header;
                 $this->block_ip_instantly($ip, 'xmlrpc_block', $reason, $log_data);
             }
             
-            // Si es una petición XML-RPC, no continuamos con las demás comprobaciones
+            // Si es una peticiÃƒÆ’Ã‚Â³n XML-RPC, no continuamos con las demÃƒÆ’Ã‚Â¡s comprobaciones
             return;
         }
-        // Comprobación de bloqueos manuales
+        // ComprobaciÃƒÆ’Ã‚Â³n de bloqueos manuales
         $manual_blocks = get_option( self::OPTION_BLOCKED_MANUAL, [] );
         if ( ! empty( $manual_blocks ) ) {
             foreach ( array_keys( $manual_blocks ) as $entry ) {
@@ -2612,7 +2763,7 @@ return $status_header;
             }
         }
         
-        // Comprobación de bloqueos CIDR cacheados desde la base de datos (Bulk Imports, etc.)
+        // ComprobaciÃƒÆ’Ã‚Â³n de bloqueos CIDR cacheados desde la base de datos (Bulk Imports, etc.)
         $db_cidrs = get_option( 'advaipbl_db_cidrs_cache', [] );
         if ( ! empty( $db_cidrs ) ) {
             foreach ( $db_cidrs as $cidr => $data ) {
@@ -2783,7 +2934,7 @@ return $status_header;
             return true;
         }
 
-        // Quitamos la restricción de NO_PRIV_RANGE para permitir whitelisting en localhost (::1, 127.0.0.1) o intranets.
+        // Quitamos la restricciÃƒÆ’Ã‚Â³n de NO_PRIV_RANGE para permitir whitelisting en localhost (::1, 127.0.0.1) o intranets.
         if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
             return false;
         }
@@ -2797,14 +2948,14 @@ return $status_header;
         return false;
     }
 
-    // Comprobación rápida para IPs individuales (la mayoría de los casos)
+    // ComprobaciÃƒÆ’Ã‚Â³n rÃƒÆ’Ã‚Â¡pida para IPs individuales (la mayorÃƒÆ’Ã‚Â­a de los casos)
     if ( array_key_exists( $ip, $whitelist ) ) {
         return true;
     }
 
     // Iterar sobre las claves de la whitelist para buscar rangos.
     foreach ( array_keys( $whitelist ) as $entry ) {
-        // Si la entrada no es la IP exacta, podría ser un rango.
+        // Si la entrada no es la IP exacta, podrÃƒÆ’Ã‚Â­a ser un rango.
         if ( $entry !== $ip && $this->is_ip_in_range( $ip, $entry ) ) {
             return true;
         }
@@ -2814,11 +2965,11 @@ return $status_header;
 }
 
     /**
-     * Comprueba si el ASN del visitante actual está en la lista blanca.
-     * Si lo está, establece una bandera interna para saltar otras comprobaciones de seguridad.
-     * Esta función está diseñada para ejecutarse en un hook muy temprano.
+     * Comprueba si el ASN del visitante actual estÃƒÆ’Ã‚Â¡ en la lista blanca.
+     * Si lo estÃƒÆ’Ã‚Â¡, establece una bandera interna para saltar otras comprobaciones de seguridad.
+     * Esta funciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ diseÃƒÆ’Ã‚Â±ada para ejecutarse en un hook muy temprano.
      *
-     * @return bool True si el ASN está en la lista blanca, false en caso contrario.
+     * @return bool True si el ASN estÃƒÆ’Ã‚Â¡ en la lista blanca, false en caso contrario.
      */
     public function is_visitor_asn_whitelisted() {
 		// Check if we have a valid whitelist
@@ -2848,9 +2999,9 @@ return $status_header;
             return false;
         }
 
-        // Comprobamos si el ASN del visitante está en nuestra lista blanca limpia.
+        // Comprobamos si el ASN del visitante estÃƒÆ’Ã‚Â¡ en nuestra lista blanca limpia.
         if (in_array($visitor_asn, $clean_whitelist, true)) {
-            // ¡Coincidencia! Establecemos la bandera y devolvemos true.
+            // Ãƒâ€šÃ‚Â¡Coincidencia! Establecemos la bandera y devolvemos true.
             $this->request_is_asn_whitelisted = true;
             return true;
         }
@@ -2882,6 +3033,10 @@ return $status_header;
     }
 
     public function block_ip_instantly($ip, $type, $reason_message, $extra_data = [], $context = 'frontend_block', $custom_duration_seconds = null) {
+        if ( empty($ip) || ! $this->is_valid_ip_or_range($ip) ) {
+            return;
+        }
+        
         if ( in_array( $ip, [ '127.0.0.1', '::1' ], true ) ) {
             $remote_addr = $this->get_remote_addr();
             if ( $remote_addr && ! in_array( $remote_addr, [ '127.0.0.1', '::1' ], true ) ) {
@@ -2928,14 +3083,14 @@ return $status_header;
         
         $timestamp = time();
 
-// Por defecto, calculamos la duración según el tipo de bloqueo.
+// Por defecto, calculamos la duraciÃƒÆ’Ã‚Â³n segÃƒÆ’Ã‚Âºn el tipo de bloqueo.
 $duration_in_seconds = 10 * YEAR_IN_SECONDS; // Permanente por defecto
 if ($def && !empty($def['duration_key'])) {
     $duration_in_minutes = (int) ($this->options[$def['duration_key']] ?? 1440);
     $duration_in_seconds = ($duration_in_minutes > 0) ? $duration_in_minutes * 60 : 0;
 }
 
-// Si se proporciona una duración personalizada, esta tiene prioridad.
+// Si se proporciona una duraciÃƒÆ’Ã‚Â³n personalizada, esta tiene prioridad.
 if ($custom_duration_seconds !== null) {
     $duration_in_seconds = (int) $custom_duration_seconds;
 }
@@ -2967,17 +3122,17 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
             $this->update_db_cidrs_cache();
         }
         
-        // Lógica condicional completa para sincronización
+        // LÃƒÆ’Ã‚Â³gica condicional completa para sincronizaciÃƒÆ’Ã‚Â³n
         $write_enabled = !empty($this->options['enable_htaccess_write']);
         $sync_enabled  = !empty($this->options['enable_htaccess_ip_blocking']);
         $include_temps = !empty($this->options['enable_htaccess_all_ips']);
         
-        // Es permanente si es manual o la fecha de expiración es 0
+        // Es permanente si es manual o la fecha de expiraciÃƒÆ’Ã‚Â³n es 0
         $is_permanent  = ($type === 'manual' || $expires_at == 0);
 
-        // Ejecutar actualización SI:
-        // 1. La escritura y la sincronización están activas
-        // 2. Y ADEMÁS: Es un bloqueo permanente O tenemos activada la inclusión de temporales
+        // Ejecutar actualizaciÃƒÆ’Ã‚Â³n SI:
+        // 1. La escritura y la sincronizaciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡n activas
+        // 2. Y ADEMÃƒÆ’Ã‚ÂS: Es un bloqueo permanente O tenemos activada la inclusiÃƒÆ’Ã‚Â³n de temporales
         if ( $write_enabled && $sync_enabled ) {
             if ( $is_permanent || $include_temps ) {
                 $this->htaccess_manager->update_htaccess();
@@ -2988,15 +3143,15 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $cf_manual  = !empty($this->options['cf_sync_manual']);
         $cf_temps   = !empty($this->options['cf_sync_temporary']);
         
-        // Lógica: Sincronizar si está activado globalmente Y
+        // LÃƒÆ’Ã‚Â³gica: Sincronizar si estÃƒÆ’Ã‚Â¡ activado globalmente Y
         // (es manual y tenemos activado sync manual) O (es temporal y tenemos activado sync temporal)
         if ( $cf_enabled ) {
             $should_sync_cf = ($type === 'manual' && $cf_manual) || ($type !== 'manual' && $cf_temps);
             
             if ( $should_sync_cf ) {
                 // Ejecutamos en segundo plano para no ralentizar la respuesta al usuario
-                // (Opcional: por ahora lo hacemos síncrono para simplificar la depuración, 
-                // la API de CF es rápida).
+                // (Opcional: por ahora lo hacemos sÃƒÆ’Ã‚Â­ncrono para simplificar la depuraciÃƒÆ’Ã‚Â³n, 
+                // la API de CF es rÃƒÆ’Ã‚Â¡pida).
                 $this->cloudflare_manager->block_ip( $ip, "Blocked by AIB: " . $reason_message );
             }
         }
@@ -3030,7 +3185,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
                 // 2. Obtener IP del servidor.
                 $server_ip = $this->get_server_ip();
                 if ( $server_ip && !array_key_exists($server_ip, $whitelist) ) {
-                    // Evitar añadir la misma IP dos veces si el admin y el servidor son el mismo.
+                    // Evitar aÃƒÆ’Ã‚Â±adir la misma IP dos veces si el admin y el servidor son el mismo.
                     if (!isset($ips_to_add[$server_ip])) {
                         $ips_to_add[$server_ip] = __('Server IP (auto-added on activation)', 'advanced-ip-blocker');
                     }
@@ -3044,7 +3199,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
                     }
                     update_option('advaipbl_ips_whitelist', $whitelist);
                     
-                    // Forzamos la invalidación de la caché aquí también.
+                    // Forzamos la invalidaciÃƒÆ’Ã‚Â³n de la cachÃƒÆ’Ã‚Â© aquÃƒÆ’Ã‚Â­ tambiÃƒÆ’Ã‚Â©n.
                     wp_cache_delete('advaipbl_ips_whitelist', 'options');
                 }
 
@@ -3101,8 +3256,8 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $current_db_version = get_option('advaipbl_db_version', '1.0');
         $installed_plugin_ver = get_option('advaipbl_version_installed', '0.0.0');
         
-        // Si la versión guardada es menor que la versión actual del código ('1.9')
-        // O si falta la tabla de logs de auditoría (verificación de auto-reparación)
+        // Si la versiÃƒÆ’Ã‚Â³n guardada es menor que la versiÃƒÆ’Ã‚Â³n actual del cÃƒÆ’Ã‚Â³digo ('1.9')
+        // O si falta la tabla de logs de auditorÃƒÆ’Ã‚Â­a (verificaciÃƒÆ’Ã‚Â³n de auto-reparaciÃƒÆ’Ã‚Â³n)
         global $wpdb;
         $table_audit = $wpdb->prefix . 'advaipbl_activity_log';
         $table_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
@@ -3113,8 +3268,30 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         if ( version_compare($current_db_version, ADVAIPBL_DB_VERSION, '<') || $table_missing ) {
             // 1. Crear/Actualizar tablas (incluida la nueva community_ips y activity_log)
             self::setup_database_tables();
+    // 3. Inicializar lista blanca de ASN por defecto con ejemplos comentados
+    $default_asns = [
+        '# Essential Crawlers and Services',
+        '# Google LLC',
+        '#AS15169',
+        '# Microsoft Corporation',
+        '#AS8075',
+        '# Automattic Inc.',
+        'AS2635',
+        '# Facebook, Inc.',
+        'AS32934',
+        '# Stripe, Inc.',
+        'AS5091',
+        '# Stripe, Inc.',
+        'AS394562',
+        '# PayPal, Inc.',
+        'AS17012',
+        '# Apple Inc.',
+        '#AS714'
+    ];
+    add_option( self::OPTION_WHITELISTED_ASNS, $default_asns );
+
             
-            // 2. Guardar la nueva versión
+            // 2. Guardar la nueva versiÃƒÆ’Ã‚Â³n
             update_option('advaipbl_db_version', ADVAIPBL_DB_VERSION);
             
             // 3. Migraciones y Limpiezas
@@ -3123,14 +3300,14 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
             $this->cleanup_legacy_options();
             
             // 4. Forzar descarga inicial de la lista comunitaria (Sync)
-            // Esto solo ocurre si venían de una versión anterior a la 1.9
+            // Esto solo ocurre si venÃƒÆ’Ã‚Â­an de una versiÃƒÆ’Ã‚Â³n anterior a la 1.9
             if (isset($this->community_manager)) {
                  $this->community_manager->update_list();
                  $this->log_event('Community list forced update during DB upgrade.', 'info');
             }
         }
         
-        // --- Migraciones de nueva generación basadas en Plugin Version ---
+        // --- Migraciones de nueva generaciÃƒÆ’Ã‚Â³n basadas en Plugin Version ---
         if ( version_compare($installed_plugin_ver, ADVAIPBL_VERSION, '<') ) {
             
             if ( version_compare($installed_plugin_ver, '8.9.0', '<') && $installed_plugin_ver !== '0.0.0' ) {
@@ -3141,7 +3318,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
                 $this->auto_migrate_default_exclusions_8_11_9();
             }
 
-            // Actualizar la versión instalada en la base de datos
+            // Actualizar la versiÃƒÆ’Ã‚Â³n instalada en la base de datos
             update_option('advaipbl_version_installed', ADVAIPBL_VERSION);
         }
 		
@@ -3151,7 +3328,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
 	
     /**
      * Inyecta de forma segura y sin duplicados las nuevas exclusiones por defecto
-     * introducidas en la versión 8.11.9 en las instalaciones existentes.
+     * introducidas en la versiÃƒÆ’Ã‚Â³n 8.11.9 en las instalaciones existentes.
      */
     private function auto_migrate_default_exclusions_8_11_9() {
         $settings = get_option(self::OPTION_SETTINGS, []);
@@ -3253,7 +3430,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
             return; // Nada que migrar.
         }
 
-        // Comprobamos el formato de la primera entrada para ver si necesita migración.
+        // Comprobamos el formato de la primera entrada para ver si necesita migraciÃƒÆ’Ã‚Â³n.
         $first_entry = reset($whitelist);
         if ( is_array($first_entry) && isset($first_entry['timestamp']) ) {
             return; 
@@ -3274,11 +3451,11 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
     }
 	
 	    /**
-     * Migra las IPs bloqueadas desde múltiples opciones de WP a la nueva tabla dedicada.
-     * Se ejecuta una sola vez y limpia las opciones antiguas después de la migración.
+     * Migra las IPs bloqueadas desde mÃƒÆ’Ã‚Âºltiples opciones de WP a la nueva tabla dedicada.
+     * Se ejecuta una sola vez y limpia las opciones antiguas despuÃƒÆ’Ã‚Â©s de la migraciÃƒÆ’Ã‚Â³n.
      */
     private function migrate_blocked_ips_to_table() {
-        // Usamos una opción para asegurarnos de que esto solo se ejecute una vez.
+        // Usamos una opciÃƒÆ’Ã‚Â³n para asegurarnos de que esto solo se ejecute una vez.
         if (get_option('advaipbl_ip_table_migration_complete')) {
             return;
         }
@@ -3289,14 +3466,14 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         $migrated_count = 0;
 
         foreach ($definitions as $type => $def) {
-            // Solo migramos tipos que tenían una lista persistente.
+            // Solo migramos tipos que tenÃƒÆ’Ã‚Â­an una lista persistente.
             if (empty($def['option_key'])) {
                 continue;
             }
 
             $list = get_option($def['option_key'], []);
             if (!is_array($list) || empty($list)) {
-                // Borramos la opción si está vacía para limpiar la BD.
+                // Borramos la opciÃƒÆ’Ã‚Â³n si estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­a para limpiar la BD.
                 delete_option($def['option_key']);
                 continue;
             }
@@ -3329,7 +3506,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
                 $migrated_count++;
             }
 
-            // Una vez migradas todas las IPs de esta opción, la borramos.
+            // Una vez migradas todas las IPs de esta opciÃƒÆ’Ã‚Â³n, la borramos.
             delete_option($def['option_key']);
         }
 
@@ -3337,7 +3514,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
             $this->log_event(sprintf('Successfully migrated %d blocked entries to the new database table.', $migrated_count), 'info');
         }
 
-        // Marcamos la migración como completada para no volver a ejecutarla.
+        // Marcamos la migraciÃƒÆ’Ã‚Â³n como completada para no volver a ejecutarla.
         update_option('advaipbl_ip_table_migration_complete', true);
     }
 
@@ -3376,7 +3553,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         ) $charset_collate;";
         dbDelta($sql_queue);
 
-        // Tabla de Puntuación de Amenaza
+        // Tabla de PuntuaciÃƒÆ’Ã‚Â³n de Amenaza
         $table_name_scores = $wpdb->prefix . 'advaipbl_ip_scores';
         $sql_scores = "CREATE TABLE $table_name_scores (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3424,7 +3601,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         ) $charset_collate;";
         dbDelta($sql_signatures);
 		
-		// Tabla de Caché
+		// Tabla de CachÃƒÆ’Ã‚Â©
         $table_name_cache = $wpdb->prefix . 'advaipbl_cache';
         $sql_cache = "CREATE TABLE $table_name_cache (
             cache_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3511,10 +3688,10 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
     public static function get_formatted_datetime($timestamp) { if (!is_numeric($timestamp)) { $timestamp = strtotime($timestamp); } if ($timestamp === false) { return __('Invalid date', 'advanced-ip-blocker'); } $options = get_option('advaipbl_settings', []); $timezone_string = $options['log_timezone'] ?? wp_timezone_string(); try { $date = new DateTime('@' . $timestamp); $timezone = new DateTimeZone($timezone_string); $date->setTimezone($timezone); return $date->format('Y-m-d H:i:s T'); } catch (Exception $e) { $format = get_option('date_format') . ' ' . get_option('time_format'); return date_i18n($format, $timestamp); } }
 
     /**
- * Parsea una cadena de User-Agent y devuelve una descripción legible.
+ * Parsea una cadena de User-Agent y devuelve una descripciÃƒÆ’Ã‚Â³n legible.
  *
  * @param string $ua La cadena de User-Agent.
- * @return string Una descripción formateada (ej. "Chrome on Windows").
+ * @return string Una descripciÃƒÆ’Ã‚Â³n formateada (ej. "Chrome on Windows").
  */
     private static function parse_user_agent($ua) {
     if (empty($ua) || $ua === __('Unknown', 'advanced-ip-blocker')) {
@@ -3524,7 +3701,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
     $os = __('Unknown OS', 'advanced-ip-blocker');
     $browser = __('Unknown Browser', 'advanced-ip-blocker');
 
-    // Mapeos para una detección más precisa
+    // Mapeos para una detecciÃƒÆ’Ã‚Â³n mÃƒÆ’Ã‚Â¡s precisa
     $os_map = [
         '/windows nt 10/i'      =>  'Windows 10/11',
         '/windows nt 6.3/i'     =>  'Windows 8.1',
@@ -3566,7 +3743,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
         }
     }
     
-    // Corrección para que "Chrome" no se identifique como "Safari"
+    // CorrecciÃƒÆ’Ã‚Â³n para que "Chrome" no se identifique como "Safari"
     if ($browser === 'Safari' && strpos(strtolower($ua), 'chrome') !== false) {
         $browser = 'Chrome';
     }
@@ -3576,7 +3753,7 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
 }
 		
 	/**
-    * Obtiene la IP del visitante actual. Actúa como un wrapper para get_ip_intelligence()
+    * Obtiene la IP del visitante actual. ActÃƒÆ’Ã‚Âºa como un wrapper para get_ip_intelligence()
     *
     * @return string La IP del visitante.
     */
@@ -3592,8 +3769,8 @@ $this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
      }
 
     /**
-* Obtiene un análisis completo y verificado de las direcciones IP de una petición.
-* Implementa la lógica de "Proxies de Confianza" para prevenir IP spoofing.
+* Obtiene un anÃƒÆ’Ã‚Â¡lisis completo y verificado de las direcciones IP de una peticiÃƒÆ’Ã‚Â³n.
+* Implementa la lÃƒÆ’Ã‚Â³gica de "Proxies de Confianza" para prevenir IP spoofing.
 */
 public function get_ip_intelligence() {
     static $result = null;
@@ -3624,7 +3801,7 @@ public function get_ip_intelligence() {
 
     $remote_addr = $this->get_remote_addr();
     $source_is_trusted = $this->is_source_trusted($remote_addr);
-    $visitor_ip = $remote_addr; // Por defecto, la IP es la de la conexión directa.
+    $visitor_ip = $remote_addr; // Por defecto, la IP es la de la conexiÃƒÆ’Ã‚Â³n directa.
     $result['visitor_ip_source'] = 'Direct Connection (REMOTE_ADDR)';
     
     if ($source_is_trusted) {
@@ -3649,7 +3826,7 @@ public function get_ip_intelligence() {
                         $result['cdn_info']['ray_id'] = $headers['cf-ray'] ?? null;
                         $result['cdn_info']['country'] = $headers['cf-ipcountry'] ?? null;
                     }
-                    break; // Salimos del bucle en cuanto encontramos una IP válida.
+                    break; // Salimos del bucle en cuanto encontramos una IP vÃƒÆ’Ã‚Â¡lida.
                 }
             }
         }
@@ -3669,7 +3846,7 @@ public function get_ip_intelligence() {
 
     } else {
         // Si la fuente NO es de confianza, ignoramos todas las cabeceras de proxy.
-        // La IP del visitante es y será siempre REMOTE_ADDR.
+        // La IP del visitante es y serÃƒÆ’Ã‚Â¡ siempre REMOTE_ADDR.
         $result['visitor_ip_source'] = 'Untrusted Source (REMOTE_ADDR)';
     }
 
@@ -3684,14 +3861,14 @@ public function get_ip_intelligence() {
      * @return string|null The server's IP address or null if not found.
      */
     public function get_server_ip() {
-        // Método 1: El más rápido, si está disponible y es una IP pública.
+        // MÃƒÆ’Ã‚Â©todo 1: El mÃƒÆ’Ã‚Â¡s rÃƒÆ’Ã‚Â¡pido, si estÃƒÆ’Ã‚Â¡ disponible y es una IP pÃƒÆ’Ã‚Âºblica.
         $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : null;
         if ( $server_ip && filter_var( $server_ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
             return $server_ip;
         }
 
-        // Método 2: Fallback a un servicio externo (muy fiable).
-        // Hacemos una petición a un servicio que nos devuelve nuestra propia IP.
+        // MÃƒÆ’Ã‚Â©todo 2: Fallback a un servicio externo (muy fiable).
+        // Hacemos una peticiÃƒÆ’Ã‚Â³n a un servicio que nos devuelve nuestra propia IP.
         $response = wp_remote_get( 'https://api.ipify.org' );
         if ( ! is_wp_error( $response ) && wp_remote_retrieve_response_code( $response ) === 200 ) {
             $ip = trim( wp_remote_retrieve_body( $response ) );
@@ -3700,7 +3877,7 @@ public function get_ip_intelligence() {
             }
         }
 
-        // Si ambos métodos fallan, no podemos determinar la IP.
+        // Si ambos mÃƒÆ’Ã‚Â©todos fallan, no podemos determinar la IP.
         return null;
     }
 	
@@ -3755,7 +3932,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         $details = array_merge($details, $extra_data);
     }
     
-    // Inyectar todas las cabeceras HTTP filtradas para análisis forense
+    // Inyectar todas las cabeceras HTTP filtradas para anÃƒÆ’Ã‚Â¡lisis forense
     $details['headers'] = $this->get_sanitized_request_headers();
 
     // --- Distributed Attack Protection (Auto-Panic) Tracker ---
@@ -3905,7 +4082,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
 
     $this->log_specific_error($type, $ip, $extra_data);
     
-	if ('login' === $type && !empty($this->options['enable_login_lockdown'])) { // Usaremos una nueva opción 'enable_login_lockdown'
+	if ('login' === $type && !empty($this->options['enable_login_lockdown'])) { // Usaremos una nueva opciÃƒÆ’Ã‚Â³n 'enable_login_lockdown'
         $this->increment_login_lockdown_counter();
     }
 	
@@ -3957,7 +4134,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
                         'final_score' => $new_score, 
                         'triggering_event' => $type, 
                         '_reason' => $reason_message,
-                        'block_reason_code' => $type // Dato extra para depuración
+                        'block_reason_code' => $type // Dato extra para depuraciÃƒÆ’Ã‚Â³n
                     ], $geo_details);
                     
                     $this->block_ip_instantly($ip, 'threat_score', $reason_message, $log_details);
@@ -3965,7 +4142,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             }
 
         } else {
-            // LÓGICA ANTIGUA (FALLBACK)
+            // LÃƒÆ’Ã¢â‚¬Å“GICA ANTIGUA (FALLBACK)
             $s = $this->options;
             $minute_in_seconds = 60;
             $threshold = (int) ($s["threshold_{$type}"] ?? 5);
@@ -4000,12 +4177,12 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     }
 
      /**
-     * Centraliza la decisión de cómo manejar un evento de amenaza instantáneo (WAF, Honeypot, etc.).
-     * Si el sistema de puntuación está activo, suma puntos. Si no, bloquea directamente.
+     * Centraliza la decisiÃƒÆ’Ã‚Â³n de cÃƒÆ’Ã‚Â³mo manejar un evento de amenaza instantÃƒÆ’Ã‚Â¡neo (WAF, Honeypot, etc.).
+     * Si el sistema de puntuaciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activo, suma puntos. Si no, bloquea directamente.
      *
-     * @param string $ip La dirección IP del atacante.
+     * @param string $ip La direcciÃƒÆ’Ã‚Â³n IP del atacante.
      * @param string $type El tipo de evento (ej. 'waf', 'honeypot').
-     * @param string $reason_message La razón detallada del evento.
+     * @param string $reason_message La razÃƒÆ’Ã‚Â³n detallada del evento.
      * @param array  $log_data Datos adicionales para el log.
      */
     public function handle_threat_event($ip, $type, $reason_message, $log_data) {
@@ -4052,6 +4229,9 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
 
         $q = self::$block_queue;
         $ip = $q['ip'];
+        if ( empty($ip) || ! $this->is_valid_ip_or_range($ip) ) {
+            return;
+        }
         $original_ip_for_log = $ip; // Guardamos la IP original para los logs
         $extra_data_for_log = ['trigger' => $q['trigger'], 'count' => ($q['errors'] ?? 1)];
 
@@ -4061,7 +4241,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
                 $ip = $remote_addr; // Cambiamos el objetivo del bloqueo
                 $extra_data_for_log['_spoofed_ip'] = $original_ip_for_log;
             } else {
-                return; // Petición interna genuina, no bloquear.
+                return; // PeticiÃƒÆ’Ã‚Â³n interna genuina, no bloquear.
             }
         }
 		
@@ -4094,7 +4274,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         $options = $q['options'];
         $errors = (isset($q['errors']) && is_numeric($q['errors'])) ? $q['errors'] : 1;
 
-        // 1. Mapear el tipo de bloqueo a su constante de opción correspondiente.
+        // 1. Mapear el tipo de bloqueo a su constante de opciÃƒÆ’Ã‚Â³n correspondiente.
         $option_key_map = [
             '404'   => self::OPTION_BLOCKED_404,
             '403'   => self::OPTION_BLOCKED_403,
@@ -4107,7 +4287,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             return;
         }
 
-        // 2. Acciones de bloqueo (transient y opción persistente)
+        // 2. Acciones de bloqueo (transient y opciÃƒÆ’Ã‚Â³n persistente)
         $duration = (int) ($options["duration_{$type}"] ?? 120) * 60;
         $block_key = "advaipbl_bloqueo_{$type}_" . md5($ip);
         set_transient($block_key, true, $duration);
@@ -4117,7 +4297,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         $list[$ip] = ['timestamp' => time(), 'detail' => $trigger];
         update_option($option_key, $list);
         
-        // 3. Obtener datos de geolocalización COMPLETOS
+        // 3. Obtener datos de geolocalizaciÃƒÆ’Ã‚Â³n COMPLETOS
         $location_data = $this->geolocation_manager->fetch_location($ip);
         $geo_details = [];
         if ($location_data && empty($location_data['error'])) {
@@ -4128,7 +4308,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             $geo_details['lon'] = $location_data['lon'] ?? null;
         }
 
-        // 4. Lógica de email y logs
+        // 4. LÃƒÆ’Ã‚Â³gica de email y logs
         $notification_enabled = !empty($options['enable_email_notifications']) && '1' === $options['enable_email_notifications'];
         $frequency = $options['notification_frequency'] ?? 'disabled';
         $email_sent = null;
@@ -4183,10 +4363,10 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         if (!empty($options['enable_logging'])) {
             $log_details = array_merge(['trigger' => $trigger], $geo_details);
             
-            // Log específico del evento (404, 403, etc.) con nivel 'critical' porque es un bloqueo.
+            // Log especÃƒÆ’Ã‚Â­fico del evento (404, 403, etc.) con nivel 'critical' porque es un bloqueo.
             $this->log_specific_error($type, $ip, $log_details, 'critical');
             
-            // Log general de auditoría
+            // Log general de auditorÃƒÆ’Ã‚Â­a
             $log_message_critical = sprintf('IP %1$s blocked via shutdown: %2$d %3$s errors.', $ip, $errors, strtoupper($type));
             $this->log_event($log_message_critical, 'critical', $log_details);
         }
@@ -4263,11 +4443,11 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     }
 
     private function send_block_notification($ip, $type, $count, $extra_data) {
-        // Obtenemos los datos de geolocalización una sola vez para usarlos en ambas notificaciones.
+        // Obtenemos los datos de geolocalizaciÃƒÆ’Ã‚Â³n una sola vez para usarlos en ambas notificaciones.
         // ADVAIPBL_Notification_Manager se encarga de esto, pero para mantener compatibilidad
         // con la firma de este metodo (que es private, pero por si acaso), delegamos.
         
-        // --- PASO 1: Construimos la razón detallada y la etiqueta una sola vez ---
+        // --- PASO 1: Construimos la razÃƒÆ’Ã‚Â³n detallada y la etiqueta una sola vez ---
         $reason = __('Unknown reason', 'advanced-ip-blocker');
         $reason_label = ucwords(str_replace('_', ' ', $type));
         
@@ -4351,12 +4531,12 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     }
 
     public function on_settings_update($old_value, $new_value) {
-        // antes de ejecutar cualquier lógica que dependa de $this->options (como el Htaccess Manager).
+        // antes de ejecutar cualquier lÃƒÆ’Ã‚Â³gica que dependa de $this->options (como el Htaccess Manager).
         $this->options = $new_value;
 
         $this->log_settings_change($old_value, $new_value);
         
-        // Lógica para el cron de notificaciones por email
+        // LÃƒÆ’Ã‚Â³gica para el cron de notificaciones por email
         $old_freq = $old_value['notification_frequency'] ?? 'disabled';
         $new_freq = $new_value['notification_frequency'] ?? 'disabled';
         if ($old_freq !== $new_freq) {
@@ -4366,7 +4546,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             }
         }
 
-        // Detectar si el administrador activa o desactiva el modo pánico manualmente
+        // Detectar si el administrador activa o desactiva el modo pÃƒÆ’Ã‚Â¡nico manualmente
         $old_under_attack = $old_value['under_attack_mode'] ?? 'off';
         $new_under_attack = $new_value['under_attack_mode'] ?? 'off';
         if ($old_under_attack !== 'manual' && $new_under_attack === 'manual') {
@@ -4380,13 +4560,13 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             $this->log_event(__('Auto-Panic Mode enabled by administrator.', 'advanced-ip-blocker'), 'info');
         }
 
-        // Lógica para el cron de Spamhaus
+        // LÃƒÆ’Ã‚Â³gica para el cron de Spamhaus
         $old_spamhaus = $old_value['enable_spamhaus_asn'] ?? '0';
         $new_spamhaus = $new_value['enable_spamhaus_asn'] ?? '0';
         if ($new_spamhaus !== $old_spamhaus) {
             if ('1' === $new_spamhaus) {
-                // Si se acaba de activar, forzamos una actualización inmediata para el usuario.
-                // schedule_cron_jobs() se encargará de la programación recurrente.
+                // Si se acaba de activar, forzamos una actualizaciÃƒÆ’Ã‚Â³n inmediata para el usuario.
+                // schedule_cron_jobs() se encargarÃƒÆ’Ã‚Â¡ de la programaciÃƒÆ’Ã‚Â³n recurrente.
                 $this->update_spamhaus_list();
             } else {
                 // Si se acaba de desactivar, limpiamos el cron inmediatamente.
@@ -4394,15 +4574,15 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             }
         }
         
-        // Lógica de roles forzados de 2FA
+        // LÃƒÆ’Ã‚Â³gica de roles forzados de 2FA
         $old_forced_roles = $old_value['tfa_force_roles'] ?? [];
         $new_forced_roles = $new_value['tfa_force_roles'] ?? [];
 
-        // Comparamos los roles antiguos con los nuevos para ver qué ha cambiado.
+        // Comparamos los roles antiguos con los nuevos para ver quÃƒÆ’Ã‚Â© ha cambiado.
         $roles_added = array_diff($new_forced_roles, $old_forced_roles);
         $roles_removed = array_diff($old_forced_roles, $new_forced_roles);
 
-        // Si se han añadido nuevos roles a la lista de forzados...
+        // Si se han aÃƒÆ’Ã‚Â±adido nuevos roles a la lista de forzados...
         if ( ! empty($roles_added) ) {
             $users_to_notify = get_users(['role__in' => $roles_added]);
             foreach ( $users_to_notify as $user ) {
@@ -4422,7 +4602,14 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
             }
         }
 
-        // --- Lógica de Actualización del .htaccess ---
+        // --- LÃƒÂ³gica para Bloquear PHP en Uploads ---
+        $old_block_php = $old_value['block_php_uploads'] ?? '0';
+        $new_block_php = $new_value['block_php_uploads'] ?? '0';
+        if ($old_block_php !== $new_block_php) {
+            $this->manage_uploads_htaccess($new_block_php === '1');
+        }
+
+        // --- LÃƒÆ’Ã‚Â³gica de ActualizaciÃƒÆ’Ã‚Â³n del .htaccess ---
         $htaccess_related_keys = [
             'enable_htaccess_write',
 			'enable_htaccess_ip_blocking',
@@ -4442,8 +4629,8 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
 
         if ($htaccess_needs_update) {
             if (!empty($new_value['enable_htaccess_write']) && '1' === $new_value['enable_htaccess_write']) {
-                // Si está activado (o se acaba de activar), actualizamos/escribimos las reglas
-                // El manager usará $this->options, que ya fue actualizado en la línea 1 de esta función.
+                // Si estÃƒÆ’Ã‚Â¡ activado (o se acaba de activar), actualizamos/escribimos las reglas
+                // El manager usarÃƒÆ’Ã‚Â¡ $this->options, que ya fue actualizado en la lÃƒÆ’Ã‚Â­nea 1 de esta funciÃƒÆ’Ã‚Â³n.
                 $result = $this->htaccess_manager->update_htaccess();
                 if (is_wp_error($result)) {
                     $this->log_event('Failed to update .htaccess: ' . $result->get_error_message(), 'error');
@@ -4463,7 +4650,7 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     }	   
 
 public function add_admin_bar_menu( $wp_admin_bar ) {
-    if ( ! current_user_can( 'manage_options' ) ) {
+    if ( ! current_user_can( 'advaipbl_manage_settings' ) ) {
         return;
     }
     
@@ -4473,7 +4660,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     $blocked_endpoints_count = $this->get_blocked_endpoints_count();
     $total_blocks = $blocked_ips_count + $blocked_signatures_count + $blocked_endpoints_count;
 
-    // 2. Función auxiliar para generar el HTML del contador (burbuja)
+    // 2. FunciÃƒÆ’Ã‚Â³n auxiliar para generar el HTML del contador (burbuja)
     $create_bubble = function($count) {
         if ($count > 0) {
             return ' <span class="advaipbl-block-count">' . number_format_i18n($count) . '</span>';
@@ -4483,7 +4670,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
     $base_admin_url = admin_url( 'admin.php?page=advaipbl_settings_page' );
     
-    // Estilos en línea para asegurar que se muestren
+    // Estilos en lÃƒÆ’Ã‚Â­nea para asegurar que se muestren
     echo '<style type="text/css">#wpadminbar .advaipbl-block-count { display: inline-block !important; vertical-align: middle !important; background-color: #d63638 !important; color: #fff !important; font-size: 11px !important; line-height: 1.4 !important; font-weight: 600 !important; border-radius: 10px !important; padding: 0 7px !important; margin-left: 5px !important; }</style>';
 
     // --- 1. Nodo Principal con el contador TOTAL ---
@@ -4595,9 +4782,10 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'threshold_login' => __('Login Threshold', 'advanced-ip-blocker'),
         'duration_login' => __('Login Duration', 'advanced-ip-blocker'),
         'transient_expiration_login' => __('Login Time Window', 'advanced-ip-blocker'),
-        // Protección de Login
+        // ProtecciÃƒÆ’Ã‚Â³n de Login
         'disable_user_enumeration' => __('REST API Protection', 'advanced-ip-blocker'),
         'prevent_author_scanning' => __('Author Scan Protection', 'advanced-ip-blocker'),
+        'block_author_scanning_403' => __('Block Author Scans with 403', 'advanced-ip-blocker'),
         'restrict_login_page' => __('Whitelist Login Access', 'advanced-ip-blocker'),
         'xmlrpc_protection_mode' => __('XML-RPC Protection Mode', 'advanced-ip-blocker'),
 		'enable_xmlrpc_lockdown' => __('XML-RPC Lockdown Mode', 'advanced-ip-blocker'),
@@ -4605,13 +4793,20 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 		'enable_2fa' => __('Two-Factor Authentication (Global)', 'advanced-ip-blocker'),
         'tfa_force_roles' => __('Force 2FA for Roles', 'advanced-ip-blocker'),
 		'prevent_login_hinting' => __('Prevent Login Hinting', 'advanced-ip-blocker'),
+        'allowed_admin_users' => __('Authorized Administrators', 'advanced-ip-blocker'),
         // reCAPTCHA
         'recaptcha_enable' => __('reCAPTCHA', 'advanced-ip-blocker'),
         'recaptcha_version' => __('reCAPTCHA Version', 'advanced-ip-blocker'),
         'recaptcha_site_key' => __('reCAPTCHA Site Key', 'advanced-ip-blocker'),
         'recaptcha_secret_key' => __('reCAPTCHA Secret Key', 'advanced-ip-blocker'),
         'recaptcha_score_threshold' => __('reCAPTCHA Score', 'advanced-ip-blocker'),
-        // Desinstalación
+        // Hardening & Core Protection
+        'disable_imagick' => __('Disable Imagick', 'advanced-ip-blocker'),
+        'hide_wp_version' => __('Hide WP Version', 'advanced-ip-blocker'),
+        'disable_app_passwords' => __('Disable App Passwords', 'advanced-ip-blocker'),
+        'disable_file_editor' => __('Disable File Editor', 'advanced-ip-blocker'),
+        'block_php_uploads' => __('Block PHP in Uploads', 'advanced-ip-blocker'),
+        // DesinstalaciÃƒÆ’Ã‚Â³n
         'delete_data_on_uninstall' => __('Delete Data on Uninstall', 'advanced-ip-blocker'),
     ];
 
@@ -4620,8 +4815,9 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     // Array de todas nuestras opciones de tipo checkbox.
     $checkbox_keys = [
         'enable_logging', 'enable_email_notifications', 'disable_user_enumeration', 'enable_2fa', 'tfa_force_roles',
-        'prevent_author_scanning', 'restrict_login_page', 'recaptcha_enable', 'enable_waf', 'rate_limiting_enable',
-        'delete_data_on_uninstall', 'disable_xmlrpc', 'show_admin_bar_menu', 'enable_xmlrpc_lockdown', 'block_ghost_ips'
+        'prevent_author_scanning', 'block_author_scanning_403', 'restrict_login_page', 'recaptcha_enable', 'enable_waf', 'rate_limiting_enable',
+        'delete_data_on_uninstall', 'disable_xmlrpc', 'show_admin_bar_menu', 'enable_xmlrpc_lockdown', 'block_ghost_ips',
+        'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads'
     ];
 
     foreach ($friendly_names as $key => $name) {
@@ -4753,7 +4949,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->delete($table_name, ['ip_range' => $entry_to_unblock]);
         
-        // También borrar de la tabla de reportes pendientes para evitar falsos positivos
+        // TambiÃƒÆ’Ã‚Â©n borrar de la tabla de reportes pendientes para evitar falsos positivos
         $table_reports = $wpdb->prefix . 'advaipbl_pending_reports';
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->delete($table_reports, ['ip' => $entry_to_unblock]);
@@ -4774,7 +4970,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             }
         }
         
-        // Limpiar caché de ubicación y resetear puntuación
+        // Limpiar cachÃƒÆ’Ã‚Â© de ubicaciÃƒÆ’Ã‚Â³n y resetear puntuaciÃƒÆ’Ã‚Â³n
         if ($is_single_ip) {
             $location_cache = $this->get_from_custom_cache(ADVAIPBL_USM_LOCATION_CACHE_KEY);
             if (is_array($location_cache) && isset($location_cache[$entry_to_unblock])) {
@@ -4792,7 +4988,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         }
 		
         if ( ! empty( $this->options['enable_cloudflare'] ) ) {
-             // Intentamos desbloquear en Cloudflare siempre, por si acaso estaba allí.
+             // Intentamos desbloquear en Cloudflare siempre, por si acaso estaba allÃƒÆ’Ã‚Â­.
              $this->cloudflare_manager->unblock_ip( $entry_to_unblock );
         }
 
@@ -4802,24 +4998,31 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
         /**
      * Desbloquea TODAS las IPs de la tabla de bloqueo y limpia todos los transients relacionados.
-     * Es una acción masiva y destructiva.
+     * Es una acciÃƒÆ’Ã‚Â³n masiva y destructiva.
      *
-     * @param string $source La fuente de la acción (e.g., 'WP-CLI', 'Admin Action').
+     * @param string $source La fuente de la acciÃƒÆ’Ã‚Â³n (e.g., 'WP-CLI', 'Admin Action').
      */
     public function unblock_all_ips($source = 'Unknown Action') {
         global $wpdb;
         $table_name_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
 
-        // 1. Vaciar la tabla de IPs bloqueadas.
+        // 1. Resetear TODAS las puntuaciones de las IPs (Troncar tabla).
+        // A peticiÃƒÆ’Ã‚Â³n del usuario, reutilizamos la lÃƒÆ’Ã‚Â³gica de vaciado completo para asegurar que no queden puntuaciones remanentes.
+        $table_scores = $wpdb->prefix . 'advaipbl_ip_scores';
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $wpdb->query("TRUNCATE TABLE `{$table_scores}`");
+
+        // 2. Vaciar la tabla de IPs bloqueadas.
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query("TRUNCATE TABLE `{$table_name_blocked}`");
         
-        // También vaciar la tabla de reportes pendientes
+        // TambiÃƒÆ’Ã‚Â©n vaciar la tabla de reportes pendientes
         $table_reports = $wpdb->prefix . 'advaipbl_pending_reports';
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $wpdb->query("TRUNCATE TABLE `{$table_reports}`");
 
-        // 2. Limpiar la caché de objetos para el contador.
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // 2. Limpiar la cachÃƒÆ’Ã‚Â© de objetos para el contador.
         $this->clear_blocked_ips_cache();
 		if ( !empty($this->options['enable_htaccess_write']) ) {
             $this->htaccess_manager->update_htaccess();
@@ -4834,6 +5037,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
                  `option_name` LIKE %s OR 
                  `option_name` LIKE %s OR
                  `option_name` LIKE %s OR
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                  `option_name` LIKE %s",
                 $wpdb->esc_like('_transient_advaipbl_bloqueo_') . '%',
                 $wpdb->esc_like('_transient_timeout_advaipbl_bloqueo_') . '%',
@@ -4842,7 +5046,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             )
         );
 
-        // 4. Limpiar reglas [AIB] de Cloudflare si está activo (ASÍNCRONO).
+        // 4. Limpiar reglas [AIB] de Cloudflare si estÃƒÆ’Ã‚Â¡ activo (ASÃƒÆ’Ã‚ÂNCRONO).
         if ( ! empty( $this->options['enable_cloudflare'] ) ) {
              // Programamos tarea en segundo plano para no bloquear la UI
              wp_schedule_single_event( time(), 'advaipbl_cloudflare_cleanup_event' );
@@ -4860,7 +5064,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         $now = time();
 
         // 1. Obtener todas las IPs que van a expirar
-        // Aumentamos el límite a 100 para procesar en lotes razonables y evitar timeouts masivos
+        // Aumentamos el lÃƒÆ’Ã‚Â­mite a 100 para procesar en lotes razonables y evitar timeouts masivos
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $expiring_ips = $wpdb->get_results($wpdb->prepare(
             "SELECT ip_range, block_type FROM {$table_name} WHERE expires_at < %d AND expires_at > 0 LIMIT 100",
@@ -4893,8 +5097,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             }
 
             if ( $cf_enabled ) {
-                // Hacemos la llamada. Si falla, no pasa nada, el cron volverá a ejecutarse.
-                // Pero como ya borramos de la DB, no lo reintentará.
+                // Hacemos la llamada. Si falla, no pasa nada, el cron volverÃƒÆ’Ã‚Â¡ a ejecutarse.
+                // Pero como ya borramos de la DB, no lo reintentarÃƒÆ’Ã‚Â¡.
                 // Es un compromiso aceptable para no bloquear el cron.
                 $this->cloudflare_manager->unblock_ip($ip);
             }
@@ -4910,7 +5114,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     
 	    /**
     * Re-sincroniza los transients de bloqueo con las listas persistentes.
-    * Se ejecuta al activar el plugin para prevenir desbloqueos accidentales tras una actualización.
+    * Se ejecuta al activar el plugin para prevenir desbloqueos accidentales tras una actualizaciÃƒÆ’Ã‚Â³n.
     */
     public function resync_block_transients() {
         $definitions = $this->get_all_block_type_definitions();
@@ -4940,11 +5144,11 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
                 $time_left = ($timestamp + $duration_seconds) - $now;
 
                 if ($time_left > 0) {
-                    // Resincroniza el transient específico
+                    // Resincroniza el transient especÃƒÆ’Ã‚Â­fico
                     if (false === get_transient("advaipbl_bloqueo_{$type}_" . md5($ip_or_range))) {
                         set_transient("advaipbl_bloqueo_{$type}_" . md5($ip_or_range), true, $time_left);
                     }
-                    // AÑADIR TRANSIENT MAESTRO ---
+                    // AÃƒÆ’Ã¢â‚¬ËœADIR TRANSIENT MAESTRO ---
                     if (false === get_transient('advaipbl_blocked_ip_' . md5($ip_or_range))) {
                         set_transient('advaipbl_blocked_ip_' . md5($ip_or_range), true, $time_left);
                     }
@@ -5028,7 +5232,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     }
 
     /**
-     * Se engancha a wp_login para añadir automáticamente la IP de un administrador a la lista blanca.
+     * Se engancha a wp_login para aÃƒÆ’Ã‚Â±adir automÃƒÆ’Ã‚Â¡ticamente la IP de un administrador a la lista blanca.
      *
      * @param string  $user_login El login del usuario.
      * @param WP_User $user       El objeto del usuario.
@@ -5042,7 +5246,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         if (is_a($user, 'WP_User') && in_array('administrator', (array) $user->roles)) {
             $ip = $this->get_client_ip();
 
-            // Solo actuar si la IP es válida y no está ya en la lista blanca
+            // Solo actuar si la IP es vÃƒÆ’Ã‚Â¡lida y no estÃƒÆ’Ã‚Â¡ ya en la lista blanca
             if (filter_var($ip, FILTER_VALIDATE_IP) && !$this->is_whitelisted($ip)) {
                 $detail = sprintf(
 				/* translators: %1$s: Username, %2$s: Email */
@@ -5107,8 +5311,8 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 		'under_attack_alerts' => 'always',
         'under_attack_excluded_urls' => '',
 		
-        // Protección de Login y Módulos
-        'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'restrict_login_page' => '0',
+        // ProtecciÃƒÆ’Ã‚Â³n de Login y MÃƒÆ’Ã‚Â³dulos
+        'disable_user_enumeration' => '1', 'prevent_author_scanning' => '1', 'block_author_scanning_403' => '0', 'restrict_login_page' => '0',
 		'auto_whitelist_admin' => '1',
 		'enable_waf' => '1', 'enable_intelligent_waf' => '1', 'rate_limiting_enable' => '1', 'rate_limiting_limit' => 120,
         'rate_limiting_window' => 60, 'rate_limiting_advanced_rules' => '[]', 'xmlrpc_protection_mode' => 'smart',
@@ -5205,10 +5409,10 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'tfa_force_roles' => [],
         'prevent_login_hinting' => '1',		
 		
-		// Telemetría
+		// TelemetrÃƒÆ’Ã‚Â­a
         'allow_telemetry' => '0',
 		
-            // Sistema de Puntuación de Amenaza (IP Trust System)
+            // Sistema de PuntuaciÃƒÆ’Ã‚Â³n de Amenaza (IP Trust System)
             'enable_threat_scoring'     => '0', 
             'threat_score_threshold'    => 100,
             'duration_threat_score'     => 1440,
@@ -5256,6 +5460,14 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         // File Integrity Monitor (FIM)
         'enable_fim' => '0',
         'fim_alert_email' => '',
+        
+        // Hardening & Core Protection
+        'disable_imagick'        => '0',
+        'hide_wp_version'        => '0',
+        'disable_app_passwords'  => '0',
+        'disable_file_editor'    => '0',
+        'block_php_uploads'      => '0',
+        'allowed_admin_users'    => [],
     ];
 		
 }
@@ -5311,7 +5523,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             '# === Cross-Site Scripting (XSS) ===',
             '<\s*script',
             'on(error|load|click|mouseover)\s*=',
-            'javascript:', // Añadido: Protocolo peligroso en inputs
+            'javascript:', // AÃƒÆ’Ã‚Â±adido: Protocolo peligroso en inputs
             '# === Path Traversal & LFI ===',
             '\.\.\/',
             '/etc/passwd',
@@ -5329,10 +5541,10 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 	
     public static function activate_plugin() {
     // 1. Obtener la instancia del plugin SIEMPRE al principio.
-    // Esto asegura que $instance siempre exista y que las propiedades (como $options) estén cargadas.
+    // Esto asegura que $instance siempre exista y que las propiedades (como $options) esten cargadas.
     $instance = self::get_instance();
 
-    // 2. Lógica de la base de datos.
+    // 2. Logica de la base de datos.
     self::setup_database_tables();
 
     if ( ! wp_next_scheduled( 'advaipbl_purge_old_logs_event' ) ) {
@@ -5357,7 +5569,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         update_option( self::OPTION_SETTINGS, $defaults );
     }
     
-    // 4. Programar los crons de notificación (usando la instancia).
+    // 4. Programar los crons de notificacion (usando la instancia).
     $notification_frequency = $instance->options['notification_frequency'] ?? 'disabled';
     if ( 'disabled' !== $notification_frequency && 'instant' !== $notification_frequency ) {
         if ( ! wp_next_scheduled( 'advaipbl_send_summary_email' ) ) {
@@ -5368,7 +5580,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     // 5. Re-sincronizar transients (ahora $instance siempre existe).
     $instance->resync_block_transients();
     
-    // 6. Añadir las demás opciones si no existen.
+    // 6. Anadir las demas opciones si no existen.
     add_option( self::OPTION_BLOCKED_UAS, [], '', 'no' );
     add_option( self::OPTION_WHITELISTED_UAS, [], '', 'no' );
     add_option( self::OPTION_WHITELIST, [], '', 'no' );
@@ -5379,26 +5591,35 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
     add_option( ADVAIPBL_USM_OPTION_PER_PAGE, ADVAIPBL_USM_DEFAULT_PER_PAGE, '', 'no' );
     add_option( self::OPTION_HONEYPOT_URLS, [], '', 'no' );
 	
-	// --- Safe ASN List ---
+	// --- Educational Safe ASN List ---
     $default_safe_asns = [
-        'AS15169', // Google LLC
-        'AS8075',  // Microsoft Corporation
-        'AS2635',  // Automattic Inc.
-        'AS32934', // Facebook, Inc.
-        'AS5091',  // Stripe, Inc.
-        'AS394562', // Stripe, Inc.
-        'AS17012'  // PayPal, Inc.
+        '# Essential Crawlers and Services',
+        '# Google LLC',
+        '#AS15169',
+        '# Microsoft Corporation',
+        '#AS8075',
+        '# Automattic Inc.',
+        'AS2635',
+        '# Facebook, Inc.',
+        'AS32934',
+        '# Stripe, Inc.',
+        'AS5091',
+        '# Stripe, Inc.',
+        'AS394562',
+        '# PayPal, Inc.',
+        'AS17012',
+        '# Apple Inc.',
+        '#AS714'
     ];
     add_option( self::OPTION_WHITELISTED_ASNS, $default_safe_asns, '', 'no' );
     
-    // 7. Inicializar los triggers de activación.
+    // 7. Inicializar los triggers de activacion.
     add_option( self::OPTION_ADMIN_IP_TRIGGER, 'yes', '', 'no' );
 }
 
-
     /**
-* Comprueba si estamos en una de las páginas de nuestro plugin y, si es así,
-* elimina todos los demás avisos de administrador para una interfaz limpia.
+* Comprueba si estamos en una de las pÃƒÆ’Ã‚Â¡ginas de nuestro plugin y, si es asÃƒÆ’Ã‚Â­,
+* elimina todos los demÃƒÆ’Ã‚Â¡s avisos de administrador para una interfaz limpia.
 */
 public function conditionally_remove_admin_notices() {
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -5408,13 +5629,13 @@ public function conditionally_remove_admin_notices() {
         'advaipbl-setup-wizard' 
     ];
 
-    // Comprobamos si el slug de la página actual es o empieza por uno de nuestros slugs.
+    // Comprobamos si el slug de la pÃƒÆ’Ã‚Â¡gina actual es o empieza por uno de nuestros slugs.
     foreach ($plugin_pages as $page_slug) {
         if (strpos($current_page_slug, $page_slug) === 0) {
             remove_all_actions('admin_notices');
             remove_all_actions('all_admin_notices');
             
-            // Excepciones CRÍTICAS de nuestro propio plugin que deben sobrevivir la purga
+            // Excepciones CRÃƒÆ’ TICAS de nuestro propio plugin que deben sobrevivir la purga
             add_action('admin_notices', [$this, 'display_under_attack_notice']);
             if (isset($this->settings_manager)) {
                 add_action('admin_notices', [$this->settings_manager, 'display_captcha_keys_warning']);
@@ -5430,43 +5651,43 @@ public function admin_menu() {
     $blocked_count = $this->get_blocked_count();
     $bubble_html = $blocked_count > 0 ? ' <span class="awaiting-mod"><span class="pending-count">' . number_format_i18n($blocked_count) . '</span></span>' : '';
     
-    // Slug base para la página principal. Es buena práctica tenerlo en una variable.
+    // Slug base para la pÃƒÆ’Ã‚Â¡gina principal. Es buena prÃƒÆ’Ã‚Â¡ctica tenerlo en una variable.
     $main_page_slug = 'advaipbl_settings_page';
 
-    // 1. Menú Principal de Nivel Superior
+    // 1. MenÃƒÆ’Ã‚Âº Principal de Nivel Superior
     add_menu_page(
         __('Advanced IP Blocker', 'advanced-ip-blocker'),
         __('Security', 'advanced-ip-blocker') . $bubble_html,
-        'manage_options',
+        'advaipbl_manage_settings',
         $main_page_slug,
         [$this, 'settings_page_content'],
         'dashicons-shield',
         '80.123'
     );
 
-    // 2. Submenús
+    // 2. SubmenÃƒÆ’Ã‚Âºs
 
-    // El primer submenú (Dashboard) usa el mismo slug que el padre para ser la página por defecto.
-    // Al hacer clic en "Security", se cargará esta página.
+    // El primer submenÃƒÆ’Ã‚Âº (Dashboard) usa el mismo slug que el padre para ser la pÃƒÆ’Ã‚Â¡gina por defecto.
+    // Al hacer clic en "Security", se cargarÃƒÆ’Ã‚Â¡ esta pÃƒÆ’Ã‚Â¡gina.
     add_submenu_page(
         $main_page_slug,
         __('Dashboard', 'advanced-ip-blocker'),
         __('Dashboard', 'advanced-ip-blocker'),
-        'manage_options',
+        'advaipbl_manage_settings',
         $main_page_slug, // Slug = padre. Correcto.
         [$this, 'settings_page_content']
     );
 
-    // Para los demás submenús, usamos slugs únicos y simples.
-    // WordPress generará automáticamente los enlaces correctos, por ejemplo:
+    // Para los demÃƒÆ’Ã‚Â¡s submenÃƒÆ’Ã‚Âºs, usamos slugs ÃƒÆ’Ã‚Âºnicos y simples.
+    // WordPress generarÃƒÆ’Ã‚Â¡ automÃƒÆ’Ã‚Â¡ticamente los enlaces correctos, por ejemplo:
     // admin.php?page=advaipbl_settings_page-settings
     
     add_submenu_page(
         $main_page_slug,
         __('Settings', 'advanced-ip-blocker'),
         __('Settings', 'advanced-ip-blocker'),
-        'manage_options',
-        $main_page_slug . '-settings', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-settings', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
 
@@ -5474,8 +5695,8 @@ public function admin_menu() {
         $main_page_slug,
         __('Security Headers', 'advanced-ip-blocker'),
         __('Security Headers', 'advanced-ip-blocker'),
-        'manage_options',
-        $main_page_slug . '-security-headers', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-security-headers', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
 
@@ -5483,8 +5704,8 @@ public function admin_menu() {
         $main_page_slug,
         __('Blocking Rules', 'advanced-ip-blocker'),
         __('Blocking Rules', 'advanced-ip-blocker'),
-        'manage_options',
-        $main_page_slug . '-rules', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-rules', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
 
@@ -5492,8 +5713,8 @@ public function admin_menu() {
         $main_page_slug,
         __('IP Management', 'advanced-ip-blocker'),
         __('IP Management', 'advanced-ip-blocker') . $bubble_html,
-        'manage_options',
-        $main_page_slug . '-ip-management', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-ip-management', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
 	
@@ -5501,8 +5722,8 @@ public function admin_menu() {
         $main_page_slug,
         __('Site Scanner', 'advanced-ip-blocker'),
         __('Site Scanner', 'advanced-ip-blocker'),
-        'manage_options',
-        $main_page_slug . '-scanner', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-scanner', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
 
@@ -5510,8 +5731,8 @@ public function admin_menu() {
         $main_page_slug,
         __('Logs & Sessions', 'advanced-ip-blocker'),
         __('Logs & Sessions', 'advanced-ip-blocker'),
-        'manage_options',
-        $main_page_slug . '-logs', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-logs', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
     
@@ -5519,25 +5740,25 @@ public function admin_menu() {
         $main_page_slug,
         __('About', 'advanced-ip-blocker'),
         __('About', 'advanced-ip-blocker'),
-        'manage_options',
-        $main_page_slug . '-about', // Slug único
+        'advaipbl_manage_settings',
+        $main_page_slug . '-about', // Slug ÃƒÆ’Ã‚Âºnico
         [$this, 'settings_page_content']
     );
 	
-    // Registrar la página oculta para el asistente de configuración.
-    // 1. Registramos la página COMO HIJA DEL MENÚ PRINCIPAL (No null)
-    // Esto hace que WordPress sepa su título.
+    // Registrar la pÃƒÆ’Ã‚Â¡gina oculta para el asistente de configuraciÃƒÆ’Ã‚Â³n.
+    // 1. Registramos la pÃƒÆ’Ã‚Â¡gina COMO HIJA DEL MENÃƒÆ’Ã…Â¡ PRINCIPAL (No null)
+    // Esto hace que WordPress sepa su tÃƒÆ’Ã‚Â­tulo.
     add_submenu_page(
         $main_page_slug, // Usamos la variable $main_page_slug que definiste arriba
         __( 'Setup Wizard', 'advanced-ip-blocker' ),
         __( 'Setup Wizard', 'advanced-ip-blocker' ),
-        'manage_options',
+        'advaipbl_manage_settings',
         'advaipbl-setup-wizard',
         [ $this->admin_pages, 'render_setup_wizard_page' ]
     );
     
-    // 2. IMPORTANTE: NO usamos remove_submenu_page aquí. Lo ocultaremos con CSS.
-    // Esto asegura que la página siga existiendo en el sistema de menús de WP.
+    // 2. IMPORTANTE: NO usamos remove_submenu_page aquÃƒÆ’Ã‚Â­. Lo ocultaremos con CSS.
+    // Esto asegura que la pÃƒÆ’Ã‚Â¡gina siga existiendo en el sistema de menÃƒÆ’Ã‚Âºs de WP.
 }
 
     /**
@@ -5545,7 +5766,7 @@ public function admin_menu() {
      * ONLY on this plugin's settings page.
      */
     public function remove_all_other_admin_notices() {
-        // Esta es la técnica que sugeriste, es perfecta.
+        // Esta es la tÃƒÆ’Ã‚Â©cnica que sugeriste, es perfecta.
         remove_all_actions( 'admin_notices' );
         remove_all_actions( 'all_admin_notices' );
     }
@@ -5565,7 +5786,7 @@ public function admin_menu() {
             ?>
             <div class="notice notice-error" style="border-left-color: #d63638; display: flex; align-items: center; justify-content: space-between;">
                 <p>
-                    <strong><?php esc_html_e('⚠️ URGENT:', 'advanced-ip-blocker'); ?></strong> 
+                    <strong><?php esc_html_e('URGENT:', 'advanced-ip-blocker'); ?></strong> 
                     <?php 
                     echo wp_kses(
                         sprintf(
@@ -5601,10 +5822,10 @@ public function admin_menu() {
             echo '</p></div>';
         }
 
-        // Primero, llamamos a la función que decide si mostrar el aviso de telemetría.
+        // Primero, llamamos a la funciÃƒÆ’Ã‚Â³n que decide si mostrar el aviso de telemetrÃƒÆ’Ã‚Â­a.
         $this->display_telemetry_notice();
 
-        // Después, mostramos cualquier otro aviso de éxito/error que esté en el transient.
+        // DespuÃƒÆ’Ã‚Â©s, mostramos cualquier otro aviso de ÃƒÆ’Ã‚Â©xito/error que estÃƒÆ’Ã‚Â© en el transient.
         $notice = get_transient('advaipbl_admin_notice');
         if ( $notice ) {
             $type = ( 'success' === $notice['type'] ) ? 'success' : 'error';
@@ -5691,16 +5912,16 @@ private function is_source_trusted($ip_to_check) {
         }
     }
 
-    // 1. Comprobación directa de IP/CIDR (la más rápida).
+    // 1. ComprobaciÃƒÆ’Ã‚Â³n directa de IP/CIDR (la mÃƒÆ’Ã‚Â¡s rÃƒÆ’Ã‚Â¡pida).
     foreach ($trusted_ips_cidrs as $trusted_entry) {
         if ($this->is_ip_in_range($ip_to_check, $trusted_entry)) {
             return true;
         }
     }
 
-    // 2. Si no hubo coincidencia de IP y hay ASNs para comprobar, procedemos con la búsqueda de ASN.
+    // 2. Si no hubo coincidencia de IP y hay ASNs para comprobar, procedemos con la bÃƒÆ’Ã‚Âºsqueda de ASN.
     if (!empty($trusted_asns)) {
-        // Aprovechamos nuestro gestor de geolocalización y su caché.
+        // Aprovechamos nuestro gestor de geolocalizaciÃƒÆ’Ã‚Â³n y su cachÃƒÆ’Ã‚Â©.
         $location_data = $this->geolocation_manager->fetch_location($ip_to_check);
         $source_asn = $this->asn_manager->extract_asn_from_data($location_data);
 
@@ -5778,7 +5999,7 @@ private function get_first_public_ip_from_string($ip_string) {
     $next_order = ($orderby === $column_key && 'asc' === $order) ? 'desc' : 'asc';
     $arrow_class = ($orderby === $column_key) ? 'sorted ' . $order : 'sortable desc';
     
-    // Obtenemos los parámetros de la URL actual para mantenerlos al ordenar
+    // Obtenemos los parÃƒÆ’Ã‚Â¡metros de la URL actual para mantenerlos al ordenar
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     $current_params = $_GET;
     $url_params = array_merge($current_params, [
@@ -5793,13 +6014,13 @@ private function get_first_public_ip_from_string($ip_string) {
 
     /**
      * Devuelve una matriz completa con las definiciones para todos los tipos de bloqueo.
-     * Esta es la ÚNICA FUENTE DE VERDAD para la configuración de cada tipo de bloqueo.
+     * Esta es la ÃƒÆ’Ã…Â¡NICA FUENTE DE VERDAD para la configuraciÃƒÆ’Ã‚Â³n de cada tipo de bloqueo.
      *
      * @return array
      */
     public function get_all_block_type_definitions() {
         return [
-            // El 'key' es el identificador técnico, usado en logs, transients, etc.
+            // El 'key' es el identificador tÃƒÆ’Ã‚Â©cnico, usado en logs, transients, etc.
             'under_attack_challenge' => [
                 'label'         => __('Panic Challenge', 'advanced-ip-blocker'),
                 'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
@@ -5853,6 +6074,7 @@ private function get_first_public_ip_from_string($ip_string) {
                 'option_key'    => self::OPTION_BLOCKED_404,
                 'duration_key'  => 'duration_404',
                 'uses_transient'=> true
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             ],
             '403' => [
                 'label'         => __('403 Error', 'advanced-ip-blocker'),
@@ -5913,13 +6135,13 @@ private function get_first_public_ip_from_string($ip_string) {
             'impersonation' => [
                 'label'         => __('Bot Impersonation', 'advanced-ip-blocker'),
                 'option_key'    => null, 
-                'duration_key'  => 'duration_user_agent', // <-- Reutiliza la duración de User-Agent
+                'duration_key'  => 'duration_user_agent', // <-- Reutiliza la duraciÃƒÆ’Ã‚Â³n de User-Agent
                 'uses_transient' => true 
             ],
 			'abuseipdb' => [
                 'label'         => __('AbuseIPDB', 'advanced-ip-blocker'),
                 'option_key'    => null, // No es una lista persistente de IPs
-                'duration_key'  => 'duration_abuseipdb', // Usaremos una nueva opción de duración
+                'duration_key'  => 'duration_abuseipdb', // Usaremos una nueva opciÃƒÆ’Ã‚Â³n de duraciÃƒÆ’Ã‚Â³n
                 'uses_transient'=> true
             ],
             'abuseipdb_challenge' => [
@@ -5946,8 +6168,8 @@ private function get_first_public_ip_from_string($ip_string) {
             ],
 			'advanced_rule' => [
                 'label'         => __('Advanced Rule', 'advanced-ip-blocker'),
-                'option_key'    => null, // No usa una opción de wp_options, usa su propia tabla/lógica.
-                'duration_key'  => null, // La duración es por regla, no global.
+                'option_key'    => null, // No usa una opciÃƒÆ’Ã‚Â³n de wp_options, usa su propia tabla/lÃƒÆ’Ã‚Â³gica.
+                'duration_key'  => null, // La duraciÃƒÆ’Ã‚Â³n es por regla, no global.
                 'uses_transient'=> true   // Un bloqueo es un bloqueo, debe tener un transient.
             ],
             'advanced_rule_challenge' => [
@@ -5994,7 +6216,7 @@ private function get_first_public_ip_from_string($ip_string) {
     }
 
     /**
-     * Limpia la entrada de la caché de objetos para la lista de IPs bloqueadas.
+     * Limpia la entrada de la cachÃƒÆ’Ã‚Â© de objetos para la lista de IPs bloqueadas.
      * Debe ser llamada cada vez que la tabla _advaipbl_blocked_ips es modificada.
      */
     private function clear_blocked_ips_cache() {
@@ -6002,19 +6224,19 @@ private function get_first_public_ip_from_string($ip_string) {
     }
 
     public function get_all_blocked_entries() {
-        // Clave única para la caché de esta petición.
+        // Clave ÃƒÆ’Ã‚Âºnica para la cachÃƒÆ’Ã‚Â© de esta peticiÃƒÆ’Ã‚Â³n.
         $cache_key = 'advaipbl_all_blocked_entries';
-        // Grupo para nuestra caché, una buena práctica.
+        // Grupo para nuestra cachÃƒÆ’Ã‚Â©, una buena prÃƒÆ’Ã‚Â¡ctica.
         $cache_group = 'advaipbl';
 
-        // 1. Intentar obtener los datos de la caché de memoria RAM primero.
+        // 1. Intentar obtener los datos de la cachÃƒÆ’Ã‚Â© de memoria RAM primero.
         $cached_entries = wp_cache_get($cache_key, $cache_group);
         if (false !== $cached_entries) {
-            // ¡Éxito! Los datos ya estaban en la caché. Los devolvemos directamente.
+            // Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Â°xito! Los datos ya estaban en la cachÃƒÆ’Ã‚Â©. Los devolvemos directamente.
             return $cached_entries;
         }
 
-        // 2. Si no estaban en la caché, los generamos desde la base de datos.
+        // 2. Si no estaban en la cachÃƒÆ’Ã‚Â©, los generamos desde la base de datos.
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         $definitions = $this->get_all_block_type_definitions();
@@ -6038,7 +6260,7 @@ private function get_first_public_ip_from_string($ip_string) {
             }
         }
         
-        // 3. Antes de devolver los datos, los guardamos en la caché de memoria
+        // 3. Antes de devolver los datos, los guardamos en la cachÃƒÆ’Ã‚Â© de memoria
         wp_cache_set($cache_key, $all_blocked, $cache_group);
 
         return $all_blocked;
@@ -6051,7 +6273,7 @@ private function get_first_public_ip_from_string($ip_string) {
 	 * @return float The sanitized score, clamped between 0.1 and 1.0.
 	 */
 	public function sanitize_score_threshold($input) {
-    // Reemplazamos la coma por punto para dar soporte robusto a formatos numéricos europeos (ej. 0,5 -> 0.5)
+    // Reemplazamos la coma por punto para dar soporte robusto a formatos numÃƒÆ’Ã‚Â©ricos europeos (ej. 0,5 -> 0.5)
     $input_string = str_replace(',', '.', (string) $input);
     $score = (float) $input_string;
     
@@ -6061,7 +6283,7 @@ private function get_first_public_ip_from_string($ip_string) {
     }
 	
     /**
-     * Devuelve una lista de países (Código => Nombre).
+     * Devuelve una lista de paÃƒÆ’Ã‚Â­ses (CÃƒÆ’Ã‚Â³digo => Nombre).
      * @return array
      */
     public function get_country_list() {
@@ -6318,23 +6540,23 @@ private function get_first_public_ip_from_string($ip_string) {
 
 	     
      /**
-     * Muestra el aviso para solicitar el consentimiento de telemetría.
+     * Muestra el aviso para solicitar el consentimiento de telemetrÃƒÆ’Ã‚Â­a.
      */
     public function display_telemetry_notice() {
-        // Condición 1: Solo mostrar en las páginas de nuestro plugin.
+        // CondiciÃƒÆ’Ã‚Â³n 1: Solo mostrar en las pÃƒÆ’Ã‚Â¡ginas de nuestro plugin.
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
         if (strpos($page, 'advaipbl_settings_page') === false) {
             return;
         }
 
-        // Condición 2: Si el usuario ya ha activado la telemetría, no mostrar.
+        // CondiciÃƒÆ’Ã‚Â³n 2: Si el usuario ya ha activado la telemetrÃƒÆ’Ã‚Â­a, no mostrar.
         if (!empty($this->options['allow_telemetry']) && '1' === $this->options['allow_telemetry']) {
             return;
         }
         
-        // Condición 3: Si el usuario ya ha descartado el aviso, no mostrar.
-        // get_option devolverá 'false' si no existe, lo cual es correcto.
+        // CondiciÃƒÆ’Ã‚Â³n 3: Si el usuario ya ha descartado el aviso, no mostrar.
+        // get_option devolverÃƒÆ’Ã‚Â¡ 'false' si no existe, lo cual es correcto.
         if (get_option('advaipbl_telemetry_notice_dismissed')) {
             return;
         }
@@ -6354,11 +6576,11 @@ private function get_first_public_ip_from_string($ip_string) {
     }
 	
 	 /**
-     * Recopila y envía datos de telemetría anónimos a un endpoint de API REST.
-     * Se ejecuta a través de una tarea de WP-Cron.
+     * Recopila y envÃƒÆ’Ã‚Â­a datos de telemetrÃƒÆ’Ã‚Â­a anÃƒÆ’Ã‚Â³nimos a un endpoint de API REST.
+     * Se ejecuta a travÃƒÆ’Ã‚Â©s de una tarea de WP-Cron.
      */
     /**
-     * Genera el payload de telemetría de uso del plugin.
+     * Genera el payload de telemetrÃƒÆ’Ã‚Â­a de uso del plugin.
      * @return array
      */
     private function get_telemetry_payload() {
@@ -6388,7 +6610,7 @@ private function get_first_public_ip_from_string($ip_string) {
             }
         }
         
-        // Array de settings completo que refleja todos los módulos principales.
+        // Array de settings completo que refleja todos los mÃƒÆ’Ã‚Â³dulos principales.
         $telemetry_data['settings'] = [
             'enable_waf'                  => !empty($this->options['enable_waf']),
             'enable_intelligent_waf'      => !empty($this->options['enable_intelligent_waf']),
@@ -6407,6 +6629,7 @@ private function get_first_public_ip_from_string($ip_string) {
             'auto_whitelist_admin'        => !empty($this->options['auto_whitelist_admin']),
             'disable_user_enumeration'    => !empty($this->options['disable_user_enumeration']),
             'prevent_author_scanning'     => !empty($this->options['prevent_author_scanning']),
+            'block_author_scanning_403'   => !empty($this->options['block_author_scanning_403']),
             'restrict_login_page'         => !empty($this->options['restrict_login_page']),
             'prevent_login_hinting'       => !empty($this->options['prevent_login_hinting']),
             'enable_email_notifications'  => !empty($this->options['enable_email_notifications']),
@@ -6436,9 +6659,18 @@ private function get_first_public_ip_from_string($ip_string) {
             'cloudflare_enabled'          => !empty($this->options['enable_cloudflare']),
             'cloudflare_safeguard'        => !empty($this->options['cf_safe_guard']),
             'cloudflare_sync_manual'      => !empty($this->options['cf_sync_manual']),
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             'cloudflare_sync_temp'        => !empty($this->options['cf_sync_temporary']),
             'aib_network_join'            => !empty($this->options['enable_community_network']),
-            'aib_network_block'           => !empty($this->options['enable_community_blocking']),            
+            'aib_network_block'           => !empty($this->options['enable_community_blocking']),
+            
+            // Hardening & Core Protection
+            'disable_imagick'             => !empty($this->options['disable_imagick']),
+            'hide_wp_version'             => !empty($this->options['hide_wp_version']),
+            'disable_app_passwords'       => !empty($this->options['disable_app_passwords']),
+            'disable_file_editor'         => !empty($this->options['disable_file_editor']),
+            'block_php_uploads'           => !empty($this->options['block_php_uploads']),
+            'restricted_admins'           => !empty($this->options['allowed_admin_users']),
         ];
 
         $seven_days_ago = gmdate('Y-m-d H:i:s', strtotime('-7 days'));
@@ -6484,16 +6716,16 @@ private function get_first_public_ip_from_string($ip_string) {
     }
 
     /**
-     * Recopila y envía datos de telemetría anónimos a un endpoint de API REST.
-     * Se ejecuta a través de una tarea de WP-Cron.
+     * Recopila y envÃƒÆ’Ã‚Â­a datos de telemetrÃƒÆ’Ã‚Â­a anÃƒÆ’Ã‚Â³nimos a un endpoint de API REST.
+     * Se ejecuta a travÃƒÆ’Ã‚Â©s de una tarea de WP-Cron.
      */
     public function send_telemetry_data() {
         if (empty($this->options['allow_telemetry']) || '1' !== $this->options['allow_telemetry']) {
             return;
         }
 
-        // Si tenemos V3 y participamos en la red comunitaria, la telemetría viaja incrustada
-        // en 'execute_community_report' para ahorrar envíos. Se anula el envío V2 aislado.
+        // Si tenemos V3 y participamos en la red comunitaria, la telemetrÃƒÆ’Ã‚Â­a viaja incrustada
+        // en 'execute_community_report' para ahorrar envÃƒÆ’Ã‚Â­os. Se anula el envÃƒÆ’Ã‚Â­o V2 aislado.
         if (!empty($this->options['api_token_v3']) && !empty($this->options['enable_community_network'])) {
             return;
         }
@@ -6508,7 +6740,7 @@ private function get_first_public_ip_from_string($ip_string) {
             'X-Telemetry-Key' => $secret_key
         ];
 
-        // Incluir Token V3 como fallback si llegara aquí, aunque V3 debe saltar arriba.
+        // Incluir Token V3 como fallback si llegara aquÃƒÆ’Ã‚Â­, aunque V3 debe saltar arriba.
         if (!empty($this->options['api_token_v3'])) {
             $headers['Authorization'] = 'Bearer ' . $this->options['api_token_v3'];
         }
@@ -6523,7 +6755,7 @@ private function get_first_public_ip_from_string($ip_string) {
 	 
 public function handle_export_settings_ajax() {
     try {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'advaipbl_manage_settings' ) ) {
             wp_send_json_error( ['message' => 'Permission denied.'] );
             return;
         }
@@ -6536,7 +6768,7 @@ public function handle_export_settings_ajax() {
         $settings_to_export = [];
 
         // 1. Exportar todas las opciones del plugin de la tabla wp_options
-        // Excluimos cachés pesadas y datos ultra-sensibles locales
+        // Excluimos cachÃƒÆ’Ã‚Â©s pesadas y datos ultra-sensibles locales
         $exclude_from_export = [
             'advaipbl_spamhaus_asn_list',
             'advaipbl_spamhaus_drop_list',
@@ -6567,13 +6799,14 @@ public function handle_export_settings_ajax() {
         } else {
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $blocked_ips_data = $wpdb->get_results("SELECT ip_range, block_type, timestamp, expires_at, reason FROM {$table_name}", ARRAY_A);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         }
         
         if (!empty($blocked_ips_data)) {
             $settings_to_export['blocked_ips_table'] = $blocked_ips_data;
         }
 
-        // 3. Si es una plantilla, eliminar claves sensibles de la configuración
+        // 3. Si es una plantilla, eliminar claves sensibles de la configuraciÃƒÆ’Ã‚Â³n
         if ($export_type === 'template' && isset($settings_to_export[self::OPTION_SETTINGS])) {
             $sensitive_keys = [
                 'recaptcha_site_key', 'recaptcha_secret_key', 
@@ -6602,7 +6835,7 @@ public function handle_import_settings() {
     if ( ! isset( $_POST['advaipbl_import_nonce_field'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['advaipbl_import_nonce_field'] ) ), 'advaipbl_import_nonce' ) ) {
         wp_die( 'Security check failed.', 'Error', ['response' => 403] );
     }
-    if ( ! current_user_can( 'manage_options' ) ) {
+    if ( ! current_user_can( 'advaipbl_manage_settings' ) ) {
         wp_die( 'Permission denied.', 'Error', ['response' => 403] );
     }
 
@@ -6616,7 +6849,7 @@ public function handle_import_settings() {
             $message = __( 'Error: The uploaded file is not a .json file.', 'advanced-ip-blocker' );
             $this->log_event( sprintf( 'A failed settings import was attempted by %s (invalid file type).', $this->get_current_admin_username() ), 'error' );
         } else {
-            $tmp_name = isset( $_FILES['advaipbl_import_file']['tmp_name'] ) ? sanitize_text_field(wp_unslash($_FILES['advaipbl_import_file']['tmp_name'])) : '';
+            $tmp_name = isset( $_FILES['advaipbl_import_file']['tmp_name'] ) ? sanitize_text_field($_FILES['advaipbl_import_file']['tmp_name']) : '';
             if (empty($tmp_name)) {
                 return;
             }
@@ -6636,7 +6869,7 @@ public function handle_import_settings() {
                 foreach ( $settings_to_import as $key => $value ) {
                     // Importar solo opciones que empiecen con nuestro prefijo
                     if (strpos($key, 'advaipbl_') === 0) {
-                        // Protegemos el estado interno del servidor destino (versión, criptografía, timestamps)
+                        // Protegemos el estado interno del servidor destino (versiÃƒÆ’Ã‚Â³n, criptografÃƒÆ’Ã‚Â­a, timestamps)
                         $skip_import_keys = [
                             'advaipbl_db_version',
                             'advaipbl_version_installed',
@@ -6653,7 +6886,7 @@ public function handle_import_settings() {
                         
                         if (!in_array($key, $skip_import_keys, true)) {
                             // --- Smart Merge for Settings ---
-                            // Al importar una Plantilla, evitamos sobreescribir las claves de API existentes con valores vacíos
+                            // Al importar una Plantilla, evitamos sobreescribir las claves de API existentes con valores vacÃƒÆ’Ã‚Â­os
                             if ( $key === self::OPTION_SETTINGS && is_array($value) ) {
                                 $current_settings = get_option( self::OPTION_SETTINGS, [] );
                                 $sensitive_keys = [
@@ -6673,7 +6906,7 @@ public function handle_import_settings() {
                             $imported_options_count++;
                         }
                     } 
-                    // Lógica especial para la tabla de IPs
+                    // LÃƒÆ’Ã‚Â³gica especial para la tabla de IPs
                     elseif ($key === 'blocked_ips_table' && is_array($value)) {
                         global $wpdb;
                         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
@@ -6745,17 +6978,17 @@ public function handle_import_settings() {
 }
 
         /**
-     * Muestra la sección de configuración de 2FA en la página de perfil del usuario.
+     * Muestra la secciÃƒÆ’Ã‚Â³n de configuraciÃƒÆ’Ã‚Â³n de 2FA en la pÃƒÆ’Ã‚Â¡gina de perfil del usuario.
      *
-     * @param WP_User $user El objeto del usuario cuyo perfil se está editando.
+     * @param WP_User $user El objeto del usuario cuyo perfil se estÃƒÆ’Ã‚Â¡ editando.
      */
         public function display_2fa_section_in_profile( $user ) {
-        // 1. Comprobamos si la funcionalidad 2FA está activada globalmente.
+        // 1. Comprobamos si la funcionalidad 2FA estÃƒÆ’Ã‚Â¡ activada globalmente.
         if ( empty( $this->options['enable_2fa'] ) || '1' !== $this->options['enable_2fa'] ) {
-            return; // Si no está activado, no mostramos nada y salimos.
+            return; // Si no estÃƒÆ’Ã‚Â¡ activado, no mostramos nada y salimos.
         }
 
-        // 2. Nos aseguramos de que el manager de 2FA esté cargado (relevante para CLI).
+        // 2. Nos aseguramos de que el manager de 2FA estÃƒÆ’Ã‚Â© cargado (relevante para CLI).
         if ( ! $this->tfa_manager ) {
             return;
         }
@@ -6797,7 +7030,7 @@ public function handle_import_settings() {
                 </tbody>
             </table>
             
-            <!-- Contenedor para el proceso de configuración (inicialmente oculto) -->
+            <!-- Contenedor para el proceso de configuraciÃƒÆ’Ã‚Â³n (inicialmente oculto) -->
             <div id="advaipbl-2fa-setup-container" style="display: none; margin-top: 1.5em; max-width: 700px;">
                 <div class="advaipbl-loader-wrapper" style="text-align: center; padding: 20px;">
                     <div class="advaipbl-loader"></div>
@@ -6845,7 +7078,7 @@ public function handle_import_settings() {
 	
         /**
      * Se ejecuta al inicio de la carga del formulario de login.
-     * Su única misión es verificar el código si se envía desde nuestro formulario del paso 2.
+     * Su ÃƒÆ’Ã‚Âºnica misiÃƒÆ’Ã‚Â³n es verificar el cÃƒÆ’Ã‚Â³digo si se envÃƒÆ’Ã‚Â­a desde nuestro formulario del paso 2.
      */
     public function handle_login_action() {
         if ( ! isset( $_POST['advaipbl_2fa_login_step'] ) ) { return; }
@@ -6923,8 +7156,8 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Intercepta el login normal (Paso 1). Si el usuario y contraseña son correctos y necesita 2FA,
-     * redirige a nuestra pantalla del Paso 2 en lugar de iniciar sesión.
+     * Intercepta el login normal (Paso 1). Si el usuario y contraseÃƒÆ’Ã‚Â±a son correctos y necesita 2FA,
+     * redirige a nuestra pantalla del Paso 2 en lugar de iniciar sesiÃƒÆ’Ã‚Â³n.
      */
         public function intercept_login_step_1( $user, $username, $password ) {
         if ( is_wp_error( $user ) || ! $user instanceof WP_User ) {
@@ -6970,12 +7203,12 @@ public function handle_import_settings() {
             exit;
         }
 
-        // Si el usuario NO tiene 2FA, pero está OBLIGADO a tenerlo...
+        // Si el usuario NO tiene 2FA, pero estÃƒÆ’Ã‚Â¡ OBLIGADO a tenerlo...
         if ( ! $user_has_2fa_setup && $user_is_forced ) {
             update_user_meta( $user->ID, '_advaipbl_2fa_setup_required', true );
         }
 
-        // En todos los demás casos (no tiene 2FA y no está obligado), el login es normal.
+        // En todos los demÃƒÆ’Ã‚Â¡s casos (no tiene 2FA y no estÃƒÆ’Ã‚Â¡ obligado), el login es normal.
         return $user;
     }
 	
@@ -7049,7 +7282,7 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Muestra nuestro formulario personalizado para introducir un código de respaldo.
+     * Muestra nuestro formulario personalizado para introducir un cÃƒÆ’Ã‚Â³digo de respaldo.
      */
         public function display_2fa_backup_code_form() {
         $user_id = isset( $_GET['user_id'] ) ? absint( $_GET['user_id'] ) : 0;
@@ -7118,8 +7351,8 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Imprime el HTML de los modales en el footer de las páginas de administración.
-     * Esto asegura que el HTML esté disponible para el JavaScript.
+     * Imprime el HTML de los modales en el footer de las pÃƒÆ’Ã‚Â¡ginas de administraciÃƒÆ’Ã‚Â³n.
+     * Esto asegura que el HTML estÃƒÆ’Ã‚Â© disponible para el JavaScript.
      */
         public function print_modal_html_in_footer() {
         ?>
@@ -7181,7 +7414,7 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Muestra un aviso de administrador persistente si el 2FA es obligatorio y no está configurado.
+     * Muestra un aviso de administrador persistente si el 2FA es obligatorio y no estÃƒÆ’Ã‚Â¡ configurado.
      */
     public function display_force_2fa_setup_notice() {
         if ( ! is_user_logged_in() || ! $this->tfa_manager ) {
@@ -7201,7 +7434,7 @@ public function handle_import_settings() {
             // CONDICIONES PARA MOSTRAR EL AVISO:
             // 1. 2FA debe estar activado globalmente.
             // 2. El rol del usuario debe estar en la lista de forzados.
-            // 3. El usuario NO debe tener 2FA configurado todavía.
+            // 3. El usuario NO debe tener 2FA configurado todavÃƒÆ’Ã‚Â­a.
             if ( $global_2fa_enabled && $user_is_forced && ! $user_has_2fa_setup ) {
                 $profile_url = get_edit_profile_url( $user_id );
                 ?>
@@ -7222,7 +7455,7 @@ public function handle_import_settings() {
                 </div>
                 <?php
             } else {
-                // Si alguna de las condiciones no se cumple (ej. el admin desactivó el forzado para este rol),
+                // Si alguna de las condiciones no se cumple (ej. el admin desactivÃƒÆ’Ã‚Â³ el forzado para este rol),
                 // el aviso ya no es necesario. Borramos la marca.
                 delete_user_meta( $user_id, '_advaipbl_2fa_setup_required' );
             }
@@ -7230,14 +7463,14 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Envía una notificación por email relacionada con un evento de 2FA.
+     * EnvÃƒÆ’Ã‚Â­a una notificaciÃƒÆ’Ã‚Â³n por email relacionada con un evento de 2FA.
      *
      * @param string  $event El tipo de evento ('activated', 'deactivated', 'reset', 'backup_used').
      * @param WP_User $user  El objeto del usuario afectado.
-     * @param array   $data  Datos adicionales (ej. número de códigos de respaldo restantes).
+     * @param array   $data  Datos adicionales (ej. nÃƒÆ’Ã‚Âºmero de cÃƒÆ’Ã‚Â³digos de respaldo restantes).
      */
     public function send_2fa_notification_email( $event, $user, $data = [] ) {
-        // Solo enviar si las notificaciones por email están activadas globalmente.
+        // Solo enviar si las notificaciones por email estÃƒÆ’Ã‚Â¡n activadas globalmente.
         if ( empty( $this->options['enable_email_notifications'] ) || '1' !== $this->options['enable_email_notifications'] ) {
             return;
         }
@@ -7297,8 +7530,8 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Previene la enumeración de usuarios a través del endpoint oEmbed de la API REST.
-     * Elimina los datos del autor de la respuesta si la protección está activada.
+     * Previene la enumeraciÃƒÆ’Ã‚Â³n de usuarios a travÃƒÆ’Ã‚Â©s del endpoint oEmbed de la API REST.
+     * Elimina los datos del autor de la respuesta si la protecciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada.
      *
      * @param array   $data   The response data.
      * @param WP_Post $post   The post object.
@@ -7307,9 +7540,9 @@ public function handle_import_settings() {
      * @return array The modified response data.
      */
     public function prevent_user_enumeration_via_oembed( $data, $post, $width, $height ) {
-        // Solo actuar si la opción de protección está activada.
+        // Solo actuar si la opciÃƒÆ’Ã‚Â³n de protecciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada.
         if ( ! empty( $this->options['disable_user_enumeration'] ) ) {
-            // Eliminamos las claves que podrían revelar información del autor.
+            // Eliminamos las claves que podrÃƒÆ’Ã‚Â­an revelar informaciÃƒÆ’Ã‚Â³n del autor.
             unset( $data['author_name'] );
             unset( $data['author_url'] );
         }
@@ -7317,19 +7550,19 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Previene la enumeración de usuarios a través de los feeds RSS.
-     * Si la protección de escaneo de autor está activada, reemplaza el login del autor
-     * con su nombre público (display name) en los feeds.
+     * Previene la enumeraciÃƒÆ’Ã‚Â³n de usuarios a travÃƒÆ’Ã‚Â©s de los feeds RSS.
+     * Si la protecciÃƒÆ’Ã‚Â³n de escaneo de autor estÃƒÆ’Ã‚Â¡ activada, reemplaza el login del autor
+     * con su nombre pÃƒÆ’Ã‚Âºblico (display name) en los feeds.
      *
      * @param string $author_login El login del autor.
-     * @return string El login del autor o su nombre público.
+     * @return string El login del autor o su nombre pÃƒÆ’Ã‚Âºblico.
      */
     public function prevent_user_enumeration_via_feeds( $author_login ) {
-        // Solo actuar si la opción está activada y estamos en un feed.
+        // Solo actuar si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada y estamos en un feed.
         if ( ! empty( $this->options['prevent_author_scanning'] ) && is_feed() ) {
             $author = get_user_by( 'login', $author_login );
             if ( $author ) {
-                // Devolvemos el nombre público en lugar del login.
+                // Devolvemos el nombre pÃƒÆ’Ã‚Âºblico en lugar del login.
                 return $author->display_name;
             }
         }
@@ -7337,24 +7570,24 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Previene el "login hinting" interceptando los errores de autenticación
-     * y reemplazándolos por un mensaje genérico.
+     * Previene el "login hinting" interceptando los errores de autenticaciÃƒÆ’Ã‚Â³n
+     * y reemplazÃƒÆ’Ã‚Â¡ndolos por un mensaje genÃƒÆ’Ã‚Â©rico.
      *
      * @param WP_User|WP_Error|null $user El objeto de usuario o error.
      * @return WP_User|WP_Error
      */
     public function prevent_login_hinting( $user ) {
-        // Solo actuar si la opción está activada.
+        // Solo actuar si la opciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activada.
         if ( empty( $this->options['prevent_login_hinting'] ) || '1' !== $this->options['prevent_login_hinting'] ) {
             return $user;
         }
 
-        // Solo nos interesa modificar los errores, no los inicios de sesión correctos.
+        // Solo nos interesa modificar los errores, no los inicios de sesiÃƒÆ’Ã‚Â³n correctos.
         if ( ! is_wp_error( $user ) ) {
             return $user;
         }
 
-        // Lista de códigos de error que queremos ocultar.
+        // Lista de cÃƒÆ’Ã‚Â³digos de error que queremos ocultar.
         $error_codes_to_hide = [
             'invalid_username',
             'invalid_email',
@@ -7381,7 +7614,7 @@ public function handle_import_settings() {
     }
 
     /**
-     * Previene el "login hinting" en el formulario de contraseña perdida simulando un envío exitoso
+     * Previene el "login hinting" en el formulario de contraseÃƒÆ’Ã‚Â±a perdida simulando un envÃƒÆ’Ã‚Â­o exitoso
      * si el usuario introduce un correo que no existe.
      *
      * @param WP_Error $errors El objeto de error.
@@ -7392,18 +7625,19 @@ public function handle_import_settings() {
         }
 
         if ( is_wp_error( $errors ) ) {
-            // Permitimos el error de campo vacío
+            // Permitimos el error de campo vacÃƒÆ’Ã‚Â­o
             if ( $errors->get_error_message( 'empty_username' ) ) {
                 return;
             }
 
-            // Si es un correo inválido (WP lo añade antes del hook)
+            // Si es un correo invÃƒÆ’Ã‚Â¡lido (WP lo aÃƒÆ’Ã‚Â±ade antes del hook)
             if ( $errors->get_error_message( 'invalid_email' ) ) {
                 wp_safe_redirect( wp_login_url() . '?checkemail=confirm' );
                 exit;
             }
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-            // WP añade el error de usuario inválido ('invalidcombo') DESPUÉS de este hook.
+            // WP aÃƒÆ’Ã‚Â±ade el error de usuario invÃƒÆ’Ã‚Â¡lido ('invalidcombo') DESPUÃƒÆ’Ã¢â‚¬Â°S de este hook.
             // Por tanto, debemos verificar manualmente si el usuario introducido existe.
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
             if ( ! empty( $_POST['user_login'] ) ) {
@@ -7420,26 +7654,26 @@ public function handle_import_settings() {
     }
 		
 	    /**
-     * Guarda los cambios de la sección 2FA en el perfil de usuario.
-     * Este hook es necesario para WordPress. Nuestra lógica de activación/desactivación
-     * se maneja principalmente vía AJAX para una mejor experiencia de usuario.
+     * Guarda los cambios de la secciÃƒÆ’Ã‚Â³n 2FA en el perfil de usuario.
+     * Este hook es necesario para WordPress. Nuestra lÃƒÆ’Ã‚Â³gica de activaciÃƒÆ’Ã‚Â³n/desactivaciÃƒÆ’Ã‚Â³n
+     * se maneja principalmente vÃƒÆ’Ã‚Â­a AJAX para una mejor experiencia de usuario.
      *
-     * @param int $user_id El ID del usuario que se está actualizando.
+     * @param int $user_id El ID del usuario que se estÃƒÆ’Ã‚Â¡ actualizando.
      */
     public function save_2fa_section_in_profile( $user_id ) {
-        // No se requiere ninguna acción aquí, ya que el JS maneja las acciones de 2FA.
-        // La función debe existir para que el hook 'personal_options_update' no cause un error fatal.
+        // No se requiere ninguna acciÃƒÆ’Ã‚Â³n aquÃƒÆ’Ã‚Â­, ya que el JS maneja las acciones de 2FA.
+        // La funciÃƒÆ’Ã‚Â³n debe existir para que el hook 'personal_options_update' no cause un error fatal.
         if ( ! current_user_can( 'edit_user', $user_id ) ) {
             return;
         }
-        // No hay nada que hacer, pero la función está aquí para evitar el error.
+        // No hay nada que hacer, pero la funciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ aquÃƒÆ’Ã‚Â­ para evitar el error.
     }
 
 	 /**
   * Tarea programada para actualizar las bases de datos de GeoIP.
   */
  public function execute_geoip_db_update() {
-     // Solo se ejecuta si el método es 'local_db' y hay una clave de licencia.
+     // Solo se ejecuta si el mÃƒÆ’Ã‚Â©todo es 'local_db' y hay una clave de licencia.
      if (
          isset($this->options['geolocation_method']) && $this->options['geolocation_method'] === 'local_db' &&
          !empty($this->options['maxmind_license_key']) && $this->geoip_manager
@@ -7469,23 +7703,23 @@ public function handle_import_settings() {
  }
  
      /**
-     * Comprueba si una IP está actualmente bajo un bloqueo activo de cualquier tipo.
-     * Esta función es una comprobación de alto rendimiento que prioriza los transients.
+     * Comprueba si una IP estÃƒÆ’Ã‚Â¡ actualmente bajo un bloqueo activo de cualquier tipo.
+     * Esta funciÃƒÆ’Ã‚Â³n es una comprobaciÃƒÆ’Ã‚Â³n de alto rendimiento que prioriza los transients.
      *
-     * @param string $ip La dirección IP a comprobar.
-     * @return bool True si la IP está activamente bloqueada, false en caso contrario.
+     * @param string $ip La direcciÃƒÆ’Ã‚Â³n IP a comprobar.
+     * @return bool True si la IP estÃƒÆ’Ã‚Â¡ activamente bloqueada, false en caso contrario.
      */
         public function is_ip_actively_blocked($ip) {
         $definitions = $this->get_all_block_type_definitions();
 
-        // 1. Comprobación de transients para todos los tipos que los usan.
+        // 1. ComprobaciÃƒÆ’Ã‚Â³n de transients para todos los tipos que los usan.
         foreach ($definitions as $type => $def) {
             if ($def['uses_transient'] && get_transient('advaipbl_bloqueo_' . $type . '_' . md5($ip))) {
                 return true;
             }
         }
 
-        // 2. Comprobación específica para bloqueos manuales (que son permanentes).
+        // 2. ComprobaciÃƒÆ’Ã‚Â³n especÃƒÆ’Ã‚Â­fica para bloqueos manuales (que son permanentes).
         $manual_blocks = get_option(self::OPTION_BLOCKED_MANUAL, []);
         if (!empty($manual_blocks)) {
             foreach (array_keys($manual_blocks) as $entry) {
@@ -7499,11 +7733,11 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Comprueba si la IP del visitante actual está activamente bloqueada.
-     * Utiliza un caché estático por petición para un rendimiento máximo,
-     * ya que esta función puede ser llamada varias veces durante una misma ejecución.
+     * Comprueba si la IP del visitante actual estÃƒÆ’Ã‚Â¡ activamente bloqueada.
+     * Utiliza un cachÃƒÆ’Ã‚Â© estÃƒÆ’Ã‚Â¡tico por peticiÃƒÆ’Ã‚Â³n para un rendimiento mÃƒÆ’Ã‚Â¡ximo,
+     * ya que esta funciÃƒÆ’Ã‚Â³n puede ser llamada varias veces durante una misma ejecuciÃƒÆ’Ã‚Â³n.
      *
-     * @return bool True si la IP está bloqueada, false en caso contrario.
+     * @return bool True si la IP estÃƒÆ’Ã‚Â¡ bloqueada, false en caso contrario.
      */
     private function is_visitor_actively_blocked() {
 
@@ -7540,8 +7774,8 @@ public function handle_import_settings() {
 	
 	    /**
      * Revisa y actualiza el estado de 'autoload' para las opciones del plugin que pueden
-     * crecer mucho en tamaño, mejorando el rendimiento general del sitio.
-     * Se ejecuta automáticamente una vez gracias a un sistema de versionado.
+     * crecer mucho en tamaÃƒÆ’Ã‚Â±o, mejorando el rendimiento general del sitio.
+     * Se ejecuta automÃƒÆ’Ã‚Â¡ticamente una vez gracias a un sistema de versionado.
      */
     public function update_option_autoload_states() {
         if ( get_option('advaipbl_autoload_version') === self::AUTOLOAD_OPTIMIZATION_VERSION ) {
@@ -7588,10 +7822,10 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Obtiene y sanea la URI de la petición actual.
-     * Cachea el resultado para evitar trabajo repetido en una misma petición.
+     * Obtiene y sanea la URI de la peticiÃƒÆ’Ã‚Â³n actual.
+     * Cachea el resultado para evitar trabajo repetido en una misma peticiÃƒÆ’Ã‚Â³n.
      *
-     * @return string La URI de la petición saneada.
+     * @return string La URI de la peticiÃƒÆ’Ã‚Â³n saneada.
      */
     public function get_current_request_uri() {
         static $request_uri = null;
@@ -7628,8 +7862,8 @@ public function handle_import_settings() {
 }
 
     /**
-     * Obtiene y sanea el User Agent de la petición actual.
-     * @return string El User Agent de la petición, saneado.
+     * Obtiene y sanea el User Agent de la peticiÃƒÆ’Ã‚Â³n actual.
+     * @return string El User Agent de la peticiÃƒÆ’Ã‚Â³n, saneado.
      */
     public function get_user_agent() {
         static $user_agent = null;
@@ -7640,7 +7874,7 @@ public function handle_import_settings() {
     }
 
     /**
-     * Obtiene y sanea el método de la petición actual.
+     * Obtiene y sanea el mÃƒÆ’Ã‚Â©todo de la peticiÃƒÆ’Ã‚Â³n actual.
      * @return string
      */
     public function get_request_method() {
@@ -7654,7 +7888,7 @@ public function handle_import_settings() {
     }
 
     /**
-     * Obtiene y sanea el Referer de la petición actual.
+     * Obtiene y sanea el Referer de la peticiÃƒÆ’Ã‚Â³n actual.
      * @return string
      */
     public function get_http_referer() {
@@ -7666,7 +7900,7 @@ public function handle_import_settings() {
     }
 
     /**
-     * Captura y sanea las cabeceras de la petición actual, ocultando información sensible.
+     * Captura y sanea las cabeceras de la peticiÃƒÆ’Ã‚Â³n actual, ocultando informaciÃƒÆ’Ã‚Â³n sensible.
      * @return array
      */
     public function get_sanitized_request_headers() {
@@ -7706,13 +7940,14 @@ public function handle_import_settings() {
     }
 
     /**
-     * Obtiene y sanea la IP de la conexión directa (REMOTE_ADDR).
+     * Obtiene y sanea la IP de la conexiÃƒÆ’Ã‚Â³n directa (REMOTE_ADDR).
      * @return string
      */
     public function get_remote_addr() {
         static $remote_addr = null;
         if (is_null($remote_addr)) {
             $remote_addr_raw = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $remote_addr = filter_var($remote_addr_raw, FILTER_VALIDATE_IP) ?: '';
         }
         return $remote_addr;
@@ -7735,7 +7970,7 @@ public function handle_import_settings() {
 
         $cache_key = 'advaipbl_lockdown_trigger_' . $endpoint_key;
         
-        // Obtenemos los datos actuales de la caché, que ahora serán un array.
+        // Obtenemos los datos actuales de la cachÃƒÆ’Ã‚Â©, que ahora serÃƒÆ’Ã‚Â¡n un array.
         $trigger_data = $this->get_from_custom_cache($cache_key);
         if (!is_array($trigger_data)) {
             $trigger_data = ['count' => 0, 'ips' => []];
@@ -7743,14 +7978,14 @@ public function handle_import_settings() {
 
         $trigger_data['count']++;
         $ip = $this->get_client_ip();
-        // Guardamos las últimas ~15 IPs para tener contexto.
+        // Guardamos las ÃƒÆ’Ã‚Âºltimas ~15 IPs para tener contexto.
         $trigger_data['ips'][] = $ip;
         if (count($trigger_data['ips']) > 15) {
             $trigger_data['ips'] = array_slice($trigger_data['ips'], -15);
         }
         $trigger_data['ips'] = array_unique($trigger_data['ips']);
 
-        // Volvemos a guardar en la caché.
+        // Volvemos a guardar en la cachÃƒÆ’Ã‚Â©.
         $ttl = $this->get_from_custom_cache($cache_key, true)['expires_at'] ?? (time() + $window_minutes * MINUTE_IN_SECONDS);
         $this->set_in_custom_cache($cache_key, $trigger_data, $ttl - time());
 
@@ -7780,7 +8015,7 @@ public function handle_import_settings() {
                 ]
             );
 
-            // Limpiamos el contador de la caché, ya que el lockdown está activo.
+            // Limpiamos el contador de la cachÃƒÆ’Ã‚Â©, ya que el lockdown estÃƒÆ’Ã‚Â¡ activo.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->delete($wpdb->prefix . 'advaipbl_cache', ['cache_key' => $cache_key]);
 
@@ -7791,10 +8026,10 @@ public function handle_import_settings() {
 	
 	    /**
      * Incrementa el contador de fallos de login para el sistema de Lockdown de wp-login.php.
-     * Activa el lockdown si se superan los umbrales de eventos y de IPs únicas.
+     * Activa el lockdown si se superan los umbrales de eventos y de IPs ÃƒÆ’Ã‚Âºnicas.
      */
     private function increment_login_lockdown_counter() {
-        // Obtenemos los umbrales desde los ajustes (los añadiremos más tarde).
+        // Obtenemos los umbrales desde los ajustes (los aÃƒÆ’Ã‚Â±adiremos mÃƒÆ’Ã‚Â¡s tarde).
         // Por ahora, usamos valores por defecto razonables.
         $event_threshold = (int) ($this->options['login_lockdown_event_threshold'] ?? 50);
         $ip_threshold = (int) ($this->options['login_lockdown_ip_threshold'] ?? 10);
@@ -7808,7 +8043,7 @@ public function handle_import_settings() {
         $endpoint_key = 'login';
         $cache_key = 'advaipbl_lockdown_trigger_' . $endpoint_key;
         
-        // Obtenemos los datos actuales de la caché.
+        // Obtenemos los datos actuales de la cachÃƒÆ’Ã‚Â©.
         $trigger_data = $this->get_from_custom_cache($cache_key);
         if (!is_array($trigger_data) || !isset($trigger_data['event_count'])) {
             $trigger_data = ['event_count' => 0, 'ip_hashes' => []];
@@ -7820,7 +8055,7 @@ public function handle_import_settings() {
             $trigger_data['ip_hashes'][] = $ip_hash;
         }
 
-        // Guardamos los datos actualizados en la caché.
+        // Guardamos los datos actualizados en la cachÃƒÆ’Ã‚Â©.
         $ttl_info = $this->get_from_custom_cache($cache_key, true);
         $ttl = $ttl_info ? $ttl_info['expires_at'] - time() : $window_minutes * MINUTE_IN_SECONDS;
         if ($ttl > 0) {
@@ -7866,18 +8101,18 @@ public function handle_import_settings() {
                 $this->send_lockdown_notification($endpoint_key, $duration_minutes, $event_threshold);
             }
             
-            // Limpiamos el contador de la caché, ya que el lockdown está activo.
+            // Limpiamos el contador de la cachÃƒÆ’Ã‚Â©, ya que el lockdown estÃƒÆ’Ã‚Â¡ activo.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->delete($wpdb->prefix . 'advaipbl_cache', ['cache_key' => $cache_key]);
         }
     }
 	
 	        /**
-     * Comprueba si un endpoint crítico está bajo "Lockdown" y sirve un desafío si es necesario.
-     * Se ejecuta en un hook temprano para interceptar el tráfico antes que otras comprobaciones.
+     * Comprueba si un endpoint crÃƒÆ’Ã‚Â­tico estÃƒÆ’Ã‚Â¡ bajo "Lockdown" y sirve un desafÃƒÆ’Ã‚Â­o si es necesario.
+     * Se ejecuta en un hook temprano para interceptar el trÃƒÆ’Ã‚Â¡fico antes que otras comprobaciones.
      */
     /**
-     * Intercepta el tráfico si el sitio est bajo ataque (Auto o Manual)
+     * Intercepta el trÃƒÆ’Ã‚Â¡fico si el sitio est bajo ataque (Auto o Manual)
      */
     public function check_for_under_attack_mode() {
         $mode = $this->options['under_attack_mode'] ?? 'off';
@@ -7928,12 +8163,12 @@ public function handle_import_settings() {
                 return; // Allow admins
             }
 
-            // Si el usuario acaba de pasar el desafío, le damos un pase de gracia.
+            // Si el usuario acaba de pasar el desafÃƒÆ’Ã‚Â­o, le damos un pase de gracia.
             if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
                 return;
             }
 
-            // Si ya está verificado, no hacer nada.
+            // Si ya estÃƒÆ’Ã‚Â¡ verificado, no hacer nada.
             if ($this->js_challenge_manager->is_vip_pass_valid()) {
                 return;
             }
@@ -7957,6 +8192,7 @@ public function handle_import_settings() {
         }
     }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
     /**
      * Dispara las notificaciones de emergencia (Email y Push)
      */
@@ -7986,10 +8222,10 @@ public function handle_import_settings() {
             if (!empty($this->options['enable_push_notifications']) && $this->notification_manager) {
                 $site_name_push = get_bloginfo('name');
                 if ($is_manual) {
-                    $push_msg = sprintf("*[%s] CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.", $site_name_push);
+                    $push_msg = sprintf("*[%s] CRITICAL ALERT: Site is UNDER ATTACK!* Ã°Å¸Å¡Â¨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.", $site_name_push);
                 } else {
                     /* translators: 1: Site Name, 2: Number of blocks, 3: Window in seconds, 4: Duration in minutes */
-                    $push_msg = sprintf("*[%1\$s] CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\nAdvanced IP Blocker detected %2\$d blocks within %3\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %4\$d minutes.", $site_name_push, $blocks_count, $window_secs, $duration_mins);
+                    $push_msg = sprintf("*[%1\$s] CRITICAL ALERT: Site is UNDER ATTACK!* Ã°Å¸Å¡Â¨\n\nAdvanced IP Blocker detected %2\$d blocks within %3\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %4\$d minutes.", $site_name_push, $blocks_count, $window_secs, $duration_mins);
                 }
                 $this->notification_manager->execute_webhook_send($push_msg);
             }
@@ -7999,10 +8235,10 @@ public function handle_import_settings() {
                 if (is_email($to) && $this->notification_manager) {
                     $site_name = get_bloginfo('name');
                     /* translators: 1: Site Name, 2: Mode (Manual/Automatic) */
-                    $email_subject = sprintf(__('[%1$s] URGENT: Site is UNDER ATTACK (Auto-Panic %2$s) 🚨', 'advanced-ip-blocker'), $site_name, $mode_text);
+                    $email_subject = sprintf(__('[%1$s] URGENT: Site is UNDER ATTACK (Auto-Panic %2$s)', 'advanced-ip-blocker'), $site_name, $mode_text);
                     $template_title = __('CRITICAL SECURITY ALERT', 'advanced-ip-blocker');
         
-                    $content_html = '<h3 style="color: #d63638;">' . esc_html__('CRITICAL SECURITY ALERT', 'advanced-ip-blocker') . ' 🚨</h3>';
+                    $content_html = '<h3 style="color: #d63638;">' . esc_html__('CRITICAL SECURITY ALERT', 'advanced-ip-blocker') . '</h3>';
                     
                     if ($is_manual) {
                         $content_html .= '<p>' . esc_html__('The Distributed Attack Protection (Auto-Panic) has been manually engaged by an administrator to protect your server resources.', 'advanced-ip-blocker') . '</p>';
@@ -8041,13 +8277,13 @@ public function handle_import_settings() {
         if (empty($this->options['enable_xmlrpc_lockdown']) && empty($this->options['enable_login_lockdown'])) {
             return;
         }
-		// Si el usuario acaba de pasar un desafío, le damos un pase de gracia de 15s.
+		// Si el usuario acaba de pasar un desafÃƒÆ’Ã‚Â­o, le damos un pase de gracia de 15s.
         if (get_transient('advaipbl_grace_pass_' . md5($this->get_client_ip()))) {
            return;
         }
         if (!empty($this->request_is_asn_whitelisted) || $this->is_whitelisted($this->get_client_ip()) || !empty($this->is_advanced_rule_allowed)) { return; }
         
-        // Procesa la respuesta del desafío si es para este tipo.
+        // Procesa la respuesta del desafÃƒÆ’Ã‚Â­o si es para este tipo.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (isset($_POST['_advaipbl_challenge_type']) && $_POST['_advaipbl_challenge_type'] === 'endpoint') {
             $duration_hours = (int)($this->options['global_challenge_cookie_duration'] ?? 4);
@@ -8055,7 +8291,7 @@ public function handle_import_settings() {
             $this->js_challenge_manager->verify_challenge('advaipbl_js_verified', $duration_seconds);
         }
 
-        // Si ya está verificado, no hacer nada.
+        // Si ya estÃƒÆ’Ã‚Â¡ verificado, no hacer nada.
         if ($this->js_challenge_manager->is_vip_pass_valid()) {
             return;
         }
@@ -8123,11 +8359,11 @@ public function handle_import_settings() {
     }
 	
 	    /**
-     * Envía notificaciones (Email/Push) cuando el modo Lockdown se activa para un endpoint.
+     * EnvÃƒÆ’Ã‚Â­a notificaciones (Email/Push) cuando el modo Lockdown se activa para un endpoint.
      *
      * @param string $endpoint_key   La clave del endpoint (ej. 'xmlrpc').
-     * @param int    $duration_minutes La duración del lockdown.
-     * @param int    $threshold      El umbral de bloqueos que lo activó.
+     * @param int    $duration_minutes La duraciÃƒÆ’Ã‚Â³n del lockdown.
+     * @param int    $threshold      El umbral de bloqueos que lo activÃƒÆ’Ã‚Â³.
      */
     public function send_lockdown_notification($endpoint_key, $duration_minutes, $threshold) {
         if ( isset($this->notification_manager) ) {
@@ -8136,7 +8372,7 @@ public function handle_import_settings() {
     }
 	
 	/**
- * Comprueba la bandera de activación y redirige al asistente si es necesario.
+ * Comprueba la bandera de activaciÃƒÆ’Ã‚Â³n y redirige al asistente si es necesario.
  * Se ejecuta en admin_init.
  */
 public function maybe_redirect_to_wizard() {
@@ -8151,7 +8387,7 @@ public function maybe_redirect_to_wizard() {
         
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if ( $is_already_on_wizard || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['activate-multi'] ) ) {
-            // Si es activación masiva, volvemos a poner para mostrar mensaje.
+            // Si es activaciÃƒÆ’Ã‚Â³n masiva, volvemos a poner para mostrar mensaje.
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             if ( isset( $_GET['activate-multi'] ) ) {
                 add_option( 'advaipbl_run_setup_wizard', true );
@@ -8165,12 +8401,12 @@ public function maybe_redirect_to_wizard() {
 }
 
 /**
- * Muestra un aviso en el panel de administración si el asistente de configuración no se ha completado.
+ * Muestra un aviso en el panel de administraciÃƒÆ’Ã‚Â³n si el asistente de configuraciÃƒÆ’Ã‚Â³n no se ha completado.
  */
 public function display_setup_wizard_notice() {
     // Solo mostrar el aviso si la bandera existe, el usuario puede gestionar opciones, y no estamos ya en el asistente.
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-    if ( get_option( 'advaipbl_run_setup_wizard' ) && current_user_can( 'manage_options' ) && ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'advaipbl-setup-wizard' ) ) {
+    if ( get_option( 'advaipbl_run_setup_wizard' ) && current_user_can( 'advaipbl_manage_settings' ) && ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'advaipbl-setup-wizard' ) ) {
         $wizard_url = admin_url( 'admin.php?page=advaipbl-setup-wizard' );
         ?>
         <div class="notice notice-info is-dismissible advaipbl-wizard-notice">
@@ -8193,7 +8429,7 @@ public function display_setup_wizard_notice() {
 }
 
 /**
- * Comprueba la reputación de la IP del visitante con AbuseIPDB.
+ * Comprueba la reputaciÃƒÆ’Ã‚Â³n de la IP del visitante con AbuseIPDB.
  * Se ejecuta temprano en el hook 'init' para bloquear proactivamente a los malos actores conocidos.
  */
 public function check_ip_with_abuseipdb() {
@@ -8213,6 +8449,7 @@ public function check_ip_with_abuseipdb() {
 
     $ip = $this->get_client_ip();
 
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
     if ($this->request_is_asn_whitelisted || ($this->js_challenge_manager->is_vip_pass_valid()) || get_transient('advaipbl_grace_pass_' . md5($ip))) {
         return;
     }
@@ -8236,12 +8473,12 @@ public function check_ip_with_abuseipdb() {
         ];
 
         if (strpos($action_to_take, 'challenge') !== false) {
-            // Si el usuario ya resolvió el desafío (VIP Pass válido), le permitimos pasar sin registrar más logs
+            // Si el usuario ya resolviÃƒÆ’Ã‚Â³ el desafÃƒÆ’Ã‚Â­o (VIP Pass vÃƒÆ’Ã‚Â¡lido), le permitimos pasar sin registrar mÃƒÆ’Ã‚Â¡s logs
             if (isset($this->js_challenge_manager) && $this->js_challenge_manager->is_vip_pass_valid()) {
                 return;
             }
 
-            // Si la acción es 'challenge' o 'challenge_automatic', registramos el evento y mostramos el desafío.
+            // Si la acciÃƒÆ’Ã‚Â³n es 'challenge' o 'challenge_automatic', registramos el evento y mostramos el desafÃƒÆ’Ã‚Â­o.
             $mode = ($action_to_take === 'challenge_automatic') ? 'automatic' : 'managed';
             $log_data['mode'] = $mode;
             $this->log_specific_error('abuseipdb_challenge', $ip, $log_data, 'warning');
@@ -8265,9 +8502,10 @@ public function check_ip_with_abuseipdb() {
     }
 }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 /**
- * Envía una notificación por email al administrador cuando se alcanza el límite de la API de AbuseIPDB.
- * Se asegura de enviar solo una notificación por día.
+ * EnvÃƒÆ’Ã‚Â­a una notificaciÃƒÆ’Ã‚Â³n por email al administrador cuando se alcanza el lÃƒÆ’Ã‚Â­mite de la API de AbuseIPDB.
+ * Se asegura de enviar solo una notificaciÃƒÆ’Ã‚Â³n por dÃƒÆ’Ã‚Â­a.
  */
     public function send_abuseipdb_limit_email() {
         if ( isset($this->notification_manager) ) {
@@ -8394,7 +8632,7 @@ public function check_ip_with_abuseipdb() {
 
 
     /**
-     * Ejecuta el envío de reportes a la API central.
+     * Ejecuta el envÃƒÆ’Ã‚Â­o de reportes a la API central.
      */
     public function execute_community_report() {
         // 1. Obtener el lote de bloqueos (solo si participa en AIB Network)
@@ -8420,7 +8658,7 @@ public function check_ip_with_abuseipdb() {
         
         $has_v3_token = !empty($this->options['api_token_v3']);
 
-        // 3. Fallback a V2 si no hay token V3 (V2 no agrupa telemetría, aborta si no hay reportes)
+        // 3. Fallback a V2 si no hay token V3 (V2 no agrupa telemetrÃƒÆ’Ã‚Â­a, aborta si no hay reportes)
         if (!$has_v3_token && !$has_reports) {
             return; 
         }
@@ -8429,7 +8667,7 @@ public function check_ip_with_abuseipdb() {
         $payload_data = $payload;
         $payload_data['site_hash'] = $payload['site_hash'] ?? hash('sha256', get_site_url());
 
-        // 4. Parámetros de envío
+        // 4. ParÃƒÆ’Ã‚Â¡metros de envÃƒÆ’Ã‚Â­o
         if ($has_v3_token) {
             $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/report';
             $headers = [
@@ -8437,20 +8675,20 @@ public function check_ip_with_abuseipdb() {
                 'Authorization' => 'Bearer ' . $this->options['api_token_v3']
             ];
             
-            // En V3 inyectamos la telemetría general en el mismo paquete para ahorrar recursos del cliente y servidor
+            // En V3 inyectamos la telemetrÃƒÆ’Ã‚Â­a general en el mismo paquete para ahorrar recursos del cliente y servidor
             if (!empty($this->options['allow_telemetry']) && '1' === $this->options['allow_telemetry']) {
                 $payload_data['telemetry'] = $this->get_telemetry_payload();
             } else {
                 $payload_data['telemetry'] = [];
             }
             
-            // Si después de intentarlo no hay ni amenazas locales ni métricas permitidas, no saturamos la red
+            // Si despuÃƒÆ’Ã‚Â©s de intentarlo no hay ni amenazas locales ni mÃƒÆ’Ã‚Â©tricas permitidas, no saturamos la red
             if (!$has_reports && empty($payload_data['telemetry'])) {
                 return;
             }
             
         } else {
-            // Configuración V2 (Asegurar que nunca llegamos aquí si !$has_reports por la comprobación anterior)
+            // ConfiguraciÃƒÆ’Ã‚Â³n V2 (Asegurar que nunca llegamos aquÃƒÆ’Ã‚Â­ si !$has_reports por la comprobaciÃƒÆ’Ã‚Â³n anterior)
             $api_url = 'https://advaipbl.com/wp-json/aib-network/v2/report';
             $headers = [
                 'Content-Type'    => 'application/json',
@@ -8492,6 +8730,9 @@ public function check_ip_with_abuseipdb() {
         }
     }
 }
+
+
+
 
 
 

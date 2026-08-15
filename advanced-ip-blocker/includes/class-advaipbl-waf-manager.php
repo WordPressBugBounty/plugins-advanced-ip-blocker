@@ -56,7 +56,14 @@ class ADVAIPBL_Waf_Manager {
         if (!empty($options['enable_intelligent_waf']) && '1' === $options['enable_intelligent_waf']) {
             $zeroday_rules = get_option('advaipbl_zeroday_waf_rules', []);
             if (is_array($zeroday_rules) && !empty($zeroday_rules)) {
-                $rules = array_merge($rules, $zeroday_rules);
+                $filtered_zeroday = [];
+                foreach ($zeroday_rules as $rule) {
+                    $rule = trim((string) $rule);
+                    if (!empty($rule) && strpos($rule, '#') !== 0) {
+                        $filtered_zeroday[] = $rule;
+                    }
+                }
+                $rules = array_merge($rules, $filtered_zeroday);
             }
         }
 

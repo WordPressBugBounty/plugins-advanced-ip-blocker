@@ -232,7 +232,7 @@ class ADVAIPBL_User_Session_Manager{
 	
 	public function ajax_close_user_session(){ 
     check_ajax_referer('advaipbl_close_session_nonce', 'nonce');
-    if(!current_user_can('manage_options')){ wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]); } 
+    if(!current_user_can('advaipbl_manage_settings')){ wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]); } 
     $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0; 
     if ($user_id > 0) { 
         $user_to_logout = get_userdata($user_id); 
@@ -254,7 +254,7 @@ class ADVAIPBL_User_Session_Manager{
 
 	public function ajax_close_all_user_sessions(){ 
     check_ajax_referer('advaipbl_close_all_sessions_nonce', 'nonce');
-    if(!current_user_can('manage_options')){ wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]); } 
+    if(!current_user_can('advaipbl_manage_settings')){ wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]); } 
     foreach(get_users(['fields'=>'ID']) as $user_id) { 
         WP_Session_Tokens::get_instance($user_id)->destroy_all(); 
     } 
@@ -270,7 +270,7 @@ class ADVAIPBL_User_Session_Manager{
 	
 	public function ajax_close_sessions_by_role(){ 
     check_ajax_referer('advaipbl_close_sessions_by_role_nonce', 'nonce');
-    if(!current_user_can('manage_options')){ wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]); } 
+    if(!current_user_can('advaipbl_manage_settings')){ wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]); } 
     $role = isset($_POST['role']) ? sanitize_text_field(wp_unslash($_POST['role'])) : ''; 
     if(!empty($role)){ 
         foreach(get_users(['role'=>$role, 'fields'=>'ID']) as $user_id) { 
@@ -286,7 +286,7 @@ class ADVAIPBL_User_Session_Manager{
     } 
     wp_send_json_success(); 
 }
-	public function save_settings(){if(!current_user_can('manage_options')||!check_admin_referer('advaipbl_usm_save_settings_nonce'))wp_die(esc_html__('Action not allowed.', 'advanced-ip-blocker'));$per_page=isset($_POST['sessions_per_page'])?intval(wp_unslash($_POST['sessions_per_page'])):10;update_option('advaipbl_usm_sessions_per_page',max(1,min(100,$per_page)));wp_safe_redirect(admin_url('options-general.php?page=advaipbl_settings_page&tab=user_sessions'));exit;}
+	public function save_settings(){if(!current_user_can('advaipbl_manage_settings')||!check_admin_referer('advaipbl_usm_save_settings_nonce'))wp_die(esc_html__('Action not allowed.', 'advanced-ip-blocker'));$per_page=isset($_POST['sessions_per_page'])?intval(wp_unslash($_POST['sessions_per_page'])):10;update_option('advaipbl_usm_sessions_per_page',max(1,min(100,$per_page)));wp_safe_redirect(admin_url('admin.php?page=advaipbl_settings_page&tab=dashboard&sub-tab=user_sessions'));exit;}
 	public function get_active_sessions() {
     // Definimos una clave única para nuestra caché.
     $cache_key = 'advaipbl_active_sessions_cache';

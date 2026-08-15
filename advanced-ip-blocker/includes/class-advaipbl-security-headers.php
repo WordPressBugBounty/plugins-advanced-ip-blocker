@@ -97,7 +97,7 @@ class ADVAIPBL_Security_Headers {
     }
 
     public function display_settings_tab() {
-        if (!current_user_can('manage_options')) return;
+        if (!current_user_can('advaipbl_manage_settings')) return;
         ?>
         <style>
             .shc-container{display:grid;grid-template-columns:1fr;gap:20px; margin-top: 20px;}
