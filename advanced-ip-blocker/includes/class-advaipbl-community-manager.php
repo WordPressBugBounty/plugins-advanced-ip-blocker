@@ -97,7 +97,22 @@ class ADVAIPBL_Community_Manager {
         $wpdb->query("TRUNCATE TABLE {$table_name}");
 
         // 2. Insertar por lotes (Batch Insert) para rendimiento
-        $ips = array_unique($data['ips']);
+        $raw_ips = $data['ips'];
+        
+        // 2b. Filtrar por score mínimo si 'scores' está disponible en la versión 3
+        $min_score = (int) ($this->plugin->options['community_min_score'] ?? 1);
+        if ($min_score > 1 && isset($data['scores']) && is_array($data['scores'])) {
+            $filtered_ips = [];
+            foreach ($raw_ips as $ip) {
+                $score = $data['scores'][$ip] ?? 0;
+                if ($score >= $min_score) {
+                    $filtered_ips[] = $ip;
+                }
+            }
+            $ips = array_unique($filtered_ips);
+        } else {
+            $ips = array_unique($raw_ips);
+        }
 
         // [USER-REQUEST] Excluir IPs que estén en la Whitelist del usuario
         // para evitar bloquear tráfico legítimo o denegar acceso propio si la IP cae en la lista comunitaria.

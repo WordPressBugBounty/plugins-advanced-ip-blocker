@@ -3967,10 +3967,18 @@ public function display_ip_inspector_tab() {
                             html += '<li><span class="dashicons dashicons-no" style="color: #ccc;"></span> <strong>' + '<?php echo esc_js(__('JS Challenge Pass:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('None', 'advanced-ip-blocker')); ?>' + '</li>';
                         }
                         
-                        if (data.metrics.aib_network) {
-                            html += '<li><span class="dashicons dashicons-warning" style="color: red;"></span> <strong>' + '<?php echo esc_js(__('AIB Community Network:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Listed (Malicious)', 'advanced-ip-blocker')); ?>' + '</li>';
+                        if (data.metrics.aib_network || (data.metrics.aib_score && data.metrics.aib_score > 0)) {
+                           var aibIcon = data.metrics.aib_network 
+                               ? '<span class="dashicons dashicons-warning" style="color: red;"></span> ' 
+                               : '<span class="dashicons dashicons-flag" style="color: #ffb900;"></span> ';
+                           var aibText = data.metrics.aib_network
+                               ? '<?php echo esc_js(__('Blocked Locally', 'advanced-ip-blocker')); ?>'
+                               : '<?php echo esc_js(__('Network Only (Below local threshold)', 'advanced-ip-blocker')); ?>';
+                           var scoreText = data.metrics.aib_score ? data.metrics.aib_score + ' ' + '<?php echo esc_js(__('reports', 'advanced-ip-blocker')); ?>' : '<?php echo esc_js(__('Listed', 'advanced-ip-blocker')); ?>';
+                           
+                           html += '<li>' + aibIcon + '<strong>' + '<?php echo esc_js(__('AIB Community Network:', 'advanced-ip-blocker')); ?>' + '</strong> ' + scoreText + ' <span style="color: #666; font-size: 12px;">(' + aibText + ')</span></li>';
                         } else {
-                            html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('AIB Community Network:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Clean', 'advanced-ip-blocker')); ?>' + '</li>';
+                           html += '<li><span class="dashicons dashicons-yes" style="color: green;"></span> <strong>' + '<?php echo esc_js(__('AIB Community Network:', 'advanced-ip-blocker')); ?>' + '</strong> ' + '<?php echo esc_js(__('Clean', 'advanced-ip-blocker')); ?>' + '</li>';
                         }
                         
                         if (data.metrics.spamhaus) {

@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.12.0\n"
+"Project-Id-Version: Advanced IP Blocker 8.12.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -7822,4 +7822,28 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:1839
 msgid "This preset is already in your list."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:419
+msgid "Minimum Threat Score"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:426
+msgid "Only import IPs that have been reported by at least this many unique community members. (Default: 1)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:3975
+msgid "Blocked Locally"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:3976
+msgid "Network Only (Below local threshold)"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:3977
+msgid "reports"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:3977
+msgid "Listed"
 msgstr ""

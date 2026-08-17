@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-08-15 10:37+0200\n"
+"PO-Revision-Date: 2026-08-16 13:28+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -9587,6 +9587,34 @@ msgstr "¡Agregado!"
 #: includes/class-advaipbl-settings-manager.php:1839
 msgid "This preset is already in your list."
 msgstr "Este ajuste preestablecido ya está en tu lista."
+
+#: includes/class-advaipbl-settings-manager.php:419
+msgid "Minimum Threat Score"
+msgstr "Puntuación mínima de amenaza"
+
+#: includes/class-advaipbl-settings-manager.php:426
+msgid ""
+"Only import IPs that have been reported by at least this many unique "
+"community members. (Default: 1)"
+msgstr ""
+"Importar únicamente las direcciones IP que hayan sido reportadas por al "
+"menos esta cantidad de miembros únicos de la comunidad. (Predeterminado: 1)"
+
+#: includes/class-advaipbl-admin-pages.php:3975
+msgid "Blocked Locally"
+msgstr "Bloqueado localmente"
+
+#: includes/class-advaipbl-admin-pages.php:3976
+msgid "Network Only (Below local threshold)"
+msgstr "Solo red (por debajo del umbral local)"
+
+#: includes/class-advaipbl-admin-pages.php:3977
+msgid "reports"
+msgstr "reportes"
+
+#: includes/class-advaipbl-admin-pages.php:3977
+msgid "Listed"
+msgstr "Listado"
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

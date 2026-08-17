@@ -67,6 +67,7 @@ class ADVAIPBL_Geolocation_Manager {
      */
     private function fetch_fallback_asn_from_ipquery( $ip, $location ) {
         if ( get_transient( 'advaipbl_geo_fallback_down' ) ) {
+            $location['fallback_error'] = true;
             return $location; // Return original if fallback is circuit-broken
         }
 
@@ -75,6 +76,7 @@ class ADVAIPBL_Geolocation_Manager {
 
         if (is_wp_error($response)) {
             set_transient( 'advaipbl_geo_fallback_down', true, 5 * MINUTE_IN_SECONDS );
+            $location['fallback_error'] = true;
             return $location;
         }
 
@@ -84,6 +86,7 @@ class ADVAIPBL_Geolocation_Manager {
                 $this->plugin->log_event("IPQuery Fallback Error: HTTP $code for IP $ip", 'warning', ['ip' => $ip]);
                 set_transient( 'advaipbl_geo_fallback_down', true, 5 * MINUTE_IN_SECONDS );
             }
+            $location['fallback_error'] = true;
             return $location;
         }
 

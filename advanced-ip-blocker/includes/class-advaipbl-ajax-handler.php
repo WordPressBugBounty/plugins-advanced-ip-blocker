@@ -125,8 +125,29 @@ class ADVAIPBL_Ajax_Handler {
             
             // 7. AIB Community Network
             $data['metrics']['aib_network'] = false;
-            if (isset($this->plugin->community_manager) && $this->plugin->community_manager->is_ip_blocked($ip)) {
-                $data['metrics']['aib_network'] = true;
+            $data['metrics']['aib_score'] = 0;
+            if (isset($this->plugin->community_manager)) {
+                if ($this->plugin->community_manager->is_ip_blocked($ip)) {
+                    $data['metrics']['aib_network'] = true;
+                }
+                
+                // Fetch live score from central API
+                $api_token = $this->plugin->options['api_token_v3'] ?? '';
+                if (!empty($api_token)) {
+                    $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . urlencode($ip), [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $api_token,
+                            'Accept'        => 'application/json'
+                        ],
+                        'timeout' => 5
+                    ]);
+                    if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+                        $body = json_decode(wp_remote_retrieve_body($response), true);
+                        if (isset($body['report_count'])) {
+                            $data['metrics']['aib_score'] = (int)$body['report_count'];
+                        }
+                    }
+                }
             }
             
             // 8. Spamhaus ASN DROP

@@ -414,6 +414,19 @@ add_settings_field(
             ]
         );
 		
+		add_settings_field(
+            'advaipbl_community_min_score', 
+            __('Minimum Threat Score', 'advanced-ip-blocker'), 
+            [$this, 'text_field_callback'], 
+            $page, 
+            'advaipbl_community_network_section', 
+            [
+                'name' => 'community_min_score', 
+                'default' => 1, 
+                'description' => __('Only import IPs that have been reported by at least this many unique community members. (Default: 1)', 'advanced-ip-blocker')
+            ]
+        );
+		
 
         
 
@@ -1294,7 +1307,7 @@ add_settings_field(
             'login_lockdown_event_threshold', 'login_lockdown_ip_threshold', 'login_lockdown_window', 'login_lockdown_duration',
             'lockdown_404_event_threshold', 'lockdown_404_ip_threshold', 'lockdown_404_window', 'lockdown_404_duration',
             'lockdown_403_event_threshold', 'lockdown_403_ip_threshold', 'lockdown_403_window', 'lockdown_403_duration',
-            'global_challenge_cookie_duration', 'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network',
+            'global_challenge_cookie_duration', 'geo_challenge_cookie_duration', 'abuseipdb_threshold', 'duration_abuseipdb', 'duration_aib_network', 'community_min_score',
             'under_attack_threshold', 'under_attack_window', 'under_attack_duration'
         ];
         foreach ($numeric_fields as $field) {

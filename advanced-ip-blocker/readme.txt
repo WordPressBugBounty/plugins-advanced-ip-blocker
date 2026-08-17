@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.12.0
+Stable tag: 8.12.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -267,7 +267,21 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 19. The new AIB Network manager.
 20. The new AbuseIPDB Api manager.
 
+== Upgrade Notice ==
+
+= 8.12.1 =
+Critical security & maintenance update! Fixes false positives in the Ghost IP blocker caused by external API rate limits. Introduces granular Threat Score thresholds to prevent community-wide false positives, and adds a new Zero-Day WAF rules. Update immediately.
+
 == Changelog ==
+
+= 8.12.1 =
+*   **SECURITY:** Added Zero-Day WAF rule for Pods Plugin Privilege Escalation (CVE-2026-19598) to intercept and block automated exploit scanners.
+*   **SECURITY:** Added Zero-Day WAF rule for Royal Elementor Addons SSRF vulnerability (CVE-2026-17123) to prevent internal network scanning via webhook spoofing.
+*   **NEW FEATURE:** Community Minimum Threat Score. You can now define how many unique community reports an IP must have before your local plugin imports and blocks it, drastically reducing false positives from the global network.
+*   **ENHANCEMENT:** Upgraded the AIB Central API integration to retrocompatibly support Threat Scores. The local IP Inspector now displays real-time community report counts directly in the UI.
+*   **ENHANCEMENT:** Manual ASN blocks are no longer transmitted to the AIB Community Network, preventing edge-case configurations from polluting the global threat database.
+*   **BUGFIX:** Resolved a critical logical flaw where failures or rate-limits in external Geolocation APIs (e.g., ipquery.io fallback) would falsely classify legitimate servers without rDNS as Ghost IPs.
+*   **BUGFIX:** Fixed a character encoding issue (mojibake) that caused emojis in Distributed Attack Protection (Auto-Panic) webhook notifications to render incorrectly in Slack and Discord.
 
 = 8.12.0 =
 *   **ENHANCEMENT:** Tested and verified full compatibility with the upcoming WordPress 7.1 core release.

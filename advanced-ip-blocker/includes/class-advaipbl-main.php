@@ -862,6 +862,10 @@ public function verify_known_bots() {
         if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) { return; }
 
         $location = $this->geolocation_manager->fetch_location($ip);
+        
+        // --- FIX: Si hubo un error en la API o en el fallback, NO podemos asegurar que sea Ghost IP. Abortamos para evitar falsos positivos. ---
+        if (!empty($location['error']) || !empty($location['fallback_error'])) { return; }
+        
         $asn_info = $this->asn_manager->extract_asn_from_data($location);
         if (!empty($asn_info)) { return; }
 
@@ -5380,6 +5384,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'enable_community_blocking' => '1',
         'community_blocking_action' => 'block',
 		'duration_aib_network' => 1440,
+		'community_min_score' => 1,
 		
 		// AbuseIPDB Integration
         'enable_abuseipdb' => '0',
@@ -8222,10 +8227,10 @@ public function handle_import_settings() {
             if (!empty($this->options['enable_push_notifications']) && $this->notification_manager) {
                 $site_name_push = get_bloginfo('name');
                 if ($is_manual) {
-                    $push_msg = sprintf("*[%s] CRITICAL ALERT: Site is UNDER ATTACK!* Ã°Å¸Å¡Â¨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.", $site_name_push);
+                    $push_msg = sprintf("*[%s] CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\n*Distributed Attack Protection (Auto-Panic)* has been manually engaged by an administrator. All non-whitelisted global traffic is now being challenged via JS.", $site_name_push);
                 } else {
                     /* translators: 1: Site Name, 2: Number of blocks, 3: Window in seconds, 4: Duration in minutes */
-                    $push_msg = sprintf("*[%1\$s] CRITICAL ALERT: Site is UNDER ATTACK!* Ã°Å¸Å¡Â¨\n\nAdvanced IP Blocker detected %2\$d blocks within %3\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %4\$d minutes.", $site_name_push, $blocks_count, $window_secs, $duration_mins);
+                    $push_msg = sprintf("*[%1\$s] CRITICAL ALERT: Site is UNDER ATTACK!* 🚨\n\nAdvanced IP Blocker detected %2\$d blocks within %3\$d seconds.\n*Distributed Attack Protection (Auto-Panic)* has been automatically engaged. All non-whitelisted global traffic is now being challenged via JS.\n\nDuration: %4\$d minutes.", $site_name_push, $blocks_count, $window_secs, $duration_mins);
                 }
                 $this->notification_manager->execute_webhook_send($push_msg);
             }

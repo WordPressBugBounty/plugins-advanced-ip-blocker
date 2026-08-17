@@ -42,6 +42,11 @@ class ADVAIPBL_Reporter_Manager {
             return;
         }
 
+        // Prevenir reporte de ASNs manuales para evitar falsos positivos en la comunidad
+        if ( $type === 'asn' && isset($extra_data['source']) && $extra_data['source'] === 'Manual List' ) {
+            return;
+        }
+
         // Zero-Trust: Filtrado rápido de IPs y ASNs de infraestructura crítica (Cloudflare, Google, etc)
         $critical_ips = ['1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4', '9.9.9.9', '149.112.112.112', '208.67.222.222', '208.67.220.220'];
         if (in_array($ip, $critical_ips, true)) {
