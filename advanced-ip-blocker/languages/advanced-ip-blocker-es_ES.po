@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-08-16 13:28+0200\n"
+"PO-Revision-Date: 2026-08-20 14:14+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -9615,6 +9615,210 @@ msgstr "reportes"
 #: includes/class-advaipbl-admin-pages.php:3977
 msgid "Listed"
 msgstr "Listado"
+
+msgid "Integrity Scanner"
+msgstr "Integrity Scanner"
+
+msgid "File Integrity Monitor"
+msgstr "Monitor de integridad de archivos"
+
+msgid ""
+"Scan your WordPress core files and plugins against their official repository "
+"checksums to detect unauthorized modifications, backdoors, or malware."
+msgstr ""
+"Analiza los archivos principales y los plugins de tu instalación de "
+"WordPress comparándolos con las sumas de comprobación de sus repositorios "
+"oficiales para detectar modificaciones no autorizadas, puertas traseras o "
+"malware."
+
+msgid "Scan Target:"
+msgstr "Objetivo de escaneo:"
+
+msgid "Core + Plugins"
+msgstr "Core + Plugins"
+
+msgid "WordPress Core Only"
+msgstr "Solo WordPress Core"
+
+msgid "Plugins Only"
+msgstr "Solo Plugins"
+
+msgid "Start Integrity Scan"
+msgstr "Iniciar análisis de integridad"
+
+msgid "Preparing scan..."
+msgstr "Preparando el escaneo..."
+
+msgid "Modified or Suspicious Files"
+msgstr "Archivos modificados o sospechosos"
+
+msgid ""
+"These files do not match the official repository hashes. They may have been "
+"modified by malware or manually altered."
+msgstr ""
+"Estos archivos no coinciden con los hashes del repositorio oficial. Es "
+"posible que hayan sido modificados por malware o alterados manualmente."
+
+msgid "File Path"
+msgstr "Ruta del archivo"
+
+msgid "Component Type"
+msgstr "Tipo de componente"
+
+msgid "Unverifiable Plugins"
+msgstr "Plugins no verificables"
+
+msgid ""
+"These plugins are not hosted on the official WordPress.org repository "
+"(Premium/Custom) and therefore cannot be verified automatically."
+msgstr ""
+"Estos plugins no están alojados en el repositorio oficial de WordPress.org "
+"(premium o personalizados) y, por lo tanto, no pueden verificarse "
+"automáticamente."
+
+msgid "Clean Files"
+msgstr "Archivos limpios"
+
+msgid "The scan found "
+msgstr "La exploración reveló "
+
+msgid "files that perfectly match their official repository versions."
+msgstr ""
+"archivos que coinciden exactamente con sus versiones del repositorio oficial."
+
+msgid "Gathering File List..."
+msgstr "Obteniendo la lista de archivos..."
+
+msgid "Scanning files..."
+msgstr "Analizando archivos..."
+
+msgid "No files found or failed to fetch checksums."
+msgstr ""
+"No se encontraron archivos o no se pudieron obtener las sumas de "
+"comprobación (checksums)."
+
+msgid "Error communicating with server."
+msgstr "Error de comunicación con el servidor."
+
+msgid "Error scanning chunk. Scan aborted."
+msgstr "Error al escanear el fragmento. Escaneo abortado."
+
+msgid "Server error during scan chunk. Scan aborted."
+msgstr "Error del servidor durante el escaneo del fragmento. Escaneo abortado."
+
+msgid "Scan Complete!"
+msgstr "¡Escaneo completado!"
+
+msgid "Update Recommendations"
+msgstr "Recomendaciones de actualización"
+
+msgid ""
+"Outdated components can cause hash mismatches (False Positives). Consider "
+"updating the following:"
+msgstr ""
+"Los componentes obsoletos pueden provocar discrepancias en los hashes "
+"(falsos positivos). Considere actualizar lo siguiente:"
+
+msgid ""
+"These plugins are not hosted on the official WordPress.org repository, so "
+"their integrity cannot be verified automatically."
+msgstr ""
+"Estos plugins no están alojados en el repositorio oficial de WordPress.org, "
+"por lo que su integridad no puede verificarse automáticamente."
+
+msgid "Modified or Missing Files"
+msgstr "Archivos modificados o faltantes"
+
+msgid "No modified files detected."
+msgstr "No se han detectado archivos modificados."
+
+msgid "Environment Summary"
+msgstr "Resumen del entorno"
+
+msgid "Overview of your installed components and their update status."
+msgstr "Resumen de los componentes instalados y su estado de actualización."
+
+msgid "Component"
+msgstr "Componente"
+
+msgid "Current Version"
+msgstr "Versión actual"
+
+msgid "Update available"
+msgstr "Actualización disponible"
+
+msgid "Premium / Unverifiable"
+msgstr "Premium / No verificable"
+
+msgid "Malware Scan"
+msgstr "Malware Scan"
+
+msgid "Uploads Inspection"
+msgstr "Uploads Inspection"
+
+msgid "Carpeta uploads aparentemente sin archivos sospechosos."
+msgstr "Carpeta uploads aparentemente sin archivos sospechosos."
+
+msgid "Scan Timings"
+msgstr "Tiempos de escaneo"
+
+msgid "Started:"
+msgstr "Comenzado:"
+
+msgid "Finished:"
+msgstr "Finalizado:"
+
+msgid "Send Report to Email"
+msgstr "Enviar informe por correo electrónico"
+
+msgid "[%s] File Integrity Monitor Report"
+msgstr "[%s] Informe del monitor de integridad de archivos"
+
+msgid "File Integrity Scan Report"
+msgstr "Informe de análisis de integridad de archivos"
+
+msgid "High Risk File"
+msgstr "Archivo de alto riesgo"
+
+msgid "Unrecognized File"
+msgstr "Archivo no reconocido"
+
+msgid "High-Risk Files Detected"
+msgstr "Se han detectado archivos de alto riesgo"
+
+msgid "Modified Files"
+msgstr "Archivos modificados"
+
+msgid "Suspicious Uploads"
+msgstr "Uploads sospechosas"
+
+msgid "No Threats Detected"
+msgstr "No se detectaron amenazas"
+
+msgid ""
+"All scanned files appear to be clean and match their expected repository "
+"hashes."
+msgstr ""
+"Todos los archivos escaneados parecen estar limpios y coinciden con los "
+"hashes esperados del repositorio."
+
+msgid "Total Plugins:"
+msgstr "Total de plugins:"
+
+msgid "updates available"
+msgstr "actualizaciones disponibles"
+
+msgid "Unverifiable / Premium Plugins"
+msgstr "Plugins no verificables / premium"
+
+msgid "Clean Files Scanned:"
+msgstr "Archivos limpios analizados:"
+
+msgid "Generated by Advanced IP Blocker FIM Engine"
+msgstr "Generated by Advanced IP Blocker FIM Engine"
+
+msgid "Suspicious Upload"
+msgstr "Uploads sospechosas"
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

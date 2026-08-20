@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.12.1
+Stable tag: 8.12.2
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
+*   **(NEW) File Integrity Scanner (Beta):** Instantly detect unauthorized changes to core WordPress files and your active plugins/themes. A vital tool to detect malware infections or backdoor placements on your server.
 *   **(NEW) Admin Access Control:** Granular control over which administrators can access the plugin's configuration dashboard. Restrict plugin management while keeping firewall rules intact for all editors and admins.
 *   **(NEW) Hardening & Core Protection:** Powerful tools to disable WordPress application passwords, turn off the dangerous built-in file editor, block PHP execution in the uploads folder, and hide the WordPress version from attackers.
 *   **(NEW) Intelligent Zero-Day WAF Sync:** Automatically download and apply critical WAF signatures from the AIB Central Server every day. Stay protected against zero-day vulnerabilities (like wp2shell) without needing to update the plugin manually! The rules run completely independent of your custom WAF configuration.
@@ -77,6 +78,9 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
+
+= What is the File Integrity Scanner? =
+The File Integrity Scanner is a powerful security feature that compares the files on your server (like WordPress core files, plugins, and themes) against their official versions on WordPress.org. If a hacker manages to modify a file (e.g., to insert a backdoor or redirect script), the scanner will detect the mismatch immediately, allowing you to take action before the infection spreads.
 
 = How does Admin Access Control work? =
 By default, all users with the Administrator role can access and configure Advanced IP Blocker. If you have multiple administrators but only want specific users to manage security settings, you can explicitly select them in the "Hardening & Core Protection" tab. The primary admin (ID 1) is always protected from lockouts. Other admins will not even see the "Security" menu.
@@ -269,14 +273,19 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.12.1 =
-Critical security & maintenance update! Fixes false positives in the Ghost IP blocker caused by external API rate limits. Introduces granular Threat Score thresholds to prevent community-wide false positives, and adds a new Zero-Day WAF rules. Update immediately.
+= 8.12.2 =
+Critical stability update! Fixes a severe bug where stuck locks in the database could cause the block engine (404, 403, Threat Score) to fail silently. Also introduces the new File Integrity Scanner (Phase 1). Please update immediately for reliable protection.
 
 == Changelog ==
 
+= 8.12.2 =
+*   **NEW FEATURE:** File Integrity Scanner (Phase 1). A brand new security module designed to scan WordPress core files, active plugins, and themes against their official WordPress.org checksums to detect unauthorized modifications or malware infections.
+*   **BUGFIX:** Resolved a critical race-condition flaw in the centralized `block_ip_instantly` engine. Stale database locks (e.g., from interrupted script executions) would silently prevent the plugin from executing new blocks, affecting Thresholds, Threat Scores, and Advanced Rules.
+*   **BUGFIX:** The "Threshold Reached" block notifications (Email and Push) now correctly display the dynamic number of errors that triggered the block (e.g., 4) instead of a hardcoded "1".
+*   **ENHANCEMENT:** The threshold blocking engine (404, 403, and Login) has been modernized to use the centralized blocking architecture and bypass legacy option tables, significantly improving performance on high-traffic sites.
+*   **ENHANCEMENT:** Minor UI improvements in the Security Dashboard layout and Environmental Summary panel.
+
 = 8.12.1 =
-*   **SECURITY:** Added Zero-Day WAF rule for Pods Plugin Privilege Escalation (CVE-2026-19598) to intercept and block automated exploit scanners.
-*   **SECURITY:** Added Zero-Day WAF rule for Royal Elementor Addons SSRF vulnerability (CVE-2026-17123) to prevent internal network scanning via webhook spoofing.
 *   **NEW FEATURE:** Community Minimum Threat Score. You can now define how many unique community reports an IP must have before your local plugin imports and blocks it, drastically reducing false positives from the global network.
 *   **ENHANCEMENT:** Upgraded the AIB Central API integration to retrocompatibly support Threat Scores. The local IP Inspector now displays real-time community report counts directly in the UI.
 *   **ENHANCEMENT:** Manual ASN blocks are no longer transmitted to the AIB Community Network, preventing edge-case configurations from polluting the global threat database.

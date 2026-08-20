@@ -199,6 +199,7 @@ function advaipbl_process_site_uninstallation() {
             
             // Internal Security
             'advaipbl_fim_baseline_hashes',
+            'advaipbl_fim_history',
             'advaipbl_vip_salt_modifier',
             
             // Security Headers

@@ -65,6 +65,7 @@ class ADVAIPBL_Main {
 	public $reporter_manager;
 	public $community_manager;
 	public $site_scanner;
+	public $fim_engine;
     public $security_headers_manager;
     public $js_challenge_manager;
     public $captcha_manager;
@@ -115,7 +116,9 @@ private function __construct() {
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-community-manager.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-community-manager.php';
 	require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
+		require_once plugin_dir_path(__FILE__) . 'class-advaipbl-fim-engine.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
+		require_once plugin_dir_path(__FILE__) . 'class-advaipbl-fim-engine.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-security-headers.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-audit-logger.php';
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-file-verifier.php';
@@ -127,6 +130,7 @@ private function __construct() {
     require_once plugin_dir_path(__FILE__) . 'class-advaipbl-notification-manager.php';
     
 	$this->site_scanner = new ADVAIPBL_Site_Scanner($this);
+		$this->fim_engine = new ADVAIPBL_FIM_Engine($this);
     $this->community_manager = new ADVAIPBL_Community_Manager($this);
     $this->admin_pages = new ADVAIPBL_Admin_Pages($this);
     $this->action_handler = new ADVAIPBL_Action_Handler($this);
@@ -1967,6 +1971,7 @@ public function get_blocked_endpoints_count() {
                 'advaipbl_settings_page-rules'     => 'rules',
                 'advaipbl_settings_page-ip-management' => 'ip_management',
                 'advaipbl_settings_page-scanner'   => 'scanner',
+                'advaipbl_settings_page-integrity' => 'integrity',
                 'advaipbl_settings_page-logs'      => 'logs',
                 'advaipbl_settings_page-about'     => 'about',
             ];
@@ -2066,6 +2071,29 @@ public function get_blocked_endpoints_count() {
                 // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
                 wp_enqueue_style('leaflet-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/leaflet.css');
                 wp_enqueue_script('leaflet-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/leaflet.js', [], '1.9.4', true);
+            }
+
+            // Cargar assets para File Integrity Monitor
+            if ( 'fim_dashboard' === $active_sub_tab ) {
+                wp_enqueue_script('advaipbl-integrity-scanner', plugin_dir_url( dirname( __FILE__ ) ) . 'js/advaipbl-integrity-scanner.js', ['jquery', 'advaipbl-admin-core-js'], ADVAIPBL_VERSION, true);
+                wp_localize_script('advaipbl-integrity-scanner', 'advaipbl_fim_vars', [
+                    'nonce' => wp_create_nonce('advaipbl_admin_ajax_nonce'),
+                    'update_url' => admin_url('update-core.php'),
+                    'i18n'  => [
+                        'gathering'          => __('Gathering File List...', 'advanced-ip-blocker'),
+                        'scanning'           => __('Scanning files...', 'advanced-ip-blocker'),
+                        'no_files'           => __('No files found or failed to fetch checksums.', 'advanced-ip-blocker'),
+                        'start_btn'          => __('Start Integrity Scan', 'advanced-ip-blocker'),
+                        'error_server'       => __('Error communicating with server.', 'advanced-ip-blocker'),
+                        'error_chunk'        => __('Error scanning chunk. Scan aborted.', 'advanced-ip-blocker'),
+                        'error_server_chunk' => __('Server error during scan chunk. Scan aborted.', 'advanced-ip-blocker'),
+                        'scan_complete'      => __('Scan Complete!', 'advanced-ip-blocker'),
+                        'scan_again'         => __('Scan Again', 'advanced-ip-blocker'),
+                        'update_avail'       => __('Update available', 'advanced-ip-blocker'),
+                        'unverifiable_status'=> __('Premium / Unverifiable', 'advanced-ip-blocker'),
+                        'up_to_date'         => __('Up to date', 'advanced-ip-blocker')
+                    ]
+                ]);
             }
 
             // Cargar assets de la pÃƒÆ’Ã‚Â¡gina "About"
@@ -3065,6 +3093,11 @@ return $status_header;
         // Suppress errors to avoid filling the log with "Deadlock found" messages. 
         // If a deadlock occurs, it just means another process is handling this IP, which is fine.
         $wpdb->suppress_errors();
+        
+        // Limpiamos cualquier lock expirado antes de intentar insertarlo
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->prefix}advaipbl_cache WHERE cache_key = %s AND expires_at < %d", $lock_key, time()));
+        
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $lock_acquired = $wpdb->query($wpdb->prepare("INSERT IGNORE INTO {$wpdb->prefix}advaipbl_cache (cache_key, cache_value, expires_at) VALUES (%s, '1', %d)", $lock_key, time() + 15));
         $wpdb->show_errors();
@@ -3120,7 +3153,8 @@ $expires_at = ($duration_in_seconds > 0) ? $timestamp + $duration_in_seconds : 0
 if ($custom_duration_seconds !== null) {
     $extra_data_for_notification['duration_seconds'] = $custom_duration_seconds;
 }
-$this->send_block_notification($ip, $type, 1, $extra_data_for_notification);
+$error_count = isset($extra_data_for_notification['count']) ? (int) $extra_data_for_notification['count'] : 1;
+$this->send_block_notification($ip, $type, $error_count, $extra_data_for_notification);
         $this->clear_blocked_ips_cache();
         if (strpos($ip, '/') !== false) {
             $this->update_db_cidrs_cache();
@@ -4180,6 +4214,51 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         }
     }
 
+     public function execute_shutdown_block() {
+        if (empty(self::$block_queue)) {
+            return;
+        }
+
+        $q = self::$block_queue;
+        $ip = $q['ip'];
+        if ( empty($ip) || ! $this->is_valid_ip_or_range($ip) ) {
+            return;
+        }
+        $original_ip_for_log = $ip; // Guardamos la IP original para los logs
+        $extra_data_for_log = ['trigger' => $q['trigger'], 'count' => ($q['errors'] ?? 1)];
+
+        if ( in_array( $ip, [ '127.0.0.1', '::1' ], true ) ) {
+            $remote_addr = $this->get_remote_addr();
+            if ( $remote_addr && ! in_array( $remote_addr, [ '127.0.0.1', '::1' ], true ) ) {
+                $ip = $remote_addr; // Cambiamos el objetivo del bloqueo
+                $extra_data_for_log['_spoofed_ip'] = $original_ip_for_log;
+            } else {
+                return; // Petición interna genuina, no bloquear.
+            }
+        }
+		
+        $type = $q['type'];
+        $trigger = $q['trigger'];
+        $options = $q['options'];
+        $errors = (isset($q['errors']) && is_numeric($q['errors'])) ? $q['errors'] : 1;
+
+        $duration_seconds = (int) ($options["duration_{$type}"] ?? 120) * 60;
+
+        $reason = '';
+        switch ($type) {
+            case '404':
+            case '403':
+                $reason = sprintf( /* translators: 1: %1$d errors number, 2: %2$s errors number, 3: Triggering URL. */ __("Generated %1\$d %2\$s errors. Triggering URL: %3\$s", 'advanced-ip-blocker'), $errors, strtoupper($type), $trigger);
+                break;
+            case 'login':
+                $reason = sprintf( /* translators: 1: %1$d failed login attempts, 2: %2$s Username. */ __('Made %1$d failed login attempts for user: %2$s', 'advanced-ip-blocker'), $errors, $trigger);
+                break;
+        }
+        
+        // El bloqueo instantáneo se encarga de todo: transients, base de datos, correos, htaccess, cloudflare, logs.
+        $this->block_ip_instantly($ip, $type, $reason, $extra_data_for_log, 'background', $duration_seconds);
+    }
+
      /**
      * Centraliza la decisiÃƒÆ’Ã‚Â³n de cÃƒÆ’Ã‚Â³mo manejar un evento de amenaza instantÃƒÆ’Ã‚Â¡neo (WAF, Honeypot, etc.).
      * Si el sistema de puntuaciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activo, suma puntos. Si no, bloquea directamente.
@@ -4224,164 +4303,6 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
         } else {
             $this->block_ip_instantly($ip, $type, $reason_message, $log_data);
         }
-    }
-	
-     public function execute_shutdown_block() {
-        if (empty(self::$block_queue)) {
-            return;
-        }
-
-        $q = self::$block_queue;
-        $ip = $q['ip'];
-        if ( empty($ip) || ! $this->is_valid_ip_or_range($ip) ) {
-            return;
-        }
-        $original_ip_for_log = $ip; // Guardamos la IP original para los logs
-        $extra_data_for_log = ['trigger' => $q['trigger'], 'count' => ($q['errors'] ?? 1)];
-
-        if ( in_array( $ip, [ '127.0.0.1', '::1' ], true ) ) {
-            $remote_addr = $this->get_remote_addr();
-            if ( $remote_addr && ! in_array( $remote_addr, [ '127.0.0.1', '::1' ], true ) ) {
-                $ip = $remote_addr; // Cambiamos el objetivo del bloqueo
-                $extra_data_for_log['_spoofed_ip'] = $original_ip_for_log;
-            } else {
-                return; // PeticiÃƒÆ’Ã‚Â³n interna genuina, no bloquear.
-            }
-        }
-		
-        global $wpdb;
-        $lock_key = 'lock_blocking_shutdown_' . md5($ip);
-        
-        $wpdb->suppress_errors(); // Avoid deadlock noise
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $lock_acquired = $wpdb->query($wpdb->prepare(
-            "INSERT IGNORE INTO {$wpdb->prefix}advaipbl_cache (cache_key, cache_value, expires_at) VALUES (%s, %s, %d)",
-            $lock_key, '1', time() + 15
-        ));
-        $wpdb->show_errors();
-
-        if ( ! $lock_acquired ) {
-            return;
-        }
-        $table_name_blocked = $wpdb->prefix . 'advaipbl_blocked_ips';
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $existing_block = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name_blocked} WHERE ip_range = %s", $ip));
-        if ($existing_block) {
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
-            return;
-        }
-        
-        $type = $q['type'];
-        $trigger = $q['trigger'];
-        $to = $q['to'];
-        $options = $q['options'];
-        $errors = (isset($q['errors']) && is_numeric($q['errors'])) ? $q['errors'] : 1;
-
-        // 1. Mapear el tipo de bloqueo a su constante de opciÃƒÆ’Ã‚Â³n correspondiente.
-        $option_key_map = [
-            '404'   => self::OPTION_BLOCKED_404,
-            '403'   => self::OPTION_BLOCKED_403,
-            'login' => self::OPTION_BLOCKED_LOGIN,
-        ];
-        $option_key = $option_key_map[$type] ?? null;
-        if ( ! $option_key ) {
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]); // Liberar cerrojo antes de salir
-            return;
-        }
-
-        // 2. Acciones de bloqueo (transient y opciÃƒÆ’Ã‚Â³n persistente)
-        $duration = (int) ($options["duration_{$type}"] ?? 120) * 60;
-        $block_key = "advaipbl_bloqueo_{$type}_" . md5($ip);
-        set_transient($block_key, true, $duration);
-        
-        $list = get_option($option_key, []);
-        if (!is_array($list)) $list = [];
-        $list[$ip] = ['timestamp' => time(), 'detail' => $trigger];
-        update_option($option_key, $list);
-        
-        // 3. Obtener datos de geolocalizaciÃƒÆ’Ã‚Â³n COMPLETOS
-        $location_data = $this->geolocation_manager->fetch_location($ip);
-        $geo_details = [];
-        if ($location_data && empty($location_data['error'])) {
-            $geo_details['country'] = $location_data['country'] ?? null;
-            $geo_details['country_code'] = $location_data['country_code'] ?? null;
-            $geo_details['city'] = $location_data['city'] ?? null;
-            $geo_details['lat'] = $location_data['lat'] ?? null;
-            $geo_details['lon'] = $location_data['lon'] ?? null;
-        }
-
-        // 4. LÃƒÆ’Ã‚Â³gica de email y logs
-        $notification_enabled = !empty($options['enable_email_notifications']) && '1' === $options['enable_email_notifications'];
-        $frequency = $options['notification_frequency'] ?? 'disabled';
-        $email_sent = null;
-
-        $reason = '';
-        switch ($type) {
-            case '404':
-            case '403':
-                $reason = sprintf( /* translators: 1: %1\$d errors number, 2: %2\$s errors number, 3: Triggering URL. */ __("Generated %1\$d %2\$s errors. Triggering URL: %3\$s", 'advanced-ip-blocker'), $errors, strtoupper($type), $trigger);
-                break;
-            case 'login':
-                $reason = sprintf( /* translators: 1: %1$d failed login attempts, 2: %2$s Username. */ __('Made %1$d failed login attempts for user: %2$s', 'advanced-ip-blocker'), $errors, $trigger);
-                break;
-        }
-
-        if ($notification_enabled && $frequency === 'instant') {
-            $site_name = get_bloginfo( 'name' );
-			/* translators: %s: Site name. */
-            $email_subject = sprintf(__('[%s] Security Alert: IP Automatically Blocked', 'advanced-ip-blocker'), $site_name);
-            $template_title = __('Security Alert: IP Blocked', 'advanced-ip-blocker');
-			/* translators: %d: Minutes. */
-            $duration_text = sprintf(__('%d minutes', 'advanced-ip-blocker'), (int) ($options["duration_{$type}"] ?? 120));
-
-            $button_url = admin_url('admin.php?page=advaipbl_ip_management&sub-tab=blocked_ips');
-            $button_style = "background-color: #2271b1; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;";
-
-            $content_html = 
-                '<p style="font-size: 16px; line-height: 1.6;">' . esc_html__( "An IP address has been automatically blocked on your website.", 'advanced-ip-blocker' ) . '</p>' .
-                '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">' .
-                '<tr><td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9; width: 150px;"><strong>' . esc_html__( 'Blocked IP', 'advanced-ip-blocker' ) . '</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . esc_html( $ip ) . '</td></tr>' .
-                '<tr><td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>' . esc_html__( 'Date and Time', 'advanced-ip-blocker' ) . '</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . esc_html( self::get_formatted_datetime(time()) ) . '</td></tr>' .
-                '<tr><td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>' . esc_html__( 'Reason', 'advanced-ip-blocker' ) . '</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . esc_html( $reason ) . '</td></tr>' .
-                '<tr><td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>' . esc_html__( 'Block Duration', 'advanced-ip-blocker' ) . '</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . esc_html( $duration_text ) . '</td></tr>' .
-                '</table>' .
-                '<p style="margin-top: 20px; font-size: 14px; color: #555;">' . esc_html__( 'No action is required on your part. This is just a notification.', 'advanced-ip-blocker' ) . '</p>' .
-                '<table style="width: 100%; text-align: center; margin-top: 30px;"><tr><td>' .
-                '<a href="' . esc_url( $button_url ) . '" style="' . esc_attr( $button_style ) . '">' . esc_html__( 'View Blocked IPs', 'advanced-ip-blocker' ) . '</a>' .
-                '</td></tr></table>';
-
-            $body = $this->get_html_email_template($template_title, $content_html);
-            add_filter('wp_mail_content_type', [$this, 'set_html_mail_content_type']);
-            $email_sent = wp_mail($to, $email_subject, $body);
-            remove_filter('wp_mail_content_type', [$this, 'set_html_mail_content_type']);
-
-        } elseif ($notification_enabled && in_array($frequency, ['daily', 'weekly'])) {
-            $table_name_queue = $wpdb->prefix . 'advaipbl_notifications_queue';
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            @$wpdb->insert($table_name_queue, ['timestamp' => current_time('mysql', 1), 'ip' => $ip, 'block_type' => $type, 'reason' => $reason]);
-        }
-
-        // 5. Loguear los eventos de forma segura
-        if (!empty($options['enable_logging'])) {
-            $log_details = array_merge(['trigger' => $trigger], $geo_details);
-            
-            // Log especÃƒÆ’Ã‚Â­fico del evento (404, 403, etc.) con nivel 'critical' porque es un bloqueo.
-            $this->log_specific_error($type, $ip, $log_details, 'critical');
-            
-            // Log general de auditorÃƒÆ’Ã‚Â­a
-            $log_message_critical = sprintf('IP %1$s blocked via shutdown: %2$d %3$s errors.', $ip, $errors, strtoupper($type));
-            $this->log_event($log_message_critical, 'critical', $log_details);
-        }
-
-        // AIB Community Network Reporting (Legacy Fallback)
-        if ( ! empty( $options['enable_community_network'] ) && $type === 'login' ) {
-             $this->reporter_manager->queue_report( $ip, 'login_lockdown', ['trigger' => $trigger] );
-        }
-
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
     }
 	
     public function add_cron_intervals($schedules) {
@@ -4725,6 +4646,15 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'title'  => __('Site Scanner', 'advanced-ip-blocker'),
         'href'   => add_query_arg(['tab' => 'scanner', 'sub-tab' => 'scan_overview'], $base_admin_url),
     ]);
+    
+    // --- NUEVO: Nodo para Integrity Scanner ---
+    $wp_admin_bar->add_node([
+        'id'     => 'advaipbl_fim',
+        'parent' => 'advaipbl_menu',
+        'title'  => __('Integrity Scanner', 'advanced-ip-blocker'),
+        'href'   => add_query_arg(['tab' => 'integrity', 'sub-tab' => 'fim_dashboard'], $base_admin_url),
+    ]);
+    
 	$wp_admin_bar->add_node(['id' => 'advaipbl_status', 'parent' => 'advaipbl_menu', 'title' => __('System Status', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'dashboard', 'sub-tab' => 'status'], $base_admin_url)]);
     $wp_admin_bar->add_node(['id' => 'advaipbl_credits', 'parent' => 'advaipbl_menu', 'title' => __('About', 'advanced-ip-blocker'), 'href' => add_query_arg(['tab' => 'about', 'sub-tab' => 'credits'], $base_admin_url)]);
 }
@@ -5729,6 +5659,15 @@ public function admin_menu() {
         __('Site Scanner', 'advanced-ip-blocker'),
         'advaipbl_manage_settings',
         $main_page_slug . '-scanner', // Slug ÃƒÆ’Ã‚Âºnico
+        [$this, 'settings_page_content']
+    );
+
+        add_submenu_page(
+        $main_page_slug,
+        __('Integrity Scanner', 'advanced-ip-blocker'),
+        __('Integrity Scanner', 'advanced-ip-blocker'),
+        'advaipbl_manage_settings',
+        $main_page_slug . '-integrity',
         [$this, 'settings_page_content']
     );
 

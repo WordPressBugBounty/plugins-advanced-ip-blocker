@@ -44,9 +44,6 @@ class ADVAIPBL_Settings_Manager {
 
     add_settings_field('advaipbl_revoke_vip_passes_button', __('Global VIP Revocation', 'advanced-ip-blocker'), [$this, 'revoke_vip_passes_button_callback'], $page, 'advaipbl_general_settings_section');
     
-
-
-
 	add_settings_section('advaipbl_general_settings_section', null, null, $page);
  add_settings_field(
         'advaipbl_allow_telemetry', 
@@ -205,7 +202,6 @@ class ADVAIPBL_Settings_Manager {
             $page,
             'advaipbl_scanner_settings_section'
         );
-
 
         // Automation & Trigger Rules
         add_settings_field(
@@ -426,11 +422,7 @@ add_settings_field(
                 'description' => __('Only import IPs that have been reported by at least this many unique community members. (Default: 1)', 'advanced-ip-blocker')
             ]
         );
-		
-
-        
-
-        
+		                
         // API PROVIDER (solo para el método 'api')
         add_settings_field(
             'advaipbl_geolocation_provider', 
@@ -494,7 +486,6 @@ add_settings_field(
             'description' => __( 'Automatic (Transparent) vs Managed (User must interact).', 'advanced-ip-blocker' )
         ]
     );
-
     
     add_settings_section('advaipbl_honeypot_settings_section', null, null, $page);
     add_settings_field(
@@ -897,9 +888,11 @@ add_settings_field(
         'class' => 'regular-text advaipbl-turnstile-field',
         'default' => '',
         'description' => sprintf(
+            // phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
             /* translators: %s: URL to Cloudflare Turnstile registration. */
             __('You can get your Turnstile keys from the <a href="%s" target="_blank" rel="noopener noreferrer">Cloudflare Dashboard</a>.', 'advanced-ip-blocker'),
             'https://dash.cloudflare.com/?to=/:account/turnstile'
+            // phpcs:enable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
         )
     ]);
     add_settings_field('advaipbl_turnstile_secret_key', __('Turnstile Secret Key', 'advanced-ip-blocker'), [$this, 'password_field_callback'], $page, 'advaipbl_captcha_integrations_section', [
@@ -1069,7 +1062,10 @@ add_settings_field(
             [
                 'name' => 'cf_api_token',
                 'class' => 'regular-text',
-                'description' => __('Create a token with <strong>Zone > Firewall > Edit</strong> permissions. <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Get Token</a>', 'advanced-ip-blocker'),
+                // phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
+                /* translators: %s: URL to Cloudflare API tokens */
+                'description' => sprintf(__('Create a token with <strong>Zone > Firewall > Edit</strong> permissions. <a href="%s" target="_blank">Get Token</a>', 'advanced-ip-blocker'), 'https://dash.cloudflare.com/profile/api-tokens'),
+                // phpcs:enable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
                 // Añadimos un atributo data para el JS de validación
                 'data_provider' => 'cloudflare' 
             ]

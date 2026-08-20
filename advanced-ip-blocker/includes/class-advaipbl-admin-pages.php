@@ -55,6 +55,7 @@ class ADVAIPBL_Admin_Pages {
             ]
         ],
 
+        'integrity' => [ 'title' => __('Integrity Scanner', 'advanced-ip-blocker'), 'icon'  => 'dashicons-search', 'sub_tabs' => [ 'fim_dashboard' => __('File Integrity Monitor', 'advanced-ip-blocker') ] ],
         'scanner' => [ 
             'title' => __('Site Scanner', 'advanced-ip-blocker'), 
             'icon'  => 'dashicons-search', 
@@ -83,6 +84,7 @@ class ADVAIPBL_Admin_Pages {
             'advaipbl_settings_page-security-headers' => ['security_headers', 'headers_config'],
             'advaipbl_settings_page-rules'     => ['rules', 'waf'],
             'advaipbl_settings_page-ip-management' => ['ip_management', 'blocked_ips'],
+			'advaipbl_settings_page-integrity' => ['integrity', 'fim_dashboard'],
 			'advaipbl_settings_page-scanner'   => ['scanner', 'scan_overview'],
             'advaipbl_settings_page-logs'      => ['logs', 'security_log'],
             'advaipbl_settings_page-about'     => ['about', 'credits'],
@@ -188,6 +190,7 @@ class ADVAIPBL_Admin_Pages {
 		case 'blocked_endpoints': $this->display_blocked_endpoints_tab(); break;
 		case 'whitelist': $this->display_whitelist_tab(); break;
 		case 'ip_inspector': $this->display_ip_inspector_tab(); break;
+		case 'fim_dashboard': $this->display_fim_dashboard(); break;
 		case 'scan_overview': $this->display_scanner_tab(); break;
         case 'security_log': $this->display_security_log_tab(); break;
         case 'challenge_log': $this->display_challenge_log_tab(); break;
@@ -4408,6 +4411,169 @@ public function display_scanner_tab() {
                 <?php endforeach; endif; ?>
             </tbody>
         </table>
+        <?php
+    }
+
+
+    public function display_fim_dashboard() {
+        ?>
+        <div class="wrap advaipbl-wrap">
+    <h2><?php esc_html_e('File Integrity Monitor', 'advanced-ip-blocker'); ?></h2>
+    <p><?php esc_html_e('Scan your WordPress core files and plugins against their official repository checksums to detect unauthorized modifications, backdoors, or malware.', 'advanced-ip-blocker'); ?></p>
+    
+    <div class="advaipbl-dashboard-widget" style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <label>
+                <strong><?php esc_html_e('Scan Target:', 'advanced-ip-blocker'); ?></strong>
+                <select id="fim-scan-type" style="margin-left: 10px;">
+                    <option value="all"><?php esc_html_e('Core + Plugins', 'advanced-ip-blocker'); ?></option>
+                    <option value="core"><?php esc_html_e('WordPress Core Only', 'advanced-ip-blocker'); ?></option>
+                    <option value="plugins"><?php esc_html_e('Plugins Only', 'advanced-ip-blocker'); ?></option>
+                </select>
+            </label>
+            <div>
+              <button id="advaipbl-fim-history-btn" class="button button-secondary button-large" style="margin-right: 10px;">
+                  <span class="dashicons dashicons-backup" style="margin-top:4px;"></span> <?php esc_html_e('View Scan History', 'advanced-ip-blocker'); ?>
+              </button>
+              <button id="advaipbl-start-fim-scan" class="button button-primary button-large"><?php esc_html_e('Start Integrity Scan', 'advanced-ip-blocker'); ?></button>
+            </div>
+        </div>
+
+        <!-- Progress Area -->
+        <div id="fim-progress-area" style="display: none;">
+            <p id="fim-status-text" style="font-weight: bold;"><?php esc_html_e('Preparing scan...', 'advanced-ip-blocker'); ?></p>
+            <div style="width: 100%; background-color: #e2e4e7; height: 20px; border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+                <div id="fim-progress-bar" style="width: 0%; height: 100%; background-color: #2271b1; transition: width 0.3s ease;"></div>
+            </div>
+            <p style="font-size: 12px; color: #666;" id="fim-progress-stats">0 / 0 files scanned</p>
+        </div>
+    </div>
+
+    <!-- Environment Summary Table -->
+    <div id="fim-environment-summary" class="advaipbl-dashboard-widget" style="display: none; margin-top: 20px;">
+        <h3 style="margin-top:0;">📊 <?php esc_html_e('Environment Summary', 'advanced-ip-blocker'); ?></h3>
+        <p><?php esc_html_e('Overview of your installed components and their update status.', 'advanced-ip-blocker'); ?></p>
+        <table class="wp-list-table widefat fixed striped" style="margin-top: 10px;">
+            <thead>
+                <tr>
+                    <th style="width: 40%;"><?php esc_html_e('Component', 'advanced-ip-blocker'); ?></th>
+                    <th style="width: 20%;"><?php esc_html_e('Current Version', 'advanced-ip-blocker'); ?></th>
+                    <th style="width: 40%;"><?php esc_html_e('Status', 'advanced-ip-blocker'); ?></th>
+                </tr>
+            </thead>
+            <tbody id="fim-env-summary-body">
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Results Area -->
+    <div id="fim-results-area" style="display: none; margin-top: 30px;">
+      
+      <!-- Scan Timings and Actions -->
+      <div class="advaipbl-dashboard-widget" style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; margin-bottom: 20px; border-left: 4px solid #007cba;">
+          <div>
+              <h4 style="margin: 0 0 5px 0;"><span class="dashicons dashicons-clock"></span> <?php esc_html_e('Scan Timings', 'advanced-ip-blocker'); ?></h4>
+              <p style="margin: 0; font-size: 13px; color: #646970;">
+                  <strong><?php esc_html_e('Started:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-start">--</span> | 
+                  <strong><?php esc_html_e('Finished:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-end">--</span> | 
+                  <strong><?php esc_html_e('Duration:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-duration">--</span>
+              </p>
+          </div>
+          <div>
+              <button type="button" class="button button-secondary" id="fim-send-email-btn">
+                  <span class="dashicons dashicons-email-alt" style="margin-top: 3px;"></span> <?php esc_html_e('Send Report to Email', 'advanced-ip-blocker'); ?>
+              </button>
+          </div>
+      </div>
+      
+        <!-- Modified Files -->
+        <div class="advaipbl-dashboard-widget" id="fim-results-modified-box" style="border-left: 4px solid #d63638;">
+            <h3 style="color: #d63638; margin-top: 0;"><span class="dashicons dashicons-warning"></span> <?php esc_html_e('Modified or Suspicious Files', 'advanced-ip-blocker'); ?></h3>
+            <p><?php esc_html_e('These files do not match the official repository hashes. They may have been modified by malware or manually altered.', 'advanced-ip-blocker'); ?></p>
+            <div class="advaipbl-table-responsive-wrapper">
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
+                            <th><?php esc_html_e('Component Type', 'advanced-ip-blocker'); ?></th>
+                            <th><?php esc_html_e('Status', 'advanced-ip-blocker'); ?></th>
+                            <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="fim-modified-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+  <!-- High-Risk Box -->
+  <div class="advaipbl-dashboard-widget" id="fim-results-highrisk-box" style="margin-top: 20px; border-left: 4px solid #f56e28; display: none;">
+      <h3 style="color: #f56e28; margin-top: 0;"><span class="dashicons dashicons-shield"></span> <?php esc_html_e('High-Risk Files Inspection', 'advanced-ip-blocker'); ?></h3>
+      <p style="margin-bottom: 15px; color: #646970;"><?php esc_html_e('Core configuration and theme files that are frequently targeted by persistent malware.', 'advanced-ip-blocker'); ?></p>
+      
+      <div class="advaipbl-table-responsive-wrapper">
+          <table class="widefat striped">
+              <thead>
+                  <tr>
+                      <th><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
+                      <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                  </tr>
+              </thead>
+              <tbody id="fim-highrisk-list">
+                  <!-- Filled via JS -->
+              </tbody>
+          </table>
+      </div>
+  </div>
+
+  <!-- Uploads Inspection -->
+  <div class="advaipbl-dashboard-widget" id="fim-results-uploads-box" style="margin-top: 20px; border-left: 4px solid #8224e3; display: none;">
+      <h3 style="color: #8224e3; margin-top: 0;"><span class="dashicons dashicons-portfolio"></span> <?php esc_html_e('Uploads Inspection', 'advanced-ip-blocker'); ?></h3>
+      <p id="fim-uploads-empty-msg" style="display: none; color: #00a32a; font-weight: bold;"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e('Carpeta uploads aparentemente sin archivos sospechosos.', 'advanced-ip-blocker'); ?></p>
+      <div class="advaipbl-table-responsive-wrapper" id="fim-uploads-table" style="display: none;">
+          <table class="widefat striped">
+              <thead>
+                  <tr>
+                      <th><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
+                      <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                  </tr>
+              </thead>
+              <tbody id="fim-uploads-list"></tbody>
+          </table>
+      </div>
+  </div>
+
+        <!-- Unverifiable -->
+        <div class="advaipbl-dashboard-widget" id="fim-results-unverifiable-box" style="margin-top: 20px; border-left: 4px solid #f0b849;">
+            <h3 style="color: #dba617; margin-top: 0;"><span class="dashicons dashicons-shield-alt"></span> <?php esc_html_e('Unverifiable Plugins', 'advanced-ip-blocker'); ?></h3>
+            <p><?php esc_html_e('These plugins are not hosted on the official WordPress.org repository (Premium/Custom) and therefore cannot be verified automatically.', 'advanced-ip-blocker'); ?></p>
+            <ul id="fim-unverifiable-list" style="columns: 2; list-style-type: disc; padding-left: 20px;"></ul>
+        </div>
+
+        <!-- Clean Files -->
+        <div class="advaipbl-dashboard-widget" id="fim-results-clean-box" style="margin-top: 20px; border-left: 4px solid #00a32a;">
+            <h3 style="color: #00a32a; margin-top: 0;"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e('Clean Files', 'advanced-ip-blocker'); ?></h3>
+            <p><?php esc_html_e('The scan found ', 'advanced-ip-blocker'); ?> <strong id="fim-clean-count">0</strong> <?php esc_html_e('files that perfectly match their official repository versions.', 'advanced-ip-blocker'); ?></p>
+        </div>
+
+    </div>
+</div>
+
+<!-- History Modal -->
+<div id="advaipbl-fim-history-modal" class="advaipbl-modal-overlay" style="display: none;">
+    <div class="advaipbl-modal-content" style="max-width: 600px;">
+        <h3 class="advaipbl-modal-title"><span class="dashicons dashicons-backup"></span> <?php esc_html_e('Scan History', 'advanced-ip-blocker'); ?></h3>
+        <div class="advaipbl-modal-body">
+            <p><?php esc_html_e('Select a past scan to load its results. Only the last 10 scans are kept.', 'advanced-ip-blocker'); ?></p>
+            <div id="advaipbl-fim-history-list" style="margin-top: 15px;">
+                <span class="spinner is-active" style="float:none; margin:0;"></span>
+            </div>
+        </div>
+        <div class="advaipbl-modal-footer">
+            <button type="button" class="button advaipbl-modal-cancel"><?php esc_html_e('Close', 'advanced-ip-blocker'); ?></button>
+        </div>
+    </div>
+</div>
+
         <?php
     }
 
