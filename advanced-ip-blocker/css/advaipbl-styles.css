@@ -1,6 +1,6 @@
 /**
  * Advanced IP Blocker - Admin Panel Styles
- * Version: 8.12.2
+ * Version: 8.13.0
  */
 
 /* ==========================================================================
@@ -81,9 +81,19 @@
     font-weight: bold;
     cursor: pointer;
     color: #888;
-    line-height: 1;
-    z-index: 10;
-    transition: color 0.2s;
+    pointer-events: none;
+    z-index: 1000;
+}
+/* FIM Responsive Utility Classes */
+.advaipbl-fim-timings-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007cba;
+}    transition: color 0.2s;
 }
 .advaipbl-modal-close:hover {
     color: var(--advaipbl-color-error);
@@ -274,7 +284,8 @@
 #advaipbl-advanced-rules-list .rule-action {
     font-size: 13px;
     line-height: 1.4;
-    white-space: nowrap; /* Evita que el contenido se parta en varias líneas */
+    white-space: normal; /* Permite saltos de linea si hay muchas condiciones */
+    overflow-wrap: break-word; /* Evita que se escape de la card */
 }
 
 #advaipbl-advanced-rules-list .rule-summary ul { display: inline; margin: 0; padding: 0; list-style: none; }
@@ -384,6 +395,18 @@
 #advaipbl-advanced-rules-list .advaipbl-rule-card {
     align-items: flex-start; /* Asegura alineación superior */
 }
+
+/* FIM Responsive Utility Classes (Desktop) */
+.advaipbl-fim-timings-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007cba;
+}
+
 /* ==========================================================================
    Estilos Responsive para el Panel de Administración
    ========================================================================== */
@@ -548,3 +571,77 @@
 }
 
 .advaipbl-rule-inactive { opacity: 0.6; background-color: #f9f9f9; filter: grayscale(50%); }
+
+/* ==========================================================================
+   FIM Dashboard Responsive Controls
+   ========================================================================== */
+.advaipbl-fim-controls-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.advaipbl-fim-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Make buttons fill width on smaller screens */
+@media screen and (max-width: 782px) {
+    .advaipbl-fim-controls-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .advaipbl-fim-scan-target {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .advaipbl-fim-scan-target select {
+        margin-left: 0 !important;
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+    }
+    
+    .advaipbl-fim-timings-card {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .advaipbl-fim-timings-actions {
+        margin-top: 15px;
+        width: 100%;
+    }
+    
+    .advaipbl-fim-timings-actions button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    .advaipbl-fim-action-buttons {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .advaipbl-fim-action-buttons button {
+        width: 100%;
+        margin-right: 0 !important;
+        text-align: center;
+        justify-content: center;
+    }
+}
+
+
+/* Custom OSM Styling for Attack Map */
+#advaipbl-attack-map .leaflet-layer {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}

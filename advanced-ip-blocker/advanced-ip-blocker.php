@@ -3,7 +3,7 @@
 Plugin Name: Advanced IP Blocker
 Plugin URI: https://advaipbl.com/
 Description: Your complete WordPress security firewall. Blocks IPs, bots & countries. Includes an intelligent WAF, Threat Scoring, and Two-Factor Authentication.
-Version: 8.12.2
+Version: 8.13.0
 Author: IniLerm
 Author URI: https://advaipbl.com/
 Text Domain: advanced-ip-blocker
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ADVAIPBL_VERSION', '8.12.2' );
+define( 'ADVAIPBL_VERSION', '8.13.0' );
 define( 'ADVAIPBL_PLUGIN_FILE', __FILE__ );
 
 if (!defined('ADVAIPBL_PLUGIN_PATH')) {
@@ -27,7 +27,7 @@ if (!defined('ADVAIPBL_PLUGIN_PATH')) {
 }
 define( 'ADVAIPBL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'ADVAIPBL_PLUGIN_NAME', 'advaipbl' );
-define( 'ADVAIPBL_DB_VERSION', '2.5' );
+define( 'ADVAIPBL_DB_VERSION', '2.6' );
 
 define( 'ADVAIPBL_USM_LOCATION_CACHE_KEY', 'advaipbl_usm_user_session_locations' );
 define( 'ADVAIPBL_USM_LOCATION_CACHE_TTL', 24 * 3600 );
@@ -79,14 +79,35 @@ spl_autoload_register(function ($class) {
     }
 });
 
-require_once ADVAIPBL_PLUGIN_PATH . 'includes/class-advaipbl-geolocation-manager.php';
-require_once ADVAIPBL_PLUGIN_PATH . 'includes/class-advaipbl-session-manager.php';
-require_once ADVAIPBL_PLUGIN_PATH . 'includes/class-advaipbl-main.php';
+$advaipbl_core_files = [
+    'includes/class-advaipbl-geolocation-manager.php',
+    'includes/class-advaipbl-session-manager.php',
+    'includes/class-advaipbl-main.php'
+];
+
+$advaipbl_missing_core_files = [];
+foreach ($advaipbl_core_files as $advaipbl_file) {
+    if (file_exists(ADVAIPBL_PLUGIN_PATH . $advaipbl_file)) {
+        require_once ADVAIPBL_PLUGIN_PATH . $advaipbl_file;
+    } else {
+        $advaipbl_missing_core_files[] = $advaipbl_file;
+    }
+}
+
+if (!empty($advaipbl_missing_core_files)) {
+    if (function_exists('add_action')) {
+        add_action('admin_notices', function() use ($advaipbl_missing_core_files) {
+            echo '<div class="notice notice-error"><p><strong>Advanced IP Blocker:</strong> Plugin initialization failed. Core files are missing: <code>' . esc_html(implode(', ', $advaipbl_missing_core_files)) . '</code>. Please reinstall the plugin.</p></div>';
+        });
+    }
+}
 
 function advaipbl_initialize() {
     // load_plugin_textdomain eliminado porque WP 4.6+ lo hace automático.
     
-    ADVAIPBL_Main::get_instance();
+    if (class_exists('ADVAIPBL_Main')) {
+        ADVAIPBL_Main::get_instance();
+    }
 }
 add_action( 'after_setup_theme', 'advaipbl_initialize' );
 

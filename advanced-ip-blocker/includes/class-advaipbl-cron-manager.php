@@ -39,6 +39,8 @@ class ADVAIPBL_Cron_Manager {
         add_action('advaipbl_update_bot_lists_event', [$this->plugin->bot_verifier, 'fetch_and_cache_bot_lists']);
         add_action('advaipbl_zeroday_sync_event', [$this->plugin, 'sync_zeroday_waf_rules']);
         add_action('advaipbl_zeroday_version_check_event', [$this->plugin, 'check_zeroday_waf_version']);
+        add_action('advaipbl_advanced_zeroday_sync_event', [$this->plugin, 'sync_advanced_zeroday_rules']);
+        add_action('advaipbl_advanced_zeroday_version_check_event', [$this->plugin, 'check_advanced_zeroday_version']);
     }
 
     /**
@@ -244,6 +246,19 @@ class ADVAIPBL_Cron_Manager {
             wp_clear_scheduled_hook('advaipbl_zeroday_version_check_event');
         }
 
+        // 12.7 Advanced Rules Cloud Sync
+        if (!empty($this->plugin->options['enable_cloud_advanced_rules']) && '1' === $this->plugin->options['enable_cloud_advanced_rules']) {
+            if (!wp_next_scheduled('advaipbl_advanced_zeroday_sync_event')) {
+                wp_schedule_event(time() + wp_rand(0, 4 * HOUR_IN_SECONDS), 'daily', 'advaipbl_advanced_zeroday_sync_event');
+            }
+            if (!wp_next_scheduled('advaipbl_advanced_zeroday_version_check_event')) {
+                wp_schedule_event(time() + wp_rand(0, HOUR_IN_SECONDS), 'hourly', 'advaipbl_advanced_zeroday_version_check_event');
+            }
+        } else {
+            wp_clear_scheduled_hook('advaipbl_advanced_zeroday_sync_event');
+            wp_clear_scheduled_hook('advaipbl_advanced_zeroday_version_check_event');
+        }
+
         // 13. Community List Update (Missing logic fixed)
         $schedule = wp_get_schedule('advaipbl_update_community_list_event');
         if ($schedule === 'six_hours') {
@@ -251,7 +266,7 @@ class ADVAIPBL_Cron_Manager {
         }
 
         if ( ! wp_next_scheduled( 'advaipbl_update_community_list_event' ) ) {
-            wp_schedule_event( time() + HOUR_IN_SECONDS, 'advaipbl_6_hours', 'advaipbl_update_community_list_event' );
+            wp_schedule_event( time() + MINUTE_IN_SECONDS, 'advaipbl_6_hours', 'advaipbl_update_community_list_event' );
         }
         
         // 14. Community Reports (Missing logic fixed)
@@ -295,7 +310,7 @@ class ADVAIPBL_Cron_Manager {
         
         if ( $count > 1 ) {
             wp_clear_scheduled_hook( 'advaipbl_update_community_list_event' );
-            wp_schedule_event( time() + HOUR_IN_SECONDS, 'advaipbl_6_hours', 'advaipbl_update_community_list_event' );
+            wp_schedule_event( time() + MINUTE_IN_SECONDS, 'advaipbl_6_hours', 'advaipbl_update_community_list_event' );
         }
 
         // Cleanup

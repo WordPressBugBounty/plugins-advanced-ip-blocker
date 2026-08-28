@@ -70,7 +70,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_logs', 'advaipbl_notifications_queue', 'advaipbl_ip_scores',
             'advaipbl_request_log', 'advaipbl_malicious_signatures', 'advaipbl_cache',
             'advaipbl_blocked_ips', 'advaipbl_endpoint_lockdowns', 'advaipbl_pending_reports', 'advaipbl_community_ips',
-            'advaipbl_activity_log' // All 11 tables included securely
+            'advaipbl_activity_log', 'advaipbl_quarantine'
         ];
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
         foreach ( $tables_to_drop as $table_name ) {
@@ -199,6 +199,7 @@ function advaipbl_process_site_uninstallation() {
             
             // Internal Security
             'advaipbl_fim_baseline_hashes',
+            'advaipbl_fim_whitelist',
             'advaipbl_fim_history',
             'advaipbl_vip_salt_modifier',
             
@@ -247,7 +248,9 @@ function advaipbl_process_site_uninstallation() {
         'advaipbl_aggregate_rules_metrics',
         'advaipbl_aggregate_challenge_metrics',
         'advaipbl_zeroday_sync_event',
-        'advaipbl_zeroday_version_check_event'
+        'advaipbl_zeroday_version_check_event',
+        'advaipbl_advanced_zeroday_sync_event',
+        'advaipbl_advanced_version_check_event'
     ];
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     foreach ($cron_hooks as $hook) {
@@ -302,6 +305,12 @@ if ( $advaipbl_global_should_delete ) {
     $backup_dir = $upload_dir['basedir'] . '/advaipbl-backups';
     if ( is_dir( $backup_dir ) ) {
         advaipbl_uninstall_recursive_rmdir( $backup_dir );
+    }
+
+    // B.1. Directorio de Cuarentena (FIM)
+    $advaipbl_quarantine_dir = $upload_dir['basedir'] . '/advaipbl_quarantine';
+    if ( is_dir( $advaipbl_quarantine_dir ) ) {
+        advaipbl_uninstall_recursive_rmdir( $advaipbl_quarantine_dir );
     }
 
     // C. Limpiar reglas del .htaccess (Borrado COMPLETO, no solo vaciar marcadores)

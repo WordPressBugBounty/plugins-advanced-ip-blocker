@@ -414,16 +414,19 @@ jQuery(document).ready(function ($) {
             }
 
             const isChecked = (rule.is_active !== false) ? 'checked' : '';
+            const isCloudRule = (rule.id && rule.id.startsWith('ar_zd_'));
+            const cloudBadge = isCloudRule ? '<span style="display:inline-block; margin-left:10px; padding:2px 6px; background:#d63384; color:#fff; border-radius:3px; font-size:11px; vertical-align:middle;" title="This rule is managed by the AIB Central Server"><span class="dashicons dashicons-cloud" style="font-size:12px; width:12px; height:12px; line-height:12px; vertical-align:text-top;"></span> Cloud</span>' : '';
 
             return `
-        <div class="advaipbl-rule-card ${isChecked ? '' : 'advaipbl-rule-inactive'}" data-rule-id="${rule.id}">
+        <div class="advaipbl-rule-card ${isChecked ? '' : 'advaipbl-rule-inactive'}" data-rule-id="${rule.id}" ${isCloudRule ? 'style="border-left: 4px solid #d63384;"' : ''}>
             <div class="rule-selector"><input type="checkbox" class="rule-checkbox" value="${rule.id}"></div>
             <div class="rule-name">
                 <label class="advaipbl-switch" style="vertical-align: middle; margin-right: 10px;" title="Enable/Disable Rule">
                     <input type="checkbox" class="toggle-rule-status" ${isChecked}>
-                    <span class="advaipbl-slider round"></span>
+                    <span class="advaipbl-slider round" ${isCloudRule && isChecked ? 'style="background-color:#d63384;"' : ''}></span>
                 </label>
                 <strong style="${isChecked ? '' : 'text-decoration: line-through; color: #999;'}">${rule.name}</strong>
+                ${cloudBadge}
             </div>
             <div class="rule-summary">
                 <strong>IF:</strong> ${conditionsHtml}

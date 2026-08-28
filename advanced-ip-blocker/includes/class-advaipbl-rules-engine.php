@@ -233,6 +233,12 @@ public function evaluate() {
         return false;
     }
 
+    // Inmunidad para administradores: No bloqueamos a los usuarios legítimos que están editando la web.
+    // Esto previene falsos positivos con constructores visuales como Avada/Fusion Builder.
+    if (is_user_logged_in() && current_user_can('unfiltered_html')) {
+        return false;
+    }
+
     $ip = $this->plugin->get_client_ip();
 
     // Inmunidad Global: Si la IP está en la lista blanca manual o es un bot/ASN verificado, ignoramos las reglas de bloqueo/desafío.
@@ -355,9 +361,12 @@ private function check_condition($condition, $ip) {
             break;
         case 'payload':
             $raw_body = @file_get_contents('php://input');
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            $post_data = !empty($_POST) ? wp_json_encode($_POST) : '';
-            $subject = $raw_body . "\n" . $post_data;
+            // phpcs:disable WordPress.Security.NonceVerification.Missing
+            $post_data = !empty($_POST) ? urldecode(http_build_query($_POST)) : '';
+            // Incluir metadatos de archivos subidos para vulnerabilidades de File Upload / RCE (ej. CVE-2026-18431)
+            $files_data = !empty($_FILES) ? urldecode(http_build_query($_FILES)) : '';
+            // phpcs:enable WordPress.Security.NonceVerification.Missing
+            $subject = $raw_body . "\n" . $post_data . "\n" . $files_data;
             break;
         case 'query_string':
             // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized

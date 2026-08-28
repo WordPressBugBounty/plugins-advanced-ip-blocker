@@ -35,6 +35,7 @@ class ADVAIPBL_Settings_Manager {
     
     add_settings_section('advaipbl_general_settings_section', null, null, $page);
     add_settings_field('advaipbl_enable_logging', __('Enable Logging', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'enable_logging', 'label' => __('Enable logging of events to the database.', 'advanced-ip-blocker')]);
+    add_settings_field('advaipbl_enable_payload_logging', __('Enable Advanced Payload Logging (Opt-in)', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'enable_payload_logging', 'label' => __('Capture POST/GET payloads of blocked requests.', 'advanced-ip-blocker'), 'description' => __('<strong>Privacy Warning:</strong> This securely logs request parameters to help identify attacks. Passwords are redacted, and payloads are limited to 2KB. <br><em>We highly recommend setting "Log Retention" to 7 or 14 days if enabled to prevent database bloat.</em>', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_log_retention_days', __('Log Retention (days)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'log_retention_days', 'default' => 30, 'description' => __('Number of days to keep logs in the DB. 0 to disable automatic purging.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_log_timezone', __('Timezone for Logs', 'advanced-ip-blocker'), [$this, 'timezone_select_callback'], $page, 'advaipbl_general_settings_section');
     add_settings_field('advaipbl_custom_block_message', __('Block Message', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'custom_block_message', 'label' => __('Message for blocked users. Leave blank for default messages.', 'advanced-ip-blocker')]);
@@ -144,6 +145,18 @@ class ADVAIPBL_Settings_Manager {
                 'name' => 'block_php_uploads',
                 'label' => __('Block execution of PHP files in the `/wp-content/uploads/` directory.', 'advanced-ip-blocker'),
                 'description' => __('Creates an isolated .htaccess file to immunize your media folder against PHP shell execution.', 'advanced-ip-blocker')
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_remove_x_powered_by',
+            __('Remove powered by HTTP header', 'advanced-ip-blocker'),
+            [$this, 'switch_field_callback'],
+            $page,
+            'advaipbl_hardening_settings_section',
+            [
+                'name' => 'remove_x_powered_by',
+                'label' => __('Remove information about software used by your site. E.g., X-Powered-By: PHP/7.4.1', 'advanced-ip-blocker')
             ]
         );
 
@@ -635,20 +648,14 @@ add_settings_field(
             ]
         );
     add_settings_field('advaipbl_enable_intelligent_waf', __('Intelligent Zero-Day Sync', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'enable_intelligent_waf', 'label' => __('Automatically download and apply critical WAF zero-day signatures from the AIB Central Server (Daily).', 'advanced-ip-blocker'), 'help_url' => 'https://advaipbl.com/intelligent-zero-day-waf-sync/']);
+    add_settings_field('advaipbl_enable_cloud_advanced_rules', __('Cloud Advanced Rules Sync', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'enable_cloud_advanced_rules', 'label' => __('Automatically download and apply Advanced JSON Rules from the AIB Central Server.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_duration_waf', __('WAF Block Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'duration_waf', 'default' => 1440, 'description' => __('Duration to block IPs that trigger a WAF rule. Set to 0 for a permanent block.', 'advanced-ip-blocker')]);
     add_settings_field('advaipbl_waf_excluded_urls', __('Excluded URLs for WAF', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_waf_settings_section', ['name' => 'waf_excluded_urls', 'label' => __('Add one URL fragment per line. Requests to URLs containing these strings will not be scanned by the WAF. Use this for payment gateway webhooks or problematic AJAX actions.', 'advanced-ip-blocker')]);
     
-    // Read-only display of synchronized Zero-Day rules
-    add_settings_field('advaipbl_zeroday_waf_rules_display', __('Active Zero-Day Signatures', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_waf_settings_section', [
-        'name' => 'zeroday_waf_rules_display',
-        'readonly' => true,
-        'value' => implode("\n", get_option('advaipbl_zeroday_waf_rules', [])),
-        'description' => __('These signatures are actively synchronized from the Central Server and injected seamlessly into the WAF engine. They do NOT interfere with your custom rules above.', 'advanced-ip-blocker')
-    ]);
-    
     add_settings_section('advaipbl_404_settings_section', null, null, $page);
 
-    // --- 404 Distributed Lockdown Settings ---
+    // Separator
+    add_settings_field('advaipbl_404_separator', '', [$this, 'separator_callback'], $page, 'advaipbl_404_settings_section');
     add_settings_field('advaipbl_enable_404_lockdown', __('Enable 404 Lockdown Mode', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_404_settings_section', ['name' => 'enable_404_lockdown', 'label' => __('Activate Distributed Attack Protection', 'advanced-ip-blocker'), 'description' => __('If enabled, a global "Lockdown" will be triggered when too many 404 errors occur from multiple IPs. During lockdown, ALL 404 visitors must solve a JS Challenge.', 'advanced-ip-blocker')]);
     
     add_settings_field('advaipbl_lockdown_404_event_threshold', __('Lockdown Trigger: Max Errors', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_404_settings_section', ['name' => 'lockdown_404_event_threshold', 'default' => 50, 'description' => __('Total 404 errors allowed across the entire site...', 'advanced-ip-blocker')]); 
@@ -1249,9 +1256,34 @@ add_settings_field(
         $page,
         'advaipbl_internal_security_section',
         [
-            'name' => 'enable_fim',
+            'name' => 'enable_fim', 'fim_scan_uploads',
             'label' => __('Monitor critical WordPress files for unauthorized changes.', 'advanced-ip-blocker'),
             'description' => __('Automatically scans core files (wp-config.php, .htaccess, index.php) daily for modifications.', 'advanced-ip-blocker')
+        ]
+    );
+
+
+    add_settings_field(
+        'advaipbl_fim_scan_uploads',
+        __('Scan Uploads Directory', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_scan_uploads',
+            'label' => __('Scan the wp-content/uploads directory for suspicious executable files (.php). Legitimate index.php files are safely ignored.', 'advanced-ip-blocker')
+        ]
+    );
+
+    add_settings_field(
+        'advaipbl_fim_excluded_paths',
+        __('Excluded Paths for FIM', 'advanced-ip-blocker'),
+        [$this, 'textarea_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_excluded_paths',
+            'description' => __('Add one path fragment per line. If a scanned file\'s path contains any of these strings, it will be ignored by the FIM. Example: <code>wp-content/uploads/cache/</code>', 'advanced-ip-blocker')
         ]
     );
 
@@ -1314,8 +1346,8 @@ add_settings_field(
         
         $checkbox_fields = [
             'prevent_author_scanning', 'block_author_scanning_403', 'disable_user_enumeration', 'restrict_login_page',
-            'enable_logging', 'delete_data_on_uninstall', 'enable_email_notifications',			
-            'enable_waf', 'enable_intelligent_waf', 'enable_geoblocking', 'enable_honeypot_blocking',
+            'enable_logging', 'enable_payload_logging', 'delete_data_on_uninstall', 'enable_email_notifications',			
+            'enable_waf', 'enable_intelligent_waf', 'enable_cloud_advanced_rules', 'enable_geoblocking', 'enable_honeypot_blocking',
             'enable_user_agent_blocking', 'rate_limiting_enable', 'show_admin_bar_menu',
             'enable_spamhaus_asn', 'enable_manual_asn', 
             'enable_push_notifications', 'push_critical_only', 'auto_whitelist_admin',
@@ -1346,9 +1378,9 @@ add_settings_field(
             'htaccess_protect_readme',
             'enable_scheduled_scans',
             'enable_audit_log',
-            'enable_fim',
+            'enable_fim', 'fim_scan_uploads',
             'scan_check_ssl', 'scan_check_updates', 'scan_check_php', 'scan_check_wp', 'scan_check_debug',
-            'block_ghost_ips', 'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads'
+            'block_ghost_ips', 'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads', 'remove_x_powered_by'
         ];
         
         foreach ($checkbox_fields as $field) {
@@ -1381,7 +1413,7 @@ add_settings_field(
             'geolocation_provider', 'log_timezone', 'recaptcha_version', 'recaptcha_site_key', 'recaptcha_secret_key',
             'xmlrpc_protection_mode', 'geolocation_method', 'trusted_proxies', 'abuseipdb_api_key', 'abuseipdb_action',
 			'cf_api_token', 'cf_zone_id', 'community_blocking_action', 'scan_frequency', 'scan_notification_email',
-            'fim_alert_email', 'api_token_v3',
+            'fim_alert_email', 'api_token_v3', 'fim_excluded_paths',
             'geo_challenge_mode', 'lockdown_404_challenge_mode', 'lockdown_403_challenge_mode', 
             'xmlrpc_lockdown_challenge_mode', 'login_lockdown_challenge_mode', 'signature_challenge_mode',
             'under_attack_mode', 'under_attack_challenge_mode', 'under_attack_notification_email', 'under_attack_excluded_urls', 'under_attack_alerts',
@@ -1399,7 +1431,7 @@ add_settings_field(
         $new_input[$field] = wp_kses($input[$field], $allowed_html);
     } elseif (strpos($field, 'email') !== false) {
          $new_input[$field] = sanitize_email($input[$field]);
-    } elseif (strpos($field, 'urls') !== false || strpos($field, 'proxies') !== false || strpos($field, 'hashes') !== false || strpos($field, 'mentions') !== false) { // Quitamos 'message' de aquí
+    } elseif (strpos($field, 'urls') !== false || strpos($field, 'proxies') !== false || strpos($field, 'hashes') !== false || strpos($field, 'mentions') !== false || strpos($field, 'paths') !== false) { // Quitamos 'message' de aquí
          $new_input[$field] = sanitize_textarea_field($input[$field]);
     } else {
          $new_input[$field] = sanitize_text_field($input[$field]);

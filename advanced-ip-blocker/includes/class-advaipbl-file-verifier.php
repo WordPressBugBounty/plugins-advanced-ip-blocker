@@ -107,9 +107,17 @@ class ADVAIPBL_File_Verifier {
                    'new_hash' => $current_hash
                 ];
             }
+
+        }
+
+        // --- NEW: Scan uploads directory if enabled ---
+        if (!empty($this->main_instance->options['fim_scan_uploads'])) {
+            $upload_anomalies = $this->scan_uploads_for_executables();
+            $changes = array_merge($changes, $upload_anomalies);
         }
 
         if (!empty($changes)) {
+
             $this->handle_fim_alert($changes);
             
             // Update baseline to prevent repeated alerts for the same change?
@@ -126,6 +134,76 @@ class ADVAIPBL_File_Verifier {
         }
 
         return $changes;
+    }
+
+
+    /**
+     * Scans the wp-content/uploads directory for suspicious executable files.
+     * @return array List of suspicious files found.
+     */
+    private function scan_uploads_for_executables() {
+        $anomalies = [];
+        $upload_dir = wp_upload_dir();
+        
+        if (empty($upload_dir['basedir']) || !is_dir($upload_dir['basedir'])) {
+            return $anomalies;
+        }
+
+        $base_dir = $upload_dir['basedir'];
+        
+        // Use RecursiveDirectoryIterator with a depth limit to avoid excessive CPU
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($base_dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        $iterator->setMaxDepth(5); // Limit depth to 5 subdirectories to prevent performance issues
+
+        $raw_excluded_paths = $this->main_instance->options['fim_excluded_paths'] ?? '';
+        $excluded_paths = array_filter(array_map('trim', explode("\n", $raw_excluded_paths)));
+
+        $blacklisted_extensions = ['php', 'php5', 'phtml', 'pl', 'cgi', 'sh'];
+
+        foreach ($iterator as $fileinfo) {
+            if ($fileinfo->isFile()) {
+                $ext = strtolower($fileinfo->getExtension());
+                if (in_array($ext, $blacklisted_extensions, true)) {
+                    $filename = $fileinfo->getFilename();
+                    $rel_path = str_replace(wp_normalize_path(ABSPATH), '', wp_normalize_path($fileinfo->getPathname()));
+                    
+                    // Quarantine filter
+                    if (strpos($rel_path, 'wp-content/uploads/advaipbl_quarantine') !== false) {
+                        continue;
+                    }
+                    
+                    // Excluded paths filter
+                    $is_excluded = false;
+                    foreach ($excluded_paths as $ex) {
+                        if (!empty($ex) && strpos($rel_path, $ex) !== false) {
+                            $is_excluded = true;
+                            break;
+                        }
+                    }
+                    if ($is_excluded) {
+                        continue;
+                    }
+                    
+                    // Smart Whitelist: Ignore typical 'Silence is golden' index.php files
+                    if ($filename === 'index.php' && $fileinfo->getSize() < 200) {
+                        $content = @file_get_contents($fileinfo->getPathname(), false, null, 0, 100);
+                        if ($content !== false && (stripos($content, 'Silence is golden') !== false || trim($content) === '<?php')) {
+                            continue; // Skip this file
+                        }
+                    }
+
+                    $anomalies[] = [
+                        'file' => str_replace(ABSPATH, '', $fileinfo->getPathname()),
+                        'type' => 'suspicious'
+                    ];
+                }
+            }
+        }
+        
+        return $anomalies;
     }
 
     private function handle_fim_alert($changes) {
@@ -186,7 +264,7 @@ class ADVAIPBL_File_Verifier {
                 '<li><strong>%s:</strong> %s <span style="color:%s;">(%s)</span></li>',
                 __('File', 'advanced-ip-blocker'),
                 esc_html($change['file']),
-                $change['type'] === 'deleted' ? '#dc3232' : ($change['type'] === 'modified' ? '#dba617' : '#00a32a'),
+                $change['type'] === 'deleted' ? '#dc3232' : ($change['type'] === 'modified' ? '#dba617' : ($change['type'] === 'suspicious' ? '#ff6600' : '#00a32a')),
                 strtoupper($change['type'])
             );
         }

@@ -17,6 +17,12 @@ class ADVAIPBL_FIM_Engine {
         add_action('wp_ajax_advaipbl_fim_save_history', [$this, 'ajax_save_history']);
         add_action('wp_ajax_advaipbl_fim_get_history', [$this, 'ajax_get_history']);
         add_action('wp_ajax_advaipbl_fim_email_report', [$this, 'ajax_email_report']);
+        add_action('wp_ajax_advaipbl_fim_add_whitelist', [$this, 'ajax_add_whitelist']);
+        add_action('wp_ajax_advaipbl_fim_remove_whitelist', [$this, 'ajax_remove_whitelist']);
+        add_action('wp_ajax_advaipbl_fim_quarantine_file', [$this, 'ajax_quarantine_file']);
+        add_action('wp_ajax_advaipbl_fim_restore_quarantine', [$this, 'ajax_restore_quarantine']);
+        add_action('wp_ajax_advaipbl_fim_delete_quarantine', [$this, 'ajax_delete_quarantine']);
+        add_action('wp_ajax_advaipbl_fim_get_quarantine_list', [$this, 'ajax_get_quarantine_list']);
     }
 
     /**
@@ -30,7 +36,62 @@ class ADVAIPBL_FIM_Engine {
 
         $scan_type = isset($_POST['scan_type']) ? sanitize_text_field(wp_unslash($_POST['scan_type'])) : 'all';
 
+        $raw_excluded_paths = $this->plugin->options['fim_excluded_paths'] ?? '';
+        $excluded_paths = array_filter(array_map('trim', explode("\n", $raw_excluded_paths)));
+
         $files_to_scan = [];
+
+        // --- DEEP SCAN ---
+        if ($scan_type === 'deep_scan') {
+            $abs_path = wp_normalize_path(trailingslashit(ABSPATH));
+            $dangerous_extensions = ['php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar'];
+            
+            try {
+                $iterator = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator(ABSPATH, RecursiveDirectoryIterator::SKIP_DOTS),
+                    RecursiveIteratorIterator::SELF_FIRST,
+                    RecursiveIteratorIterator::CATCH_GET_CHILD
+                );
+                
+                foreach ($iterator as $file) {
+                    if ($file->isFile()) {
+                        $ext = strtolower($file->getExtension());
+                        if (in_array($ext, $dangerous_extensions, true)) {
+                            $file_path_normalized = wp_normalize_path($file->getPathname());
+                            $rel_path = str_replace($abs_path, '', $file_path_normalized);
+                            
+                            if (strpos($rel_path, 'wp-content/uploads/advaipbl_quarantine') !== false) {
+                                continue;
+                            }
+                            
+                            $is_excluded = false;
+                            foreach ($excluded_paths as $ex) {
+                                if (!empty($ex) && strpos($rel_path, $ex) !== false) {
+                                    $is_excluded = true;
+                                    break;
+                                }
+                            }
+                            if ($is_excluded) {
+                                continue;
+                            }
+                            
+                            $files_to_scan[] = [
+                                'type' => 'deep_scan_file',
+                                'path' => $file->getPathname(),
+                                'rel_path' => $rel_path,
+                                'expected_hash' => '',
+                                'plugin_slug' => 'Deep Scan'
+                            ];
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                // Silently ignore if unreadable
+            }
+            
+            wp_send_json_success(['files' => $files_to_scan, 'total' => count($files_to_scan)]);
+            return;
+        }
 
         // 1. Core Files
         if (in_array($scan_type, ['all', 'core'])) {
@@ -141,6 +202,21 @@ class ADVAIPBL_FIM_Engine {
                             $file_path_normalized = wp_normalize_path($file->getPathname());
                             $rel_path = str_replace($abs_path, '', $file_path_normalized);
                             
+                            if (strpos($rel_path, 'wp-content/uploads/advaipbl_quarantine') !== false) {
+                                continue;
+                            }
+                            
+                            $is_excluded = false;
+                            foreach ($excluded_paths as $ex) {
+                                if (!empty($ex) && strpos($rel_path, $ex) !== false) {
+                                    $is_excluded = true;
+                                    break;
+                                }
+                            }
+                            if ($is_excluded) {
+                                continue;
+                            }
+                            
                             $files_to_scan[] = [
                                 'type' => 'upload_php',
                                 'path' => $file->getPathname(),
@@ -213,6 +289,36 @@ class ADVAIPBL_FIM_Engine {
         }
 
         $results = [];
+        
+        $has_deep_scan = false;
+        foreach ($files as $f) {
+            if (isset($f['type']) && $f['type'] === 'deep_scan_file') {
+                $has_deep_scan = true;
+                break;
+            }
+        }
+        
+        $core_checksums = null;
+        $plugin_checksum_cache = [];
+        $whitelist = $this->get_whitelist();
+        
+        if ($has_deep_scan) {
+            $core_checksums = $this->get_core_checksums();
+            if (is_wp_error($core_checksums)) $core_checksums = [];
+            
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+            $installed_plugins = get_plugins();
+            foreach ($installed_plugins as $p_file => $p_data) {
+                $p_slug = dirname($p_file);
+                if ($p_slug === '.') $p_slug = basename($p_file, '.php');
+                $plugin_checksum_cache[$p_slug] = [
+                    'version' => $p_data['Version'],
+                    'checksums' => null
+                ];
+            }
+        }
 
         foreach ($files as $file_data) {
             $type = sanitize_text_field($file_data['type']);
@@ -239,21 +345,87 @@ class ADVAIPBL_FIM_Engine {
             }
 
             if ($type === 'upload_php') {
-                $malware_status = $this->scan_for_malware($path);
+                $rel_path = sanitize_text_field($file_data['rel_path']);
+                $is_whitelisted = $this->is_whitelisted($rel_path, $whitelist);
+                $malware_status = $is_whitelisted ? 'Whitelisted' : $this->scan_for_malware($path);
                 $results[] = [
                     'status' => 'malware_scan',
-                    'rel_path' => sanitize_text_field($file_data['rel_path']),
+                    'rel_path' => $rel_path,
                     'type' => $type,
                     'malware' => $malware_status
                 ];
                 continue;
             }
+
+            if ($type === 'deep_scan_file') {
+                $rel_path = sanitize_text_field($file_data['rel_path']);
+                $is_safe = false;
+                
+                // Anti-False-Positive Shield: Verify Hash
+                if (isset($core_checksums[$rel_path])) {
+                    $official_hash = $core_checksums[$rel_path];
+                    if (md5_file($path) === $official_hash) {
+                        $is_safe = true;
+                    }
+                } else if (strpos($rel_path, 'wp-content/plugins/') === 0) {
+                    $parts = explode('/', $rel_path);
+                    if (count($parts) >= 3) {
+                        $p_slug = '';
+                        $p_file_in_dir = '';
+                        
+                        if (count($parts) === 3) {
+                            $p_slug = basename($parts[2], '.php');
+                            $p_file_in_dir = $parts[2];
+                        } else {
+                            $p_slug = $parts[2];
+                            $p_file_in_dir = implode('/', array_slice($parts, 3));
+                        }
+                        
+                        if (isset($plugin_checksum_cache[$p_slug])) {
+                            if ($plugin_checksum_cache[$p_slug]['checksums'] === null) {
+                                $chk = $this->get_plugin_checksums($p_slug, $plugin_checksum_cache[$p_slug]['version']);
+                                if (is_wp_error($chk)) $chk = [];
+                                $plugin_checksum_cache[$p_slug]['checksums'] = $chk;
+                            }
+                            
+                            $p_checksums = $plugin_checksum_cache[$p_slug]['checksums'];
+                            if (isset($p_checksums[$p_file_in_dir])) {
+                                $official_hash = $p_checksums[$p_file_in_dir];
+                                if (md5_file($path) === $official_hash) {
+                                    $is_safe = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if ($is_safe) {
+                    $results[] = ['status' => 'clean'];
+                    continue;
+                }
+
+                $is_whitelisted = $this->is_whitelisted($rel_path, $whitelist);
+                $malware_status = $is_whitelisted ? 'Whitelisted' : $this->scan_for_malware($path);
+                if ($malware_status === 'Clean') {
+                    $results[] = ['status' => 'clean'];
+                } else {
+                    $results[] = [
+                        'status' => 'deep_scan_file',
+                        'rel_path' => $rel_path,
+                        'type' => $type,
+                        'malware' => $malware_status
+                    ];
+                }
+                continue;
+            }
             
             if ($type === 'high_risk') {
-                $malware_status = $this->scan_for_malware($path);
+                $rel_path = sanitize_text_field($file_data['rel_path']);
+                $is_whitelisted = $this->is_whitelisted($rel_path, $whitelist);
+                $malware_status = $is_whitelisted ? 'Whitelisted' : $this->scan_for_malware($path);
                 $results[] = [
                     'status' => 'high_risk_scan',
-                    'rel_path' => sanitize_text_field($file_data['rel_path']),
+                    'rel_path' => $rel_path,
                     'type' => $type,
                     'malware' => $malware_status
                 ];
@@ -269,10 +441,12 @@ class ADVAIPBL_FIM_Engine {
                     'type' => $type
                 ];
             } else {
-                $malware_status = $this->scan_for_malware($path);
+                $rel_path = sanitize_text_field($file_data['rel_path']);
+                $is_whitelisted = $this->is_whitelisted($rel_path, $whitelist);
+                $malware_status = $is_whitelisted ? 'Whitelisted' : $this->scan_for_malware($path);
                 $results[] = [
                     'status' => 'modified',
-                    'rel_path' => sanitize_text_field($file_data['rel_path']),
+                    'rel_path' => $rel_path,
                     'type' => $type,
                     'malware' => $malware_status
                 ];
@@ -318,6 +492,41 @@ class ADVAIPBL_FIM_Engine {
             'pack('            => base64_decode('cGFjayg='), // pack(
             'hex2bin('         => base64_decode('aGV4MmJpbig='), // hex2bin(
             'WP-VCD'           => base64_decode('V1AtVkNE'), // WP-VCD (common malware)
+            
+            // Highly specific curated signatures from public-signatures-raw.php
+            'b374k' => base64_decode('YjM3NGs='),
+            'c99shell' => base64_decode('Yzk5c2hlbGw='),
+            'r57shell' => base64_decode('cjU3c2hlbGw='),
+            'fx29shell' => base64_decode('ZngyOXNoZWxs'),
+            'evilc0ders' => base64_decode('ZXZpbGMwZGVycw=='),
+            'kingdefacer' => base64_decode('a2luZ2RlZmFjZXI='),
+            'Wireghoul' => base64_decode('V2lyZWdob3Vs'),
+            'htshell' => base64_decode('aHRzaGVsbA=='),
+            'locus7s' => base64_decode('bG9jdXM3cw=='),
+            'meterpreter' => base64_decode('bWV0ZXJwcmV0ZXI='),
+            'slowloris' => base64_decode('c2xvd2xvcmlz'),
+            'sun-tzu' => base64_decode('c3VuLXR6dQ=='),
+            'visbot' => base64_decode('dmlzYm90'),
+            "@eval(\$_POST['" => base64_decode('QGV2YWwoJF9QT1NUWyc='),
+            "@include(\$_GET[" => base64_decode('QGluY2x1ZGUoJF9HRVRb'),
+            "system(\$_GET[" => base64_decode('c3lzdGVtKCRfR0VUWw=='),
+            'w4ck1ng shell' => base64_decode('dzRjazFuZyBzaGVsbA=='),
+            'private Shell by m4rco' => base64_decode('cHJpdmF0ZSBTaGVsbCBieSBtNHJjbw=='),
+            'Shell by Mawar_Hitam' => base64_decode('U2hlbGwgYnkgTWF3YXJfSGl0YW0='),
+            'ConnectBackShell' => base64_decode('Q29ubmVjdEJhY2tTaGVsbA=='),
+            'ShellBOT' => base64_decode('U2hlbGxCT1Q='),
+            'IndoXploit' => base64_decode('SW5kb1hwbG9pdA=='),
+            'FaisaL Ahmed aka rEd X' => base64_decode('RmFpc2FMIEFobWVkIGFrYSByRWQgWA=='),
+            'smisbot' => base64_decode('c21pc2JvdA=='),
+            'smotherbot' => base64_decode('c21vdGhlcmJvdA=='),
+            'Indonesian Hacker Rulez' => base64_decode('SW5kb25lc2lhbiBIYWNrZXIgUnVsZXo='),
+            'WSOsetcookie(' => base64_decode('V1NPc2V0Y29va2llKA=='),
+            'wsoEx(' => base64_decode('d3NvRXgo'),
+            'Mister Spy' => base64_decode('TWlzdGVyIFNweQ=='),
+            'Souheyl Bypass Shell' => base64_decode('U291aGV5bCBCeXBhc3MgU2hlbGw='),
+            'Welcome To Our Shell' => base64_decode('V2VsY29tZSBUbyBPdXIgU2hlbGw='),
+            'Devloped By El Moujahidin' => base64_decode('RGV2bG9wZWQgQnkgRWwgTW91amFoaWRpbg=='),
+            'PHPJiaMi' => base64_decode('UEhQSmlhTWk='),
         ];
 
         $found = [];
@@ -582,7 +791,7 @@ class ADVAIPBL_FIM_Engine {
 
         $date_str = isset($data['timestamp']) ? gmdate('Y-m-d H:i:s', $data['timestamp']) : gmdate('Y-m-d H:i:s');
         if (isset($data['timings']['start'])) {
-            $date_str = gmdate('Y-m-d H:i:s', $data['timings']['start'] / 1000);
+            $date_str = gmdate('Y-m-d H:i:s', (int)($data['timings']['start'] / 1000));
         }
 
         // Build HTML
@@ -590,6 +799,16 @@ class ADVAIPBL_FIM_Engine {
         $html .= '<h2 style="background: #007cba; color: #fff; padding: 15px; margin: -20px -20px 20px -20px;">' . __('File Integrity Scan Report', 'advanced-ip-blocker') . '</h2>';
         $html .= '<p><strong>' . __('Site:', 'advanced-ip-blocker') . '</strong> ' . esc_html($site_name) . '</p>';
         $html .= '<p><strong>' . __('Date:', 'advanced-ip-blocker') . '</strong> ' . esc_html($date_str) . ' (UTC)</p>';
+        
+        $type_labels = [
+            'all' => __('Core + Plugins', 'advanced-ip-blocker'),
+            'core' => __('WordPress Core Only', 'advanced-ip-blocker'),
+            'plugins' => __('Plugins Only', 'advanced-ip-blocker'),
+            'deep_scan' => __('Deep Scan (All PHP Files)', 'advanced-ip-blocker')
+        ];
+        $s_type = isset($data['scan_type']) ? $data['scan_type'] : 'all';
+        $type_str = isset($type_labels[$s_type]) ? $type_labels[$s_type] : $s_type;
+        $html .= '<p><strong>' . __('Scan Type:', 'advanced-ip-blocker') . '</strong> ' . esc_html($type_str) . '</p>';
         
         if (isset($data['timings'])) {
             $dur = intval($data['timings']['duration_sec']);
@@ -664,6 +883,12 @@ class ADVAIPBL_FIM_Engine {
             $html .= $build_table(__('Suspicious Uploads', 'advanced-ip-blocker'), '#d63638', '&#x26A0;&#xFE0F;', $data['uploads']);
         }
 
+        // Deep Scan
+        if (!empty($data['deep_scan'])) {
+            $has_threats = true;
+            $html .= $build_table(__('Deep Scan Malware Detected', 'advanced-ip-blocker'), '#d63638', '&#x1F6A8;', $data['deep_scan']);
+        }
+
         if (!$has_threats) {
             $html .= '<div style="background: #edfaef; border-left: 4px solid #00a32a; padding: 15px;">';
             $html .= '<h3 style="color: #00a32a; margin-top: 0;">&#x2705; ' . __('No Threats Detected', 'advanced-ip-blocker') . '</h3>';
@@ -706,7 +931,24 @@ class ADVAIPBL_FIM_Engine {
         $clean_count = isset($data['clean']) ? intval($data['clean']) : 0;
         $html .= '<p style="margin-top: 20px;"><strong>' . __('Clean Files Scanned:', 'advanced-ip-blocker') . '</strong> ' . $clean_count . '</p>';
         
-        $html .= '<p style="margin-top: 30px; font-size: 12px; color: #666; text-align: center;">' . __('Generated by Advanced IP Blocker FIM Engine', 'advanced-ip-blocker') . '</p>';
+        // Footer
+        $dashboard_url = admin_url('admin.php?page=advaipbl_settings_page&tab=integrity&sub-tab=fim_dashboard');
+        $settings_url = admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-notifications');
+        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.0';
+
+        $html .= '<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center; line-height: 1.6;">';
+        $html .= '<p style="margin: 0;">' . __('This email was generated by the Advanced IP Blocker plugin.', 'advanced-ip-blocker') . '</p>';
+        
+        /* translators: %s: Dashboard URL. */
+        $html .= '<p style="margin: 5px 0;">' . sprintf(__('View scan results and history in the <a href="%s" style="color: #007cba; text-decoration: none;">Integrity Scanner Dashboard</a>.', 'advanced-ip-blocker'), esc_url($dashboard_url)) . '</p>';
+        
+        /* translators: %s: Settings URL. */
+        $html .= '<p style="margin: 5px 0;">' . sprintf(__('To unsubscribe from these updates, please visit the <a href="%s" style="color: #007cba; text-decoration: none;">settings page</a>.', 'advanced-ip-blocker'), esc_url($settings_url)) . '</p>';
+        
+        /* translators: %s: Plugin version. */
+        $html .= '<p style="margin: 15px 0 0 0; color: #999;">' . sprintf(__('Sent by Advanced IP Blocker v%s', 'advanced-ip-blocker'), esc_html($plugin_version)) . '</p>';
+        $html .= '</div>';
+        
         $html .= '</div>';
 
         add_filter('wp_mail_content_type', [$this, 'set_html_mail_content_type']);
@@ -718,5 +960,286 @@ class ADVAIPBL_FIM_Engine {
         } else {
             wp_send_json_error('Failed to send email. Check your WordPress mail configuration.');
         }
+    }
+
+    /**
+     * Get the current FIM whitelist.
+     */
+    private function get_whitelist() {
+        return get_option('advaipbl_fim_whitelist', []);
+    }
+
+    private function is_whitelisted($rel_path, $whitelist) {
+        if (in_array($rel_path, $whitelist)) {
+            return true;
+        }
+        
+        // Normalize for plugins: deep scan format vs standard format
+        // Deep scan path: wp-content/plugins/plugin-slug/file.php
+        // Standard path: plugin-slug/file.php
+        
+        if (strpos($rel_path, 'wp-content/plugins/') === 0) {
+            $standard_plugin_path = substr($rel_path, strlen('wp-content/plugins/'));
+            if (in_array($standard_plugin_path, $whitelist)) {
+                return true;
+            }
+        } else {
+            $deep_scan_path = 'wp-content/plugins/' . $rel_path;
+            if (in_array($deep_scan_path, $whitelist)) {
+                return true;
+            }
+        }
+        
+        // Similarly for themes if needed in the future
+        if (strpos($rel_path, 'wp-content/themes/') === 0) {
+            $standard_theme_path = substr($rel_path, strlen('wp-content/themes/'));
+            if (in_array($standard_theme_path, $whitelist)) {
+                return true;
+            }
+        } else {
+            $deep_scan_theme_path = 'wp-content/themes/' . $rel_path;
+            if (in_array($deep_scan_theme_path, $whitelist)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * AJAX endpoint to add a file to the whitelist.
+     */
+    public function ajax_add_whitelist() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized']);
+        }
+        
+        $rel_path = isset($_POST['rel_path']) ? sanitize_text_field(wp_unslash($_POST['rel_path'])) : '';
+        if (empty($rel_path)) {
+            wp_send_json_error(['message' => 'Invalid path']);
+        }
+
+        $whitelist = $this->get_whitelist();
+        if (!in_array($rel_path, $whitelist)) {
+            $whitelist[] = $rel_path;
+            update_option('advaipbl_fim_whitelist', $whitelist);
+        }
+
+        wp_send_json_success(['message' => __('File marked as safe.', 'advanced-ip-blocker')]);
+    }
+
+    /**
+     * AJAX endpoint to remove a file from the whitelist.
+     */
+    public function ajax_remove_whitelist() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized']);
+        }
+        
+        $rel_path = isset($_POST['rel_path']) ? sanitize_text_field(wp_unslash($_POST['rel_path'])) : '';
+        if (empty($rel_path)) {
+            wp_send_json_error(['message' => 'Invalid path']);
+        }
+
+        $whitelist = $this->get_whitelist();
+        if (($key = array_search($rel_path, $whitelist)) !== false) {
+            unset($whitelist[$key]);
+            update_option('advaipbl_fim_whitelist', array_values($whitelist));
+        }
+
+        wp_send_json_success(['message' => __('File removed from whitelist.', 'advanced-ip-blocker')]);
+    }
+
+
+    // --- QUARANTINE SYSTEM ---
+
+    private function get_quarantine_dir() {
+        $upload_dir = wp_upload_dir();
+        $q_dir = trailingslashit($upload_dir['basedir']) . 'advaipbl_quarantine';
+        if (!is_dir($q_dir)) {
+            wp_mkdir_p($q_dir);
+        }
+        
+        // Security: Deny all HTTP access
+        $htaccess = trailingslashit($q_dir) . '.htaccess';
+        if (!file_exists($htaccess)) {
+            file_put_contents($htaccess, "Order Allow,Deny
+Deny from all
+<Files *>
+    Deny from all
+</Files>");
+        }
+        
+        // Security: Empty index
+        $index = trailingslashit($q_dir) . 'index.php';
+        if (!file_exists($index)) {
+            file_put_contents($index, "<?php
+// Silence is golden.");
+        }
+        
+        return $q_dir;
+    }
+
+    public function ajax_quarantine_file() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $file_path = isset($_POST['file_path']) ? sanitize_text_field(wp_unslash($_POST['file_path'])) : '';
+        $malware_type = isset($_POST['malware_type']) ? sanitize_text_field(wp_unslash($_POST['malware_type'])) : 'unknown';
+
+        if (empty($file_path)) {
+            wp_send_json_error('No file provided.');
+        }
+
+        $abs_path = wp_normalize_path(trailingslashit(ABSPATH));
+        $full_path = wp_normalize_path($abs_path . $file_path);
+
+        if (!file_exists($full_path)) {
+            wp_send_json_error('File not found on server.');
+        }
+
+        // Anti-Brick Shields
+        // 1. Core Shield
+        if (strpos($file_path, 'wp-admin/') === 0 || strpos($file_path, 'wp-includes/') === 0 || dirname($file_path) === '.') {
+            wp_send_json_error('Cannot quarantine WordPress core files.');
+        }
+
+        // 2. Theme Shield
+        $active_theme_dir = wp_normalize_path(get_stylesheet_directory());
+        $parent_theme_dir = wp_normalize_path(get_template_directory());
+        if (strpos($full_path, $active_theme_dir) === 0 || strpos($full_path, $parent_theme_dir) === 0) {
+            wp_send_json_error('Cannot quarantine active theme files.');
+        }
+
+        // 3. Plugin Shield (excluding uploads)
+        if (strpos($file_path, 'wp-content/plugins/') === 0) {
+            wp_send_json_error('Cannot quarantine plugin files to prevent site breakage. Please disable the plugin and remove manually.');
+        }
+
+        $q_dir = $this->get_quarantine_dir();
+        $vault_filename = md5(time() . $file_path . wp_rand()) . '.quarantined';
+        $vault_path = trailingslashit($q_dir) . $vault_filename;
+
+        // Move the file
+        if (rename($full_path, $vault_path)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
+            global $wpdb;
+            $table = $wpdb->prefix . 'advaipbl_quarantine';
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $wpdb->insert(
+                $table,
+                [
+                    'original_path' => $file_path,
+                    'vault_filename' => $vault_filename,
+                    'malware_type' => $malware_type,
+                    'timestamp' => current_time('mysql', true)
+                ],
+                ['%s', '%s', '%s', '%s']
+            );
+            wp_send_json_success('File quarantined successfully.');
+        } else {
+            wp_send_json_error('Failed to move file to quarantine vault.');
+        }
+    }
+
+    public function ajax_restore_quarantine() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        if (!$id) {
+            wp_send_json_error('Invalid ID.');
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'advaipbl_quarantine';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $record = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
+
+        if (!$record) {
+            wp_send_json_error('Record not found.');
+        }
+
+        $q_dir = $this->get_quarantine_dir();
+        $vault_path = trailingslashit($q_dir) . $record->vault_filename;
+        $abs_path = wp_normalize_path(trailingslashit(ABSPATH));
+        $original_full_path = wp_normalize_path($abs_path . $record->original_path);
+
+        if (!file_exists($vault_path)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->delete($table, ['id' => $id], ['%d']);
+            wp_send_json_error('Quarantined file missing from vault. Record deleted.');
+        }
+        
+        // Ensure destination directory exists (if it was deleted)
+        $dest_dir = dirname($original_full_path);
+        if (!is_dir($dest_dir)) {
+            wp_mkdir_p($dest_dir);
+        }
+
+        if (rename($vault_path, ABSPATH . ltrim($record->original_path, '/'))) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, PluginCheck.CodeAnalysis.WriteFile.ABSPATHDetected
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->delete($table, ['id' => $id], ['%d']);
+            wp_send_json_success('File restored successfully.');
+        } else {
+            wp_send_json_error('Failed to restore file.');
+        }
+    }
+
+    public function ajax_delete_quarantine() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        if (!$id) {
+            wp_send_json_error('Invalid ID.');
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'advaipbl_quarantine';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $record = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
+
+        if ($record) {
+            $q_dir = $this->get_quarantine_dir();
+            $vault_path = trailingslashit($q_dir) . $record->vault_filename;
+            if (file_exists($vault_path)) {
+                wp_delete_file($vault_path);
+            }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->delete($table, ['id' => $id], ['%d']);
+        }
+        
+        wp_send_json_success('File permanently deleted.');
+    }
+
+    public function ajax_get_quarantine_list() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'advaipbl_quarantine';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $results = $wpdb->get_results("SELECT * FROM $table ORDER BY timestamp DESC", ARRAY_A);
+        
+        if (!is_array($results)) {
+            $results = []; // Handle case if table doesn't exist yet
+        }
+        
+        // Format timestamp
+        foreach ($results as &$row) {
+            $row['timestamp'] = get_date_from_gmt($row['timestamp'], 'Y-m-d H:i:s');
+        }
+
+        wp_send_json_success($results);
     }
 }

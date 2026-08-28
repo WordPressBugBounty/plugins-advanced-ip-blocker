@@ -803,13 +803,43 @@ public function display_waf_tab() {
         </p>
     </div>
     <?php
+    $is_zeroday_enabled = !empty($this->plugin->options['enable_intelligent_waf']);
+    ?>
+    <div class="notice notice-info inline">
+        <p>
+            <?php 
+            $zeroday_status_tag = sprintf(
+                '<span class="advaipbl-status-tag %s">%s</span>',
+                $is_zeroday_enabled ? 'enabled' : 'disabled',
+                $is_zeroday_enabled ? esc_html__('Active', 'advanced-ip-blocker') : esc_html__('Inactive', 'advanced-ip-blocker')
+            );
+
+            /* translators: 1: Status tag (Active/Inactive), 2: Link to settings page. */
+            $sync_text = __('Intelligent Zero-Day Sync is currently %1$s. You can change this in the <a href="%2$s">Settings</a>.', 'advanced-ip-blocker');
+            
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            printf(
+                wp_kses( 
+                    $sync_text,
+                    [
+                        'span' => ['class' => true], 
+                        'a'    => ['href' => []]
+                    ]
+                ),
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                $zeroday_status_tag,
+                esc_url($settings_url)
+            );
+            ?>
+        </p>
+    </div>
+    <?php
 // Conjunto de reglas WAF recomendadas para que el usuario las copie.
 $default_waf_rules_list = [
             '# === SQL Injection (SQLi) ===',
             '# Blocks common SQL injection patterns.',
             'union\s+select',
             'information_schema\.',
-            '--\s*$',
             '(?:--|#|\/\*)\s*(select|insert|update|delete|union)',
             '',
             '# === Cross-Site Scripting (XSS) ===',
@@ -821,8 +851,7 @@ $default_waf_rules_list = [
             '',
             '# === Path Traversal & File Inclusion (LFI/RFI) ===',
             '# Prevents access to local files or inclusion of remote files.',
-            '\.\.\/',
-            '\.\.\\\\',
+            '(?:\.\.[/\\\\]){2,}',
             '/etc/passwd',
             'php://(input|filter)',
             '',
@@ -834,8 +863,7 @@ $default_waf_rules_list = [
             '',
             '# === WordPress-Specific Probes & Attacks ===',
             '# Blocks scanning for sensitive files and common exploits.',
-            '/(wlwmanifest\.xml|wp-config\.php|\.env|\.git/config)',
-            '/?author=\d+',
+            '/(wlwmanifest\.xml|wp-config\.php|\.env|\.git/config)'
         ];
     $default_waf_rules_text = implode("\n", $default_waf_rules_list);
     ?>
@@ -871,6 +899,15 @@ $default_waf_rules_list = [
         <h3><?php esc_html_e('Common WAF Rule Suggestions', 'advanced-ip-blocker'); ?></h3>
         <p><?php esc_html_e('You can copy and paste these rules into the active rules list above. It is recommended to test your site after adding new rules to ensure they do not interfere with your plugins or theme.', 'advanced-ip-blocker'); ?></p>
         <textarea rows="15" class="large-text code" readonly><?php echo esc_textarea($default_waf_rules_text); ?></textarea>
+    </div>
+
+    <div class="advaipbl-card" style="margin-top: 20px; border-left: 4px solid #e01669;">
+        <h3 style="color: #e01669; display: flex; align-items: center;">
+            <span class="dashicons dashicons-cloud" style="margin-right: 8px;"></span>
+            <?php esc_html_e('Active Zero-Day Signatures', 'advanced-ip-blocker'); ?>
+        </h3>
+        <p><?php esc_html_e('These signatures are actively synchronized from the Central Server and injected seamlessly into the WAF engine. They do NOT interfere with your custom rules above.', 'advanced-ip-blocker'); ?></p>
+        <textarea rows="15" class="large-text code" readonly><?php echo esc_textarea(implode("\n", get_option('advaipbl_zeroday_waf_rules', []))); ?></textarea>
     </div>
 
     <?php
@@ -2732,6 +2769,20 @@ public function display_general_log_tab() {
                                 ?></code></pre>
                             </div>
                             <?php endif; ?>
+
+                            <?php if (!empty($details['payload'])): ?>
+                            <div style="margin-top: 20px;">
+                                <strong style="color: #666; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px;"><?php esc_html_e('Captured Request Payload (POST/GET)', 'advanced-ip-blocker'); ?></strong>
+                                <pre style="background: #1e1e1e; color: #a9dc76; padding: 10px 15px; border-radius: 4px; overflow-y: auto; max-height: 200px; font-size: 12px; line-height: 1.5; margin: 0; border: 1px solid #444;"><code><?php
+                                    $parsed_payload = is_string($details['payload']) ? json_decode($details['payload'], true) : $details['payload'];
+                                    if (json_last_error() === JSON_ERROR_NONE && !empty($parsed_payload)) {
+                                        echo esc_html(wp_json_encode($parsed_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                                    } else {
+                                        echo esc_html(is_string($details['payload']) ? $details['payload'] : wp_json_encode($details['payload']));
+                                    }
+                                ?></code></pre>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </td>
                 </tr>
@@ -3636,8 +3687,10 @@ public function display_advanced_rules_tab() {
     <?php
 $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scoring']);
 $is_geolocation_ready = !empty($this->plugin->options['geolocation_provider']);
+$is_cloud_sync_enabled = !empty($this->plugin->options['enable_cloud_advanced_rules']);
 
 $settings_base_url = admin_url('admin.php?page=advaipbl_settings_page-settings&sub-tab=general_settings');
+$waf_settings_url = admin_url('admin.php?page=advaipbl_settings_page-settings&sub-tab=waf_settings');
 
 $status_parts = [];
 
@@ -3656,6 +3709,15 @@ $status_parts[] = sprintf(
     $is_geolocation_ready ? 'enabled' : 'disabled',
     $is_geolocation_ready ? esc_html__('Ready', 'advanced-ip-blocker') : esc_html__('Not Configured', 'advanced-ip-blocker'),
     esc_url($settings_base_url . '#section-geolocation'),
+    esc_html__('configure', 'advanced-ip-blocker')
+);
+
+$status_parts[] = sprintf(
+    '<strong>%1$s:</strong> <span class="advaipbl-status-tag %2$s">%3$s</span> (<a href="%4$s">%5$s</a>)',
+    esc_html__('Cloud Sync', 'advanced-ip-blocker'),
+    $is_cloud_sync_enabled ? 'enabled' : 'disabled',
+    $is_cloud_sync_enabled ? esc_html__('Active', 'advanced-ip-blocker') : esc_html__('Deactivated', 'advanced-ip-blocker'),
+    esc_url($waf_settings_url . '#sub-section-waf'),
     esc_html__('configure', 'advanced-ip-blocker')
 );
 ?>
@@ -4422,17 +4484,21 @@ public function display_scanner_tab() {
     <p><?php esc_html_e('Scan your WordPress core files and plugins against their official repository checksums to detect unauthorized modifications, backdoors, or malware.', 'advanced-ip-blocker'); ?></p>
     
     <div class="advaipbl-dashboard-widget" style="margin-top: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <label>
+        <div class="advaipbl-fim-controls-container">
+            <label class="advaipbl-fim-scan-target">
                 <strong><?php esc_html_e('Scan Target:', 'advanced-ip-blocker'); ?></strong>
                 <select id="fim-scan-type" style="margin-left: 10px;">
                     <option value="all"><?php esc_html_e('Core + Plugins', 'advanced-ip-blocker'); ?></option>
                     <option value="core"><?php esc_html_e('WordPress Core Only', 'advanced-ip-blocker'); ?></option>
                     <option value="plugins"><?php esc_html_e('Plugins Only', 'advanced-ip-blocker'); ?></option>
+                    <option value="deep_scan"><?php esc_html_e('Deep Scan (All PHP Files)', 'advanced-ip-blocker'); ?></option>
                 </select>
             </label>
-            <div>
-              <button id="advaipbl-fim-history-btn" class="button button-secondary button-large" style="margin-right: 10px;">
+            <div class="advaipbl-fim-action-buttons">
+              <button id="advaipbl-fim-quarantine-btn" class="button button-secondary button-large" style="color: #d63638; border-color: #d63638;">
+                  <span class="dashicons dashicons-shield-alt" style="margin-top:4px;"></span> <?php esc_html_e('Quarantine Vault', 'advanced-ip-blocker'); ?>
+              </button>
+              <button id="advaipbl-fim-history-btn" class="button button-secondary button-large">
                   <span class="dashicons dashicons-backup" style="margin-top:4px;"></span> <?php esc_html_e('View Scan History', 'advanced-ip-blocker'); ?>
               </button>
               <button id="advaipbl-start-fim-scan" class="button button-primary button-large"><?php esc_html_e('Start Integrity Scan', 'advanced-ip-blocker'); ?></button>
@@ -4470,16 +4536,17 @@ public function display_scanner_tab() {
     <div id="fim-results-area" style="display: none; margin-top: 30px;">
       
       <!-- Scan Timings and Actions -->
-      <div class="advaipbl-dashboard-widget" style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; margin-bottom: 20px; border-left: 4px solid #007cba;">
-          <div>
+      <div class="advaipbl-dashboard-widget advaipbl-fim-timings-card">
+          <div class="advaipbl-fim-timings-info">
               <h4 style="margin: 0 0 5px 0;"><span class="dashicons dashicons-clock"></span> <?php esc_html_e('Scan Timings', 'advanced-ip-blocker'); ?></h4>
               <p style="margin: 0; font-size: 13px; color: #646970;">
+                  <strong><?php esc_html_e('Scan Type:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-type">--</span> | 
                   <strong><?php esc_html_e('Started:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-start">--</span> | 
                   <strong><?php esc_html_e('Finished:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-end">--</span> | 
                   <strong><?php esc_html_e('Duration:', 'advanced-ip-blocker'); ?></strong> <span id="fim-timing-duration">--</span>
               </p>
           </div>
-          <div>
+          <div class="advaipbl-fim-timings-actions">
               <button type="button" class="button button-secondary" id="fim-send-email-btn">
                   <span class="dashicons dashicons-email-alt" style="margin-top: 3px;"></span> <?php esc_html_e('Send Report to Email', 'advanced-ip-blocker'); ?>
               </button>
@@ -4498,6 +4565,7 @@ public function display_scanner_tab() {
                             <th><?php esc_html_e('Component Type', 'advanced-ip-blocker'); ?></th>
                             <th><?php esc_html_e('Status', 'advanced-ip-blocker'); ?></th>
                             <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                            <th><?php esc_html_e('Action', 'advanced-ip-blocker'); ?></th>
                         </tr>
                     </thead>
                     <tbody id="fim-modified-list"></tbody>
@@ -4516,6 +4584,7 @@ public function display_scanner_tab() {
                   <tr>
                       <th><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
                       <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                      <th><?php esc_html_e('Action', 'advanced-ip-blocker'); ?></th>
                   </tr>
               </thead>
               <tbody id="fim-highrisk-list">
@@ -4535,10 +4604,38 @@ public function display_scanner_tab() {
                   <tr>
                       <th><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
                       <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                      <th><?php esc_html_e('Action', 'advanced-ip-blocker'); ?></th>
                   </tr>
               </thead>
               <tbody id="fim-uploads-list"></tbody>
           </table>
+      </div>
+  </div>
+
+  <!-- Deep Scan Results -->
+  <div class="advaipbl-dashboard-widget" id="fim-results-deepscan-box" style="margin-top: 20px; border-left: 4px solid #d63638; display: none;">
+      <h3 style="color: #d63638; margin-top: 0;"><span class="dashicons dashicons-search"></span> <?php esc_html_e('Deep Scan Results', 'advanced-ip-blocker'); ?></h3>
+      <p id="fim-deepscan-empty-msg" style="display: none; color: #00a32a; font-weight: bold;"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e('No suspicious PHP files were found on the entire server.', 'advanced-ip-blocker'); ?></p>
+      <div class="advaipbl-table-responsive-wrapper" id="fim-deepscan-table" style="display: none;">
+          <table class="widefat striped">
+              <thead>
+                  <tr>
+                      <th><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
+                      <th><?php esc_html_e('Malware Scan', 'advanced-ip-blocker'); ?></th>
+                      <th><?php esc_html_e('Action', 'advanced-ip-blocker'); ?></th>
+                  </tr>
+              </thead>
+              <tbody id="fim-deepscan-list"></tbody>
+          </table>
+          <div id="fim-deepscan-pagination" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; display: none;">
+              <div>
+                  <span id="fim-deepscan-page-info"></span>
+              </div>
+              <div>
+                  <button type="button" class="button" id="fim-deepscan-prev" disabled>&laquo; <?php esc_html_e('Previous', 'advanced-ip-blocker'); ?></button>
+                  <button type="button" class="button" id="fim-deepscan-next" disabled><?php esc_html_e('Next', 'advanced-ip-blocker'); ?> &raquo;</button>
+              </div>
+          </div>
       </div>
   </div>
 
@@ -4570,6 +4667,44 @@ public function display_scanner_tab() {
         </div>
         <div class="advaipbl-modal-footer">
             <button type="button" class="button advaipbl-modal-cancel"><?php esc_html_e('Close', 'advanced-ip-blocker'); ?></button>
+        </div>
+    </div>
+</div>
+
+<!-- Quarantine Vault Modal -->
+<div id="advaipbl-fim-quarantine-modal" class="advaipbl-modal-overlay" style="display: none;">
+    <div class="advaipbl-modal-content" style="max-width: 900px;">
+        <h3 class="advaipbl-modal-title" style="background-color: #d63638;"><span class="dashicons dashicons-shield-alt"></span> <?php esc_html_e('Quarantine Vault', 'advanced-ip-blocker'); ?></h3>
+        <div class="advaipbl-modal-body">
+            <p><?php esc_html_e('These files have been isolated from your server to prevent execution. You can restore them if they are false positives, or delete them permanently.', 'advanced-ip-blocker'); ?></p>
+            
+            <div id="advaipbl-fim-quarantine-loading" style="text-align: center; padding: 20px;">
+                <span class="spinner is-active" style="float: none; margin: 0;"></span> <?php esc_html_e('Loading vault...', 'advanced-ip-blocker'); ?>
+            </div>
+            
+            <div id="advaipbl-fim-quarantine-empty" style="display: none; padding: 30px; text-align: center; background: #f9f9f9; border-radius: 4px; border: 1px dashed #ccc;">
+                <span class="dashicons dashicons-yes" style="font-size: 40px; color: #46b450; width: 40px; height: 40px; margin-bottom: 10px;"></span><br>
+                <?php esc_html_e('The Quarantine Vault is currently empty.', 'advanced-ip-blocker'); ?>
+            </div>
+
+            <div id="advaipbl-fim-quarantine-list-container" style="display: none; margin-top: 15px; max-height: 400px; overflow-y: auto;">
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;"><?php esc_html_e('Original Path', 'advanced-ip-blocker'); ?></th>
+                            <th style="width: 15%;"><?php esc_html_e('Malware Type', 'advanced-ip-blocker'); ?></th>
+                            <th style="width: 15%;"><?php esc_html_e('Date', 'advanced-ip-blocker'); ?></th>
+                            <th style="width: 20%;"><?php esc_html_e('Actions', 'advanced-ip-blocker'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="advaipbl-fim-quarantine-tbody">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="advaipbl-modal-footer">
+            <button class="button button-secondary advaipbl-modal-cancel"><?php esc_html_e('Close Vault', 'advanced-ip-blocker'); ?></button>
         </div>
     </div>
 </div>

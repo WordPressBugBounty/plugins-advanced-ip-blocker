@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.12.2
+Stable tag: 8.13.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -67,6 +67,7 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 *   **IP Trust & Threat Scoring System:** An intelligent defense that assigns "threat points" to IPs for malicious actions, blocking them only when they reach a configurable score. More accurate and context-aware than simple rules.
 *   **Attack Signature Engine:** Proactively stops distributed botnet attacks by identifying and blocking the attacker's "fingerprint" (signature) instead of just individual IPs.
 *   **Web Application Firewall (WAF):** Block malicious requests (SQLi, XSS, etc.) with a customizable ruleset.
+*   **File Integrity Monitor & Quarantine Vault:** Automatically scans WordPress core files and the uploads directory for malware, unauthorized modifications, and hidden PHP shells. Safely neutralize threats by moving them to an encrypted Quarantine Vault.
 *   **And much more:** Rate Limiting, Country & ASN Blocking (with Spamhaus support), ASN Whitelisting, Push Notifications, Google reCAPTCHA, Honeypots, Active User Session Management, and Full WP-CLI Support.
 
 
@@ -78,9 +79,6 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 4.  **Crucial:** Visit `Security > Dashboard > System Status` to ensure your IP and your server's IP are whitelisted. Use the one-click buttons if they are not.
 
 == Frequently Asked Questions ==
-
-= What is the File Integrity Scanner? =
-The File Integrity Scanner is a powerful security feature that compares the files on your server (like WordPress core files, plugins, and themes) against their official versions on WordPress.org. If a hacker manages to modify a file (e.g., to insert a backdoor or redirect script), the scanner will detect the mismatch immediately, allowing you to take action before the infection spreads.
 
 = How does Admin Access Control work? =
 By default, all users with the Administrator role can access and configure Advanced IP Blocker. If you have multiple administrators but only want specific users to manage security settings, you can explicitly select them in the "Hardening & Core Protection" tab. The primary admin (ID 1) is always protected from lockouts. Other admins will not even see the "Security" menu.
@@ -115,7 +113,7 @@ Deep Scan (Vulnerability Audit): Checks your installed plugins and themes agains
 The Audit Log is your site's "black box". It records critical administrative actions such as plugin activations, settings changes, and file modifications. This helps you identify "who did what and when," which is essential for troubleshooting and security forensics.
 
 = How does the File Integrity Monitor (FIM) work? =
-The FIM scans your critical core files (wp-config.php, .htaccess, index.php) and specific plugin files daily. It takes a "fingerprint" (hash) of the file. If the file changes (e.g., malware adds a line of code), the fingerprint changes, and the plugin alerts you immediately via email.
+The FIM acts as a forensic security layer. It takes cryptographic fingerprints of your most critical core files (like wp-config.php) to detect unauthorized modifications. Additionally, it recursively scans your `wp-content/uploads/` media folder to detect and alert you of hidden PHP web shells. If an anomaly is found, you can neutralize it instantly by sending it to the encrypted Quarantine Vault.
 
 = Why did you move the Community Blocklist to a custom table? =
 To ensure maximum performance as the network grows. Storing thousands of IPs in standard WordPress options (wp_options) can slow down a site. By moving this data to a dedicated, indexed database table (wp_advaipbl_community_ips), we ensure that lookups are lightning-fast (O(1) complexity) and consume negligible memory, regardless of how many threats we track.
@@ -273,10 +271,20 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.12.2 =
-Critical stability update! Fixes a severe bug where stuck locks in the database could cause the block engine (404, 403, Threat Score) to fail silently. Also introduces the new File Integrity Scanner (Phase 1). Please update immediately for reliable protection.
+= 8.13.0 =
+Introduces FIM Phase 2 (Uploads Scanner & Quarantine Vault), Advanced Payload Logging, modernized UI inputs, and optimized WAF rules to eliminate false positives.
 
 == Changelog ==
+
+= 8.13.0 =
+*   **NEW FEATURE:** File Integrity Monitor (Phase 2): Uploads Malware Scanner. The FIM now extends beyond core files to recursively scan the `wp-content/uploads/` directory for suspicious executable files (e.g., hidden `.php` shells), alerting administrators immediately without causing false positives on legitimate index files.
+*   **NEW FEATURE:** Quarantine Vault. A secure backend interface to safely encrypt and isolate malicious or suspicious files detected by the File Integrity Monitor, preventing them from being executed by attackers while preserving them for forensic analysis.
+*   **NEW FEATURE:** Advanced Payload Logging. The WAF and Block engines now capture, sanitize, and log the raw HTTP payload (POST data) of malicious requests, providing invaluable context for administrators investigating complex attacks like SQL injections or XSS.
+*   **ENHANCEMENT:** The FIM alert notification system now dynamically checks your security configuration and will append a highly visible recommendation to enable "Block PHP in Uploads" if an anomaly is detected and the feature is currently disabled.
+*   **ENHANCEMENT:** FIM alert emails now feature color-coded event types for improved scannability (e.g., orange for suspicious files, red for deleted core files).
+*   **ENHANCEMENT:** Modernized Admin UI. Redesigned all configuration inputs across the plugin to feature dynamic floating labels, sleek borderless designs, and premium dark background filters for a better user experience.
+*   **ENHANCEMENT:** Optimized Local WAF Rules. Refined the default and suggested regular expressions (e.g. Path Traversal) to be highly precise, eliminating false positives caused by overly aggressive legacy patterns (like `/?author=` or trailing hyphens).
+*   **BUGFIX:** Resolved a persistent PHPCS linting error (`OutputNotEscaped`) in the WAF status tag renderer.
 
 = 8.12.2 =
 *   **NEW FEATURE:** File Integrity Scanner (Phase 1). A brand new security module designed to scan WordPress core files, active plugins, and themes against their official WordPress.org checksums to detect unauthorized modifications or malware infections.

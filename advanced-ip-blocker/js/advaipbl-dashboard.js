@@ -162,6 +162,7 @@ jQuery(document).ready(function ($) {
                 'intelligent_waf': 'Zero-Day WAF',
                 'honeypot': 'Honeypot Protection',
                 'advanced_rule': 'Advanced Rules',
+                'cloud_advanced_rules': 'Cloud Advanced Rules Sync',
                 'signature_blocking': 'Signature Blocking',
                 'block_ghost_ips': 'Block Ghost IPs'
             },
@@ -191,6 +192,7 @@ jQuery(document).ready(function ($) {
                 'disable_app_passwords': 'Disable App Passwords',
                 'disable_file_editor': 'Disable File Editor',
                 'block_php_uploads': 'Block PHP Uploads',
+                'remove_x_powered_by': 'Remove powered by HTTP header',
                 'restricted_admins': 'Admin Access Control'
             }
         };
@@ -270,9 +272,9 @@ jQuery(document).ready(function ($) {
 
         if (!advaipblMapInstance) {
             advaipblMapInstance = L.map('advaipbl-attack-map').setView([20, 0], 2);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(advaipblMapInstance);
         }
 

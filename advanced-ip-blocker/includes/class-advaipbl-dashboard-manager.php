@@ -252,6 +252,7 @@ class ADVAIPBL_Dashboard_Manager {
             
             // Level 3: Advanced Rules
             'advanced_rule'      => !empty($this->main_class->rules_engine->get_rules()),
+            'cloud_advanced_rules' => !empty($options['enable_cloud_advanced_rules']),
             
             // Level 4: Global & Automated Shields
             'under_attack_mode'  => (!empty($options['under_attack_mode']) && $options['under_attack_mode'] !== 'off'),
@@ -291,6 +292,7 @@ class ADVAIPBL_Dashboard_Manager {
             'disable_app_passwords'  => !empty($options['disable_app_passwords']),
             'disable_file_editor'    => !empty($options['disable_file_editor']),
             'block_php_uploads'      => !empty($options['block_php_uploads']),
+            'remove_x_powered_by'    => !empty($options['remove_x_powered_by']),
             'restricted_admins'      => !empty($options['allowed_admin_users']),
         ];
     }

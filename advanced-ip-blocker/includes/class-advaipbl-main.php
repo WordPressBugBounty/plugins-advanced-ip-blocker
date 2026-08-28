@@ -92,42 +92,63 @@ class ADVAIPBL_Main {
 private function __construct() {
     $this->options = get_option(self::OPTION_SETTINGS, []);
     
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-admin-pages.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-action-handler.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-ajax-handler.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-settings-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-geolocation-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-geoip-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-session-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-asn-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cdn-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-waf-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rate-limiting-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-dashboard-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-threat-score-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-bot-verifier.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rules-engine.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rules-metrics.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-fingerprint-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-abuseipdb-manager.php';
-	require_once plugin_dir_path(__FILE__) . 'class-advaipbl-htaccess-manager.php';
-	require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cloudflare-manager.php';
-	require_once plugin_dir_path(__FILE__) . 'class-advaipbl-reporter-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-community-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-community-manager.php';
-	require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
-		require_once plugin_dir_path(__FILE__) . 'class-advaipbl-fim-engine.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
-		require_once plugin_dir_path(__FILE__) . 'class-advaipbl-fim-engine.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-security-headers.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-audit-logger.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-file-verifier.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-js-challenge.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-captcha-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cache-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-live-feed-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-cron-manager.php';
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-notification-manager.php';
+    $includes_dir = plugin_dir_path(__FILE__);
+    
+    $required_files = [
+        'class-advaipbl-admin-pages.php',
+        'class-advaipbl-action-handler.php',
+        'class-advaipbl-ajax-handler.php',
+        'class-advaipbl-settings-manager.php',
+        'class-advaipbl-geolocation-manager.php',
+        'class-advaipbl-geoip-manager.php',
+        'class-advaipbl-session-manager.php',
+        'class-advaipbl-asn-manager.php',
+        'class-advaipbl-cdn-manager.php',
+        'class-advaipbl-waf-manager.php',
+        'class-advaipbl-rate-limiting-manager.php',
+        'class-advaipbl-dashboard-manager.php',
+        'class-advaipbl-threat-score-manager.php',
+        'class-advaipbl-bot-verifier.php',
+        'class-advaipbl-rules-engine.php',
+        'class-advaipbl-rules-metrics.php',
+        'class-advaipbl-fingerprint-manager.php',
+        'class-advaipbl-abuseipdb-manager.php',
+        'class-advaipbl-htaccess-manager.php',
+        'class-advaipbl-cloudflare-manager.php',
+        'class-advaipbl-reporter-manager.php',
+        'class-advaipbl-community-manager.php',
+        'class-advaipbl-site-scanner.php',
+        'class-advaipbl-fim-engine.php',
+        'class-advaipbl-security-headers.php',
+        'class-advaipbl-audit-logger.php',
+        'class-advaipbl-file-verifier.php',
+        'class-advaipbl-js-challenge.php',
+        'class-advaipbl-captcha-manager.php',
+        'class-advaipbl-cache-manager.php',
+        'class-advaipbl-live-feed-manager.php',
+        'class-advaipbl-cron-manager.php',
+        'class-advaipbl-notification-manager.php',
+        'class-advaipbl-challenge-metrics.php'
+    ];
+    
+    $missing_files = [];
+    foreach ($required_files as $file) {
+        $path = $includes_dir . $file;
+        if (file_exists($path)) {
+            require_once $path;
+        } else {
+            $missing_files[] = $file;
+        }
+    }
+    
+    if (!empty($missing_files)) {
+        if (function_exists('add_action')) {
+            add_action('admin_notices', function() use ($missing_files) {
+                echo '<div class="notice notice-error"><p><strong>Advanced IP Blocker:</strong> Plugin initialization failed. The following required files are missing from the installation: <code>' . esc_html(implode(', ', $missing_files)) . '</code>. Please reinstall the plugin to fix this issue.</p></div>';
+            });
+        }
+        return; // Abort further instantiation to prevent Fatal Errors
+    }
     
 	$this->site_scanner = new ADVAIPBL_Site_Scanner($this);
 		$this->fim_engine = new ADVAIPBL_FIM_Engine($this);
@@ -146,10 +167,8 @@ private function __construct() {
     $this->threat_score_manager = new ADVAIPBL_Threat_Score_Manager($this);
     $this->bot_verifier = new ADVAIPBL_Bot_Verifier($this);
     $this->rules_engine = new ADVAIPBL_Rules_Engine($this);
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-rules-metrics.php';
     $this->rules_metrics = new ADVAIPBL_Rules_Metrics($this);
     
-    require_once plugin_dir_path(__FILE__) . 'class-advaipbl-challenge-metrics.php';
     $this->challenge_metrics = new ADVAIPBL_Challenge_Metrics($this);
     $this->fingerprint_manager = new ADVAIPBL_Fingerprint_Manager($this);
     $this->abuseipdb_manager = new ADVAIPBL_AbuseIPDB_Manager($this);
@@ -404,6 +423,14 @@ private function __construct() {
         
         if ( ! empty( $this->options['disable_imagick'] ) ) {
             add_filter( 'wp_image_editors', [$this, 'force_gd_image_editor'] );
+        }
+        
+        if ( ! empty( $this->options['remove_x_powered_by'] ) ) {
+            add_action('send_headers', function() {
+                if (function_exists('header_remove')) {
+                    header_remove('X-Powered-By');
+                }
+            }, 9999);
         }
         
         if ( ! empty( $this->options['hide_wp_version'] ) ) {
@@ -1462,6 +1489,106 @@ public function check_zeroday_waf_version() {
 }
 
 /**
+ * Downloads and applies advanced zero-day WAF rules from the Central Server.
+ */
+public function sync_advanced_zeroday_rules() {
+    if (empty($this->options['enable_cloud_advanced_rules']) || '1' !== $this->options['enable_cloud_advanced_rules']) {
+        return;
+    }
+
+    $api_token = $this->options['api_token_v3'] ?? '';
+    if (empty($api_token)) {
+        $this->log_event('Advanced WAF Sync skipped: Central API Token V3 not configured.', 'warning');
+        return;
+    }
+
+    $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/advanced-zero-day';
+    
+    $response = wp_remote_get($api_url, [
+        'headers' => [
+            'X-AIB-Auth' => 'Bearer ' . $api_token,
+            'Accept'        => 'application/json'
+        ],
+        'timeout' => 30
+    ]);
+
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($response);
+        $this->log_event('Advanced WAF Sync failed. Reason: ' . $error_msg, 'error');
+        return;
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || !isset($data['rules'])) {
+        $this->log_event('Advanced WAF Sync failed: Invalid JSON response.', 'error');
+        return;
+    }
+
+    $remote_rules = is_array($data['rules']) ? $data['rules'] : [];
+    
+    // Load local rules
+    $local_rules = get_option('advaipbl_advanced_rules', []);
+    if (!is_array($local_rules)) { $local_rules = []; }
+
+    // Filter out existing cloud rules (ar_zd_) so we can replace them entirely
+    $user_rules = array_filter($local_rules, function($rule) {
+        return isset($rule['id']) && strpos($rule['id'], 'ar_zd_') !== 0;
+    });
+
+    // Merge user rules with new cloud rules
+    $merged_rules = array_merge(array_values($user_rules), array_values($remote_rules));
+
+    update_option('advaipbl_advanced_rules', $merged_rules);
+    update_option('advaipbl_advanced_zeroday_waf_last_sync', time());
+    
+    $this->log_event(sprintf('Advanced WAF Sync successful: Downloaded %d cloud rules.', count($remote_rules)), 'info');
+}
+
+/**
+ * Lightweight ping to check if new Advanced WAF rules are available.
+ */
+public function check_advanced_zeroday_version() {
+    if (empty($this->options['enable_cloud_advanced_rules']) || '1' !== $this->options['enable_cloud_advanced_rules']) {
+        return;
+    }
+
+    $api_token = $this->options['api_token_v3'] ?? '';
+    if (empty($api_token)) {
+        return;
+    }
+
+    $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/advanced-version';
+    
+    $response = wp_remote_get($api_url, [
+        'headers' => [
+            'X-AIB-Auth' => 'Bearer ' . $api_token,
+            'Accept'        => 'application/json'
+        ],
+        'timeout' => 10
+    ]);
+
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        return; // Fallo silencioso en el ping ligero
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if (json_last_error() === JSON_ERROR_NONE && isset($data['version'])) {
+        $remote_version = (int) $data['version'];
+        $local_version = (int) get_option('advaipbl_advanced_zeroday_waf_version', 0);
+        
+        if ($remote_version > $local_version) {
+            // Version nueva detectada, forzar sincronizacion pesada
+            $this->sync_advanced_zeroday_rules();
+            update_option('advaipbl_advanced_zeroday_waf_version', $remote_version);
+        }
+    }
+}
+
+/**
  * Displays the reCAPTCHA field on the login form.
  */
 public function display_recaptcha_field() {
@@ -2021,7 +2148,7 @@ public function get_blocked_endpoints_count() {
         // --- 2. Cargar Assets Comunes (siempre necesarios en nuestras pÃƒÆ’Ã‚Â¡ginas) ---
         if ($is_plugin_page || in_array($hook, $allowed_hooks)) {
             $this->session_manager->enqueue_scripts_styles(); // Asumiendo que es necesario en el perfil tambiÃƒÆ’Ã‚Â©n.
-            wp_enqueue_style( 'advaipbl-styles-main', plugin_dir_url( dirname( __FILE__ ) ) . 'css/advaipbl-styles.css', [], ADVAIPBL_VERSION );
+            wp_enqueue_style( 'advaipbl-styles-main', plugin_dir_url( dirname( __FILE__ ) ) . 'css/advaipbl-styles.css', [], filemtime(plugin_dir_path(dirname(__FILE__)) . 'css/advaipbl-styles.css') );
             wp_enqueue_style( 'advaipbl-select2-css', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/css/select2.min.css', [], '4.1.0-rc.0' );
             wp_enqueue_script( 'advaipbl-select2-js', plugin_dir_url( dirname( __FILE__ ) ) . 'assets/js/select2.min.js', [ 'jquery' ], '4.1.0-rc.0', true );
             
@@ -2075,7 +2202,7 @@ public function get_blocked_endpoints_count() {
 
             // Cargar assets para File Integrity Monitor
             if ( 'fim_dashboard' === $active_sub_tab ) {
-                wp_enqueue_script('advaipbl-integrity-scanner', plugin_dir_url( dirname( __FILE__ ) ) . 'js/advaipbl-integrity-scanner.js', ['jquery', 'advaipbl-admin-core-js'], ADVAIPBL_VERSION, true);
+                wp_enqueue_script('advaipbl-integrity-scanner', plugin_dir_url( dirname( __FILE__ ) ) . 'js/advaipbl-integrity-scanner-v2.js', ['jquery', 'advaipbl-admin-core-js'], filemtime(plugin_dir_path(dirname(__FILE__)) . 'js/advaipbl-integrity-scanner-v2.js'), true);
                 wp_localize_script('advaipbl-integrity-scanner', 'advaipbl_fim_vars', [
                     'nonce' => wp_create_nonce('advaipbl_admin_ajax_nonce'),
                     'update_url' => admin_url('update-core.php'),
@@ -2091,8 +2218,33 @@ public function get_blocked_endpoints_count() {
                         'scan_again'         => __('Scan Again', 'advanced-ip-blocker'),
                         'update_avail'       => __('Update available', 'advanced-ip-blocker'),
                         'unverifiable_status'=> __('Premium / Unverifiable', 'advanced-ip-blocker'),
-                        'up_to_date'         => __('Up to date', 'advanced-ip-blocker')
-                    ]
+                        'up_to_date'         => __('Up to date', 'advanced-ip-blocker'),
+                        'deep_scan_confirm'  => __('Warning: A Deep Scan will check ALL PHP files on your server for malware signatures. This process may take a significant amount of time depending on the size of your installation. Do you want to proceed?', 'advanced-ip-blocker'),
+                        'mark_safe'          => __('Mark as Safe', 'advanced-ip-blocker'),
+                        'remove_whitelist'   => __('Remove from Whitelist', 'advanced-ip-blocker'),
+                        'whitelisted'        => __('Whitelisted', 'advanced-ip-blocker'),
+                        'confirm_mark_safe'  => __('Are you sure you want to mark this file as safe? It will be excluded from future malware alerts.', 'advanced-ip-blocker'),
+                        'confirm_remove_whitelist' => __('Are you sure you want to remove this file from the whitelist?', 'advanced-ip-blocker'),
+           'quarantine_title'   => __('Send to Quarantine Vault?', 'advanced-ip-blocker'),
+           'quarantine_msg'     => __('Are you sure you want to quarantine this file? It will be renamed and moved to a secure vault, preventing it from executing on your server.', 'advanced-ip-blocker'),
+           'quarantine_confirm' => __('Yes, Quarantine File', 'advanced-ip-blocker'),
+           'quarantine_moving'  => __('Moving...', 'advanced-ip-blocker'),
+           'success'            => __('Success', 'advanced-ip-blocker'),
+           'error'              => __('Error', 'advanced-ip-blocker'),
+           'restore_title'      => __('Restore File?', 'advanced-ip-blocker'),
+           'restore_msg'        => __('Are you sure you want to restore this file to its original location?', 'advanced-ip-blocker'),
+           'restore_confirm'    => __('Yes, Restore', 'advanced-ip-blocker'),
+           'restore_restoring'  => __('Restoring...', 'advanced-ip-blocker'),
+           'delete_title'       => __('Delete Permanently?', 'advanced-ip-blocker'),
+           'delete_msg'         => __('WARNING: This will permanently delete the file from the server. This action cannot be undone.', 'advanced-ip-blocker'),
+           'delete_confirm'     => __('Yes, Delete', 'advanced-ip-blocker'),
+           'delete_deleting'    => __('Deleting...', 'advanced-ip-blocker'),
+           'quarantined_status' => __('Quarantined', 'advanced-ip-blocker'),
+           'manage_vault'       => __('Manage in Vault', 'advanced-ip-blocker'),
+           'quarantine_btn'     => __('Quarantine', 'advanced-ip-blocker'),
+           'restore_btn'        => __('Restore', 'advanced-ip-blocker'),
+           'delete_btn'         => __('Delete', 'advanced-ip-blocker')
+       ]
                 ]);
             }
 
@@ -3605,6 +3757,18 @@ $this->send_block_notification($ip, $type, $error_count, $extra_data_for_notific
             KEY score (score)
         ) $charset_collate;";
         dbDelta($sql_scores);
+
+        // Tabla de Cuarentena (FIM)
+        $table_name_quarantine = $wpdb->prefix . 'advaipbl_quarantine';
+        $sql_quarantine = "CREATE TABLE $table_name_quarantine (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            original_path TEXT NOT NULL,
+            vault_filename VARCHAR(255) NOT NULL,
+            malware_type VARCHAR(100) NOT NULL,
+            timestamp DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
+        dbDelta($sql_quarantine);
         
 		// Tabla de Logs de Peticiones y Firmas
         $table_name_requests = $wpdb->prefix . 'advaipbl_request_log';
@@ -3951,7 +4115,68 @@ public function get_ip_intelligence() {
         );
     }
 	
-public function log_specific_error($type, $ip, $extra_data = [], $level = 'warning') {
+    public function capture_and_sanitize_payload() {
+        if ( empty( $this->options['enable_payload_logging'] ) ) {
+            return null;
+        }
+
+        $payload = [];
+        $method = $this->get_request_method();
+
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
+        if ( $method === 'POST' ) {
+            if ( ! empty( $_POST ) ) {
+                $payload = $_POST;
+            }
+            if ( ! empty( $_FILES ) ) {
+                $payload['_FILES'] = $_FILES;
+            }
+        } elseif ( $method === 'GET' && ! empty( $_GET ) ) {
+            $payload = $_GET;
+        }
+        // phpcs:enable
+
+        if ( empty( $payload ) ) {
+            return null;
+        }
+
+        $sensitive_keywords = ['password', 'pwd', 'pass', 'secret', 'token', 'key', 'auth', 'cookie', 'card', 'cvv'];
+        
+        $sanitize_array = function( &$array ) use ( &$sanitize_array, $sensitive_keywords ) {
+            foreach ( $array as $key => &$value ) {
+                $key_lower = strtolower( (string) $key );
+                $is_sensitive = false;
+                
+                foreach ( $sensitive_keywords as $keyword ) {
+                    if ( strpos( $key_lower, $keyword ) !== false ) {
+                        $is_sensitive = true;
+                        break;
+                    }
+                }
+
+                if ( $is_sensitive ) {
+                    $value = '[REDACTED FOR SECURITY]';
+                } elseif ( is_array( $value ) ) {
+                    $sanitize_array( $value );
+                }
+            }
+        };
+
+        // Clonar para no modificar la variable global original
+        $safe_payload = $payload;
+        $sanitize_array( $safe_payload );
+
+        $json_payload = wp_json_encode( $safe_payload );
+        
+        // Límite de tamaño: 2KB (2048 bytes) para evitar ataques DoS a la base de datos
+        if ( strlen( $json_payload ) > 2048 ) {
+            $json_payload = substr( $json_payload, 0, 2048 ) . '... [TRUNCATED DUE TO SIZE LIMIT]';
+        }
+
+        return $json_payload;
+    }
+
+    public function log_specific_error($type, $ip, $extra_data = [], $level = 'warning') {
     if (empty($this->options['enable_logging'])) {
         return;
     }
@@ -3972,6 +4197,12 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
     
     // Inyectar todas las cabeceras HTTP filtradas para anÃƒÆ’Ã‚Â¡lisis forense
     $details['headers'] = $this->get_sanitized_request_headers();
+
+    // Inyectar el payload capturado (POST/GET) si estÃ¡ habilitado
+    $payload_data = $this->capture_and_sanitize_payload();
+    if ( ! empty( $payload_data ) ) {
+        $details['payload'] = $payload_data;
+    }
 
     // --- Distributed Attack Protection (Auto-Panic) Tracker ---
     if ($level === 'critical' && !empty($this->options['under_attack_mode']) && $this->options['under_attack_mode'] === 'auto') {
@@ -4470,6 +4701,30 @@ public function log_specific_error($type, $ip, $extra_data = [], $level = 'warni
                 $this->schedule_notification_cron();
             }
         }
+        
+        // Lógica para Cloud Advanced Rules
+        $old_cloud_adv = $old_value['enable_cloud_advanced_rules'] ?? '0';
+        $new_cloud_adv = $new_value['enable_cloud_advanced_rules'] ?? '0';
+        if (!empty($old_cloud_adv) && empty($new_cloud_adv)) {
+            // Desactivado: borramos reglas ar_zd_
+            $local_rules = get_option('advaipbl_advanced_rules', []);
+            if (is_array($local_rules)) {
+                $user_rules = array_filter($local_rules, function($rule) {
+                    return isset($rule['id']) && strpos($rule['id'], 'ar_zd_') !== 0;
+                });
+                update_option('advaipbl_advanced_rules', array_values($user_rules));
+            }
+            $this->log_event(__('Cloud Advanced Rules Sync disabled. Cloud rules have been removed from the local database.', 'advanced-ip-blocker'), 'info');
+        }
+
+        // Lógica para Intelligent Zero-Day Sync
+        $old_intelligent_waf = $old_value['enable_intelligent_waf'] ?? '0';
+        $new_intelligent_waf = $new_value['enable_intelligent_waf'] ?? '0';
+        if (!empty($old_intelligent_waf) && empty($new_intelligent_waf)) {
+            // Desactivado: borramos reglas WAF descargadas
+            update_option('advaipbl_zeroday_waf_rules', []);
+            $this->log_event(__('Intelligent Zero-Day Sync disabled. Zero-day WAF rules have been removed from the local database.', 'advanced-ip-blocker'), 'info');
+        }
 
         // Detectar si el administrador activa o desactiva el modo pÃƒÆ’Ã‚Â¡nico manualmente
         $old_under_attack = $old_value['under_attack_mode'] ?? 'off';
@@ -4736,6 +4991,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'recaptcha_score_threshold' => __('reCAPTCHA Score', 'advanced-ip-blocker'),
         // Hardening & Core Protection
         'disable_imagick' => __('Disable Imagick', 'advanced-ip-blocker'),
+        'remove_x_powered_by' => __('Remove X-Powered-By', 'advanced-ip-blocker'),
         'hide_wp_version' => __('Hide WP Version', 'advanced-ip-blocker'),
         'disable_app_passwords' => __('Disable App Passwords', 'advanced-ip-blocker'),
         'disable_file_editor' => __('Disable File Editor', 'advanced-ip-blocker'),
@@ -4751,7 +5007,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         'enable_logging', 'enable_email_notifications', 'disable_user_enumeration', 'enable_2fa', 'tfa_force_roles',
         'prevent_author_scanning', 'block_author_scanning_403', 'restrict_login_page', 'recaptcha_enable', 'enable_waf', 'rate_limiting_enable',
         'delete_data_on_uninstall', 'disable_xmlrpc', 'show_admin_bar_menu', 'enable_xmlrpc_lockdown', 'block_ghost_ips',
-        'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads'
+        'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads', 'remove_x_powered_by'
     ];
 
     foreach ($friendly_names as $key => $name) {
@@ -5398,6 +5654,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
         
         // Hardening & Core Protection
         'disable_imagick'        => '0',
+        'remove_x_powered_by'    => '0',
         'hide_wp_version'        => '0',
         'disable_app_passwords'  => '0',
         'disable_file_editor'    => '0',
@@ -5460,7 +5717,7 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
             'on(error|load|click|mouseover)\s*=',
             'javascript:', // AÃƒÆ’Ã‚Â±adido: Protocolo peligroso en inputs
             '# === Path Traversal & LFI ===',
-            '\.\.\/',
+            '(?:\.\.[/\\\\]){2,}', 
             '/etc/passwd',
             'php://input',
             '# === Sensitive Files & Backups ===',
@@ -6558,6 +6815,7 @@ private function get_first_public_ip_from_string($ip_string) {
         $telemetry_data['settings'] = [
             'enable_waf'                  => !empty($this->options['enable_waf']),
             'enable_intelligent_waf'      => !empty($this->options['enable_intelligent_waf']),
+            'enable_cloud_advanced_rules' => !empty($this->options['enable_cloud_advanced_rules']),
             'rate_limiting_enable'        => !empty($this->options['rate_limiting_enable']),
             'enable_geoblocking'          => !empty($this->options['enable_geoblocking']),
             'block_ghost_ips'             => !empty($this->options['block_ghost_ips']),
@@ -6610,6 +6868,7 @@ private function get_first_public_ip_from_string($ip_string) {
             
             // Hardening & Core Protection
             'disable_imagick'             => !empty($this->options['disable_imagick']),
+            'remove_x_powered_by'         => !empty($this->options['remove_x_powered_by']),
             'hide_wp_version'             => !empty($this->options['hide_wp_version']),
             'disable_app_passwords'       => !empty($this->options['disable_app_passwords']),
             'disable_file_editor'         => !empty($this->options['disable_file_editor']),
