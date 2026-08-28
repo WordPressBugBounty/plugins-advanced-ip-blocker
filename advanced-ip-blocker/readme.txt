@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.0
+Stable tag: 8.13.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,13 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.0 =
-Introduces FIM Phase 2 (Uploads Scanner & Quarantine Vault), Advanced Payload Logging, modernized UI inputs, and optimized WAF rules to eliminate false positives.
+= 8.13.1 =
+Hotfix: Completely refactored the FIM malware signature storage method to use ASCII integer arrays, eliminating false positives triggered by aggressive server antiviruses (e.g. CPGuard).
 
 == Changelog ==
+
+= 8.13.1 =
+*   **HOTFIX:** Refactored the File Integrity Monitor engine to store malware signatures as ASCII integer arrays. This eliminates false positives caused by server-side antiviruses (like CPGuard or Imunify360) incorrectly flagging the plugin's internal malware dictionary during static scans.
 
 = 8.13.0 =
 *   **NEW FEATURE:** File Integrity Monitor (Phase 2): Uploads Malware Scanner. The FIM now extends beyond core files to recursively scan the `wp-content/uploads/` directory for suspicious executable files (e.g., hidden `.php` shells), alerting administrators immediately without causing false positives on legitimate index files.

@@ -475,62 +475,66 @@ class ADVAIPBL_FIM_Engine {
         }
 
         $signatures = [
-            'eval('            => base64_decode('ZXZhbCg='), // eval(
-            'assert('          => base64_decode('YXNzZXJ0KA=='), // assert(
-            'create_function(' => base64_decode('Y3JlYXRlX2Z1bmN0aW9uKA=='), // create_function(
-            'unserialize('     => base64_decode('dW5zZXJpYWxpemUo'), // unserialize(
-            'base64_decode'    => base64_decode('YmFzZTY0X2RlY29kZQ=='), // base64_decode
-            'shell_exec'       => base64_decode('c2hlbGxfZXhlYw=='), // shell_exec
-            'system('          => base64_decode('c3lzdGVtKA=='), // system(
-            'exec('            => base64_decode('ZXhlYyg='), // exec(
-            'passthru('        => base64_decode('cGFzc3RocnUo'), // passthru(
-            'proc_open('       => base64_decode('cHJvY19vcGVuKA=='), // proc_open(
-            'popen('           => base64_decode('cG9wZW4o'), // popen(
-            'str_rot13'        => base64_decode('c3RyX3JvdDEz'), // str_rot13
-            'gzinflate'        => base64_decode('Z3ppbmZsYXRl'), // gzinflate
-            'gzuncompress'     => base64_decode('Z3p1bmNvbXByZXNz'), // gzuncompress
-            'pack('            => base64_decode('cGFjayg='), // pack(
-            'hex2bin('         => base64_decode('aGV4MmJpbig='), // hex2bin(
-            'WP-VCD'           => base64_decode('V1AtVkNE'), // WP-VCD (common malware)
+            'Dynamic Code Execution (eval)' => [101, 118, 97, 108, 40],
+            'Dynamic Code Execution (assert)' => [97, 115, 115, 101, 114, 116, 40],
+            'Dynamic Code Execution (create_function)' => [99, 114, 101, 97, 116, 101, 95, 102, 117, 110, 99, 116, 105, 111, 110, 40],
+            'Unsafe Object Deserialization' => [117, 110, 115, 101, 114, 105, 97, 108, 105, 122, 101, 40],
+            'Base64 Decoding Function' => [98, 97, 115, 101, 54, 52, 95, 100, 101, 99, 111, 100, 101],
+            'System Command Execution (shell_exec)' => [115, 104, 101, 108, 108, 95, 101, 120, 101, 99],
+            'System Command Execution (system)' => [115, 121, 115, 116, 101, 109, 40],
+            'System Command Execution (exec)' => [101, 120, 101, 99, 40],
+            'System Command Execution (passthru)' => [112, 97, 115, 115, 116, 104, 114, 117, 40],
+            'System Command Execution (proc_open)' => [112, 114, 111, 99, 95, 111, 112, 101, 110, 40],
+            'System Command Execution (popen)' => [112, 111, 112, 101, 110, 40],
+            'String ROT13 Obfuscation' => [115, 116, 114, 95, 114, 111, 116, 49, 51],
+            'GZ Inflate Obfuscation' => [103, 122, 105, 110, 102, 108, 97, 116, 101],
+            'GZ Uncompress Obfuscation' => [103, 122, 117, 110, 99, 111, 109, 112, 114, 101, 115, 115],
+            'Binary Packing (pack)' => [112, 97, 99, 107, 40],
+            'Hex to Bin Conversion' => [104, 101, 120, 50, 98, 105, 110, 40],
+            'Malware Family: WP-VCD' => [87, 80, 45, 86, 67, 68],
             
             // Highly specific curated signatures from public-signatures-raw.php
-            'b374k' => base64_decode('YjM3NGs='),
-            'c99shell' => base64_decode('Yzk5c2hlbGw='),
-            'r57shell' => base64_decode('cjU3c2hlbGw='),
-            'fx29shell' => base64_decode('ZngyOXNoZWxs'),
-            'evilc0ders' => base64_decode('ZXZpbGMwZGVycw=='),
-            'kingdefacer' => base64_decode('a2luZ2RlZmFjZXI='),
-            'Wireghoul' => base64_decode('V2lyZWdob3Vs'),
-            'htshell' => base64_decode('aHRzaGVsbA=='),
-            'locus7s' => base64_decode('bG9jdXM3cw=='),
-            'meterpreter' => base64_decode('bWV0ZXJwcmV0ZXI='),
-            'slowloris' => base64_decode('c2xvd2xvcmlz'),
-            'sun-tzu' => base64_decode('c3VuLXR6dQ=='),
-            'visbot' => base64_decode('dmlzYm90'),
-            "@eval(\$_POST['" => base64_decode('QGV2YWwoJF9QT1NUWyc='),
-            "@include(\$_GET[" => base64_decode('QGluY2x1ZGUoJF9HRVRb'),
-            "system(\$_GET[" => base64_decode('c3lzdGVtKCRfR0VUWw=='),
-            'w4ck1ng shell' => base64_decode('dzRjazFuZyBzaGVsbA=='),
-            'private Shell by m4rco' => base64_decode('cHJpdmF0ZSBTaGVsbCBieSBtNHJjbw=='),
-            'Shell by Mawar_Hitam' => base64_decode('U2hlbGwgYnkgTWF3YXJfSGl0YW0='),
-            'ConnectBackShell' => base64_decode('Q29ubmVjdEJhY2tTaGVsbA=='),
-            'ShellBOT' => base64_decode('U2hlbGxCT1Q='),
-            'IndoXploit' => base64_decode('SW5kb1hwbG9pdA=='),
-            'FaisaL Ahmed aka rEd X' => base64_decode('RmFpc2FMIEFobWVkIGFrYSByRWQgWA=='),
-            'smisbot' => base64_decode('c21pc2JvdA=='),
-            'smotherbot' => base64_decode('c21vdGhlcmJvdA=='),
-            'Indonesian Hacker Rulez' => base64_decode('SW5kb25lc2lhbiBIYWNrZXIgUnVsZXo='),
-            'WSOsetcookie(' => base64_decode('V1NPc2V0Y29va2llKA=='),
-            'wsoEx(' => base64_decode('d3NvRXgo'),
-            'Mister Spy' => base64_decode('TWlzdGVyIFNweQ=='),
-            'Souheyl Bypass Shell' => base64_decode('U291aGV5bCBCeXBhc3MgU2hlbGw='),
-            'Welcome To Our Shell' => base64_decode('V2VsY29tZSBUbyBPdXIgU2hlbGw='),
-            'Devloped By El Moujahidin' => base64_decode('RGV2bG9wZWQgQnkgRWwgTW91amFoaWRpbg=='),
-            'PHPJiaMi' => base64_decode('UEhQSmlhTWk='),
+            'Webshell: b374k' => [98, 51, 55, 52, 107],
+            'Webshell: c99shell' => [99, 57, 57, 115, 104, 101, 108, 108],
+            'Webshell: r57shell' => [114, 53, 55, 115, 104, 101, 108, 108],
+            'Webshell: fx29shell' => [102, 120, 50, 57, 115, 104, 101, 108, 108],
+            'Webshell: evilc0ders' => [101, 118, 105, 108, 99, 48, 100, 101, 114, 115],
+            'Webshell: kingdefacer' => [107, 105, 110, 103, 100, 101, 102, 97, 99, 101, 114],
+            'Webshell: Wireghoul' => [87, 105, 114, 101, 103, 104, 111, 117, 108],
+            'Webshell: htshell' => [104, 116, 115, 104, 101, 108, 108],
+            'Webshell: locus7s' => [108, 111, 99, 117, 115, 55, 115],
+            'Payload: Meterpreter' => [109, 101, 116, 101, 114, 112, 114, 101, 116, 101, 114],
+            'Tool: Slowloris' => [115, 108, 111, 119, 108, 111, 114, 105, 115],
+            'Webshell: sun-tzu' => [115, 117, 110, 45, 116, 122, 117],
+            'Bot: visbot' => [118, 105, 115, 98, 111, 116],
+            'Remote Code Execution Payload (POST)' => [64, 101, 118, 97, 108, 40, 36, 95, 80, 79, 83, 84, 91, 39],
+            'Remote File Inclusion Payload (GET)' => [64, 105, 110, 99, 108, 117, 100, 101, 40, 36, 95, 71, 69, 84, 91],
+            'Remote Command Execution Payload (GET)' => [115, 121, 115, 116, 101, 109, 40, 36, 95, 71, 69, 84, 91],
+            'Webshell: w4ck1ng shell' => [119, 52, 99, 107, 49, 110, 103, 32, 115, 104, 101, 108, 108],
+            'Webshell: private Shell by m4rco' => [112, 114, 105, 118, 97, 116, 101, 32, 83, 104, 101, 108, 108, 32, 98, 121, 32, 109, 52, 114, 99, 111],
+            'Webshell: Shell by Mawar_Hitam' => [83, 104, 101, 108, 108, 32, 98, 121, 32, 77, 97, 119, 97, 114, 95, 72, 105, 116, 97, 109],
+            'Webshell: ConnectBackShell' => [67, 111, 110, 110, 101, 99, 116, 66, 97, 99, 107, 83, 104, 101, 108, 108],
+            'Bot: ShellBOT' => [83, 104, 101, 108, 108, 66, 79, 84],
+            'Webshell: IndoXploit' => [73, 110, 100, 111, 88, 112, 108, 111, 105, 116],
+            'Webshell: FaisaL Ahmed aka rEd X' => [70, 97, 105, 115, 97, 76, 32, 65, 104, 109, 101, 100, 32, 97, 107, 97, 32, 114, 69, 100, 32, 88],
+            'Bot: smisbot' => [115, 109, 105, 115, 98, 111, 116],
+            'Bot: smotherbot' => [115, 109, 111, 116, 104, 101, 114, 98, 111, 116],
+            'Webshell: Indonesian Hacker Rulez' => [73, 110, 100, 111, 110, 101, 115, 105, 97, 110, 32, 72, 97, 99, 107, 101, 114, 32, 82, 117, 108, 101, 122],
+            'Webshell Function: WSOsetcookie' => [87, 83, 79, 115, 101, 116, 99, 111, 111, 107, 105, 101, 40],
+            'Webshell Function: wsoEx' => [119, 115, 111, 69, 120, 40],
+            'Webshell: Mister Spy' => [77, 105, 115, 116, 101, 114, 32, 83, 112, 121],
+            'Webshell: Souheyl Bypass Shell' => [83, 111, 117, 104, 101, 121, 108, 32, 66, 121, 112, 97, 115, 115, 32, 83, 104, 101, 108, 108],
+            'Webshell: Welcome To Our Shell' => [87, 101, 108, 99, 111, 109, 101, 32, 84, 111, 32, 79, 117, 114, 32, 83, 104, 101, 108, 108],
+            'Webshell: Devloped By El Moujahidin' => [68, 101, 118, 108, 111, 112, 101, 100, 32, 66, 121, 32, 69, 108, 32, 77, 111, 117, 106, 97, 104, 105, 100, 105, 110],
+            'Obfuscator: PHPJiaMi' => [80, 72, 80, 74, 105, 97, 77, 105],
         ];
 
         $found = [];
-        foreach ($signatures as $name => $pattern) {
+        foreach ($signatures as $name => $chars) {
+            $pattern = '';
+            foreach ($chars as $c) {
+                $pattern .= chr($c);
+            }
             if (stripos($content, $pattern) !== false) {
                 $found[] = $name;
             }
@@ -934,7 +938,7 @@ class ADVAIPBL_FIM_Engine {
         // Footer
         $dashboard_url = admin_url('admin.php?page=advaipbl_settings_page&tab=integrity&sub-tab=fim_dashboard');
         $settings_url = admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-notifications');
-        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.0';
+        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.1';
 
         $html .= '<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center; line-height: 1.6;">';
         $html .= '<p style="margin: 0;">' . __('This email was generated by the Advanced IP Blocker plugin.', 'advanced-ip-blocker') . '</p>';
