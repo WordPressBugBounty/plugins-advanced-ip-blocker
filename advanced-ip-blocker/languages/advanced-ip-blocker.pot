@@ -3,7 +3,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.1\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -9788,4 +9788,74 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Remove X-Powered-By"
+msgstr ""
+
+#: includes/class-advaipbl-fim-engine.php:40
+msgid "Warning: Malware signatures could not be downloaded. The scan will run but malware detection will be skipped. Error: "
+msgstr ""
+
+msgid "Active Signature Modules"
+msgstr ""
+
+msgid "Raw Signatures"
+msgstr ""
+
+msgid "RegEx Signatures"
+msgstr ""
+
+msgid "Malicious Domains"
+msgstr ""
+
+msgid "MD5 Hashes"
+msgstr ""
+
+msgid "SHA256 Hashes"
+msgstr ""
+
+msgid "Disabled modules are automatically removed from your database to optimize performance and evade server AVs."
+msgstr ""
+
+msgid "Enable Raw String Signatures"
+msgstr ""
+
+msgid "Recommended. This is the fastest and most common method for detecting known malware strings."
+msgstr ""
+
+msgid "Enable RegEx Signatures"
+msgstr ""
+
+msgid "Advanced. Uses more CPU but detects polymorphic backdoors."
+msgstr ""
+
+msgid "Enable Domain Signatures"
+msgstr ""
+
+msgid "Recommended. Very fast check for external malicious requests."
+msgstr ""
+
+msgid "Enable MD5 Hash Signatures"
+msgstr ""
+
+msgid "Recommended. Skips reading file contents if the hash matches known malware."
+msgstr ""
+
+msgid "Enable SHA256 Hash Signatures"
+msgstr ""
+
+msgid "Slower than MD5 but highly accurate."
+msgstr ""
+
+msgid "Whitelist Manager"
+msgstr ""
+
+msgid "Are you sure you want to remove this file from the whitelist? It will be scanned again during the next Integrity Scan."
+msgstr ""
+
+msgid "Trusted Files (Whitelist)"
+msgstr ""
+
+msgid "These files are ignored during integrity scans."
+msgstr ""
+
+msgid "No files are currently whitelisted."
 msgstr ""

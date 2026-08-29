@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2025-07-22 14:47+0200\n"
-"PO-Revision-Date: 2026-08-27 22:42+0200\n"
+"PO-Revision-Date: 2026-08-29 16:59+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -11242,6 +11242,96 @@ msgstr ""
 #: includes/class-advaipbl-main.php
 msgid "Remove X-Powered-By"
 msgstr "Eliminar X-Powered-By"
+
+#: includes/class-advaipbl-fim-engine.php:40
+msgid ""
+"Warning: Malware signatures could not be downloaded. The scan will run but "
+"malware detection will be skipped. Error: "
+msgstr ""
+"Advertencia: No se pudieron descargar las firmas de malware. El análisis se "
+"ejecutará, pero se omitirá la detección de malware. Error: "
+
+msgid "Active Signature Modules"
+msgstr "Módulos de firma activa"
+
+msgid "Raw Signatures"
+msgstr "Raw Firmas"
+
+msgid "RegEx Signatures"
+msgstr "RegEx Firmas"
+
+msgid "Malicious Domains"
+msgstr "Dominios maliciosos"
+
+msgid "MD5 Hashes"
+msgstr "MD5 Hashes"
+
+msgid "SHA256 Hashes"
+msgstr "SHA256 Hashes"
+
+msgid ""
+"Disabled modules are automatically removed from your database to optimize "
+"performance and evade server AVs."
+msgstr ""
+"Los módulos deshabilitados se eliminan automáticamente de la base de datos "
+"para optimizar el rendimiento y eludir los antivirus del servidor."
+
+msgid "Enable Raw String Signatures"
+msgstr "Habilitar firmas de cadenas Raw"
+
+msgid ""
+"Recommended. This is the fastest and most common method for detecting known "
+"malware strings."
+msgstr ""
+"Recomendado. Este es el método más rápido y común para detectar cadenas de "
+"malware conocidas."
+
+msgid "Enable RegEx Signatures"
+msgstr "Habilitar firmas RegEx"
+
+msgid "Advanced. Uses more CPU but detects polymorphic backdoors."
+msgstr "Avanzado. Consume más CPU, pero detecta puertas traseras polimórficas."
+
+msgid "Enable Domain Signatures"
+msgstr "Habilitar firmas de dominio"
+
+msgid "Recommended. Very fast check for external malicious requests."
+msgstr ""
+"Recomendado. Verificación muy rápida de solicitudes externas maliciosas."
+
+msgid "Enable MD5 Hash Signatures"
+msgstr "Habilitar firmas hash MD5"
+
+msgid ""
+"Recommended. Skips reading file contents if the hash matches known malware."
+msgstr ""
+"Recomendado. Omite la lectura del contenido del archivo si el hash coincide "
+"con malware conocido."
+
+msgid "Enable SHA256 Hash Signatures"
+msgstr "Habilitar firmas hash SHA256"
+
+msgid "Slower than MD5 but highly accurate."
+msgstr "Más lento que MD5 pero altamente preciso."
+
+msgid "Whitelist Manager"
+msgstr "Gestor de lista blanca"
+
+msgid ""
+"Are you sure you want to remove this file from the whitelist? It will be "
+"scanned again during the next Integrity Scan."
+msgstr ""
+"¿Está seguro de que desea eliminar este archivo de la lista blanca? Se "
+"analizará de nuevo durante el próximo análisis de integridad."
+
+msgid "Trusted Files (Whitelist)"
+msgstr "Archivos de confianza (lista blanca)"
+
+msgid "These files are ignored during integrity scans."
+msgstr "Estos archivos se omiten durante los análisis de integridad."
+
+msgid "No files are currently whitelisted."
+msgstr "Actualmente no hay archivos en la lista blanca."
 
 #, php-format
 #~ msgid "FAILED to send security summary to %s. Queue NOT cleared."

@@ -132,6 +132,15 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_challenge_stats',
             'advaipbl_zeroday_waf_rules',
             'advaipbl_zeroday_waf_last_sync',
+            'advaipbl_fim_signatures',
+            'advaipbl_fim_signatures_raw',
+            'advaipbl_fim_signatures_regex',
+            'advaipbl_fim_signatures_domains',
+            'advaipbl_fim_signatures_md5',
+            'advaipbl_fim_signatures_sha256',
+            'advaipbl_fim_signatures_split',
+            'advaipbl_fim_signatures_version',
+            'advaipbl_fim_signatures_last_sync',
             
             // Opciones de sistema y estado
             'advaipbl_db_version',
@@ -250,7 +259,9 @@ function advaipbl_process_site_uninstallation() {
         'advaipbl_zeroday_sync_event',
         'advaipbl_zeroday_version_check_event',
         'advaipbl_advanced_zeroday_sync_event',
-        'advaipbl_advanced_version_check_event'
+        'advaipbl_advanced_version_check_event',
+        'advaipbl_fim_signatures_sync_event',
+        'advaipbl_fim_signatures_version_check_event'
     ];
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     foreach ($cron_hooks as $hook) {

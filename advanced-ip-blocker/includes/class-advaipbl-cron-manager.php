@@ -41,6 +41,8 @@ class ADVAIPBL_Cron_Manager {
         add_action('advaipbl_zeroday_version_check_event', [$this->plugin, 'check_zeroday_waf_version']);
         add_action('advaipbl_advanced_zeroday_sync_event', [$this->plugin, 'sync_advanced_zeroday_rules']);
         add_action('advaipbl_advanced_zeroday_version_check_event', [$this->plugin, 'check_advanced_zeroday_version']);
+        add_action('advaipbl_fim_signatures_sync_event', [$this->plugin, 'sync_fim_signatures']);
+        add_action('advaipbl_fim_signatures_version_check_event', [$this->plugin, 'check_fim_signatures_version']);
     }
 
     /**
@@ -257,6 +259,19 @@ class ADVAIPBL_Cron_Manager {
         } else {
             wp_clear_scheduled_hook('advaipbl_advanced_zeroday_sync_event');
             wp_clear_scheduled_hook('advaipbl_advanced_zeroday_version_check_event');
+        }
+
+        // 12.8 FIM Malware Signatures Cloud Sync
+        if (!empty($this->plugin->options['enable_fim']) && '1' === $this->plugin->options['enable_fim']) {
+            if (!wp_next_scheduled('advaipbl_fim_signatures_sync_event')) {
+                wp_schedule_event(time() + wp_rand(0, 4 * HOUR_IN_SECONDS), 'daily', 'advaipbl_fim_signatures_sync_event');
+            }
+            if (!wp_next_scheduled('advaipbl_fim_signatures_version_check_event')) {
+                wp_schedule_event(time() + wp_rand(0, HOUR_IN_SECONDS), 'hourly', 'advaipbl_fim_signatures_version_check_event');
+            }
+        } else {
+            wp_clear_scheduled_hook('advaipbl_fim_signatures_sync_event');
+            wp_clear_scheduled_hook('advaipbl_fim_signatures_version_check_event');
         }
 
         // 13. Community List Update (Missing logic fixed)

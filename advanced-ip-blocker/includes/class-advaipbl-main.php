@@ -1589,6 +1589,112 @@ public function check_advanced_zeroday_version() {
 }
 
 /**
+ * Downloads and applies FIM Malware Signatures from the Central Server.
+ */
+public function sync_fim_signatures() {
+    if (empty($this->options['enable_fim']) || '1' !== $this->options['enable_fim']) {
+        return 'FIM is disabled.';
+    }
+
+    $api_token = $this->options['api_token_v3'] ?? '';
+    if (empty($api_token)) {
+        $this->log_event('FIM Signatures Sync skipped: Central API Token V3 not configured.', 'warning');
+        return 'Central API Token V3 not configured.';
+    }
+
+    $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/fim/signatures';
+    
+    $response = wp_remote_get($api_url, [
+        'headers' => [
+            'X-AIB-Auth' => 'Bearer ' . $api_token,
+            'Accept'        => 'application/json'
+        ],
+        'timeout' => 30
+    ]);
+
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($response);
+        $this->log_event('FIM Signatures Sync failed. Reason: ' . $error_msg, 'error');
+        return $error_msg;
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+        $this->log_event('FIM Signatures Sync failed: Invalid JSON response.', 'error');
+        return 'Invalid JSON response from server.';
+    }
+
+    // Obtenemos los ajustes actuales para saber qué guardar
+    $opts = $this->options;
+    $enable_raw = !isset($opts['fim_enable_raw']) || !empty($opts['fim_enable_raw']);
+    $enable_regex = !empty($opts['fim_enable_regex']);
+    $enable_domains = !isset($opts['fim_enable_domains']) || !empty($opts['fim_enable_domains']);
+    $enable_md5 = !isset($opts['fim_enable_md5']) || !empty($opts['fim_enable_md5']);
+    $enable_sha256 = !empty($opts['fim_enable_sha256']);
+
+    // Split signatures to bypass max_allowed_packet limits and use 'no' for autoload to save RAM
+    if ($enable_raw) update_option('advaipbl_fim_signatures_raw', $data['raw'] ?? [], 'no'); else delete_option('advaipbl_fim_signatures_raw');
+    if ($enable_regex) update_option('advaipbl_fim_signatures_regex', $data['regex'] ?? [], 'no'); else delete_option('advaipbl_fim_signatures_regex');
+    if ($enable_domains) update_option('advaipbl_fim_signatures_domains', $data['domains'] ?? [], 'no'); else delete_option('advaipbl_fim_signatures_domains');
+    if ($enable_md5) update_option('advaipbl_fim_signatures_md5', $data['md5'] ?? '', 'no'); else delete_option('advaipbl_fim_signatures_md5');
+    if ($enable_sha256) update_option('advaipbl_fim_signatures_sha256', $data['sha256'] ?? '', 'no'); else delete_option('advaipbl_fim_signatures_sha256');
+    
+    update_option('advaipbl_fim_signatures_split', '1', 'yes');
+    
+    update_option('advaipbl_fim_signatures_last_sync', time());
+    
+    // Cleanup old bloated option
+    delete_option('advaipbl_fim_signatures');
+    
+    $this->log_event('FIM Signatures Sync successful: Splitted signatures stored locally.', 'info');
+    return true;
+}
+
+/**
+ * Lightweight ping to check if new FIM Malware Signatures are available.
+ */
+public function check_fim_signatures_version() {
+    if (empty($this->options['enable_fim']) || '1' !== $this->options['enable_fim']) {
+        return;
+    }
+
+    $api_token = $this->options['api_token_v3'] ?? '';
+    if (empty($api_token)) {
+        return;
+    }
+
+    $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/fim/version';
+    
+    $response = wp_remote_get($api_url, [
+        'headers' => [
+            'X-AIB-Auth' => 'Bearer ' . $api_token,
+            'Accept'        => 'application/json'
+        ],
+        'timeout' => 10
+    ]);
+
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        return; // Fallo silencioso en el ping ligero
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if (json_last_error() === JSON_ERROR_NONE && isset($data['version'])) {
+        $remote_version = (int) $data['version'];
+        $local_version = (int) get_option('advaipbl_fim_signatures_version', 0);
+        
+        if ($remote_version > $local_version) {
+            // Version nueva detectada, forzar sincronizacion pesada
+            $this->sync_fim_signatures();
+            update_option('advaipbl_fim_signatures_version', $remote_version);
+        }
+    }
+}
+
+/**
  * Displays the reCAPTCHA field on the login form.
  */
 public function display_recaptcha_field() {
@@ -5650,6 +5756,11 @@ public function add_admin_bar_menu( $wp_admin_bar ) {
 
         // File Integrity Monitor (FIM)
         'enable_fim' => '0',
+        'fim_enable_raw' => '1',
+        'fim_enable_regex' => '0',
+        'fim_enable_domains' => '1',
+        'fim_enable_md5' => '1',
+        'fim_enable_sha256' => '0',
         'fim_alert_email' => '',
         
         // Hardening & Core Protection

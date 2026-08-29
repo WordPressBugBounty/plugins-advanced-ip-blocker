@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.1
+Stable tag: 8.13.2
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,18 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
+= 8.13.2 =
+Hotfix: Refactored the FIM malware scanner to dynamically fetch and store signatures in the database. This hides the dictionary from aggressive server antiviruses and eliminates false positives.
+
 = 8.13.1 =
 Hotfix: Completely refactored the FIM malware signature storage method to use ASCII integer arrays, eliminating false positives triggered by aggressive server antiviruses (e.g. CPGuard).
 
 == Changelog ==
+
+= 8.13.2 =
+*   **HOTFIX:** Refactored the File Integrity Monitor engine to fetch malware signatures dynamically from the Central API and store them in the database. This prevents the plugin's internal malware dictionary from triggering false positives in server-side antiviruses (e.g., CPGuard, Imunify360).
+*   **NEW FEATURE:** Added a "Manage Whitelist" UI to the FIM Dashboard for manually excluding files from scans.
+*   **ENHANCEMENT:** The FIM scanner now automatically ignores the plugin's own directory to prevent false positives caused by security-related localization strings.
 
 = 8.13.1 =
 *   **HOTFIX:** Refactored the File Integrity Monitor engine to store malware signatures as ASCII integer arrays. This eliminates false positives caused by server-side antiviruses (like CPGuard or Imunify360) incorrectly flagging the plugin's internal malware dictionary during static scans.

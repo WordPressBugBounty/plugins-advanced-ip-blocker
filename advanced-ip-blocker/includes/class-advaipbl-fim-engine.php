@@ -19,6 +19,7 @@ class ADVAIPBL_FIM_Engine {
         add_action('wp_ajax_advaipbl_fim_email_report', [$this, 'ajax_email_report']);
         add_action('wp_ajax_advaipbl_fim_add_whitelist', [$this, 'ajax_add_whitelist']);
         add_action('wp_ajax_advaipbl_fim_remove_whitelist', [$this, 'ajax_remove_whitelist']);
+        add_action('wp_ajax_advaipbl_fim_get_whitelist_list', [$this, 'ajax_get_whitelist_list']);
         add_action('wp_ajax_advaipbl_fim_quarantine_file', [$this, 'ajax_quarantine_file']);
         add_action('wp_ajax_advaipbl_fim_restore_quarantine', [$this, 'ajax_restore_quarantine']);
         add_action('wp_ajax_advaipbl_fim_delete_quarantine', [$this, 'ajax_delete_quarantine']);
@@ -35,6 +36,17 @@ class ADVAIPBL_FIM_Engine {
         }
 
         $scan_type = isset($_POST['scan_type']) ? sanitize_text_field(wp_unslash($_POST['scan_type'])) : 'all';
+
+        $warning = '';
+        $signatures = get_option('advaipbl_fim_signatures');
+        if (empty($signatures) || !is_array($signatures)) {
+            $sync_result = $this->plugin->sync_fim_signatures();
+            if ($sync_result !== true) {
+                $warning = __('Warning: Malware signatures could not be downloaded. The scan will run but malware detection will be skipped. Error: ', 'advanced-ip-blocker') . $sync_result;
+            } else {
+                $signatures = get_option('advaipbl_fim_signatures');
+            }
+        }
 
         $raw_excluded_paths = $this->plugin->options['fim_excluded_paths'] ?? '';
         $excluded_paths = array_filter(array_map('trim', explode("\n", $raw_excluded_paths)));
@@ -64,6 +76,11 @@ class ADVAIPBL_FIM_Engine {
                                 continue;
                             }
                             
+                            // Auto-ignore our own plugin to prevent false positives from security-related keywords
+                            if (strpos($rel_path, 'wp-content/plugins/advanced-ip-blocker/') === 0 || strpos($rel_path, 'advanced-ip-blocker/') === 0) {
+                                continue;
+                            }
+                            
                             $is_excluded = false;
                             foreach ($excluded_paths as $ex) {
                                 if (!empty($ex) && strpos($rel_path, $ex) !== false) {
@@ -89,7 +106,7 @@ class ADVAIPBL_FIM_Engine {
                 // Silently ignore if unreadable
             }
             
-            wp_send_json_success(['files' => $files_to_scan, 'total' => count($files_to_scan)]);
+            wp_send_json_success(['files' => $files_to_scan, 'total' => count($files_to_scan), 'warning' => $warning]);
             return;
         }
 
@@ -266,10 +283,21 @@ class ADVAIPBL_FIM_Engine {
                 ];
             }
         }
+        // Remove advanced-ip-blocker from results so it doesn't even show as Whitelisted
+        $filtered_files = [];
+        foreach ($files_to_scan as $file) {
+            $r_path = $file['rel_path'] ?? '';
+            if (strpos($r_path, 'wp-content/plugins/advanced-ip-blocker/') === 0 || strpos($r_path, 'advanced-ip-blocker/') === 0) {
+                continue;
+            }
+            $filtered_files[] = $file;
+        }
+        $files_to_scan = $filtered_files;
         
         wp_send_json_success([
             'files' => $files_to_scan,
-            'total' => count($files_to_scan)
+            'total' => count($files_to_scan),
+            'warning' => $warning
         ]);
     }
 
@@ -456,16 +484,66 @@ class ADVAIPBL_FIM_Engine {
         wp_send_json_success(['results' => $results]);
     }
 
-    /**
-     * Scan a file for common malware signatures.
-     * Uses obfuscated patterns to avoid false positives in WP Plugin Check.
-     * 
-     * @param string $path Absolute path to the file.
-     * @return string 'Clean' or a comma-separated list of found signatures.
-     */
     private function scan_for_malware($path) {
         if (!file_exists($path) || !is_readable($path)) {
             return 'Unreadable';
+        }
+
+        static $signatures = null;
+        if ($signatures === null) {
+            if (get_option('advaipbl_fim_signatures_split') === '1') {
+                $signatures['raw'] = get_option('advaipbl_fim_signatures_raw', []);
+                $signatures['regex'] = get_option('advaipbl_fim_signatures_regex', []);
+                $signatures['domains'] = get_option('advaipbl_fim_signatures_domains', []);
+                $signatures['md5'] = get_option('advaipbl_fim_signatures_md5', '');
+                $signatures['sha256'] = get_option('advaipbl_fim_signatures_sha256', '');
+            } else {
+                $signatures = get_option('advaipbl_fim_signatures');
+            }
+        }
+
+        if (empty($signatures) || (!isset($signatures['raw']) && !isset($signatures['regex']) && !isset($signatures['md5']))) {
+            return 'Clean';
+        }
+
+        // Is it the legacy format? (flat array, we assume if key 'raw' doesn't exist)
+        if (!isset($signatures['raw']) && !isset($signatures['regex']) && !isset($signatures['domains']) && !isset($signatures['md5']) && !isset($signatures['sha256'])) {
+            $signatures = ['raw' => $signatures]; // Upgrade to new format for processing
+        }
+
+        $opts = $this->plugin->options;
+        $enable_raw = !isset($opts['fim_enable_raw']) || !empty($opts['fim_enable_raw']);
+        $enable_regex = !empty($opts['fim_enable_regex']);
+        $enable_domains = !isset($opts['fim_enable_domains']) || !empty($opts['fim_enable_domains']);
+        $enable_md5 = !isset($opts['fim_enable_md5']) || !empty($opts['fim_enable_md5']);
+        $enable_sha256 = !empty($opts['fim_enable_sha256']);
+
+        // MD5 Optimization (Caching array generation during multiple file scans)
+        static $md5_array = null;
+        if ($md5_array === null && !empty($signatures['md5'])) {
+            $md5_array = is_array($signatures['md5']) ? $signatures['md5'] : str_split($signatures['md5'], 8);
+        }
+
+        // Hash checks (before reading content)
+        if ($enable_md5 && !empty($md5_array)) {
+            $md5 = md5_file($path);
+            $md5_prefix = substr($md5, 0, 8); // Support for 8-char prefixes from AMWScan
+            if (in_array($md5, $md5_array) || in_array($md5_prefix, $md5_array)) {
+                return 'Found: Known Malware (MD5 Match)';
+            }
+        }
+        
+        // SHA256 Optimization
+        static $sha256_array = null;
+        if ($sha256_array === null && !empty($signatures['sha256'])) {
+            $sha256_array = is_array($signatures['sha256']) ? $signatures['sha256'] : str_split($signatures['sha256'], 64);
+        }
+
+        if ($enable_sha256 && !empty($sha256_array)) {
+            $sha256 = hash_file('sha256', $path);
+            if (in_array($sha256, $sha256_array)) {
+                return 'Found: Known Malware (SHA256 Match)';
+            }
         }
 
         // Limit file read to 1MB to avoid memory exhaustion
@@ -474,69 +552,53 @@ class ADVAIPBL_FIM_Engine {
             return 'Unreadable';
         }
 
-        $signatures = [
-            'Dynamic Code Execution (eval)' => [101, 118, 97, 108, 40],
-            'Dynamic Code Execution (assert)' => [97, 115, 115, 101, 114, 116, 40],
-            'Dynamic Code Execution (create_function)' => [99, 114, 101, 97, 116, 101, 95, 102, 117, 110, 99, 116, 105, 111, 110, 40],
-            'Unsafe Object Deserialization' => [117, 110, 115, 101, 114, 105, 97, 108, 105, 122, 101, 40],
-            'Base64 Decoding Function' => [98, 97, 115, 101, 54, 52, 95, 100, 101, 99, 111, 100, 101],
-            'System Command Execution (shell_exec)' => [115, 104, 101, 108, 108, 95, 101, 120, 101, 99],
-            'System Command Execution (system)' => [115, 121, 115, 116, 101, 109, 40],
-            'System Command Execution (exec)' => [101, 120, 101, 99, 40],
-            'System Command Execution (passthru)' => [112, 97, 115, 115, 116, 104, 114, 117, 40],
-            'System Command Execution (proc_open)' => [112, 114, 111, 99, 95, 111, 112, 101, 110, 40],
-            'System Command Execution (popen)' => [112, 111, 112, 101, 110, 40],
-            'String ROT13 Obfuscation' => [115, 116, 114, 95, 114, 111, 116, 49, 51],
-            'GZ Inflate Obfuscation' => [103, 122, 105, 110, 102, 108, 97, 116, 101],
-            'GZ Uncompress Obfuscation' => [103, 122, 117, 110, 99, 111, 109, 112, 114, 101, 115, 115],
-            'Binary Packing (pack)' => [112, 97, 99, 107, 40],
-            'Hex to Bin Conversion' => [104, 101, 120, 50, 98, 105, 110, 40],
-            'Malware Family: WP-VCD' => [87, 80, 45, 86, 67, 68],
-            
-            // Highly specific curated signatures from public-signatures-raw.php
-            'Webshell: b374k' => [98, 51, 55, 52, 107],
-            'Webshell: c99shell' => [99, 57, 57, 115, 104, 101, 108, 108],
-            'Webshell: r57shell' => [114, 53, 55, 115, 104, 101, 108, 108],
-            'Webshell: fx29shell' => [102, 120, 50, 57, 115, 104, 101, 108, 108],
-            'Webshell: evilc0ders' => [101, 118, 105, 108, 99, 48, 100, 101, 114, 115],
-            'Webshell: kingdefacer' => [107, 105, 110, 103, 100, 101, 102, 97, 99, 101, 114],
-            'Webshell: Wireghoul' => [87, 105, 114, 101, 103, 104, 111, 117, 108],
-            'Webshell: htshell' => [104, 116, 115, 104, 101, 108, 108],
-            'Webshell: locus7s' => [108, 111, 99, 117, 115, 55, 115],
-            'Payload: Meterpreter' => [109, 101, 116, 101, 114, 112, 114, 101, 116, 101, 114],
-            'Tool: Slowloris' => [115, 108, 111, 119, 108, 111, 114, 105, 115],
-            'Webshell: sun-tzu' => [115, 117, 110, 45, 116, 122, 117],
-            'Bot: visbot' => [118, 105, 115, 98, 111, 116],
-            'Remote Code Execution Payload (POST)' => [64, 101, 118, 97, 108, 40, 36, 95, 80, 79, 83, 84, 91, 39],
-            'Remote File Inclusion Payload (GET)' => [64, 105, 110, 99, 108, 117, 100, 101, 40, 36, 95, 71, 69, 84, 91],
-            'Remote Command Execution Payload (GET)' => [115, 121, 115, 116, 101, 109, 40, 36, 95, 71, 69, 84, 91],
-            'Webshell: w4ck1ng shell' => [119, 52, 99, 107, 49, 110, 103, 32, 115, 104, 101, 108, 108],
-            'Webshell: private Shell by m4rco' => [112, 114, 105, 118, 97, 116, 101, 32, 83, 104, 101, 108, 108, 32, 98, 121, 32, 109, 52, 114, 99, 111],
-            'Webshell: Shell by Mawar_Hitam' => [83, 104, 101, 108, 108, 32, 98, 121, 32, 77, 97, 119, 97, 114, 95, 72, 105, 116, 97, 109],
-            'Webshell: ConnectBackShell' => [67, 111, 110, 110, 101, 99, 116, 66, 97, 99, 107, 83, 104, 101, 108, 108],
-            'Bot: ShellBOT' => [83, 104, 101, 108, 108, 66, 79, 84],
-            'Webshell: IndoXploit' => [73, 110, 100, 111, 88, 112, 108, 111, 105, 116],
-            'Webshell: FaisaL Ahmed aka rEd X' => [70, 97, 105, 115, 97, 76, 32, 65, 104, 109, 101, 100, 32, 97, 107, 97, 32, 114, 69, 100, 32, 88],
-            'Bot: smisbot' => [115, 109, 105, 115, 98, 111, 116],
-            'Bot: smotherbot' => [115, 109, 111, 116, 104, 101, 114, 98, 111, 116],
-            'Webshell: Indonesian Hacker Rulez' => [73, 110, 100, 111, 110, 101, 115, 105, 97, 110, 32, 72, 97, 99, 107, 101, 114, 32, 82, 117, 108, 101, 122],
-            'Webshell Function: WSOsetcookie' => [87, 83, 79, 115, 101, 116, 99, 111, 111, 107, 105, 101, 40],
-            'Webshell Function: wsoEx' => [119, 115, 111, 69, 120, 40],
-            'Webshell: Mister Spy' => [77, 105, 115, 116, 101, 114, 32, 83, 112, 121],
-            'Webshell: Souheyl Bypass Shell' => [83, 111, 117, 104, 101, 121, 108, 32, 66, 121, 112, 97, 115, 115, 32, 83, 104, 101, 108, 108],
-            'Webshell: Welcome To Our Shell' => [87, 101, 108, 99, 111, 109, 101, 32, 84, 111, 32, 79, 117, 114, 32, 83, 104, 101, 108, 108],
-            'Webshell: Devloped By El Moujahidin' => [68, 101, 118, 108, 111, 112, 101, 100, 32, 66, 121, 32, 69, 108, 32, 77, 111, 117, 106, 97, 104, 105, 100, 105, 110],
-            'Obfuscator: PHPJiaMi' => [80, 72, 80, 74, 105, 97, 77, 105],
-        ];
-
         $found = [];
-        foreach ($signatures as $name => $chars) {
-            $pattern = '';
-            foreach ($chars as $c) {
-                $pattern .= chr($c);
+
+        // Helper function to decode HEX strings or ASCII arrays if needed
+        $decode_obfuscated = function($chars) {
+            if (is_string($chars) && ctype_xdigit($chars)) {
+                return hex2bin($chars); // Fast HEX decoding
             }
-            if (stripos($content, $pattern) !== false) {
-                $found[] = $name;
+            if (is_array($chars)) {
+                $pattern = '';
+                foreach ($chars as $c) {
+                    $pattern .= chr($c);
+                }
+                return $pattern;
+            }
+            return (string) $chars;
+        };
+
+        // Raw Text Signatures
+        if ($enable_raw && !empty($signatures['raw'])) {
+            foreach ($signatures['raw'] as $name => $chars) {
+                $pattern = $decode_obfuscated($chars);
+                if (stripos($content, $pattern) !== false) {
+                    $found[] = is_numeric($name) ? 'Raw Signature' : $name;
+                }
+            }
+        }
+
+        // Domain Signatures
+        if ($enable_domains && !empty($signatures['domains'])) {
+            foreach ($signatures['domains'] as $name => $chars) {
+                $pattern = $decode_obfuscated($chars);
+                if (stripos($content, $pattern) !== false) {
+                    $found[] = is_numeric($name) ? 'Malicious Domain' : $name;
+                }
+            }
+        }
+
+        // RegEx Signatures
+        if ($enable_regex && !empty($signatures['regex'])) {
+            foreach ($signatures['regex'] as $name => $chars) {
+                $pattern = $decode_obfuscated($chars);
+                // Ensure regex has delimiters. Standardize to ~ to avoid conflicts with / inside regex
+                // AMWScan regexes do not have delimiters in their array, so we wrap them
+                $pattern = '~' . str_replace('~', '\~', $pattern) . '~is';
+                if (@preg_match($pattern, $content)) {
+                    $found[] = is_numeric($name) ? 'RegEx Match' : $name;
+                }
             }
         }
 
@@ -544,7 +606,7 @@ class ADVAIPBL_FIM_Engine {
             return 'Clean';
         }
 
-        return 'Found: ' . implode(', ', $found);
+        return 'Found: ' . implode(', ', array_unique($found));
     }
 
     /**
@@ -938,7 +1000,7 @@ class ADVAIPBL_FIM_Engine {
         // Footer
         $dashboard_url = admin_url('admin.php?page=advaipbl_settings_page&tab=integrity&sub-tab=fim_dashboard');
         $settings_url = admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-notifications');
-        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.1';
+        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.2';
 
         $html .= '<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center; line-height: 1.6;">';
         $html .= '<p style="margin: 0;">' . __('This email was generated by the Advanced IP Blocker plugin.', 'advanced-ip-blocker') . '</p>';
@@ -978,6 +1040,11 @@ class ADVAIPBL_FIM_Engine {
             return true;
         }
         
+        // Auto-ignore our own plugin to prevent false positives from security-related keywords
+        if (strpos($rel_path, 'wp-content/plugins/advanced-ip-blocker/') === 0 || strpos($rel_path, 'advanced-ip-blocker/') === 0) {
+            return true;
+        }
+        
         // Normalize for plugins: deep scan format vs standard format
         // Deep scan path: wp-content/plugins/plugin-slug/file.php
         // Standard path: plugin-slug/file.php
@@ -1013,6 +1080,18 @@ class ADVAIPBL_FIM_Engine {
     /**
      * AJAX endpoint to add a file to the whitelist.
      */
+    /**
+     * AJAX endpoint to gather the list of whitelisted files.
+     */
+    public function ajax_get_whitelist_list() {
+        check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized']);
+        }
+        $whitelist = $this->get_whitelist();
+        wp_send_json_success($whitelist);
+    }
+
     public function ajax_add_whitelist() {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
         if (!current_user_can('manage_options')) {

@@ -58,7 +58,7 @@ jQuery(document).ready(function($) {
 
     function executeScan(scanType, $btn) {
         $btn.prop('disabled', true).text(advaipbl_fim_vars.i18n.gathering);
-        $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn').hide();
+        $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn, #advaipbl-fim-whitelist-btn').hide();
         
         $('#fim-progress-area').show();
         $('#fim-results-area').hide();
@@ -104,6 +104,16 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data.files.length > 0) {
+                    if (response.data.warning) {
+                        if (window.AdvaipblAdmin && typeof window.AdvaipblAdmin.showConfirmModal === 'function') {
+                            window.AdvaipblAdmin.showConfirmModal({ title: advaipbl_fim_vars.i18n.warning || 'Warning', message: response.data.warning, confirmText: 'OK' });
+                            // Hide cancel button
+                            setTimeout(function() { $('#advaipbl-general-confirm-modal .advaipbl-modal-cancel').hide(); }, 10);
+                            setTimeout(function() { $('#advaipbl-general-confirm-modal .advaipbl-modal-cancel').show(); }, 1000);
+                        } else {
+                            alert(response.data.warning);
+                        }
+                    }
                     filesToScan = response.data.files;
                     totalFiles = response.data.total;
                     $('#fim-status-text').text(advaipbl_fim_vars.i18n.scanning);
@@ -111,14 +121,14 @@ jQuery(document).ready(function($) {
                 } else {
                     alert(advaipbl_fim_vars.i18n.no_files);
                     $btn.prop('disabled', false).text(advaipbl_fim_vars.i18n.start_btn);
-                    $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn').show().prop('disabled', false);
+                    $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn, #advaipbl-fim-whitelist-btn').show().prop('disabled', false);
                     $('#fim-progress-area').hide();
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 handleFimError(jqXHR, advaipbl_fim_vars.i18n.error_server);
                 $btn.prop('disabled', false).text(advaipbl_fim_vars.i18n.start_btn);
-                    $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn').show().prop('disabled', false);
+                    $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn, #advaipbl-fim-whitelist-btn').show().prop('disabled', false);
                 $('#fim-progress-area').hide();
             }
         });
@@ -194,13 +204,13 @@ jQuery(document).ready(function($) {
                 } else {
                     alert(advaipbl_fim_vars.i18n.error_chunk);
                     $('#advaipbl-start-fim-scan').prop('disabled', false).text(advaipbl_fim_vars.i18n.start_btn);
-                $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn').show().prop('disabled', false);
+                $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn, #advaipbl-fim-whitelist-btn').show().prop('disabled', false);
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 handleFimError(jqXHR, advaipbl_fim_vars.i18n.error_server_chunk);
                 $('#advaipbl-start-fim-scan').prop('disabled', false).text(advaipbl_fim_vars.i18n.start_btn);
-                $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn').show().prop('disabled', false);
+                $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn, #advaipbl-fim-whitelist-btn').show().prop('disabled', false);
             }
         });
     }
@@ -208,7 +218,7 @@ jQuery(document).ready(function($) {
     function finishScan() {
         $('#fim-status-text').text(advaipbl_fim_vars.i18n.scan_complete);
         $('#advaipbl-start-fim-scan').prop('disabled', false).text(advaipbl_fim_vars.i18n.scan_again);
-        $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn').show().prop('disabled', false);
+        $('#advaipbl-fim-history-btn, #fim-load-history-btn, #advaipbl-fim-quarantine-btn, #advaipbl-fim-whitelist-btn').show().prop('disabled', false);
         
         // Populate Unverifiable
         for (var pName in unverifiablePlugins) {
@@ -801,6 +811,62 @@ jQuery(document).ready(function($) {
     // --- QUARANTINE SYSTEM ---
     
     // Open Vault Modal
+    // FIM Whitelist Modal
+    $('#advaipbl-fim-whitelist-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#advaipbl-fim-whitelist-modal').show();
+        loadFIMWhitelist();
+    });
+
+    function loadFIMWhitelist() {
+        $('#advaipbl-fim-whitelist-loading').show();
+        $('#advaipbl-fim-whitelist-empty').hide();
+        $('#advaipbl-fim-whitelist-list-container').hide();
+        
+        $.post(ajaxurl, {
+            action: 'advaipbl_fim_get_whitelist_list',
+            nonce: advaipbl_fim_vars.nonce
+        }, function(response) {
+            $('#advaipbl-fim-whitelist-loading').hide();
+            if (response.success && response.data.length > 0) {
+                var $tbody = $('#advaipbl-fim-whitelist-tbody');
+                $tbody.empty();
+                response.data.forEach(function(path) {
+                    var html = '<tr>' +
+                        '<td><code>' + path + '</code></td>' +
+                        '<td style="text-align:center;">' +
+                            '<button type="button" class="button button-link-delete advaipbl-remove-whitelist-modal-btn" data-path="' + path + '"><span class="dashicons dashicons-trash"></span> ' + (advaipbl_fim_vars.i18n.ignore_btn ? advaipbl_fim_vars.i18n.ignore_btn.replace('Ignore', 'Remove') : 'Remove') + '</button>' +
+                        '</td>' +
+                    '</tr>';
+                    $tbody.append(html);
+                });
+                $('#advaipbl-fim-whitelist-list-container').show();
+            } else {
+                $('#advaipbl-fim-whitelist-empty').show();
+            }
+        });
+    }
+
+    $(document).on('click', '.advaipbl-remove-whitelist-modal-btn', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var path = $btn.data('path');
+        $btn.prop('disabled', true).text('...');
+        
+        $.post(ajaxurl, {
+            action: 'advaipbl_fim_remove_whitelist',
+            nonce: advaipbl_fim_vars.nonce,
+            rel_path: path
+        }, function(response) {
+            if (response.success) {
+                loadFIMWhitelist();
+            } else {
+                alert(response.data.message || advaipbl_fim_vars.i18n.error);
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> Remove');
+            }
+        });
+    });
+
     $('#advaipbl-fim-quarantine-btn').on('click', function(e) {
         e.preventDefault();
         $('#advaipbl-fim-quarantine-modal').show();

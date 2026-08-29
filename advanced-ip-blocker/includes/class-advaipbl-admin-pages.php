@@ -1287,8 +1287,11 @@ public function display_general_settings_tab() {
                             <p class="description">
                                 <?php esc_html_e('Audit administrative actions and monitor the integrity of your WordPress files.', 'advanced-ip-blocker'); ?>
                                 <br><br>
-                                <a href="<?php echo esc_url(admin_url('admin.php?page=advaipbl_settings_page&tab=logs&sub-tab=audit_log')); ?>" class="button button-secondary">
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=advaipbl_settings_page&tab=logs&sub-tab=audit_log')); ?>" class="button button-secondary" style="margin-right:10px;">
                                     <?php esc_html_e('View Activity Audit Logs', 'advanced-ip-blocker'); ?>
+                                </a>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=advaipbl_settings_page&tab=integrity&sub-tab=fim_dashboard')); ?>" class="button button-primary">
+                                    <?php esc_html_e('Go to Integrity Scanner', 'advanced-ip-blocker'); ?>
                                 </a>
                             </p>
                             <table class="form-table">
@@ -4483,6 +4486,41 @@ public function display_scanner_tab() {
     <h2><?php esc_html_e('File Integrity Monitor', 'advanced-ip-blocker'); ?></h2>
     <p><?php esc_html_e('Scan your WordPress core files and plugins against their official repository checksums to detect unauthorized modifications, backdoors, or malware.', 'advanced-ip-blocker'); ?></p>
     
+    <?php
+    $opts = $this->plugin->options;
+    $fim_raw = !isset($opts['fim_enable_raw']) || !empty($opts['fim_enable_raw']);
+    $fim_regex = !empty($opts['fim_enable_regex']);
+    $fim_domains = !isset($opts['fim_enable_domains']) || !empty($opts['fim_enable_domains']);
+    $fim_md5 = !isset($opts['fim_enable_md5']) || !empty($opts['fim_enable_md5']);
+    $fim_sha256 = !empty($opts['fim_enable_sha256']);
+    
+    $render_status = function($is_active, $label) {
+        $icon = $is_active ? 'yes-alt' : 'dismiss';
+        $color = $is_active ? '#46b450' : '#dc3232';
+        return '<span style="display:inline-block; margin-right:15px; font-weight:600; color:#3c434a;"><span class="dashicons dashicons-' . $icon . '" style="color:' . $color . '; vertical-align:middle; margin-top:-3px;"></span> ' . esc_html($label) . '</span>';
+    };
+    ?>
+    <div class="notice notice-info" style="margin-left:0; padding:15px; border-left-color: #2271b1; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h4 style="margin: 0 0 10px 0;"><?php esc_html_e('Active Signature Modules', 'advanced-ip-blocker'); ?></h4>
+                <div style="font-size: 13px;">
+                    <?php echo wp_kses_post($render_status($fim_raw, 'Raw Signatures')); ?>
+                    <?php echo wp_kses_post($render_status($fim_regex, 'RegEx Signatures')); ?>
+                    <?php echo wp_kses_post($render_status($fim_domains, 'Malicious Domains')); ?>
+                    <?php echo wp_kses_post($render_status($fim_md5, 'MD5 Hashes')); ?>
+                    <?php echo wp_kses_post($render_status($fim_sha256, 'SHA256 Hashes')); ?>
+                </div>
+                <p style="margin: 10px 0 0 0; font-size:12px; color:#646970;"><?php esc_html_e('Disabled modules are automatically removed from your database to optimize performance and evade server AVs.', 'advanced-ip-blocker'); ?></p>
+            </div>
+            <div>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-internal_security')); ?>" class="button button-secondary">
+                    <span class="dashicons dashicons-admin-generic" style="margin-top:4px;"></span> <?php esc_html_e('Configure Modules', 'advanced-ip-blocker'); ?>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="advaipbl-dashboard-widget" style="margin-top: 20px;">
         <div class="advaipbl-fim-controls-container">
             <label class="advaipbl-fim-scan-target">
@@ -4501,6 +4539,9 @@ public function display_scanner_tab() {
               <button id="advaipbl-fim-history-btn" class="button button-secondary button-large">
                   <span class="dashicons dashicons-backup" style="margin-top:4px;"></span> <?php esc_html_e('View Scan History', 'advanced-ip-blocker'); ?>
               </button>
+     <button id="advaipbl-fim-whitelist-btn" class="button button-secondary button-large">
+         <span class="dashicons dashicons-yes-alt" style="margin-top:4px;"></span> <?php esc_html_e('Manage Whitelist', 'advanced-ip-blocker'); ?>
+     </button>
               <button id="advaipbl-start-fim-scan" class="button button-primary button-large"><?php esc_html_e('Start Integrity Scan', 'advanced-ip-blocker'); ?></button>
             </div>
         </div>
@@ -4667,6 +4708,38 @@ public function display_scanner_tab() {
         </div>
         <div class="advaipbl-modal-footer">
             <button type="button" class="button advaipbl-modal-cancel"><?php esc_html_e('Close', 'advanced-ip-blocker'); ?></button>
+        </div>
+    </div>
+</div>
+
+<!-- Whitelist Modal -->
+<div id="advaipbl-fim-whitelist-modal" class="advaipbl-modal-overlay" style="display: none;">
+    <div class="advaipbl-modal-content" style="max-width: 800px;">
+        <h3 class="advaipbl-modal-title"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e('Trusted Files (Whitelist)', 'advanced-ip-blocker'); ?></h3>
+        <div class="advaipbl-modal-body">
+            <p><?php esc_html_e('These files are ignored during integrity scans.', 'advanced-ip-blocker'); ?></p>
+            <div id="advaipbl-fim-whitelist-loading" style="display:none; text-align:center; padding: 20px;">
+                <span class="spinner is-active" style="float:none; margin:0 auto;"></span>
+            </div>
+            <div id="advaipbl-fim-whitelist-empty" style="display:none; text-align:center; padding: 30px; background:#f9f9f9; border-radius:4px; margin-top:20px;">
+                <p><?php esc_html_e('No files are currently whitelisted.', 'advanced-ip-blocker'); ?></p>
+            </div>
+            <div id="advaipbl-fim-whitelist-list-container" style="display:none; max-height: 400px; overflow-y: auto; margin-top:15px; border: 1px solid #ccd0d4;">
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 80%;"><?php esc_html_e('File Path', 'advanced-ip-blocker'); ?></th>
+                            <th style="width: 20%; text-align:center;"><?php esc_html_e('Action', 'advanced-ip-blocker'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="advaipbl-fim-whitelist-tbody">
+                        <!-- Loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="advaipbl-modal-footer">
+            <button class="button advaipbl-modal-cancel"><?php esc_html_e('Close', 'advanced-ip-blocker'); ?></button>
         </div>
     </div>
 </div>

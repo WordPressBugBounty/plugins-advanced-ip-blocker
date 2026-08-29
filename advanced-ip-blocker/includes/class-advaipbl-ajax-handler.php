@@ -1038,6 +1038,10 @@ public function ajax_verify_abuseipdb_key() {
              wp_send_json_error(['message' => __('File Verifier module not loaded.', 'advanced-ip-blocker')]);
         }
 
+        // Before starting a manual scan, ping the Central API to see if there is a new signature version.
+        // This ensures the manual scan always uses the latest signatures without waiting for the cron job.
+        $this->plugin->check_fim_signatures_version();
+
         $changes = $this->plugin->file_verifier->scan_files();
 
         if (empty($changes)) {

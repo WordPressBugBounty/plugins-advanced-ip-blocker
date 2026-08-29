@@ -25,6 +25,46 @@ class ADVAIPBL_Settings_Manager {
         $this->plugin = $plugin_instance;
         $this->admin_pages = $admin_pages_instance;
         add_action('admin_notices', [$this, 'display_captcha_keys_warning']);
+        add_action('update_option_' . ADVAIPBL_Main::OPTION_SETTINGS, [$this, 'handle_fim_settings_update'], 10, 2);
+    }
+
+    /**
+     * Handles dynamic cleanup of FIM signatures DB options when FIM settings change.
+     */
+    public function handle_fim_settings_update($old_value, $new_value) {
+        $old_value = is_array($old_value) ? $old_value : [];
+        $new_value = is_array($new_value) ? $new_value : [];
+
+        $modules = [
+            'fim_enable_raw' => 'raw',
+            'fim_enable_regex' => 'regex',
+            'fim_enable_domains' => 'domains',
+            'fim_enable_md5' => 'md5',
+            'fim_enable_sha256' => 'sha256',
+        ];
+
+        $needs_sync = false;
+
+        foreach ($modules as $setting_key => $db_suffix) {
+            // Check default state if not set (raw and domains default to ON in engine)
+            $default_on = in_array($setting_key, ['fim_enable_raw', 'fim_enable_domains']);
+            
+            $was_on = isset($old_value[$setting_key]) ? !empty($old_value[$setting_key]) : $default_on;
+            $is_on = isset($new_value[$setting_key]) ? !empty($new_value[$setting_key]) : $default_on;
+
+            if ($was_on && !$is_on) {
+                // User disabled the module, delete it from DB immediately to avoid AV detections
+                delete_option('advaipbl_fim_signatures_' . $db_suffix);
+            } elseif (!$was_on && $is_on) {
+                // User enabled the module, we need to force a re-download of the JSON
+                $needs_sync = true;
+            }
+        }
+
+        if ($needs_sync) {
+            // Delete the local version so next Ping triggers a full download
+            delete_option('advaipbl_fim_signatures_version');
+        }
     }
 
     public function register_settings() {
@@ -1256,7 +1296,7 @@ add_settings_field(
         $page,
         'advaipbl_internal_security_section',
         [
-            'name' => 'enable_fim', 'fim_scan_uploads',
+            'name' => 'enable_fim', 'fim_scan_uploads', 'fim_enable_raw', 'fim_enable_regex', 'fim_enable_domains', 'fim_enable_md5', 'fim_enable_sha256',
             'label' => __('Monitor critical WordPress files for unauthorized changes.', 'advanced-ip-blocker'),
             'description' => __('Automatically scans core files (wp-config.php, .htaccess, index.php) daily for modifications.', 'advanced-ip-blocker')
         ]
@@ -1274,6 +1314,72 @@ add_settings_field(
             'label' => __('Scan the wp-content/uploads directory for suspicious executable files (.php). Legitimate index.php files are safely ignored.', 'advanced-ip-blocker')
         ]
     );
+
+    add_settings_field(
+        'advaipbl_fim_enable_raw',
+        __('Enable Raw String Signatures', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_enable_raw',
+            'label' => __('Detect malware using ultra-fast exact string matching.', 'advanced-ip-blocker'),
+            'description' => __('Recommended. This is the fastest and most common method for detecting known malware strings.', 'advanced-ip-blocker')
+        ]
+    );
+
+    add_settings_field(
+        'advaipbl_fim_enable_regex',
+        __('Enable RegEx Signatures', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_enable_regex',
+            'label' => __('Detect highly obfuscated malware using Regular Expressions.', 'advanced-ip-blocker'),
+            'description' => __('Advanced. Uses more CPU but detects polymorphic backdoors.', 'advanced-ip-blocker')
+        ]
+    );
+
+    add_settings_field(
+        'advaipbl_fim_enable_domains',
+        __('Enable Domain Signatures', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_enable_domains',
+            'label' => __('Detect malicious domains, APIs, and C2 servers inside files.', 'advanced-ip-blocker'),
+            'description' => __('Recommended. Very fast check for external malicious requests.', 'advanced-ip-blocker')
+        ]
+    );
+
+    add_settings_field(
+        'advaipbl_fim_enable_md5',
+        __('Enable MD5 Hash Signatures', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_enable_md5',
+            'label' => __('Identify known malware files instantly using MD5 hashes.', 'advanced-ip-blocker'),
+            'description' => __('Recommended. Skips reading file contents if the hash matches known malware.', 'advanced-ip-blocker')
+        ]
+    );
+
+    add_settings_field(
+        'advaipbl_fim_enable_sha256',
+        __('Enable SHA256 Hash Signatures', 'advanced-ip-blocker'),
+        [$this, 'switch_field_callback'],
+        $page,
+        'advaipbl_internal_security_section',
+        [
+            'name' => 'fim_enable_sha256',
+            'label' => __('Identify known malware files using SHA256 hashes.', 'advanced-ip-blocker'),
+            'description' => __('Slower than MD5 but highly accurate.', 'advanced-ip-blocker')
+        ]
+    );
+
 
     add_settings_field(
         'advaipbl_fim_excluded_paths',
@@ -1378,7 +1484,7 @@ add_settings_field(
             'htaccess_protect_readme',
             'enable_scheduled_scans',
             'enable_audit_log',
-            'enable_fim', 'fim_scan_uploads',
+            'enable_fim', 'fim_scan_uploads', 'fim_enable_raw', 'fim_enable_regex', 'fim_enable_domains', 'fim_enable_md5', 'fim_enable_sha256',
             'scan_check_ssl', 'scan_check_updates', 'scan_check_php', 'scan_check_wp', 'scan_check_debug',
             'block_ghost_ips', 'disable_imagick', 'hide_wp_version', 'disable_app_passwords', 'disable_file_editor', 'block_php_uploads', 'remove_x_powered_by'
         ];
