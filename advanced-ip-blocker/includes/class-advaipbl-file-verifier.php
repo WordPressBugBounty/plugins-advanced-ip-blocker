@@ -1,30 +1,35 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (! defined('ABSPATH')) {
+    exit;
+}
 
-class ADVAIPBL_File_Verifier {
-
+class ADVAIPBL_File_Verifier
+{
     private $main_instance;
-    const OPTION_BASELINE_HASHES = 'advaipbl_fim_baseline_hashes';
+    public const OPTION_BASELINE_HASHES = 'advaipbl_fim_baseline_hashes';
 
-    public function __construct($main_instance) {
+    public function __construct($main_instance)
+    {
         $this->main_instance = $main_instance;
     }
 
     /**
      * Calculates the hash of a critical file.
-     * 
+     *
      * @param string $filepath Absolute path to the file.
      * @return string|false SHA-256 hash or false if file not found.
      */
-    public function get_file_hash($filepath) {
+    public function get_file_hash($filepath)
+    {
         if (!file_exists($filepath)) {
             return false;
         }
-         // 2MB limit to avoid memory issues
+
         if (filesize($filepath) > 2 * 1024 * 1024) {
             return 'skipped_too_large';
         }
+
         return hash_file('sha256', $filepath);
     }
 
@@ -32,11 +37,12 @@ class ADVAIPBL_File_Verifier {
      * Gets the list of critical files to monitor.
      * @return array
      */
-    public function get_monitored_files() {
+    public function get_monitored_files()
+    {
         return [
             'wp-config.php' => ABSPATH . 'wp-config.php',
             'index.php'     => ABSPATH . 'index.php',
-            'wp-settings.php'=> ABSPATH . 'wp-settings.php',
+            'wp-settings.php' => ABSPATH . 'wp-settings.php',
             '.htaccess'     => ABSPATH . '.htaccess',
         ];
     }
@@ -44,7 +50,8 @@ class ADVAIPBL_File_Verifier {
     /**
      * Creates and stores the initial baseline hashes.
      */
-    public function create_baseline() {
+    public function create_baseline()
+    {
         $baseline = [];
         foreach ($this->get_monitored_files() as $key => $path) {
             $hash = $this->get_file_hash($path);
@@ -56,6 +63,7 @@ class ADVAIPBL_File_Verifier {
             }
         }
         update_option(self::OPTION_BASELINE_HASHES, $baseline);
+
         return $baseline;
     }
 
@@ -63,24 +71,35 @@ class ADVAIPBL_File_Verifier {
      * Scans files against the stored baseline.
      * @return array List of changed files.
      */
-    public function scan_files() {
-        // Double check setting
+    public function scan_files()
+    {
         if (empty($this->main_instance->options['enable_fim'])) {
             return [];
         }
 
         $baseline = get_option(self::OPTION_BASELINE_HASHES, []);
         if (empty($baseline)) {
-            // First run, create baseline
             $this->create_baseline();
+
             return [];
         }
 
+        $fim_engine = null;
+        $core_checksums = [];
+        if (isset($this->main_instance->fim_engine)) {
+            $fim_engine = $this->main_instance->fim_engine;
+            $core_checksums = $fim_engine->get_core_checksums();
+            if (is_wp_error($core_checksums)) {
+                $core_checksums = [];
+            }
+        }
+
         $changes = [];
+        $silent_updates = [];
+
         foreach ($this->get_monitored_files() as $key => $path) {
             $current_hash = $this->get_file_hash($path);
-            
-            // If file existed in baseline but now gone/unreadable
+
             if (!$current_hash && isset($baseline[$key])) {
                 $changes[] = [
                     'file' => $key,
@@ -89,74 +108,83 @@ class ADVAIPBL_File_Verifier {
                 continue;
             }
 
-            // If file exists and we have a baseline
             if ($current_hash && isset($baseline[$key])) {
                 if ($current_hash !== $baseline[$key]['hash']) {
+                    
+                    if (isset($core_checksums[$key]) && md5_file($path) === $core_checksums[$key]) {
+                        $silent_updates[] = [
+                            'file' => $key,
+                            'type' => 'official_update',
+                            'new_hash' => $current_hash
+                        ];
+                        continue;
+                    }
+
+                    $malware_status = $fim_engine ? $fim_engine->scan_for_malware($path) : 'Unknown';
+
                     $changes[] = [
                         'file' => $key,
                         'type' => 'modified',
                         'old_hash' => $baseline[$key]['hash'],
-                        'new_hash' => $current_hash
+                        'new_hash' => $current_hash,
+                        'malware_status' => $malware_status
                     ];
                 }
-            } else if ($current_hash && !isset($baseline[$key])) {
-                // Should not happen with fixed list, but good for future dynamic lists
+            } elseif ($current_hash && !isset($baseline[$key])) {
                 $changes[] = [
-                   'file' => $key,
-                   'type' => 'added',
-                   'new_hash' => $current_hash
+                    'file' => $key,
+                    'type' => 'added',
+                    'new_hash' => $current_hash
                 ];
             }
-
         }
 
-        // --- NEW: Scan uploads directory if enabled ---
         if (!empty($this->main_instance->options['fim_scan_uploads'])) {
             $upload_anomalies = $this->scan_uploads_for_executables();
             $changes = array_merge($changes, $upload_anomalies);
         }
 
-        if (!empty($changes)) {
-
-            $this->handle_fim_alert($changes);
-            
-            // Update baseline to prevent repeated alerts for the same change?
-            // SECURITY DECISION: No, we keep alerting until manual reset? 
-            // Better: update the specific files in baseline so we detect *new* changes.
-            foreach ($changes as $change) {
-                if ($change['type'] === 'modified' || $change['type'] === 'added') {
-                    $baseline[$change['file']] = ['hash' => $change['new_hash'], 'timestamp' => time()];
-                } elseif ($change['type'] === 'deleted') {
-                    unset($baseline[$change['file']]);
+        if (!empty($silent_updates)) {
+            foreach ($silent_updates as $upd) {
+                $baseline[$upd['file']] = ['hash' => $upd['new_hash'], 'timestamp' => time()];
+                if (isset($this->main_instance->audit_logger)) {
+                    $this->main_instance->audit_logger->log_activity(
+                        'fim_info',
+                        'info',
+                        ['message' => "WordPress official update applied to {$upd['file']}"]
+                    );
                 }
             }
             update_option(self::OPTION_BASELINE_HASHES, $baseline);
         }
 
+        if (!empty($changes)) {
+            $this->handle_fim_alert($changes);
+        }
+
         return $changes;
     }
-
 
     /**
      * Scans the wp-content/uploads directory for suspicious executable files.
      * @return array List of suspicious files found.
      */
-    private function scan_uploads_for_executables() {
+    private function scan_uploads_for_executables()
+    {
         $anomalies = [];
         $upload_dir = wp_upload_dir();
-        
+
         if (empty($upload_dir['basedir']) || !is_dir($upload_dir['basedir'])) {
             return $anomalies;
         }
 
         $base_dir = $upload_dir['basedir'];
-        
-        // Use RecursiveDirectoryIterator with a depth limit to avoid excessive CPU
+
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($base_dir, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
-        $iterator->setMaxDepth(5); // Limit depth to 5 subdirectories to prevent performance issues
+        $iterator->setMaxDepth(5);
 
         $raw_excluded_paths = $this->main_instance->options['fim_excluded_paths'] ?? '';
         $excluded_paths = array_filter(array_map('trim', explode("\n", $raw_excluded_paths)));
@@ -169,13 +197,11 @@ class ADVAIPBL_File_Verifier {
                 if (in_array($ext, $blacklisted_extensions, true)) {
                     $filename = $fileinfo->getFilename();
                     $rel_path = str_replace(wp_normalize_path(ABSPATH), '', wp_normalize_path($fileinfo->getPathname()));
-                    
-                    // Quarantine filter
+
                     if (strpos($rel_path, 'wp-content/uploads/advaipbl_quarantine') !== false) {
                         continue;
                     }
-                    
-                    // Excluded paths filter
+
                     $is_excluded = false;
                     foreach ($excluded_paths as $ex) {
                         if (!empty($ex) && strpos($rel_path, $ex) !== false) {
@@ -186,64 +212,71 @@ class ADVAIPBL_File_Verifier {
                     if ($is_excluded) {
                         continue;
                     }
-                    
-                    // Smart Whitelist: Ignore typical 'Silence is golden' index.php files
+
                     if ($filename === 'index.php' && $fileinfo->getSize() < 200) {
                         $content = @file_get_contents($fileinfo->getPathname(), false, null, 0, 100);
                         if ($content !== false && (stripos($content, 'Silence is golden') !== false || trim($content) === '<?php')) {
-                            continue; // Skip this file
+                            continue;
                         }
+                    }
+
+                    $malware_status = 'Unknown';
+                    if (isset($this->main_instance->fim_engine)) {
+                        $malware_status = $this->main_instance->fim_engine->scan_for_malware($fileinfo->getPathname());
+                    }
+
+                    if ($malware_status === 'Clean') {
+                        continue;
                     }
 
                     $anomalies[] = [
                         'file' => str_replace(ABSPATH, '', $fileinfo->getPathname()),
-                        'type' => 'suspicious'
+                        'type' => 'suspicious_upload',
+                        'malware_status' => $malware_status
                     ];
                 }
             }
         }
-        
+
         return $anomalies;
     }
 
-    private function handle_fim_alert($changes) {
+    private function handle_fim_alert($changes)
+    {
         $change_summary = [];
         foreach ($changes as $change) {
-            $change_summary[] = "{$change['file']} ({$change['type']})";
+            $malware_info = (isset($change['malware_status']) && $change['malware_status'] !== 'Clean' && $change['malware_status'] !== 'Unknown') ? " [{$change['malware_status']}]" : "";
+            $change_summary[] = "{$change['file']} ({$change['type']}){$malware_info}";
         }
         $summary_string = implode(', ', $change_summary);
-        
-        // Use Audit Logger instead of generic log
+
         if (isset($this->main_instance->audit_logger)) {
             $this->main_instance->audit_logger->log_activity(
-                'fim_alert', 
-                'critical', 
+                'fim_alert',
+                'critical',
                 ['message' => 'File integrity changes detected', 'files' => $change_summary]
             );
         } else {
-            // Fallback
             $this->main_instance->log_event('File Integrity Monitor detected changes: ' . wp_json_encode($changes), 'critical');
         }
-        
-        $to = !empty($this->main_instance->options['fim_alert_email']) 
-            ? $this->main_instance->options['fim_alert_email'] 
+
+        $to = !empty($this->main_instance->options['fim_alert_email'])
+            ? $this->main_instance->options['fim_alert_email']
             : get_option('admin_email');
-            
+
         $site_name = get_bloginfo('name');
-        
-        /* translators: %s: Site name */
+
+        /* translators: %s is a placeholder */
         $subject = sprintf(__('[%s] CRITICAL: File Change Detected', 'advanced-ip-blocker'), $site_name);
-        
+
         $template_title = __('File Integrity Alert', 'advanced-ip-blocker');
-        
-        // Context Data
+
         $date_time = date_i18n(get_option('date_format') . ' ' . get_option('time_format'));
         $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : 'Unknown';
-        
-        // Trigger detection
+
         $trigger_source = 'Scheduled Cron';
         $user_info = '';
-        
+
         if (is_admin() && current_user_can('advaipbl_manage_settings') && wp_doing_ajax()) {
             $current_user = wp_get_current_user();
             $trigger_source = 'Manual Scan';
@@ -258,30 +291,30 @@ class ADVAIPBL_File_Verifier {
 
         $body_content .= '<p>' . esc_html__('The Advanced IP Blocker File Integrity Monitor has detected unauthorized changes to critical system files:', 'advanced-ip-blocker') . '</p>';
         $body_content .= '<ul>';
-        
+
         foreach ($changes as $change) {
+            $malware_info = (isset($change['malware_status']) && $change['malware_status'] !== 'Clean' && $change['malware_status'] !== 'Unknown') ? ' <strong style="color:#dc3232;">[' . esc_html($change['malware_status']) . ']</strong>' : '';
             $body_content .= sprintf(
-                '<li><strong>%s:</strong> %s <span style="color:%s;">(%s)</span></li>',
+                '<li><strong>%s:</strong> %s <span style="color:%s;">(%s)</span>%s</li>',
                 __('File', 'advanced-ip-blocker'),
                 esc_html($change['file']),
                 $change['type'] === 'deleted' ? '#dc3232' : ($change['type'] === 'modified' ? '#dba617' : ($change['type'] === 'suspicious' ? '#ff6600' : '#00a32a')),
-                strtoupper($change['type'])
+                strtoupper($change['type']),
+                $malware_info
             );
         }
         $body_content .= '</ul>';
-        
+
         $body_content .= '<p>' . esc_html__('Please review these files immediately. If you made these changes, no action is required.', 'advanced-ip-blocker') . '</p>';
         $body_content .= '<p><em>' . esc_html__('The baseline has been updated to these new versions.', 'advanced-ip-blocker') . '</em></p>';
 
-        // Use the main HTML template (Delegated to Notification Manager)
         if (isset($this->main_instance->notification_manager)) {
             $body = $this->main_instance->notification_manager->get_html_email_template($template_title, $body_content);
-            
+
             add_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
             wp_mail($to, $subject, $body);
             remove_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
-            
-             // --- Push Notification (New in 8.7.4) ---
+
             if (!empty($this->main_instance->options['enable_push_notifications'])) {
                 $push_message_lines = [
                     sprintf('*:file_folder: [%s] CRITICAL: File Change Detected*', $site_name),
@@ -293,35 +326,34 @@ class ADVAIPBL_File_Verifier {
                 $this->main_instance->notification_manager->execute_webhook_send(implode("\n", $push_message_lines));
             }
         } else {
-             // Fallback if notification manager is missing
-             $body = $body_content;
-             wp_mail($to, $subject, $body);
+            $body = $body_content;
+            wp_mail($to, $subject, $body);
         }
     }
+
     /**
      * Updates the baseline hash for a specific file.
      * Use this when the plugin legitimately modifies a monitored file.
-     * 
+     *
      * @param string $filepath Absolute path to the file.
      * @return bool True if updated, false otherwise.
      */
-    public function update_file_hash($filepath) {
-        // Double check setting
+    public function update_file_hash($filepath)
+    {
         if (empty($this->main_instance->options['enable_fim'])) {
             return false;
         }
 
         $baseline = get_option(self::OPTION_BASELINE_HASHES, []);
         if (empty($baseline)) {
-            return false; // No baseline to update
+            return false;
         }
 
-        // Find the key for this filepath
         $monitored_files = $this->get_monitored_files();
         $key = array_search($filepath, $monitored_files);
 
         if (!$key) {
-            return false; // File not monitored
+            return false;
         }
 
         $new_hash = $this->get_file_hash($filepath);
@@ -331,6 +363,7 @@ class ADVAIPBL_File_Verifier {
                 'timestamp' => time()
             ];
             update_option(self::OPTION_BASELINE_HASHES, $baseline);
+
             return true;
         }
 

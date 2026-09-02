@@ -3,12 +3,12 @@ jQuery(document).ready(function ($) {
     const ajax_obj = window.advaipbl_ajax_obj || {};
 
     // ========================================================================
-    // MODAL Y NOTIFICACIONES PERSONALIZADAS
+    // CUSTOM MODAL AND NOTIFICATIONS
     // ========================================================================
     // Delegated to admin-core.js (window.AdvaipblAdmin)
 
     // ========================================================================
-    // GESTIÓN DEL MODAL DEL MAPA
+    // MAP MODAL MANAGEMENT
     // ========================================================================
 
     $('.wrap').on('click', '.advaipbl-btn-map', function (e) {
@@ -35,7 +35,7 @@ jQuery(document).ready(function ($) {
     });
 
     // ========================================================================
-    // ACCIONES AJAX PARA CERRAR SESIONES (USANDO MODAL)
+    // AJAX ACTIONS TO CLOSE SESSIONS (USING MODAL)
     // ========================================================================
 
     const ajaxHandler = function (action, data, nonceValue) {
@@ -65,7 +65,7 @@ jQuery(document).ready(function ($) {
     $('.wrap').on('click', '.advaipbl-btn-close-user', function () {
         const userId = $(this).data('user-id');
         window.AdvaipblAdmin.showConfirmModal({
-            // Usamos las nuevas claves del objeto ajax_obj
+            // We use the new keys from the ajax_obj object
             title: ajax_obj.title_close_user,
             message: ajax_obj.text_confirm_close_user,
             confirmText: ajax_obj.btn_close_user,
@@ -89,7 +89,7 @@ jQuery(document).ready(function ($) {
     $('#advaipbl-close-role-btn').on('click', function () {
         const role = $('#role-selector').val();
         if (!role) {
-            // Usamos la cadena traducida para la advertencia
+            // We use the translated string for the warning
             window.AdvaipblAdmin.showAdminNotice(ajax_obj.text_select_role, 'warning');
             return;
         }
@@ -117,7 +117,7 @@ jQuery(document).ready(function ($) {
     });
 
     /**
-     * Maneja el cambio del selector de "items por página" para recargar la página.
+     * Handles the "items per page" selector change to reload the page.
      */
     function initPerPageSelector() {
         $('body').on('change', '.advaipbl-per-page-selector', function () {

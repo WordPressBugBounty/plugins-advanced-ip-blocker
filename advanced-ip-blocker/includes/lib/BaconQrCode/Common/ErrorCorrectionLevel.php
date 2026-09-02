@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Common;
 
@@ -28,7 +29,7 @@ final class ErrorCorrectionLevel extends AbstractEnum
     /**
      * @throws OutOfBoundsException if number of bits is invalid
      */
-    public static function forBits(int $bits) : self
+    public static function forBits(int $bits): self
     {
         switch ($bits) {
             case 0:
@@ -50,7 +51,7 @@ final class ErrorCorrectionLevel extends AbstractEnum
     /**
      * Returns the two bits used to encode this error correction level.
      */
-    public function getBits() : int
+    public function getBits(): int
     {
         return $this->bits;
     }

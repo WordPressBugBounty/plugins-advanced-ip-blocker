@@ -1,38 +1,40 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (! defined('ABSPATH')) {
+    exit;
+}
 
-class ADVAIPBL_JS_Challenge {
-
+class ADVAIPBL_JS_Challenge
+{
     /**
      * @var ADVAIPBL_Main
      */
     private $plugin;
 
-    public function __construct( ADVAIPBL_Main $plugin_instance ) {
+    public function __construct(ADVAIPBL_Main $plugin_instance)
+    {
         $this->plugin = $plugin_instance;
     }
 
     /**
-     * Verifica la respuesta de un desafío JS si se ha enviado.
-     * Esta función se ejecuta antes que las reglas de bloqueo para procesar
-     * la respuesta de un desafío y establecer la cookie de verificación.
+     * Verifies a JS challenge response if submitted.
+     * Executes before block rules to process
+     * a challenge response and set the verification cookie.
      */
-    public function verify_submission() {
+    public function verify_submission()
+    {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         if (!isset($_POST['_advaipbl_js_token'])) {
             return;
         }
 
-        // Si la IP goza de inmunidad global (Bot legítimo, ASN en lista blanca, IP en lista blanca o Regla Avanzada ALLOW), 
-        // ignoramos el submission del challenge fallido o caducado y le dejamos pasar.
-        if ( !empty($this->plugin->request_is_asn_whitelisted) || $this->plugin->is_whitelisted($this->plugin->get_client_ip()) || !empty($this->plugin->is_advanced_rule_allowed) ) {
+        if (!empty($this->plugin->request_is_asn_whitelisted) || $this->plugin->is_whitelisted($this->plugin->get_client_ip()) || !empty($this->plugin->is_advanced_rule_allowed)) {
             return;
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $challenge_type = sanitize_key($_POST['_advaipbl_challenge_type'] ?? 'signature');
-        
+
         $global_duration_hours = (int)($this->plugin->options['global_challenge_cookie_duration'] ?? 4);
         $cookie_duration = ($global_duration_hours > 0) ? $global_duration_hours * HOUR_IN_SECONDS : 0;
 
@@ -45,56 +47,54 @@ class ADVAIPBL_JS_Challenge {
     }
 
     /**
-     * Valida un Pase VIP criptografico (Cookie HMAC)
+     * Validates a cryptographic VIP Pass (HMAC Cookie)
      * @param string $ip
      * @return bool
      */
-    public function is_vip_pass_valid($ip = null) {
+    public function is_vip_pass_valid($ip = null)
+    {
         if (!$ip) {
             $ip = $this->plugin->get_client_ip();
         }
-        
+
         $cookie_name = 'advaipbl_js_verified';
         if (!isset($_COOKIE[$cookie_name])) {
             return false;
         }
-        
+
         $cookie_value = sanitize_text_field(wp_unslash($_COOKIE[$cookie_name]));
-        
-        // Rechazar cookies antiguas tipo '1' por seguridad (fuerza un nuevo desafio)
+
         if ($cookie_value === '1') {
             return false;
         }
-        
+
         $decoded = base64_decode($cookie_value);
         if ($decoded === false || strpos($decoded, '|') === false) {
             return false;
         }
-        
+
         list($expiration, $signature) = explode('|', $decoded, 2);
-        
-        // Check si ha expirado (0 = sesion)
+
         if ((int)$expiration !== 0 && time() > (int)$expiration) {
             return false;
         }
-        
-        // Verificar firma
+
         $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
         $modifier = get_option('advaipbl_vip_salt_modifier', '');
-        
+
         $expected_signature = hash_hmac('sha256', $ip . $expiration, $salt . $modifier);
-        
+
         return hash_equals($expected_signature, $signature);
     }
 
     /**
-     * Verifica el token del desafío y establece la cookie si es correcto.
-     * 
-     * @param string $cookie_name Nombre de la cookie a establecer.
-     * @param int $cookie_duration Duración de la cookie en segundos.
+     * Verifies the challenge token and sets the cookie if correct.
+     *
+     * @param string $cookie_name Name of the cookie to set.
+     * @param int $cookie_duration Cookie duration in seconds.
      */
-    public function verify_challenge($cookie_name, $cookie_duration) {
-        // Sanitize input
+    public function verify_challenge($cookie_name, $cookie_duration)
+    {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $token = sanitize_text_field(wp_unslash($_POST['_advaipbl_js_token'] ?? ''));
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -102,29 +102,26 @@ class ADVAIPBL_JS_Challenge {
 
         $ip = $this->plugin->get_client_ip();
 
-        // Sanitizar el modo reportado
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $mode_reported = sanitize_key($_POST['_advaipbl_challenge_mode'] ?? 'managed');
 
-        // Verification check
         $is_valid       = false;
         $correct_answer = null;
 
-        // Decode HMAC Token (Stateless Verification)
         if (!empty($token)) {
             $decoded = base64_decode(strtr($token, '-_', '+/'));
             if ($decoded !== false && strpos($decoded, '::') !== false) {
                 list($payload, $signature) = explode('::', $decoded, 2);
-                
+
                 $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
                 $expected_signature = hash_hmac('sha256', $payload, $salt);
-                
+
                 if (hash_equals($expected_signature, $signature)) {
                     $parts = explode('|', $payload);
                     if (count($parts) === 2) {
                         $parsed_answer = (int) $parts[0];
                         $expiration    = (int) $parts[1];
-                        
+
                         if (time() <= $expiration) {
                             $correct_answer = $parsed_answer;
                         }
@@ -134,14 +131,12 @@ class ADVAIPBL_JS_Challenge {
         }
 
         if ($correct_answer !== null && $response === $correct_answer) {
-            // Si el cliente reporta que es un challenge 'managed', verificamos el checkbox
             if ($mode_reported === 'managed') {
                 // phpcs:ignore WordPress.Security.NonceVerification.Missing
                 if (isset($_POST['human_check'])) {
                     $is_valid = true;
                 }
             } else {
-                // Automático
                 $is_valid = true;
             }
         }
@@ -160,15 +155,15 @@ class ADVAIPBL_JS_Challenge {
                 'action' => 'js_challenge_failed'
             ]);
         }
-    
-        if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+
+        if (! defined('DONOTCACHEPAGE')) {
             // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
-            define( 'DONOTCACHEPAGE', true );
+            define('DONOTCACHEPAGE', true);
         }
-        header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
-        
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
         $this->plugin->log_event('JS challenge verification failed.', 'warning', ['ip' => $ip, 'token' => $token, 'response' => $response]);
-        
+
         wp_die(
             esc_html__('Verification failed. Please ensure JavaScript and cookies are enabled in your browser.', 'advanced-ip-blocker'),
             esc_html__('Access Denied', 'advanced-ip-blocker'),
@@ -181,7 +176,8 @@ class ADVAIPBL_JS_Challenge {
      * @param int $cookie_duration
      * @param string|null $ip
      */
-    public function set_vip_pass_cookie($cookie_duration, $ip = null) {
+    public function set_vip_pass_cookie($cookie_duration, $ip = null)
+    {
         if (!$ip) {
             $ip = $this->plugin->get_client_ip();
         }
@@ -189,14 +185,12 @@ class ADVAIPBL_JS_Challenge {
         $expiration = ($cookie_duration > 0) ? time() + $cookie_duration : 0;
         $request_uri = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'] ?? ''));
 
-        // Generar Pase VIP HMAC
         $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
         $modifier = get_option('advaipbl_vip_salt_modifier', '');
         $signature = hash_hmac('sha256', $ip . $expiration, $salt . $modifier);
         $cookie_value = base64_encode($expiration . '|' . $signature);
 
         if (defined('ADVAIPBL_EDGE_MODE') && ADVAIPBL_EDGE_MODE) {
-            // En Edge Mode, limpiamos el buffer y usamos una redirecci&oacute;n de PHP nativa.
             if (ob_get_level()) {
                 ob_end_clean();
             }
@@ -210,34 +204,31 @@ class ADVAIPBL_JS_Challenge {
                 'samesite' => 'Lax'
             ];
             setcookie($cookie_name, $cookie_value, $cookie_options);
-            
+
             wp_safe_redirect($request_uri, 303);
             exit;
-
         } else {
-            // En modo normal de WordPress, usamos las funciones de WordPress.
             setcookie($cookie_name, $cookie_value, $expiration, '/', defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '', is_ssl(), true);
             wp_safe_redirect($request_uri, 303);
             exit;
         }
     }
 
-    public function serve_challenge($challenge_type, $challenge_mode = 'managed') {
+    public function serve_challenge($challenge_type, $challenge_mode = 'managed')
+    {
         if (isset($this->plugin->challenge_metrics)) {
             $this->plugin->challenge_metrics->increment('served');
         }
 
         $global_engine = $this->plugin->options['default_challenge_engine'] ?? 'js_managed';
-        
-        // If mode is default (or legacy managed/automatic), use the global engine
+
         if ($challenge_mode === 'default' || $challenge_mode === 'managed' || $challenge_mode === 'automatic') {
             $challenge_mode = $global_engine;
         }
 
-        // Now parse the chosen mode (which is either explicitly set by the module or resolved from global)
-        $engine = 'js_challenge'; // Default assumption
+        $engine = 'js_challenge';
         $final_mode = 'managed';
-        
+
         if ($challenge_mode === 'js_managed') {
             $engine = 'js_challenge';
             $final_mode = 'managed';
@@ -265,7 +256,6 @@ class ADVAIPBL_JS_Challenge {
             }
 
             if (!$has_keys) {
-                // Fallback to js_automatic
                 $this->plugin->log_event(
                     sprintf("Missing API keys for %s. Falling back to JS Automatic Challenge to prevent lockout.", ucfirst($engine)),
                     'warning',
@@ -280,51 +270,46 @@ class ADVAIPBL_JS_Challenge {
             $this->plugin->captcha_manager->serve_challenge($challenge_type, $engine, $final_mode);
             exit;
         }
-        
-        $challenge_mode = $final_mode; // Pass down the final mode to the rest of the method
 
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
-        if (!defined('DONOTCACHEPAGE')) define('DONOTCACHEPAGE', true);
-        if (headers_sent()) { return; }
-        
-        // 1. Headers estándar HTTP/1.1 y HTTP/1.0
+        $challenge_mode = $final_mode;
+
+        if (!defined('DONOTCACHEPAGE')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Required constant name for caching plugins
+            define('DONOTCACHEPAGE', true);
+        }
+        if (headers_sent()) {
+            return;
+        }
+
         header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0');
         header('Pragma: no-cache');
         header('Expires: Thu, 01 Jan 1970 00:00:01 GMT');
-        
-        // 2. Headers específicos para proveedores de Caché/CDN conocidos
-        // Cubre: LiteSpeed, Cloudflare, Fastly, Varnish
-        header('X-LiteSpeed-Cache-Control: no-cache'); 
+
+        header('X-LiteSpeed-Cache-Control: no-cache');
         header('Cloudflare-CDN-Cache-Control: no-store');
-        header('CDN-Cache-Control: no-store'); 
-        header('Surrogate-Control: no-store'); 
-        
-        // Cubre: NGINX FastCGI Cache (FlyingPress, WP Rocket NGINX mode, etc.)
+        header('CDN-Cache-Control: no-store');
+        header('Surrogate-Control: no-store');
+
         header('X-Accel-Expires: 0');
-        
-        // Cubre: SG Optimizer y otros sistemas basados en headers
+
         header('X-Cache-Enabled: False');
 
-        // Nota: La constante DONOTCACHEPAGE (definida arriba) maneja:
-        // WP Rocket, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler.
-
-        // 3. Seguridad Standard
         header('X-Frame-Options: DENY');
         header('X-Content-Type-Options: nosniff');
         header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline';");
-        
+
         $num1   = wp_rand(1, 9);
         $num2   = wp_rand(1, 9);
         $answer = $num1 + $num2;
-        // Stateless verification token (HMAC) to bypass Cache and Database limitations
+
         $expiration = time() + 300;
         $payload    = $answer . '|' . $expiration;
         $salt       = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
         $signature  = hash_hmac('sha256', $payload, $salt);
         $token_raw  = $payload . '::' . $signature;
-        // URL-safe Base64
+
         $token      = strtr(base64_encode($token_raw), '+/', '-_');
-        
+
         status_header(503);
         header('Content-Type: text/html; charset=utf-8');
         header('Retry-After: 10');
@@ -334,11 +319,11 @@ class ADVAIPBL_JS_Challenge {
         $uri        = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'] ?? '/'));
         $action_url = esc_url($protocol . $host . $uri);
         $site_host          = wp_parse_url(home_url(), PHP_URL_HOST);
-        $site_msg           = esc_html__('needs to review the security of your connection before proceeding.', 'advanced-ip-blocker');        
+        $site_msg           = esc_html__('needs to review the security of your connection before proceeding.', 'advanced-ip-blocker');
         $site_title         = get_bloginfo('name', 'display');
         $page_title         = esc_html__('Verifying your connection...', 'advanced-ip-blocker');
-        $main_heading       = esc_html__('Security Check Required', 'advanced-ip-blocker'); 
-        
+        $main_heading       = esc_html__('Security Check Required', 'advanced-ip-blocker');
+
         $timer_text         = esc_html__('Time remaining: ', 'advanced-ip-blocker');
         $noscript_text      = esc_html__('Please enable JavaScript to continue.', 'advanced-ip-blocker');
         $button_text        = esc_html__('Verify and Continue', 'advanced-ip-blocker');
@@ -346,7 +331,7 @@ class ADVAIPBL_JS_Challenge {
         $expired_heading    = esc_html__('Session Expired', 'advanced-ip-blocker');
         $expired_message    = esc_html__('The security challenge has expired. Click the button below to get a new challenge.', 'advanced-ip-blocker');
         $reload_button_text = esc_html__('Start New Challenge', 'advanced-ip-blocker');
-        
+
         if ($challenge_mode === 'automatic') {
             $main_text = esc_html__('Please wait while we verify your connection. This process is automatic and protects the website from automated attacks.', 'advanced-ip-blocker');
             $js_script = "<script>
@@ -362,13 +347,12 @@ class ADVAIPBL_JS_Challenge {
                     }
                 }, 2500);
             </script>";
-            
+
             $form_content = '
                 <div id="challenge_spinner"></div>
                 <!-- Automatic Mode: No checkbox rendered -->
             ';
         } else {
-            // Managed mode
             $main_text = esc_html__('To proceed, please prove you are human. This verification protects the website from automated attacks.', 'advanced-ip-blocker');
             $js_script = "<script>
                 let isSubmitting = false;
@@ -401,7 +385,7 @@ class ADVAIPBL_JS_Challenge {
                     updateTimer();
                 }, 1500);
             </script>";
-            
+
             $form_content = '
                 <div id="challenge_spinner"></div>
                 <div id="challenge_interaction" style="display:none;">
@@ -471,7 +455,7 @@ p.branding a:hover{text-decoration:underline;}
     </div>' . $js_script . '</body>
 </html>';
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-        echo $html; 
+        echo $html;
         exit;
     }
 }

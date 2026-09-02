@@ -87,7 +87,6 @@ class City extends Country
             ;
         }
 
-        // Not using end as we don't want to modify internal pointer.
         $this->mostSpecificSubdivision
             = $subdivisions[\count($subdivisions) - 1];
         $this->subdivisions = $subdivisions;

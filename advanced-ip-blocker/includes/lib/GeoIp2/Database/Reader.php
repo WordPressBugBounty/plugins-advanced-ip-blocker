@@ -46,6 +46,7 @@ use MaxMind\Db\Reader\Metadata;
 class Reader implements ProviderInterface
 {
     private readonly DbReader $dbReader;
+
     private readonly string $dbType;
 
     /**
@@ -255,13 +256,6 @@ class Reader implements ProviderInterface
             );
         }
         if (!\is_array($record)) {
-            // This can happen on corrupt databases. Generally,
-            // MaxMind\Db\Reader will throw a
-            // MaxMind\Db\Reader\InvalidDatabaseException, but occasionally
-            // the lookup may result in a record that looks valid but is not
-            // an array. This mostly happens when the user is ignoring all
-            // exceptions and the more frequent InvalidDatabaseException
-            // exceptions go unnoticed.
             throw new InvalidDatabaseException(
                 "Expected an array when looking up $ipAddress but received: "
                 . \gettype($record)

@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Eye;
 
@@ -16,7 +17,7 @@ final class ModuleEye implements EyeInterface
     {
     }
 
-    public function getExternalPath() : Path
+    public function getExternalPath(): Path
     {
         $matrix = new ByteMatrix(7, 7);
 
@@ -33,7 +34,7 @@ final class ModuleEye implements EyeInterface
         return $this->module->createPath($matrix)->translate(-3.5, -3.5);
     }
 
-    public function getInternalPath() : Path
+    public function getInternalPath(): Path
     {
         $matrix = new ByteMatrix(3, 3);
 

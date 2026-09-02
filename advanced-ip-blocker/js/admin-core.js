@@ -3,11 +3,11 @@ jQuery(document).ready(function ($) {
     // Global Namespace for sharing functions between modules
     window.AdvaipblAdmin = window.AdvaipblAdmin || {};
 
-    // Objeto global con todos los datos y textos pasados desde PHP.
+    // Global object with all data and texts passed from PHP.
     const adminData = window.advaipbl_admin_data || {};
 
     // ========================================================================
-    // FUNCIONES DE UI REUTILIZABLES (Exposed globally)
+    // REUSABLE UI FUNCTIONS (Exposed globally)
     // ========================================================================
 
     window.AdvaipblAdmin.showAdminNotice = function (message, type = 'error') {
@@ -91,7 +91,7 @@ jQuery(document).ready(function ($) {
     initConfirmActions();
 
     /**
-    * Maneja los clics en el aviso de consentimiento de telemetría.
+    * Handles clicks on the telemetry consent notice.
     */
     function initTelemetryNotice() {
         $(document).on('click', '#advaipbl-allow-telemetry, #advaipbl-dismiss-telemetry-notice', function (e) {

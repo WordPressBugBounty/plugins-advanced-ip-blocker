@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Module;
 
@@ -23,7 +24,7 @@ final class DotsModule implements ModuleInterface
         }
     }
 
-    public function createPath(ByteMatrix $matrix) : Path
+    public function createPath(ByteMatrix $matrix): Path
     {
         $width = $matrix->getWidth();
         $height = $matrix->getHeight();

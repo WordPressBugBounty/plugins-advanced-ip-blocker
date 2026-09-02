@@ -1,29 +1,29 @@
 /**
  * Advanced IP Blocker - Admin Panel Styles
- * Version: 8.13.2
+ * Version: 8.13.3
  */
 
 /* ==========================================================================
-   PALETA DE COLORES CORPORATIVA (VARIABLES CSS)
+   CORPORATE COLOR PALETTE (CSS VARIABLES)
    ========================================================================== */
 :root {
-    --advaipbl-color-primary: #2271b1;       /* Color de marca para acentos principales */
-	--advaipbl-color-header: #2271b1;       /* Fondo nativo */
-    --advaipbl-color-secondary: #43b4e6;     /* Azul claro para acentos secundarios */
-    --advaipbl-color-text-light: #ffffff;   /* Texto sobre fondos oscuros/de color */
-    --advaipbl-color-text-dark: #1d2327;    /* Títulos y texto importante */
-    --advaipbl-color-text-body: #444444;     /* Texto de párrafo principal */
-    --advaipbl-color-border: #dcdcde;        /* Bordes estándar */
-    --advaipbl-color-background-alt: #f0f0f1;/* Fondos alternativos sutiles */
+    --advaipbl-color-primary: #2271b1;       /* Brand color for primary accents */
+	--advaipbl-color-header: #2271b1;       /* Native background */
+    --advaipbl-color-secondary: #43b4e6;     /* Light blue for secondary accents */
+    --advaipbl-color-text-light: #ffffff;   /* Text on dark/colored backgrounds */
+    --advaipbl-color-text-dark: #1d2327;    /* Titles and important text */
+    --advaipbl-color-text-body: #444444;     /* Main paragraph text */
+    --advaipbl-color-border: #dcdcde;        /* Standard borders */
+    --advaipbl-color-background-alt: #f0f0f1;/* Subtle alternative backgrounds */
     
-    /* Colores de Estado Estándar */
+    /* Standard State Colors */
     --advaipbl-color-success: #00a32a;
     --advaipbl-color-warning: #f59e0b;
     --advaipbl-color-error: #d63638;
 }
 
 /* ==========================================================================
-   CABECERA, NAVEGACIÓN Y LAYOUT GENERAL
+   HEADER, NAVIGATION AND GENERAL LAYOUT
    ========================================================================== */
 .advaipbl-header { background-color: var(--advaipbl-color-header); padding: 15px 25px; margin: 10px -20px 20px -20px; display: flex; align-items: center; gap: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); box-sizing: border-box; }
 .advaipbl-header-logo img { display: block; height: 48px; width: auto; max-width: 350px; }
@@ -43,7 +43,7 @@
 .form-table td .description { display: block; clear: both; padding-top: 8px; }
 
 /* ==========================================================================
-   ESTILO GLOBAL PARA EL CONTADOR DE NOTIFICACIONES
+   GLOBAL STYLE FOR NOTIFICATION COUNTER
    ========================================================================== */
 .advaipbl-block-count {
     display: inline-block;
@@ -61,7 +61,7 @@
 }
 
 /* ==========================================================================
-   MODALES (MAPA, CONFIRMACIÓN, ETC.)
+   MODALS (MAP, CONFIRMATION, ETC.)
    ========================================================================== */
 
 #mapModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
@@ -107,7 +107,7 @@
 .advaipbl-modal-footer .button { margin-left: 10px; }
 
 /* ==========================================================================
-   TABLAS Y PAGINACIÓN
+   TABLES AND PAGINATION
    ========================================================================== */
 .tablenav-pages .page-numbers { font-size: 14px; padding: 5px 10px; margin: 0 2px; border-radius: 4px; transition: background-color 0.2s, color 0.2s; border: 1px solid var(--advaipbl-color-border); background-color: #f6f7f7; color: var(--advaipbl-color-primary); text-decoration: none; }
 .tablenav-pages .page-numbers.current { background-color: var(--advaipbl-color-primary); border-color: var(--advaipbl-color-primary); color: var(--advaipbl-color-text-light); font-weight: bold; }
@@ -115,7 +115,7 @@
 .tablenav-pages .dots { padding: 6px 4px; border: none; background-color: transparent; }
 
 /* ==========================================================================
-   DASHBOARD Y WIDGETS
+   DASHBOARD AND WIDGETS
    ========================================================================== */
 #advaipbl-dashboard { position: relative; min-height: 400px; }
 .advaipbl-loader-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px; color: #666; }
@@ -173,7 +173,7 @@
 @keyframes pulse-animation { 0% { transform: scale(0); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
 
 /* ==========================================================================
-   ESTILOS ESPECÍFICOS Y UTILIDADES
+   SPECIFIC STYLES AND UTILITIES
    ========================================================================== */
 .advaipbl-table-responsive-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--advaipbl-color-border); border-radius: 4px; }
 .advaipbl-table-responsive-wrapper .wp-list-table { border: none; min-width: 600px; }
@@ -186,7 +186,7 @@
 .advaipbl-threat-score-item input[type="number"] { max-width: 80px; text-align: right; }
 
 /* ==========================================================================
-   INTERRUPTORES (TOGGLE SWITCHES)
+   TOGGLE SWITCHES
    ========================================================================== */
 .advaipbl-switch { position: relative; display: inline-block; width: 38px; height: 20px; vertical-align: middle; }
 .advaipbl-switch input[type="checkbox"] { opacity: 0; width: 0; height: 0; }
@@ -197,7 +197,7 @@
 .advaipbl-switch input:checked + .advaipbl-slider:before { transform: translateX(18px); }
 
 /* ==========================================================================
-   LAYOUT DE LA PÁGINA DE AJUSTES CON MENÚ LATERAL
+   SETTINGS PAGE LAYOUT WITH SIDE MENU
    ========================================================================== */
 .advaipbl-settings-layout { display: flex; gap: 20px; align-items: flex-start; }
 .advaipbl-settings-nav { width: 200px; flex-shrink: 0; position: -webkit-sticky; position: sticky; top: 50px; }
@@ -225,7 +225,7 @@
                 }
 #advaipbl-settings-search {
                     width: 100%;
-                    padding: 8px 12px 8px 35px; /* Espacio para el icono */
+                    padding: 8px 12px 8px 35px; /* Space for the icon */
                     font-size: 1.1em;
                     border-radius: 4px;
                 }
@@ -239,9 +239,9 @@
                     background-color: #f6f7f7;
                     border: 1px dashed #ddd;
                     border-radius: 4px;
-                    display: none; /* Oculto por defecto */
+                    display: none; /* Hidden by default */
                 }
-/* Estilos generales del Wizard */
+/* General Wizard styles */
 .advaipbl-wizard-wrap { max-width: 780px; margin: 40px auto; background: #fff; padding: 40px 40px; box-shadow: 0 1px 3px rgba(0,0,0,.13); border-radius: 4px; }
 .advaipbl-wizard-wrap h2 { font-size: 1.5em; border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 20px; }
 .advaipbl-wizard-ips { background: #f6f7f7; border-left: 4px solid #0073aa; padding: 10px 20px; margin: 20px 0; }
@@ -255,7 +255,7 @@
 .wizard-option-item .description { font-size: 13px; color: #646970; margin: 5px 0 0 0; }
 .advaipbl-wizard-final-step{text-align:center;padding:40px 20px;}.advaipbl-wizard-final-step .dashicons{font-size:80px;width:80px;height:80px;color:#4ab866;}.advaipbl-wizard-final-step h2{font-size:2em;margin:20px 0 10px;}.advaipbl-wizard-final-step h3{margin-top:40px;border-top:1px solid #ddd;padding-top:30px;}.advaipbl-wizard-next-steps{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;}
             				
-/* --- Estilos Finales para Reglas Avanzadas (Layout en Línea) --- */
+/* --- Final Styles for Advanced Rules (Inline Layout) --- */
 #advaipbl-advanced-rules-list .advaipbl-rule-card {
     display: flex !important; /* Forza el layout flex */
     align-items: center;      /* Alinea verticalmente los elementos */
@@ -269,48 +269,48 @@
     border-left-color: #72aee6;
 }
 
-/* Nombre de la regla: tamaño fijo, no se encoge */
+/* Rule name: fixed size, no shrink */
 #advaipbl-advanced-rules-list .rule-name {
     flex-shrink: 0;
     font-weight: 600;
-    min-width: 150px; /* Ancho mínimo para el nombre */
+    min-width: 150px; /* Minimum width for the name */
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Añade "..." si el nombre es muy largo */
+    text-overflow: ellipsis; /* Add "..." if the name is too long */
 }
 
-/* Resumen (IF) y Acción (THEN) */
+/* Summary (IF) and Action (THEN) */
 #advaipbl-advanced-rules-list .rule-summary,
 #advaipbl-advanced-rules-list .rule-action {
     font-size: 13px;
     line-height: 1.4;
-    white-space: normal; /* Permite saltos de linea si hay muchas condiciones */
-    overflow-wrap: break-word; /* Evita que se escape de la card */
+    white-space: normal; /* Allow line breaks if there are many conditions */
+    overflow-wrap: break-word; /* Prevent overflow from the card */
 }
 
 #advaipbl-advanced-rules-list .rule-summary ul { display: inline; margin: 0; padding: 0; list-style: none; }
 #advaipbl-advanced-rules-list .rule-summary li { display: inline; }
 #advaipbl-advanced-rules-list .rule-summary li:not(:last-child):after { content: 'AND'; font-weight: bold; color: #50575e; font-size: 10px; margin: 0 8px; }
 
-/* Acciones: empujadas al final */
+/* Actions: pushed to the end */
 #advaipbl-advanced-rules-list .rule-actions {
-    margin-left: auto; /* ¡Esta es la magia! Empuja este elemento a la derecha */
-    flex-shrink: 0;    /* Evita que los botones se encojan */
+    margin-left: auto; /* This is the magic! Pushes this element to the right */
+    flex-shrink: 0;    /* Prevent buttons from shrinking */
     white-space: nowrap;
 }
 
-/* Estilos para los componentes internos */
+/* Styles for internal components */
 #advaipbl-advanced-rules-list .rule-component-operator { font-style: italic; }
 #advaipbl-advanced-rules-list .rule-component-value { background: #f0f0f1; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
 #advaipbl-advanced-rules-list .rule-action-type { text-transform: capitalize; color: #d63638; font-weight: bold; }
 #advaipbl-advanced-rules-list .rule-action-param { font-size: 12px; color: #50575e; }
 #advaipbl-advanced-rules-list .rule-component-type {
     text-transform: capitalize;
-    color: #2271b1; /* Color azul de WordPress */
+    color: #2271b1; /* WordPress blue color */
     font-weight: bold;
 }
 
-/* --- Estilos para la Barra de Navegación de Reglas Avanzadas --- */
+/* --- Styles for Advanced Rules Navigation Bar --- */
 .advaipbl-rules-nav-bar {
     display: flex;
     justify-content: space-between;
@@ -326,16 +326,16 @@
     align-items: center;
     gap: 5px;
 }
-/* El contenedor de paginación se alineará a la derecha por el justify-content: space-between */
+/* Pagination container aligns right via justify-content: space-between */
 .advaipbl-rules-nav-bar .advaipbl-pagination-container {
     /* No necesita float */
 }
 
 /* ==========================================================================
-   Estilos para el Constructor de Reglas (Modal)
+   Styles for Rule Builder (Modal)
    ========================================================================== */
 
-/* Contenedor de cada fila de condición */
+/* Container for each condition row */
 #advaipbl-rule-builder-modal .advaipbl-condition-row {
     display: flex;
     align-items: center;
@@ -347,7 +347,7 @@
     border: 1px solid #ddd;
 }
 
-/* Anchos fijos para los selectores */
+/* Fixed widths for selectors */
 #advaipbl-rule-builder-modal .advaipbl-condition-row .condition-type {
     flex-basis: 180px;
     flex-shrink: 0;
@@ -357,17 +357,21 @@
     flex-shrink: 0;
 }
 
-/* El contenedor del valor ocupa el espacio restante */
+/* Target and Value containers share remaining space */
+#advaipbl-rule-builder-modal .advaipbl-condition-row .condition-target-container,
 #advaipbl-rule-builder-modal .advaipbl-condition-row .condition-value-container {
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
 }
 
-/* Asegura que el input o select de valor ocupe todo el espacio disponible en su contenedor */
+/* Ensures input/select occupies full container width */
+#advaipbl-rule-builder-modal .condition-target,
 #advaipbl-rule-builder-modal .condition-value {
     width: 100%;
+    box-sizing: border-box;
 }
 
-/* Estilo del botón de borrar */
+/* Delete button style */
 #advaipbl-rule-builder-modal .advaipbl-condition-row .remove-condition {
     text-decoration: none;
     flex-shrink: 0;
@@ -379,7 +383,7 @@
 #advaipbl-rule-builder-modal .advaipbl-condition-row .remove-condition:hover .dashicons {
     color: #d63638;
 }
-/* --- Estilos para Acciones en Lote de Reglas Avanzadas --- */
+/* --- Styles for Advanced Rules Bulk Actions --- */
 .advaipbl-rules-nav-bar .bulkactions {
     display: flex;
     align-items: center;
@@ -388,12 +392,12 @@
 }
 
 #advaipbl-advanced-rules-list .advaipbl-rule-card .rule-selector {
-    padding-top: 2px; /* Alinea el checkbox con el texto */
+    padding-top: 2px; /* Align checkbox with text */
     margin-right: 5px;
 }
 
 #advaipbl-advanced-rules-list .advaipbl-rule-card {
-    align-items: flex-start; /* Asegura alineación superior */
+    align-items: flex-start; /* Ensure top alignment */
 }
 
 /* FIM Responsive Utility Classes (Desktop) */
@@ -408,50 +412,50 @@
 }
 
 /* ==========================================================================
-   Estilos Responsive para el Panel de Administración
+   Responsive Styles for Admin Panel
    ========================================================================== */
 
 @media screen and (max-width: 782px) {
 
-    /* --- Responsive para Tarjetas de Reglas Avanzadas --- */
+    /* --- Responsive for Advanced Rule Cards --- */
     #advaipbl-advanced-rules-list .advaipbl-rule-card {
-        flex-wrap: wrap; /* ¡La clave! Permite que los elementos salten de línea */
-        gap: 10px;       /* Reduce el espacio entre elementos */
+        flex-wrap: wrap; /* The key! Allows elements to wrap */
+        gap: 10px;       /* Reduce space between elements */
     }
 
     #advaipbl-advanced-rules-list .rule-name,
     #advaipbl-advanced-rules-list .rule-summary,
     #advaipbl-advanced-rules-list .rule-action {
-        flex-basis: 100%; /* Ocupan toda la primera línea, forzando a los botones a bajar */
-        white-space: normal; /* Permite que el texto largo se divida en líneas */
+        flex-basis: 100%; /* Take full first line, forcing buttons down */
+        white-space: normal; /* Allow long text to wrap */
     }
 
     #advaipbl-advanced-rules-list .rule-actions {
-        margin-left: 0;   /* Resetea el margen que los empujaba a la derecha */
-        margin-top: 10px; /* Añade un pequeño espacio superior */
-        flex-basis: 100%; /* Ocupan todo el ancho disponible */
+        margin-left: 0;   /* Reset right-push margin */
+        margin-top: 10px; /* Add a small top space */
+        flex-basis: 100%; /* Take all available width */
         display: flex;
-        justify-content: flex-end; /* Alinea los botones a la derecha en su propia línea */
+        justify-content: flex-end; /* Align buttons right on their own line */
     }
     
-    /* Hacemos que la paginación sea más compacta */
+    /* Make pagination more compact */
     .advaipbl-rules-nav-bar .displaying-num {
-        display: none; /* Ocultamos el contador "X items" en móviles */
+        display: none; /* Hide "X items" counter on mobile */
     }
 
 }
 /* ==========================================================================
-   Estilos para la Tabla de Sesiones de Usuario (Versión Final)
+   Styles for User Sessions Table (Final Version)
    ========================================================================== */
 
-/* --- Estilos Base (Escritorio y Móvil) --- */
+/* --- Base Styles (Desktop and Mobile) --- */
 .advaipbl-sessions-table {
-    /* Un ancho mínimo global para evitar que se colapse demasiado */
+    /* Global min-width to prevent severe collapsing */
     min-width: 800px;
 }
 
-/* Asignamos anchos de columna para dar estructura a la tabla.
-   Estos actuarán como anchos base que el navegador puede ajustar. */
+/* Assign column widths for table structure.
+   These act as base widths the browser can adjust. */
 .advaipbl-sessions-table th:nth-child(1), .advaipbl-sessions-table td:nth-child(1) { width: 18%; } /* User */
 .advaipbl-sessions-table th:nth-child(2), .advaipbl-sessions-table td:nth-child(2) { width: 10%; } /* Role */
 .advaipbl-sessions-table th:nth-child(3), .advaipbl-sessions-table td:nth-child(3) { width: 15%; } /* IP */
@@ -461,33 +465,33 @@
 .advaipbl-sessions-table th:nth-child(7), .advaipbl-sessions-table td:nth-child(7) { width: 130px; text-align: center; } /* Actions */
 
 
-/* --- Estilos específicos para celdas --- */
+/* --- Specific cell styles --- */
 
-/* Forzamos el salto de palabra en celdas con texto potencialmente largo */
+/* Force word wrap in potentially long text cells */
 .advaipbl-sessions-table td {
     word-wrap: break-word;
     word-break: break-word;
 }
 
-/* Aseguramos que los botones de acción no se partan y tengan espacio */
+/* Ensure action buttons don't wrap and have space */
 .advaipbl-sessions-table td:nth-child(7) .button {
     white-space: nowrap;
-    margin: 2px; /* Pequeño margen para que no se peguen a los bordes */
+    margin: 2px; /* Small margin to avoid sticking to edges */
 }
 
-/* --- Estilos Responsive (Móvil) --- */
+/* --- Responsive Styles (Mobile) --- */
 @media screen and (max-width: 782px) {
-    /* Opcional: Ocultar la columna menos crítica en pantallas MUY pequeñas */
+    /* Optional: Hide least critical column on VERY small screens */
     @media screen and (max-width: 480px) {
-        .advaipbl-sessions-table th:nth-child(5), /* Ocultar ISP */
+        .advaipbl-sessions-table th:nth-child(5), /* Hide ISP */
         .advaipbl-sessions-table td:nth-child(5) {
             display: none;
         }
     }
 }
-/* Estilo para la acción 'Allow' en las tarjetas de Reglas Avanzadas */
+/* Style for 'Allow' action on Advanced Rule cards */
 #advaipbl-advanced-rules-list .rule-action-type[data-action="allow"] {
-    color: #00a32a; /* Verde éxito */
+    color: #00a32a; /* Success green */
 }
 
 .advaipbl-help-icon {

@@ -63,6 +63,7 @@ class BaconQrCodeProvider implements IQRCodeProvider
 
         if ($this->format === 'svg') {
             $svg = explode("\n", $output);
+
             return $svg[1];
         }
 
@@ -107,25 +108,20 @@ class BaconQrCodeProvider implements IQRCodeProvider
     {
         if (is_string($colour) && $colour[0] == '#') {
             $hexToRGB = static function ($input) {
-                // ensure input no longer has a # for more predictable division
-                // PHP 8.1 does not like implicitly casting a float to an int
                 $input = trim($input, '#');
 
                 if (strlen($input) != 3 && strlen($input) != 6) {
                     throw new RuntimeException('Colour should be a 3 or 6 character value after the #');
                 }
 
-                // split the array into three chunks
                 $split = str_split($input, strlen($input) / 3);
 
-                // cope with three character hex reference
                 if (strlen($input) == 3) {
                     array_walk($split, static function (&$character) {
                         $character = str_repeat($character, 2);
                     });
                 }
 
-                // convert hex to rgb
                 return array_map('hexdec', $split);
             };
 

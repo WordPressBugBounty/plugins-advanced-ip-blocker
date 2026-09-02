@@ -8,21 +8,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class ADVAIPBL_Captcha_Manager {
-
+class ADVAIPBL_Captcha_Manager
+{
     /**
      * @var ADVAIPBL_Main
      */
     private $plugin;
 
-    public function __construct(ADVAIPBL_Main $plugin_instance) {
+    public function __construct(ADVAIPBL_Main $plugin_instance)
+    {
         $this->plugin = $plugin_instance;
     }
 
     /**
-     * Verifica la respuesta de un Captcha si se ha enviado.
+     * Verifies a Captcha response if submitted.
      */
-    public function verify_submission() {
+    public function verify_submission()
+    {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- CAPTCHA submission occurs prior to authenticated sessions/nonces.
         if (!isset($_POST['_advaipbl_challenge_type'])) {
             return;
@@ -33,7 +35,7 @@ class ADVAIPBL_Captcha_Manager {
             return;
         }
 
-        if ( !empty($this->plugin->request_is_asn_whitelisted) || $this->plugin->is_whitelisted($this->plugin->get_client_ip()) || !empty($this->plugin->is_advanced_rule_allowed) ) {
+        if (!empty($this->plugin->request_is_asn_whitelisted) || $this->plugin->is_whitelisted($this->plugin->get_client_ip()) || !empty($this->plugin->is_advanced_rule_allowed)) {
             return;
         }
 
@@ -46,12 +48,12 @@ class ADVAIPBL_Captcha_Manager {
         $ip = $this->plugin->get_client_ip();
 
         $is_valid = false;
-        
+
         if ($engine === 'turnstile') {
             $secret_key = $this->plugin->options['turnstile_secret_key'] ?? '';
-// phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
+
+            // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent
             $response = wp_remote_post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-// phpcs:enable
                 'body' => [
                     'secret'   => $secret_key,
                     'response' => $token,
@@ -93,11 +95,11 @@ class ADVAIPBL_Captcha_Manager {
             if (isset($this->plugin->challenge_metrics)) {
                 $this->plugin->challenge_metrics->increment('passed');
             }
-            // Set grace pass transient to avoid instant loops due to caching
+
             set_transient('advaipbl_grace_pass_' . md5($ip), true, 15);
-            // Set cookie and reload
+
             $this->plugin->js_challenge_manager->set_vip_pass_cookie($cookie_duration, $ip);
-            
+
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
             $redirect_to = !empty($_POST['_advaipbl_redirect_to']) ? esc_url_raw(wp_unslash($_POST['_advaipbl_redirect_to'])) : '';
             if (empty($redirect_to)) {
@@ -123,40 +125,42 @@ class ADVAIPBL_Captcha_Manager {
     }
 
     /**
-     * Sirve el desafío Captcha (Turnstile o hCaptcha).
+     * Serves the Captcha challenge (Turnstile or hCaptcha).
      */
-    public function serve_challenge($challenge_type, $engine, $challenge_mode = 'managed') {
+    public function serve_challenge($challenge_type, $engine, $challenge_mode = 'managed')
+    {
         if (isset($this->plugin->challenge_metrics)) {
             $this->plugin->challenge_metrics->increment('served');
         }
 
-        if (!defined('DONOTCACHEPAGE')) define('DONOTCACHEPAGE', true);
-        if (headers_sent()) { return; }
-        
+        if (!defined('DONOTCACHEPAGE')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Required constant name for caching plugins
+            define('DONOTCACHEPAGE', true);
+        }
+        if (headers_sent()) {
+            return;
+        }
+
         header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0');
         header('Pragma: no-cache');
         header('Expires: Thu, 01 Jan 1970 00:00:01 GMT');
-        header('X-LiteSpeed-Cache-Control: no-cache'); 
+        header('X-LiteSpeed-Cache-Control: no-cache');
         header('Cloudflare-CDN-Cache-Control: no-store');
-        header('CDN-Cache-Control: no-store'); 
-        header('Surrogate-Control: no-store'); 
+        header('CDN-Cache-Control: no-store');
+        header('Surrogate-Control: no-store');
         header('X-Accel-Expires: 0');
         header('X-Cache-Enabled: False');
 
         header('X-Frame-Options: DENY');
         header('X-Content-Type-Options: nosniff');
-        
-        // El CSP debe permitir los scripts de turnstile/hcaptcha
+
         if ($engine === 'turnstile') {
-            // phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
+            // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent
             header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline';");
-            // phpcs:enable
         } else {
-            // phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
             header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; frame-src https://hcaptcha.com https://*.hcaptcha.com; style-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com; connect-src 'self' https://hcaptcha.com https://*.hcaptcha.com;");
-            // phpcs:enable
         }
-        
+
         status_header(503);
         header('Content-Type: text/html; charset=utf-8');
         header('Retry-After: 10');
@@ -165,13 +169,13 @@ class ADVAIPBL_Captcha_Manager {
         $host       = sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? ''));
         $uri        = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'] ?? '/'));
         $action_url = esc_url($protocol . $host . $uri);
-        
+
         $site_title         = get_bloginfo('name', 'display');
         $site_host          = wp_parse_url(home_url(), PHP_URL_HOST);
         $page_title         = esc_html__('Verifying your connection...', 'advanced-ip-blocker');
-        $main_heading       = esc_html__('Security Check Required', 'advanced-ip-blocker'); 
-        $site_msg           = esc_html__('needs to review the security of your connection before proceeding.', 'advanced-ip-blocker');        
-        
+        $main_heading       = esc_html__('Security Check Required', 'advanced-ip-blocker');
+        $site_msg           = esc_html__('needs to review the security of your connection before proceeding.', 'advanced-ip-blocker');
+
         $site_key = '';
         if ($engine === 'turnstile') {
             $site_key = $this->plugin->options['turnstile_site_key'] ?? '';
@@ -205,10 +209,10 @@ class ADVAIPBL_Captcha_Manager {
                 .challenge-box { margin: 20px auto; min-height: 70px; display: flex; justify-content: center; align-items: center; }
             </style>
             <?php if ($engine === 'turnstile'): ?>
-                <?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript, PluginCheck.CodeAnalysis.Offloading.OffloadedContent ?>
+                <?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript, PluginCheck.CodeAnalysis.Offloading.OffloadedContent?>
                 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
             <?php elseif ($engine === 'hcaptcha'): ?>
-                <?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript, PluginCheck.CodeAnalysis.Offloading.OffloadedContent ?>
+                <?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript, PluginCheck.CodeAnalysis.Offloading.OffloadedContent?>
                 <script src="https://hcaptcha.com/1/api.js" async defer></script>
             <?php endif; ?>
         </head>
@@ -226,7 +230,9 @@ class ADVAIPBL_Captcha_Manager {
                         <input type="hidden" name="_advaipbl_redirect_to" value="<?php echo esc_attr($action_url); ?>">
                         
                         <?php if ($engine === 'turnstile'): ?>
-                            <div class="cf-turnstile" data-sitekey="<?php echo esc_attr($site_key); ?>" <?php if ($challenge_mode === 'automatic') echo 'data-action="login"'; ?>></div>
+                            <div class="cf-turnstile" data-sitekey="<?php echo esc_attr($site_key); ?>" <?php if ($challenge_mode === 'automatic') {
+                                echo 'data-action="login"';
+                            } ?>></div>
                         <?php elseif ($engine === 'hcaptcha'): ?>
                             <div class="h-captcha" data-sitekey="<?php echo esc_attr($site_key); ?>"></div>
                         <?php endif; ?>

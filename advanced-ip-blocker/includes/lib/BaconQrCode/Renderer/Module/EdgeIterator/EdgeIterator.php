@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Module\EdgeIterator;
 
@@ -34,7 +35,7 @@ final class EdgeIterator implements IteratorAggregate
     /**
      * @return Traversable<Edge>
      */
-    public function getIterator() : Traversable
+    public function getIterator(): Traversable
     {
         $originalBytes = $this->bytes;
         $point = $this->findNext(0, 0);
@@ -54,7 +55,7 @@ final class EdgeIterator implements IteratorAggregate
     /**
      * @return int[]|null
      */
-    private function findNext(int $x, int $y) : ?array
+    private function findNext(int $x, int $y): ?array
     {
         $i = $this->width * $y + $x;
 
@@ -69,7 +70,7 @@ final class EdgeIterator implements IteratorAggregate
         return null;
     }
 
-    private function findEdge(int $x, int $y) : Edge
+    private function findEdge(int $x, int $y): Edge
     {
         $edge = new Edge($this->isSet($x, $y));
         $startX = $x;
@@ -86,7 +87,7 @@ final class EdgeIterator implements IteratorAggregate
                 break;
             }
 
-            $left = $this->isSet($x + ($dirX + $dirY - 1 ) / 2, $y + ($dirY - $dirX - 1) / 2);
+            $left = $this->isSet($x + ($dirX + $dirY - 1) / 2, $y + ($dirY - $dirX - 1) / 2);
             $right = $this->isSet($x + ($dirX - $dirY - 1) / 2, $y + ($dirY + $dirX - 1) / 2);
 
             if ($right && ! $left) {
@@ -107,7 +108,7 @@ final class EdgeIterator implements IteratorAggregate
         return $edge;
     }
 
-    private function xorEdge(Edge $path) : void
+    private function xorEdge(Edge $path): void
     {
         $points = $path->getPoints();
         $y1 = $points[0][1];
@@ -132,7 +133,7 @@ final class EdgeIterator implements IteratorAggregate
         }
     }
 
-    private function isSet(int $x, int $y) : bool
+    private function isSet(int $x, int $y): bool
     {
         return (
             $x >= 0
@@ -145,13 +146,14 @@ final class EdgeIterator implements IteratorAggregate
     /**
      * @return int[]
      */
-    private function pointOf(int $i) : array
+    private function pointOf(int $i): array
     {
         $y = intdiv($i, $this->width);
+
         return [$i - $y * $this->width, $y];
     }
 
-    private function flip(int $x, int $y) : void
+    private function flip(int $x, int $y): void
     {
         $this->bytes[$this->width * $y + $x] = (
             $this->isSet($x, $y) ? 0 : 1

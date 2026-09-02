@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Common;
 
@@ -44,7 +45,7 @@ final class Mode extends AbstractEnum
     /**
      * Returns the number of bits used in a specific QR code version.
      */
-    public function getCharacterCountBits(Version $version) : int
+    public function getCharacterCountBits(Version $version): int
     {
         $number = $version->getVersionNumber();
 
@@ -62,7 +63,7 @@ final class Mode extends AbstractEnum
     /**
      * Returns the four bits used to encode this mode.
      */
-    public function getBits() : int
+    public function getBits(): int
     {
         return $this->bits;
     }

@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer;
 
@@ -35,7 +36,7 @@ final class PlainTextRenderer implements RendererInterface
     /**
      * @throws InvalidArgumentException if matrix width doesn't match height
      */
-    public function render(QrCode $qrCode) : string
+    public function render(QrCode $qrCode): string
     {
         $matrix = $qrCode->getMatrix();
         $matrixSize = $matrix->getWidth();

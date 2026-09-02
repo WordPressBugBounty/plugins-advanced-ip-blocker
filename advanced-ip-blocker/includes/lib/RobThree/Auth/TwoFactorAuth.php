@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace RobThree\Auth;
 
-use function hash_equals;
-
 use RobThree\Auth\Providers\Qr\IQRCodeProvider;
 use RobThree\Auth\Providers\Rng\CSRNGProvider;
 use RobThree\Auth\Providers\Rng\IRNGProvider;
@@ -15,8 +13,8 @@ use RobThree\Auth\Providers\Time\LocalMachineTimeProvider;
 use RobThree\Auth\Providers\Time\NTPTimeProvider;
 use SensitiveParameter;
 
-// Based on / inspired by: https://github.com/PHPGangsta/GoogleAuthenticator
-// Algorithms, digits, period etc. explained: https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+use function hash_equals;
+
 class TwoFactorAuth
 {
     private static string $_base32dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=';
@@ -54,12 +52,13 @@ class TwoFactorAuth
     public function createSecret(int $bits = 160): string
     {
         $secret = '';
-        $bytes = (int)ceil($bits / 5);   // We use 5 bits of each byte (since we have a 32-character 'alphabet' / BASE32)
+        $bytes = (int)ceil($bits / 5);
         $rngprovider = $this->getRngProvider();
         $rnd = $rngprovider->getRandomBytes($bytes);
         for ($i = 0; $i < $bytes; $i++) {
-            $secret .= self::$_base32[ord($rnd[$i]) & 31];  //Mask out left 3 bits for 0-31 values
+            $secret .= self::$_base32[ord($rnd[$i]) & 31];
         }
+
         return $secret;
     }
 
@@ -70,11 +69,11 @@ class TwoFactorAuth
     {
         $secretkey = $this->base32Decode($secret);
 
-        $timestamp = "\0\0\0\0" . pack('N*', $this->getTimeSlice($this->getTime($time)));  // Pack time into binary string
-        $hashhmac = hash_hmac($this->algorithm->value, $timestamp, $secretkey, true);             // Hash it with users secret key
-        $hashpart = substr($hashhmac, ord(substr($hashhmac, -1)) & 0x0F, 4);               // Use last nibble of result as index/offset and grab 4 bytes of the result
-        $value = unpack('N', $hashpart);                                                   // Unpack binary value
-        $value = $value[1] & 0x7FFFFFFF;                                                   // Drop MSB, keep only 31 bits
+        $timestamp = "\0\0\0\0" . pack('N*', $this->getTimeSlice($this->getTime($time)));
+        $hashhmac = hash_hmac($this->algorithm->value, $timestamp, $secretkey, true);
+        $hashpart = substr($hashhmac, ord(substr($hashhmac, -1)) & 0x0F, 4);
+        $value = unpack('N', $hashpart);
+        $value = $value[1] & 0x7FFFFFFF;
 
         return str_pad((string)($value % 10 ** $this->digits), $this->digits, '0', STR_PAD_LEFT);
     }
@@ -88,10 +87,6 @@ class TwoFactorAuth
 
         $timeslice = 0;
 
-        // To keep safe from timing-attacks we iterate *all* possible codes even though we already may have
-        // verified a code is correct. We use the timeslice variable to hold either 0 (no match) or the timeslice
-        // of the match. Each iteration we either set the timeslice variable to the timeslice of the match
-        // or set the value to itself.  This is an effort to maintain constant execution time for the code.
         for ($i = -$discrepancy; $i <= $discrepancy; $i++) {
             $ts = $timestamp + ($i * $this->period);
             $slice = $this->getTimeSlice($ts);
@@ -130,16 +125,13 @@ class TwoFactorAuth
             );
         }
 
-        // Get default time provider
         $timeprovider = $this->getTimeProvider();
 
-        // Iterate specified time providers
         foreach ($timeproviders as $t) {
             if (!($t instanceof ITimeProvider)) {
                 throw new TwoFactorAuthException('Object does not implement ITimeProvider');
             }
 
-            // Get time from default time provider and compare to specific time provider and throw if time difference is more than specified number of seconds leniency
             if (abs($timeprovider->getTime() - $t->getTime()) > $leniency) {
                 throw new TwoFactorAuthException(sprintf('Time for timeprovider is off by more than %d seconds when compared to %s', $leniency, get_class($t)));
             }
@@ -169,7 +161,6 @@ class TwoFactorAuth
 
     public function getTimeProvider(): ITimeProvider
     {
-        // Set default time provider if none was specified
         return $this->timeprovider ??= new LocalMachineTimeProvider();
     }
 
@@ -206,6 +197,7 @@ class TwoFactorAuth
         foreach (explode(' ', $blocks) as $block) {
             $output .= chr(bindec(str_pad($block, 8, '0', STR_PAD_RIGHT)));
         }
+
         return $output;
     }
 }

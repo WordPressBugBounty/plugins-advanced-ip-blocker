@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\RendererStyle;
 
@@ -14,17 +15,17 @@ final class Gradient
     ) {
     }
 
-    public function getStartColor() : ColorInterface
+    public function getStartColor(): ColorInterface
     {
         return $this->startColor;
     }
 
-    public function getEndColor() : ColorInterface
+    public function getEndColor(): ColorInterface
     {
         return $this->endColor;
     }
 
-    public function getType() : GradientType
+    public function getType(): GradientType
     {
         return $this->type;
     }

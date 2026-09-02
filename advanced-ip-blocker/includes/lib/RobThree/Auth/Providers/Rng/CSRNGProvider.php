@@ -11,6 +11,6 @@ class CSRNGProvider implements IRNGProvider
      */
     public function getRandomBytes(int $bytecount): string
     {
-        return random_bytes($bytecount);    // PHP7+
+        return random_bytes($bytecount);
     }
 }

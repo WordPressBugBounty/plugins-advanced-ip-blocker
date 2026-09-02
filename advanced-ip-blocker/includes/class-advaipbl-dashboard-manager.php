@@ -1,42 +1,43 @@
 <?php
 
 if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+    exit;
 }
 
-class ADVAIPBL_Dashboard_Manager {
-
+class ADVAIPBL_Dashboard_Manager
+{
     private $main_class;
+
     private $session_manager;
 
     /**
-     * Constructor modificado para aceptar la clase principal y el gestor de sesiones.
+     * Modified constructor to accept the main class and session manager.
      * @param ADVAIPBL_Main $main_class
      * @param ADVAIPBL_User_Session_Manager $session_manager
      */
-    public function __construct(ADVAIPBL_Main $main_class, ADVAIPBL_User_Session_Manager $session_manager) {
+    public function __construct(ADVAIPBL_Main $main_class, ADVAIPBL_User_Session_Manager $session_manager)
+    {
         $this->main_class = $main_class;
         $this->session_manager = $session_manager;
     }
 
     /**
-     * Recopila todas las estadísticas para el dashboard en un solo array.
+     * Collects all dashboard statistics into a single array.
      * @return array
      */
-    public function get_dashboard_stats() {
+    public function get_dashboard_stats()
+    {
         $this->main_class->limpiar_ips_expiradas();
 
         $days = 7;
         $date_after = gmdate('Y-m-d H:i:s', strtotime("-{$days} days"));
 
-        // Obtenemos los datos de los ataques para el mapa una sola vez.
         $live_attacks_data = $this->get_recent_attacks_for_map();
 
-        // Procesar las métricas de reglas avanzadas para inyectar el nombre de la regla y ordenarlas
         $raw_rules_metrics = isset($this->main_class->rules_metrics) ? $this->main_class->rules_metrics->get_metrics() : [];
         $advanced_rules = $this->main_class->rules_engine->get_rules();
         $processed_rules_metrics = [];
-        
+
         foreach ($raw_rules_metrics as $rule_id => $metrics) {
             $rule_name = 'Unknown Rule';
             foreach ($advanced_rules as $rule) {
@@ -52,9 +53,8 @@ class ADVAIPBL_Dashboard_Manager {
                 'passed' => $metrics['passed'] ?? 0
             ];
         }
-        
-        // Ordenar por hits descendente
-        usort($processed_rules_metrics, function($a, $b) {
+
+        usort($processed_rules_metrics, function ($a, $b) {
             return $b['hits'] <=> $a['hits'];
         });
 
@@ -67,19 +67,20 @@ class ADVAIPBL_Dashboard_Manager {
             'live_attacks'       => $live_attacks_data,
             'blocked_ips_count'  => count($live_attacks_data),
             'challenge_stats'    => isset($this->main_class->challenge_metrics) ? $this->main_class->challenge_metrics->get_historical_stats() : [],
-            'advanced_rules_stats'=> array_slice($processed_rules_metrics, 0, 5), // Top 5
+            'advanced_rules_stats' => array_slice($processed_rules_metrics, 0, 5),
         ];
     }
 
     /**
-     * Obtiene estadísticas de resumen: total de bloqueos y desglose por tipo.
-     * @param string $date_after Fecha desde la cual contar (formato Y-m-d H:i:s).
+     * Gets summary statistics: total blocks and breakdown by type.
+     * @param string $date_after Date from which to count (Y-m-d H:i:s format).
      * @return array
      */
-    private function get_summary_stats($date_after) {
+    private function get_summary_stats($date_after)
+    {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
-        
+
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
@@ -92,8 +93,7 @@ class ADVAIPBL_Dashboard_Manager {
             ),
             ARRAY_A
         );
-        // phpcs:enable
-        
+
         $stats = ['total' => 0, 'by_type' => []];
         if ($results) {
             foreach ($results as $row) {
@@ -101,19 +101,21 @@ class ADVAIPBL_Dashboard_Manager {
                 $stats['by_type'][$row['log_type']] = $row['count'];
             }
         }
+
         return $stats;
     }
 
     /**
-     * Obtiene datos para el gráfico de línea de tiempo.
-     * @param int    $days Número de días hacia atrás a consultar.
-     * @param string $date_after Fecha desde la cual contar.
+     * Gets data for the timeline chart.
+     * @param int    $days Number of days back to query.
+     * @param string $date_after Date from which to count.
      * @return array
      */
-    private function get_timeline_stats($days, $date_after) {
+    private function get_timeline_stats($days, $date_after)
+    {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
-        
+
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
@@ -126,9 +128,7 @@ class ADVAIPBL_Dashboard_Manager {
             ),
             ARRAY_A
         );
-        // phpcs:enable
 
-        // Rellenar los días sin eventos para un gráfico continuo.
         $timeline = [];
         for ($i = ($days - 1); $i >= 0; $i--) {
             $day_key = gmdate('Y-m-d', strtotime("-{$i} days"));
@@ -142,18 +142,20 @@ class ADVAIPBL_Dashboard_Manager {
                 }
             }
         }
+
         return $timeline;
     }
 
     /**
-     * Obtiene las 8 IPs más atacantes.
-     * @param string $date_after Fecha desde la cual contar.
+     * Gets the 8 top attacking IPs.
+     * @param string $date_after Date from which to count.
      * @return array
      */
-    private function get_top_attackers($date_after) {
+    private function get_top_attackers($date_after)
+    {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
-        
+
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
@@ -167,19 +169,20 @@ class ADVAIPBL_Dashboard_Manager {
             ),
             ARRAY_A
         );
-        // phpcs:enable
+
         return $results;
     }
 
     /**
-     * Obtiene los 8 países más bloqueados de TODOS los tipos de bloqueo.
-     * @param string $date_after Fecha desde la cual contar.
+     * Gets the top 8 blocked countries across ALL block types.
+     * @param string $date_after Date from which to count.
      * @return array
      */
-    private function get_top_countries($date_after) {
+    private function get_top_countries($date_after)
+    {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
-        
+
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results(
             $wpdb->prepare(
@@ -198,21 +201,22 @@ class ADVAIPBL_Dashboard_Manager {
             ),
             ARRAY_A
         );
-        // phpcs:enable
+
         return $results;
     }
 
     /**
-     * Obtiene estadísticas específicas de la protección de Spamhaus.
+     * Gets specific statistics for Spamhaus protection.
      * @return array
      */
-    public function get_spamhaus_stats() {
+    public function get_spamhaus_stats()
+    {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_logs';
         $date_after = gmdate('Y-m-d H:i:s', strtotime("-7 days"));
 
         $spamhaus_asns = get_option('advaipbl_spamhaus_asn_list', []);
-        
+
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $blocked_count = $wpdb->get_var(
             $wpdb->prepare(
@@ -225,36 +229,33 @@ class ADVAIPBL_Dashboard_Manager {
                 $date_after
             )
         );
-        // phpcs:enable
 
         return [
             'list_count'    => count($spamhaus_asns),
             'blocked_count' => (int) $blocked_count,
         ];
     }
- 
-        /**
-     * Devuelve el estado de cada módulo de protección.
+
+    /**
+     * Returns the status of each protection module.
      * @return array
      */
-    public function get_system_status() {
+    public function get_system_status()
+    {
         $options = $this->main_class->options;
+
         return [
-            // Level 1 & Infrastructure
             'cloudflare_sync'    => !empty($options['enable_cloudflare']),
             'htaccess_firewall'  => !empty($options['enable_htaccess_write']),
             'community_network'  => !empty($options['enable_community_blocking']),
-            
-            // Level 2: Bot Verification
+
             'bot_verification'   => !empty($options['enable_bot_verification']),
-            'ai_bot_verification'=> isset($options['enable_ai_bot_verification']) ? !empty($options['enable_ai_bot_verification']) : true,
+            'ai_bot_verification' => isset($options['enable_ai_bot_verification']) ? !empty($options['enable_ai_bot_verification']) : true,
             'monitoring_bot_verification' => isset($options['enable_monitoring_bot_verification']) ? !empty($options['enable_monitoring_bot_verification']) : true,
-            
-            // Level 3: Advanced Rules
+
             'advanced_rule'      => !empty($this->main_class->rules_engine->get_rules()),
             'cloud_advanced_rules' => !empty($options['enable_cloud_advanced_rules']),
-            
-            // Level 4: Global & Automated Shields
+
             'under_attack_mode'  => (!empty($options['under_attack_mode']) && $options['under_attack_mode'] !== 'off'),
             'block_ghost_ips'    => !empty($options['block_ghost_ips']),
             'xmlrpc_lockdown'    => !empty($options['enable_xmlrpc_lockdown']),
@@ -264,8 +265,7 @@ class ADVAIPBL_Dashboard_Manager {
             'signature_blocking' => !empty($options['enable_signature_blocking']),
             'geo_challenge'      => !empty($options['enable_geo_challenge']),
             'rate_limit'         => !empty($options['rate_limiting_enable']),
-            
-            // Level 5: Core Blocking Engine (WAF & Static Rules)
+
             'honeypot'           => !empty($options['enable_honeypot_blocking']),
             'waf'                => !empty($options['enable_waf']),
             'intelligent_waf'    => !empty($options['enable_intelligent_waf']),
@@ -280,13 +280,11 @@ class ADVAIPBL_Dashboard_Manager {
             '403_lockdown'       => !empty($options['enable_403_lockdown']),
             'xmlrpc_mode'        => $options['xmlrpc_protection_mode'] ?? 'smart',
             'enable_2fa'         => !empty($options['enable_2fa']),
-            
-            // Level 6: External Intelligence & Auditing
+
             'abuseipdb'          => !empty($options['enable_abuseipdb']),
             'threat_scoring'     => !empty($options['enable_threat_scoring']),
             'activity_audit'     => !empty($options['enable_audit_log']),
-            
-            // Level 7: Hardening & Core Protection
+
             'disable_imagick'        => !empty($options['disable_imagick']),
             'hide_wp_version'        => !empty($options['hide_wp_version']),
             'disable_app_passwords'  => !empty($options['disable_app_passwords']),
@@ -297,13 +295,14 @@ class ADVAIPBL_Dashboard_Manager {
         ];
     }
 
-        /**
-     * Obtiene los datos de geolocalización y los detalles del bloqueo (tipo, duración)
-     * de las IPs actualmente bloqueadas para el mapa.
+    /**
+     * Gets geolocation data and block details (type, duration)
+     * of currently blocked IPs for the map.
      *
-     * @return array Un array de ataques con todos los datos necesarios para el popup.
+     * @return array An array of attacks with all data needed for the popup.
      */
-        public function get_recent_attacks_for_map() {
+    public function get_recent_attacks_for_map()
+    {
         $all_blocked_entries = $this->main_class->get_all_blocked_entries();
 
         if (empty($all_blocked_entries)) {
@@ -322,7 +321,7 @@ class ADVAIPBL_Dashboard_Manager {
         if (empty($ips_to_locate)) {
             return [];
         }
-        
+
         $locations = $this->session_manager->get_cached_locations($ips_to_locate);
 
         $attacks_for_map = [];
@@ -337,7 +336,6 @@ class ADVAIPBL_Dashboard_Manager {
 
         foreach ($locations as $ip => $location_data) {
             if (isset($location_data['lat']) && isset($location_data['lon']) && isset($entry_map[$ip])) {
-                
                 $entry = $entry_map[$ip];
                 $type = $entry['type'];
                 $type_display = ($type === 'threat_score') ? $entry['detail'] : $entry['type_label'];
@@ -347,7 +345,7 @@ class ADVAIPBL_Dashboard_Manager {
                 if ($type === 'manual' || $duration_minutes <= 0) {
                     $duration_text = __('Permanent', 'advanced-ip-blocker');
                 } else {
-					/* translators: %d: The number of minutes. */
+                    /* translators: %s is a placeholder */
                     $duration_text = sprintf(__('%d minutes', 'advanced-ip-blocker'), $duration_minutes);
                 }
 
@@ -364,8 +362,8 @@ class ADVAIPBL_Dashboard_Manager {
             }
         }
 
-        $limit = 200; 
+        $limit = 200;
+
         return array_slice($attacks_for_map, 0, $limit);
     }
-
 }

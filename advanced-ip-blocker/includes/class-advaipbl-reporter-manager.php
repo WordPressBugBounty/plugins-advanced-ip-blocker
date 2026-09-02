@@ -1,53 +1,64 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (! defined('ABSPATH')) {
+    exit;
+}
 
-class ADVAIPBL_Reporter_Manager {
-
+class ADVAIPBL_Reporter_Manager
+{
     private $plugin;
-    
-    // Tipos de reporte permitidos (Expandible en el futuro)
-    private $allowed_types = [
-    'abuseipdb', 
-    'asn',
-    'waf',       
-    'login_lockdown', 
-    'xmlrpc_block',
-    'threat_score',
-    'rate_limit',
-    'aib_network',
-    'impersonation',
-    'ghost_ip',
-];
 
-    public function __construct( ADVAIPBL_Main $plugin_instance ) {
+    private $allowed_types = [
+        'abuseipdb',
+        'asn',
+        'waf',
+        'login',
+        '404',
+        '403',
+        'honeypot',
+        'user_agent',
+        'xmlrpc_block',
+        'threat_score',
+        'rate_limit',
+        'aib_network',
+        'impersonation',
+        'ghost_ip',
+        'advanced_rule',
+    ];
+
+    public function __construct(ADVAIPBL_Main $plugin_instance)
+    {
         $this->plugin = $plugin_instance;
     }
 
     /**
-     * Añade un evento a la cola de reportes pendientes.
-     * 
-     * @param string $ip La IP atacante.
-     * @param string $type El tipo de bloqueo.
-     * @param array $extra_data Datos de contexto (UA, URI, Score, etc).
+     * Adds an event to the pending report queue.
+     *
+     * @param string $ip The attacking IP.
+     * @param string $type The block type.
+     * @param array $extra_data Context data (UA, URI, Score, etc).
      */
-    public function queue_report( $ip, $type, $extra_data = [] ) {
-        // Filtrado inicial: Solo reportamos tipos de interés para la red
-        if ( ! in_array( $type, $this->allowed_types, true ) ) {
-            return;
-        }
-        
-        // Filtrado de privacidad: No reportar IPs privadas o locales
-        if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+    public function queue_report($ip, $type, $extra_data = [])
+    {
+        if (! in_array($type, $this->allowed_types, true)) {
             return;
         }
 
-        // Prevenir reporte de ASNs manuales para evitar falsos positivos en la comunidad
-        if ( $type === 'asn' && isset($extra_data['source']) && $extra_data['source'] === 'Manual List' ) {
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
             return;
         }
 
-        // Zero-Trust: Filtrado rápido de IPs y ASNs de infraestructura crítica (Cloudflare, Google, etc)
+        if ($type === 'asn' && isset($extra_data['source']) && $extra_data['source'] === 'Manual List') {
+            return;
+        }
+
+        if ($type === 'advanced_rule') {
+            $rule_id = $extra_data['rule_id'] ?? '';
+            if (strpos($rule_id, 'ar_zd_') !== 0) {
+                return;
+            }
+        }
+
         $critical_ips = ['1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4', '9.9.9.9', '149.112.112.112', '208.67.222.222', '208.67.220.220'];
         if (in_array($ip, $critical_ips, true)) {
             return;
@@ -67,18 +78,14 @@ class ADVAIPBL_Reporter_Manager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_pending_reports';
 
-        // Preparamos el contexto rico
         $context = [
             'ua' => $this->plugin->get_user_agent(),
             'uri' => $extra_data['uri'] ?? '',
             'method' => $this->plugin->get_request_method(),
-            'score' => $extra_data['abuse_score'] ?? 0, // Si viene de AbuseIPDB
-            'rule' => $extra_data['rule'] ?? '', // Si es WAF
+            'score' => $extra_data['abuse_score'] ?? 0,
+            'rule' => $extra_data['rule'] ?? '',
         ];
 
-        // Insertamos en la cola. 
-        // Nota: No comprobamos duplicados estrictos para rendimiento. 
-        // El servidor central hará la agregación (si una IP ataca 10 veces, queremos saberlo).
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->insert(
             $table_name,
@@ -92,46 +99,43 @@ class ADVAIPBL_Reporter_Manager {
     }
 
     /**
-     * Obtiene el lote de reportes para enviar y limpia la tabla.
-     * Se llamará desde el Cron.
+     * Gets the batch of reports to send and clears the table.
+     * Called via Cron.
      *
-     * @param int $limit Máximo de reportes por lote.
-     * @return array Datos listos para enviar a la API.
+     * @param int $limit Maximum reports per batch.
+     * @return array Data ready to send to the API.
      */
-    public function get_batch_for_api( $limit = 50 ) {
+    public function get_batch_for_api($limit = 50)
+    {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_pending_reports';
 
-        // Obtenemos los X más antiguos
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} ORDER BY timestamp ASC LIMIT %d", $limit ), ARRAY_A );
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table_name} ORDER BY timestamp ASC LIMIT %d", $limit), ARRAY_A);
 
-        if ( empty( $rows ) ) {
+        if (empty($rows)) {
             return [];
         }
 
-        // Preparamos los IDs para borrarlos tras el envío (o antes, para evitar bucles si la API falla)
-        // Estrategia "Fire and Forget" local: Borramos al leer para no saturar la DB local nunca.
-        $ids_to_delete = wp_list_pluck( $rows, 'id' );
-        if ( ! empty( $ids_to_delete ) ) {
-            $ids_string = implode( ',', array_map( 'absint', $ids_to_delete ) );
+        $ids_to_delete = wp_list_pluck($rows, 'id');
+        if (! empty($ids_to_delete)) {
+            $ids_string = implode(',', array_map('absint', $ids_to_delete));
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $wpdb->query( "DELETE FROM {$table_name} WHERE id IN ($ids_string)" );
+            $wpdb->query("DELETE FROM {$table_name} WHERE id IN ($ids_string)");
         }
 
-        // Formateamos para la API
         $payload = [
-            'site_hash' => hash( 'sha256', home_url() ), // Identificador anónimo del sitio
+            'site_hash' => hash('sha256', home_url()),
             'version' => ADVAIPBL_VERSION,
             'reports' => []
         ];
 
-        foreach ( $rows as $row ) {
+        foreach ($rows as $row) {
             $payload['reports'][] = [
                 'ip' => $row['ip'],
                 'type' => $row['report_type'],
                 'ts' => $row['timestamp'],
-                'meta' => json_decode( $row['context'], true )
+                'meta' => json_decode($row['context'], true)
             ];
         }
 

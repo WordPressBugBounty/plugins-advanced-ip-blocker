@@ -336,7 +336,7 @@ jQuery(document).ready(function ($) {
 
 
     /**
-     * Maneja la exportación de ajustes vía AJAX y descarga en el cliente.
+     * Handles exporting settings via AJAX and downloading on the client.
      */
     function initExportLogic() {
         $('#advaipbl-export-template, #advaipbl-export-full').on('click', function (e) {
@@ -380,7 +380,7 @@ jQuery(document).ready(function ($) {
 
 
     /**
-     * Maneja la lógica de la sección 2FA en la página de perfil de usuario.
+     * Handles the logic for the 2FA section on the user profile page.
      */
     function initTwoFactorAuthProfile() {
         $(document).on('click', '#advaipbl-2fa-activate-btn', function () {
@@ -502,8 +502,8 @@ jQuery(document).ready(function ($) {
                 $button.prop('disabled', false);
                 return;
             }
-            // Determinamos dinámicamente qué acción AJAX y nonce usar
-            let ajaxAction = 'advaipbl_verify_api_key'; // Acción por defecto para Geolocation
+            // Dynamically determine which AJAX action and nonce to use
+            let ajaxAction = 'advaipbl_verify_api_key'; // Default action for Geolocation
             let nonce = adminData.nonces.verify_api;
 
             if (provider === 'abuseipdb') {
@@ -514,7 +514,7 @@ jQuery(document).ready(function ($) {
             $.post(ajaxurl, {
                 action: ajaxAction,
                 nonce: nonce,
-                provider: provider, // Se sigue enviando por si el backend lo necesita
+                provider: provider, // Still sent in case the backend needs it
                 api_key: apiKey
             })
                 .done(function (response) {
@@ -532,11 +532,11 @@ jQuery(document).ready(function ($) {
                 });
         });
 
-        // Handler específico para el Token API V3
+        // Specific handler for the V3 API Token
         $('body').on('click', '#advaipbl-verify-api-token', function (e) {
             e.preventDefault();
             const $button = $(this);
-            // El selector del token V3 ahora usa _display o el input oculto tras darle a editar
+            // The V3 token selector now uses _display or the hidden input after clicking edit
             let apiKey = $('#advaipbl_api_token_v3_display').val() || $('#advaipbl_api_token_v3').val();
             const $statusContainer = $button.closest('.advaipbl-status-indicator');
             const texts = adminData.text || {};
@@ -579,7 +579,7 @@ jQuery(document).ready(function ($) {
                 });
         });
 
-        // Handler para generar una clave gratuita (In-App Registration)
+        // Handler to generate a free key (In-App Registration)
         $('body').on('click', '#advaipbl-get-api-token', function (e) {
             e.preventDefault();
             const $button = $(this);
@@ -591,27 +591,27 @@ jQuery(document).ready(function ($) {
 
             $.post(ajaxurl, {
                 action: 'advaipbl_get_free_api_key',
-                nonce: adminData.nonces.verify_api, // Reutilizamos el nonce de ajustes generales
-                _t: Date.now() // Cache buster para Cloudflare
+                nonce: adminData.nonces.verify_api, // Reuse the general settings nonce
+                _t: Date.now() // Cache buster for Cloudflare
             })
                 .done(function (response) {
                     if (response.success) {
                         showAdminNotice(response.data.message, 'success');
-                        // Actualizar el valor visual localmente sin recargar
+                        // Update the visual value locally without reloading
                         const newHtml = `
                         <input type="text" id="advaipbl_api_token_v3_display" class="regular-text" style="font-family: monospace;" value="${response.data.api_token_visual}" disabled>
                         <input type="hidden" name="advaipbl_settings[api_token_v3]" id="advaipbl_api_token_v3" value="${response.data.api_token}">
                         <button type="button" class="button" id="advaipbl-edit-api-token" title="Edit API Key"><span class="dashicons dashicons-edit" style="margin-top: 2px;"></span></button>
                     `;
-                        // Recargar suavemente para asegurar que todo WordPress se actualice (ahora es seguro porque el PHP guarda el token y sincroniza la lista)
+                        // Soft reload to ensure all of WordPress updates (now safe because PHP saves the token and syncs the list)
                         setTimeout(() => {
                             window.location.reload();
                         }, 2500);
                         
-                        // Actualizamos el texto de validación para avisar del reload
+                        // Update the validation text to warn about the reload
                         $('#advaipbl-api-verification-result').html('<span style="color: green;">' + (adminData.text.api_key_generated || 'API Key Generated!') + ' Sincronizando y recargando...</span>');
                         
-                        // Localizar el indicador de estado de la red AIB y cambiarlo a activo visualmente
+                        // Locate the AIB network status indicator and visually change it to active
                         var $statusIndicator = $('.advaipbl-status-indicator');
                         if($statusIndicator.length) {
                              $statusIndicator.css({
@@ -620,11 +620,11 @@ jQuery(document).ready(function ($) {
                              });
                              $statusIndicator.html('<span class="dashicons dashicons-cloud-saved" style="color: #2271b1; vertical-align: middle;"></span> <strong>' + (adminData.text.protection_active || 'Protection Active:') + '</strong> <span style="margin-left:5px;">Connected (Waiting for first sync)</span>');
                         } else {
-                             // Si estaba 'Not Connected', no existe el div con esa clase, así que lo inyectamos
+                             // If it was 'Not Connected', the div with that class doesn't exist, so we inject it
                              var $card = $button.closest('.advaipbl-card');
                              var $header = $card.find('h3').first();
                              $header.after('<div class="advaipbl-status-indicator" style="margin-bottom: 15px; padding: 10px; background: #f0f6fc; border: 1px solid #cce5ff; border-radius: 4px;"><span class="dashicons dashicons-cloud-saved" style="color: #2271b1; vertical-align: middle;"></span> <strong>' + (adminData.text.protection_active || 'Protection Active:') + '</strong> <span style="margin-left:5px;">Connected (Waiting for first sync)</span></div>');
-                             // Si hay un texto de 'No Conectado' previo en la tabla, podríamos querer ocultarlo
+                             // If there is a previous 'Not Connected' text in the table, we might want to hide it
                              $card.find('td:contains("Not Connected"), td:contains("No Conectado")').html('<span style="color:green; font-weight:bold;">' + (adminData.text.connected || 'Connected') + '</span>');
                         }
                         
@@ -736,7 +736,7 @@ jQuery(document).ready(function ($) {
         });
 
         $(window).on('beforeunload', function (e) {
-            // Buscamos la variable global que creamos en initTwoFactorAuthProfile - wait, that's not global there.
+            // Look for the global variable created in initTwoFactorAuthProfile - wait, that's not global there.
             // But we don't need it. We just check isDirty.
             // If 2FA submitted via Ajax, we need to bypass this?
             // The original code had window.advaipbl_isSubmittingAjax.

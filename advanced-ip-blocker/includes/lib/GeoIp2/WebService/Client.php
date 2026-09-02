@@ -52,6 +52,7 @@ use MaxMind\WebService\Client as WsClient;
 class Client implements ProviderInterface
 {
     private readonly WsClient $client;
+
     private static string $basePath = '/geoip/v2.1';
 
     public const VERSION = 'v3.4.0';
@@ -83,12 +84,9 @@ class Client implements ProviderInterface
         int $accountId,
         string $licenseKey,
         /** @var list<string> */
-        public readonly array $locales = ['en'], // Promoted and readonly
+        public readonly array $locales = ['en'],
         array $options = []
     ) {
-        // This is for backwards compatibility. Do not remove except for a
-        // major version bump.
-        // @phpstan-ignore-next-line
         if (\is_string($options)) {
             $options = ['host' => $options];
         }

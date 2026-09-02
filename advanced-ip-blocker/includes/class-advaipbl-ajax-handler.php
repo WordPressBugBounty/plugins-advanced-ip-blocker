@@ -1,25 +1,28 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (! defined('ABSPATH')) {
+    exit;
+}
 
-class ADVAIPBL_Ajax_Handler {
-
+class ADVAIPBL_Ajax_Handler
+{
     /**
-     * Instancia de la clase principal del plugin.
+     * Main plugin class instance.
      * @var ADVAIPBL_Main
      */
     private $plugin;
 
     /**
  * Constructor.
- * @param ADVAIPBL_Main $plugin_instance La instancia de la clase principal.
+ * @param ADVAIPBL_Main $plugin_instance The main class instance.
  */
-    public function __construct(ADVAIPBL_Main $plugin_instance) {
-    $this->plugin = $plugin_instance;
-}
+    public function __construct(ADVAIPBL_Main $plugin_instance)
+    {
+        $this->plugin = $plugin_instance;
+    }
 
-    public function ajax_get_dashboard_stats() {
-        // 1. Verificamos el nonce. El primer argumento debe coincidir con la acción del nonce que creamos.
+    public function ajax_get_dashboard_stats()
+    {
         check_ajax_referer('wp_ajax_advaipbl_get_dashboard_stats', 'nonce');
 
         if (!current_user_can('advaipbl_manage_settings')) {
@@ -32,10 +35,12 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(['message' => 'Could not retrieve stats.']);
         }
     }
-	/**
-     * AJAX callback para el IP Inspector.
+
+    /**
+     * AJAX callback for the IP Inspector.
      */
-    public function ajax_inspect_ip() {
+    public function ajax_inspect_ip()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(__('Permission denied.', 'advanced-ip-blocker'));
         }
@@ -46,7 +51,6 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(__('Please enter an IP address or ASN.', 'advanced-ip-blocker'));
         }
 
-        // Si es un ASN, solo limpiarlo. Si es una IP, validarla.
         $ip = '';
         $asn = '';
         if (preg_match('/^AS\d+$/i', $query)) {
@@ -83,7 +87,6 @@ class ADVAIPBL_Ajax_Handler {
         ];
 
         if ($ip) {
-            // 1. Geolocation
             $loc = $this->plugin->geolocation_manager->fetch_location($ip);
             if ($loc && empty($loc['error'])) {
                 $data['geo']['country'] = isset($loc['country']) ? $loc['country'] : (isset($loc['country_code']) ? $loc['country_code'] : null);
@@ -93,28 +96,22 @@ class ADVAIPBL_Ajax_Handler {
                 $data['geo']['lat'] = isset($loc['lat']) ? $loc['lat'] : null;
                 $data['geo']['lon'] = isset($loc['lon']) ? $loc['lon'] : null;
             }
-            
-            // Hostname (rDNS)
+
             $hostname = gethostbyaddr($ip);
             if ($hostname !== $ip && $hostname !== false) {
                 $data['geo']['hostname'] = $hostname;
             }
 
-            // 2. Whitelist
             $data['status']['is_whitelisted'] = $this->plugin->is_whitelisted($ip);
 
-            // 3. Bot Verifier
             $data['status']['is_bot'] = $this->plugin->bot_verifier->is_verified_bot($ip, '');
 
-            // 4. Blocked Status
             $data['status']['is_blocked'] = $this->plugin->is_ip_actively_blocked($ip);
 
-            // 5. VIP Pass
             if (!empty($this->plugin->options['enable_js_challenge'])) {
                 $data['metrics']['has_vip_pass'] = $this->plugin->js_challenge_manager->is_vip_pass_valid($ip);
             }
 
-            // 6. AbuseIPDB
             $data['metrics']['abuse_threshold'] = (int) ($this->plugin->options['abuseipdb_threshold'] ?? 90);
             if (!empty($this->plugin->options['enable_abuseipdb'])) {
                 $abuse_data = $this->plugin->abuseipdb_manager->check_ip($ip);
@@ -122,16 +119,14 @@ class ADVAIPBL_Ajax_Handler {
                     $data['metrics']['abuse_score'] = $abuse_data['score'];
                 }
             }
-            
-            // 7. AIB Community Network
+
             $data['metrics']['aib_network'] = false;
             $data['metrics']['aib_score'] = 0;
             if (isset($this->plugin->community_manager)) {
                 if ($this->plugin->community_manager->is_ip_blocked($ip)) {
                     $data['metrics']['aib_network'] = true;
                 }
-                
-                // Fetch live score from central API
+
                 $api_token = $this->plugin->options['api_token_v3'] ?? '';
                 if (!empty($api_token)) {
                     $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . urlencode($ip), [
@@ -149,8 +144,7 @@ class ADVAIPBL_Ajax_Handler {
                     }
                 }
             }
-            
-            // 8. Spamhaus ASN DROP
+
             $data['metrics']['spamhaus'] = false;
             if ($data['geo']['asn']) {
                 if (preg_match('/\d+/', $data['geo']['asn'], $matches)) {
@@ -166,25 +160,23 @@ class ADVAIPBL_Ajax_Handler {
             $data['geo']['provider'] = 'ASN Lookup';
             $data['status']['is_blocked'] = false;
             $data['status']['is_whitelisted'] = false;
-            
+
             if (preg_match('/\d+/', $asn, $matches)) {
                 $asn_number = intval($matches[0]);
-                
-                // Fetch ASN details from RIPE Stat API
+
                 $response = wp_remote_get('https://stat.ripe.net/data/as-overview/data.json?resource=' . $asn_number, ['timeout' => 5]);
-                
+
                 if (!is_wp_error($response)) {
                     $body = wp_remote_retrieve_body($response);
                     $json = json_decode($body, true);
-                    
+
                     if (isset($json['status']) && $json['status'] === 'ok' && !empty($json['data']['holder'])) {
                         $data['geo']['isp'] = $json['data']['holder'];
                         $data['geo']['provider'] = 'RIPE Stat API (ASN Lookup)';
                     }
                 }
             }
-            
-            // Check ASN Whitelist
+
             $whitelisted_asns_raw = get_option('advaipbl_whitelisted_asns', []);
             $clean_whitelist = [];
             if (!empty($whitelisted_asns_raw)) {
@@ -199,8 +191,7 @@ class ADVAIPBL_Ajax_Handler {
             if (in_array(strtoupper($asn), $clean_whitelist, true)) {
                 $data['status']['is_whitelisted'] = true;
             }
-            
-            // Check ASN Blocklist
+
             $blocked_asns_raw = get_option('advaipbl_blocked_asns', []);
             $clean_blocklist = [];
             if (!empty($blocked_asns_raw)) {
@@ -215,12 +206,11 @@ class ADVAIPBL_Ajax_Handler {
             if (in_array(strtoupper($asn), $clean_blocklist, true)) {
                 $data['status']['is_blocked'] = true;
             }
-            
-            // Check Spamhaus Blocklist
+
             if (preg_match('/\d+/', $asn, $matches)) {
                 $asn_number = intval($matches[0]);
                 $spamhaus_list = get_option('advaipbl_spamhaus_asn_list', []);
-                
+
                 if (in_array($asn_number, $spamhaus_list, true)) {
                     $data['status']['is_blocked'] = true;
                     $data['metrics']['spamhaus'] = true;
@@ -231,10 +221,11 @@ class ADVAIPBL_Ajax_Handler {
         wp_send_json_success($data);
     }
 
-	/**
-     * AJAX callback para resetear la puntuación de amenaza de una IP.
+    /**
+     * AJAX callback to reset an IP threat score.
      */
-        public function ajax_reset_threat_score() {
+    public function ajax_reset_threat_score()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -251,17 +242,20 @@ class ADVAIPBL_Ajax_Handler {
 
         if ($success) {
             $this->plugin->purge_all_page_caches();
-			/* translators: %1$s: IP, %2$s: Username. */
+
+            /* translators: %s is a placeholder */
             $this->plugin->log_event(sprintf(__('Threat score for IP %1$s was manually reset by %2$s.', 'advanced-ip-blocker'), $ip, $this->plugin->get_current_admin_username()), 'info');
             wp_send_json_success(['message' => __('Score reset and IP unblocked successfully.', 'advanced-ip-blocker')]);
         } else {
             wp_send_json_error(['message' => __('Failed to reset score.', 'advanced-ip-blocker')]);
         }
     }
-	/**
-     * AJAX callback para añadir una firma a la lista blanca y eliminarla de la lista de bloqueo.
+
+    /**
+     * AJAX callback to whitelist a signature and remove it from the blocklist.
      */
-    public function ajax_whitelist_signature() {
+    public function ajax_whitelist_signature()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -272,13 +266,11 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(['message' => __('Invalid signature hash.', 'advanced-ip-blocker')]);
         }
 
-        // 1. Obtenemos los detalles de la firma para construir los comentarios.
         $details = $this->plugin->fingerprint_manager->get_signature_details($hash);
         if ($details === false) {
             wp_send_json_error(['message' => __('Could not retrieve signature details to create whitelist entry.', 'advanced-ip-blocker')]);
         }
-        
-        // 2. Construimos la entrada para la lista blanca con comentarios.
+
         $entry_lines = ["\n# Signature Components:"];
         $entry_lines[] = "# User-Agent: " . ($details['sample_user_agent'] ?? 'N/A');
         if (!empty($details['sample_headers'])) {
@@ -288,53 +280,53 @@ class ADVAIPBL_Ajax_Handler {
         }
         $entry_lines[] = $hash;
         $entry_to_add = implode("\n", $entry_lines);
-        
-        // 3. Obtenemos el array COMPLETO de settings, modificamos la clave y guardamos.
+
         $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
         $current_whitelist = $options['trusted_signature_hashes'] ?? '';
         $new_whitelist = $current_whitelist . "\n" . $entry_to_add;
-        
-        // Actualizamos la clave dentro del array de opciones.
+
         $options['trusted_signature_hashes'] = trim($new_whitelist);
-        
-        // Guardamos el array de opciones completo.
+
         update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
 
-        // 4. Eliminamos la firma de la lista de maliciosos.
         $this->plugin->fingerprint_manager->delete_signature($hash);
-        /* translators: %s: hash, %s: Username. */
+
+        /* translators: %s is a placeholder */
         $this->plugin->log_event(sprintf(__('Signature %1$s... whitelisted by %2$s.', 'advanced-ip-blocker'), substr($hash, 0, 12), $this->plugin->get_current_admin_username()), 'info');
         wp_send_json_success(['message' => __('Signature whitelisted successfully.', 'advanced-ip-blocker')]);
     }
-	/**
-     * AJAX callback para eliminar una firma maliciosa.
+
+    /**
+     * AJAX callback to delete a malicious signature.
      */
-    public function ajax_delete_signature() {
+    public function ajax_delete_signature()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
         check_ajax_referer('advaipbl_delete_signature_nonce', 'nonce');
 
         $signature_hash = isset($_POST['hash']) ? sanitize_text_field(wp_unslash($_POST['hash'])) : '';
-        // Validamos que el hash tenga la longitud correcta de un sha256.
+
         if (strlen($signature_hash) !== 64) {
             wp_send_json_error(['message' => __('Invalid signature hash format.', 'advanced-ip-blocker')]);
-        }       
+        }
         $success = $this->plugin->fingerprint_manager->delete_signature($signature_hash);
 
         if ($success) {
-			/* translators: %1$s: Hash, %2$s: Username */
+            /* translators: %s is a placeholder */
             $this->plugin->log_event(sprintf(__('Malicious signature %1$s... was manually deleted by %2$s.', 'advanced-ip-blocker'), substr($signature_hash, 0, 12), $this->plugin->get_current_admin_username()), 'warning');
             wp_send_json_success(['message' => __('Signature deleted successfully.', 'advanced-ip-blocker')]);
         } else {
             wp_send_json_error(['message' => __('Failed to delete signature. It might have already expired or been removed.', 'advanced-ip-blocker')]);
         }
     }
-	
-	    /**
-     * AJAX callback para obtener los detalles de una firma maliciosa.
+
+    /**
+     * AJAX callback to get details of a malicious signature.
      */
-    public function ajax_get_signature_details() {
+    public function ajax_get_signature_details()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -344,7 +336,7 @@ class ADVAIPBL_Ajax_Handler {
         if (strlen($signature_hash) !== 64) {
             wp_send_json_error(['message' => __('Invalid signature hash format.', 'advanced-ip-blocker')]);
         }
-        
+
         $details = $this->plugin->fingerprint_manager->get_signature_details($signature_hash);
 
         if ($details !== false) {
@@ -353,11 +345,12 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(['message' => __('Could not retrieve signature details.', 'advanced-ip-blocker')]);
         }
     }
-	
-	    /**
-     * AJAX callback para obtener los detalles de un Endpoint Lockdown.
+
+    /**
+     * AJAX callback to get Endpoint Lockdown details.
      */
-    public function ajax_get_lockdown_details() {
+    public function ajax_get_lockdown_details()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -379,10 +372,12 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(['message' => __('Could not retrieve lockdown details.', 'advanced-ip-blocker')]);
         }
     }
-	/**
-     * AJAX callback para obtener el historial de eventos de una IP.
+
+    /**
+     * AJAX callback to get the event history of an IP.
      */
-    public function ajax_get_score_history() {
+    public function ajax_get_score_history()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -391,7 +386,7 @@ class ADVAIPBL_Ajax_Handler {
         $ip = isset($_POST['ip']) ? sanitize_text_field(wp_unslash($_POST['ip'])) : '';
         if (!$ip) {
             wp_send_json_error(['message' => __('Invalid IP address.', 'advanced-ip-blocker')]);
-        }        
+        }
         $history = $this->plugin->threat_score_manager->get_log_details($ip);
 
         if ($history !== false) {
@@ -400,104 +395,104 @@ class ADVAIPBL_Ajax_Handler {
             wp_send_json_error(['message' => __('Could not retrieve history.', 'advanced-ip-blocker')]);
         }
     }
-	/**
+
+    /**
      * AJAX callback to test the server's outbound connection.
      */
-    public function ajax_test_outbound_connection() {
-        if ( ! current_user_can('advaipbl_manage_settings') ) {
-            wp_send_json_error( [ 'message' => 'Permission denied.' ] );
+    public function ajax_test_outbound_connection()
+    {
+        if (! current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error([ 'message' => 'Permission denied.' ]);
         }
-        check_ajax_referer( 'advaipbl_test_connection_nonce', 'nonce' );
+        check_ajax_referer('advaipbl_test_connection_nonce', 'nonce');
 
         $response = wp_remote_get('https://api.ipify.org?format=json', [ 'timeout' => 10 ]);
 
-        if ( is_wp_error($response) ) {
-            wp_send_json_error( [ 'message' => 'Error: ' . $response->get_error_message() ] );
+        if (is_wp_error($response)) {
+            wp_send_json_error([ 'message' => 'Error: ' . $response->get_error_message() ]);
         }
 
-        $http_code = wp_remote_retrieve_response_code( $response );
-        if ( $http_code !== 200 ) {
-            wp_send_json_error( [ 'message' => sprintf( 'Error: Received HTTP status code %d.', $http_code ) ] );
+        $http_code = wp_remote_retrieve_response_code($response);
+        if ($http_code !== 200) {
+            wp_send_json_error([ 'message' => sprintf('Error: Received HTTP status code %d.', $http_code) ]);
         }
 
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-        if ( isset( $body['ip'] ) && filter_var( $body['ip'], FILTER_VALIDATE_IP ) ) {
-            wp_send_json_success( [ 'message' => sprintf( 'Success! Connection established from IP: %s', $body['ip'] ) ] );
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (isset($body['ip']) && filter_var($body['ip'], FILTER_VALIDATE_IP)) {
+            wp_send_json_success([ 'message' => sprintf('Success! Connection established from IP: %s', $body['ip']) ]);
         }
 
-        wp_send_json_error( [ 'message' => 'Error: The response from the test service was invalid.' ] );
+        wp_send_json_error([ 'message' => 'Error: The response from the test service was invalid.' ]);
     }
-	/**
+
+    /**
      * AJAX callback to add a specific IP to the whitelist.
      * This is used by the interactive buttons in the admin interface.
      */
-
-    public function ajax_add_ip_to_whitelist() {
-    // 1. Validar permisos y nonce de seguridad (esto no cambia).
-    if ( ! current_user_can('advaipbl_manage_settings') ) {
-        wp_send_json_error( [ 'message' => __( 'Permission denied.', 'advanced-ip-blocker' ) ] );
-    }
-    check_ajax_referer( 'advaipbl_add_whitelist_nonce', 'nonce' );
-
-    // 2. Obtener y validar la IP del POST. Esta función AJAX solo maneja IPs individuales.
-    if ( ! isset( $_POST['ip'] ) || ! filter_var( wp_unslash( $_POST['ip'] ), FILTER_VALIDATE_IP ) ) {
-        wp_send_json_error( [ 'message' => __( 'Invalid or missing IP address.', 'advanced-ip-blocker' ) ] );
-    }
-    $ip = sanitize_text_field( wp_unslash( $_POST['ip'] ) );
-    
-    $detail = isset( $_POST['detail'] ) ? sanitize_text_field( wp_unslash( $_POST['detail'] ) ) : __('Added via admin action', 'advanced-ip-blocker');
-
-    // 3. Reutilizar nuestra nueva lógica centralizada.
-    $success = $this->plugin->add_to_whitelist_and_unblock( $ip, $detail );
-
-    if ( $success ) {
-        /* translators: %s: The IP address that was successfully whitelisted. */
-        wp_send_json_success( [ 'message' => sprintf( __( '%s successfully added to the whitelist.', 'advanced-ip-blocker' ), $ip ) ] );
-    } else {
-        /* translators: %s: The IP address that is already whitelisted. */
-        wp_send_json_success( [ 'message' => sprintf( __( '%s is already whitelisted.', 'advanced-ip-blocker' ), $ip ) ] );
-    }
-}
-    /**
-    * AJAX callback para verificar una API key de geolocalización o de Cloudflare.
-    */
-    public function ajax_verify_api_key() {
-        if ( ! current_user_can('advaipbl_manage_settings') ) {
-            wp_send_json_error( ['message' => __('Permission denied.', 'advanced-ip-blocker')] );
+    public function ajax_add_ip_to_whitelist()
+    {
+        if (! current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error([ 'message' => __('Permission denied.', 'advanced-ip-blocker') ]);
         }
-        check_ajax_referer( 'advaipbl_verify_api_nonce', 'nonce' );
+        check_ajax_referer('advaipbl_add_whitelist_nonce', 'nonce');
+
+        if (! isset($_POST['ip']) || ! filter_var(wp_unslash($_POST['ip']), FILTER_VALIDATE_IP)) {
+            wp_send_json_error([ 'message' => __('Invalid or missing IP address.', 'advanced-ip-blocker') ]);
+        }
+        $ip = sanitize_text_field(wp_unslash($_POST['ip']));
+
+        $detail = isset($_POST['detail']) ? sanitize_text_field(wp_unslash($_POST['detail'])) : __('Added via admin action', 'advanced-ip-blocker');
+
+        $success = $this->plugin->add_to_whitelist_and_unblock($ip, $detail);
+
+        if ($success) {
+            /* translators: %s is a placeholder */
+            wp_send_json_success([ 'message' => sprintf(__('%s successfully added to the whitelist.', 'advanced-ip-blocker'), $ip) ]);
+        } else {
+            /* translators: %s is a placeholder */
+            wp_send_json_success([ 'message' => sprintf(__('%s is already whitelisted.', 'advanced-ip-blocker'), $ip) ]);
+        }
+    }
+
+    /**
+    * AJAX callback to verify a geolocation or Cloudflare API key.
+    */
+    public function ajax_verify_api_key()
+    {
+        if (! current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+        }
+        check_ajax_referer('advaipbl_verify_api_nonce', 'nonce');
 
         $provider = isset($_POST['provider']) ? sanitize_text_field(wp_unslash($_POST['provider'])) : '';
         $api_key = isset($_POST['api_key']) ? sanitize_text_field(wp_unslash($_POST['api_key'])) : '';
 
         if (empty($provider)) {
-            wp_send_json_error( ['message' => __('Provider is missing.', 'advanced-ip-blocker')] );
+            wp_send_json_error(['message' => __('Provider is missing.', 'advanced-ip-blocker')]);
         }
-        
+
         if ($provider === 'cloudflare') {
             if (empty($api_key)) {
                 wp_send_json_error(['message' => __('API Token is missing.', 'advanced-ip-blocker')]);
             }
-            
-            // Llamamos al Cloudflare Manager
+
             $result = $this->plugin->cloudflare_manager->verify_token($api_key);
-            
+
             if (is_wp_error($result)) {
                 wp_send_json_error(['message' => $result->get_error_message()]);
             } else {
                 wp_send_json_success(['message' => __('Token verified successfully! (Status: Active)', 'advanced-ip-blocker')]);
             }
-            return; // Terminamos aquí para Cloudflare
+
+            return;
         }
 
-        // --- Verificación del Token API V3 (Servidor Central AIB) ---
         if ($provider === 'api_token_v3') {
             if (empty($api_key)) {
                 $this->plugin->log_event('AIB Network connection failed: API Key is missing.', 'error');
                 wp_send_json_error(['message' => __('API Key is missing.', 'advanced-ip-blocker')]);
             }
 
-            // Llamada al servidor central para verificar el token real
             $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $api_key,
@@ -523,27 +518,28 @@ class ADVAIPBL_Ajax_Handler {
                 $this->plugin->log_event('AIB Network connection failed: ' . $error_msg, 'error');
                 wp_send_json_error(['message' => $error_msg]);
             }
+
             return;
         }
 
-        // --- Lógica existente para Geolocalización ---
         $this->plugin->geolocation_manager->set_transient_api_key($provider, $api_key);
         $result = $this->plugin->geolocation_manager->fetch_location('8.8.8.8');
         $this->plugin->geolocation_manager->clear_transient_api_key($provider);
 
-        if ( $result && !isset($result['error']) ) {
+        if ($result && !isset($result['error'])) {
             wp_send_json_success(['message' => __('API Key is valid!', 'advanced-ip-blocker')]);
         } else {
             $error_message = $result['error_message'] ?? __('Invalid API Key or connection error.', 'advanced-ip-blocker');
             wp_send_json_error(['message' => $error_message]);
         }
-    } 
+    }
 
     /**
      * AJAX action to get a free API Key from the Central Server automatically.
      */
-    public function ajax_get_free_api_key() {
-        check_ajax_referer('advaipbl_verify_api_nonce', 'nonce'); // Usamos este nonce existente
+    public function ajax_get_free_api_key()
+    {
+        check_ajax_referer('advaipbl_verify_api_nonce', 'nonce');
 
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Unauthorized', 'advanced-ip-blocker')]);
@@ -556,7 +552,6 @@ class ADVAIPBL_Ajax_Handler {
         }
 
         if (isset($result['api_token'])) {
-            // Trigger an immediate sync so the blocklist and stats update to V3 levels instantly.
             $this->plugin->community_manager->update_list();
 
             wp_send_json_success([
@@ -569,9 +564,10 @@ class ADVAIPBL_Ajax_Handler {
     }
 
     /**
-     * Callback de AJAX para gestionar la respuesta al aviso de telemetría.
+     * AJAX callback to handle the telemetry notice response.
      */
-    public function ajax_handle_telemetry_notice() {
+    public function ajax_handle_telemetry_notice()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error();
         }
@@ -580,7 +576,6 @@ class ADVAIPBL_Ajax_Handler {
         $action = isset($_POST['telemetry_action']) ? sanitize_key($_POST['telemetry_action']) : '';
 
         if ('allow' === $action) {
-            // Obtenemos las opciones a través de la instancia del plugin.
             $options = $this->plugin->options;
             $options['allow_telemetry'] = '1';
 
@@ -594,183 +589,184 @@ class ADVAIPBL_Ajax_Handler {
             }
 
             wp_send_json_success();
-
         } elseif ('dismiss' === $action) {
             update_option('advaipbl_telemetry_notice_dismissed', '1');
             wp_clear_scheduled_hook('advaipbl_send_telemetry_data_event');
-            
+
             wp_send_json_success();
         }
 
         wp_send_json_error();
     }
-	/**
-     * AJAX callback para generar un nuevo secreto 2FA para un usuario.
+
+    /**
+     * AJAX callback to generate a new 2FA secret for a user.
      */
-    public function ajax_2fa_generate() {
-        check_ajax_referer( 'advaipbl_2fa_generate_nonce', 'nonce' );
-        $user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
-        if ( ! $user_id || ! current_user_can( 'edit_user', $user_id ) ) {
-            wp_send_json_error( [ 'message' => __( 'Permission denied.', 'advanced-ip-blocker' ) ] );
+    public function ajax_2fa_generate()
+    {
+        check_ajax_referer('advaipbl_2fa_generate_nonce', 'nonce');
+        $user_id = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
+        if (! $user_id || ! current_user_can('edit_user', $user_id)) {
+            wp_send_json_error([ 'message' => __('Permission denied.', 'advanced-ip-blocker') ]);
         }
-        $user = get_user_by( 'id', $user_id );
-        if ( ! $user ) {
-            wp_send_json_error( [ 'message' => __( 'Invalid user.', 'advanced-ip-blocker' ) ] );
+        $user = get_user_by('id', $user_id);
+        if (! $user) {
+            wp_send_json_error([ 'message' => __('Invalid user.', 'advanced-ip-blocker') ]);
         }
-        $data = $this->plugin->tfa_manager->generate_new_secret_for_user( $user );
-        wp_send_json_success( $data );
+        $data = $this->plugin->tfa_manager->generate_new_secret_for_user($user);
+        wp_send_json_success($data);
     }
 
     /**
-     * AJAX callback para verificar y activar 2FA para un usuario.
+     * AJAX callback to verify and activate 2FA for a user.
      */
-    public function ajax_2fa_activate() {
-        check_ajax_referer( 'advaipbl_2fa_activate_nonce', 'nonce' );
-        $user_id      = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
-        $code         = isset( $_POST['code'] ) ? sanitize_text_field( wp_unslash( $_POST['code'] ) ) : '';
-        $backup_codes = isset( $_POST['backup_codes'] ) && is_array( $_POST['backup_codes'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['backup_codes'] ) ) : [];
+    public function ajax_2fa_activate()
+    {
+        check_ajax_referer('advaipbl_2fa_activate_nonce', 'nonce');
+        $user_id      = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
+        $code         = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+        $backup_codes = isset($_POST['backup_codes']) && is_array($_POST['backup_codes']) ? array_map('sanitize_text_field', wp_unslash($_POST['backup_codes'])) : [];
 
-        if ( ! $user_id || ! current_user_can( 'edit_user', $user_id ) ) {
-            wp_send_json_error( [ 'message' => __( 'Permission denied.', 'advanced-ip-blocker' ) ] );
+        if (! $user_id || ! current_user_can('edit_user', $user_id)) {
+            wp_send_json_error([ 'message' => __('Permission denied.', 'advanced-ip-blocker') ]);
         }
-        $success = $this->plugin->tfa_manager->verify_and_activate( $user_id, $code, $backup_codes );
-        if ( $success ) {
+        $success = $this->plugin->tfa_manager->verify_and_activate($user_id, $code, $backup_codes);
+        if ($success) {
             wp_send_json_success();
         } else {
-            wp_send_json_error( [ 'message' => __( 'Invalid verification code. Please try again.', 'advanced-ip-blocker' ) ] );
+            wp_send_json_error([ 'message' => __('Invalid verification code. Please try again.', 'advanced-ip-blocker') ]);
         }
     }
 
     /**
-     * AJAX callback para desactivar 2FA para un usuario.
+     * AJAX callback to deactivate 2FA for a user.
      */
-        public function ajax_2fa_deactivate() {
-        check_ajax_referer( 'advaipbl_2fa_deactivate_nonce', 'nonce' );
-        $user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
-        if ( ! $user_id || ! current_user_can( 'edit_user', $user_id ) ) {
-            wp_send_json_error( [ 'message' => __( 'Permission denied.', 'advanced-ip-blocker' ) ] );
+    public function ajax_2fa_deactivate()
+    {
+        check_ajax_referer('advaipbl_2fa_deactivate_nonce', 'nonce');
+        $user_id = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
+        if (! $user_id || ! current_user_can('edit_user', $user_id)) {
+            wp_send_json_error([ 'message' => __('Permission denied.', 'advanced-ip-blocker') ]);
         }
-        $this->plugin->tfa_manager->deactivate_for_user( $user_id );
+        $this->plugin->tfa_manager->deactivate_for_user($user_id);
         wp_send_json_success();
     }
-	/**
-     * AJAX callback para iniciar la descarga de la base de datos GeoIP.
+
+    /**
+     * AJAX callback to start the GeoIP database download.
      */
-    public function ajax_update_geoip_db() {
-        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'advaipbl_update_geoip_nonce' ) ) {
-            wp_send_json_error( ['message' => 'Nonce verification failed.'], 403 );
+    public function ajax_update_geoip_db()
+    {
+        if (! isset($_POST['nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'advaipbl_update_geoip_nonce')) {
+            wp_send_json_error(['message' => 'Nonce verification failed.'], 403);
         }
-        if ( ! current_user_can( 'manage_options' ) || ! $this->plugin->geoip_manager ) {
-            wp_send_json_error( ['message' => 'Permission denied or module not available.'], 403 );
+        if (! current_user_can('manage_options') || ! $this->plugin->geoip_manager) {
+            wp_send_json_error(['message' => 'Permission denied or module not available.'], 403);
         }
-        
-        // Aumentamos el límite de tiempo de ejecución para la descarga
+
         // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
         set_time_limit(300);
 
         $this->plugin->log_event('Starting manual GeoIP database update from Dashboard.', 'info');
         $result = $this->plugin->geoip_manager->download_and_unpack_databases();
-        
-        if ( $result['success'] ) {
+
+        if ($result['success']) {
             $this->plugin->log_event('Manual GeoIP database update completed successfully.', 'info');
-            wp_send_json_success( ['message' => $result['message']] );
+            wp_send_json_success(['message' => $result['message']]);
         } else {
             $this->plugin->log_event('Manual GeoIP database update failed: ' . $result['message'], 'error');
-            wp_send_json_error( ['message' => $result['message']] );
+            wp_send_json_error(['message' => $result['message']]);
         }
     }
-
-   /**
- * AJAX callback para obtener las reglas avanzadas, con soporte para paginación.
- */
-public function ajax_get_advanced_rules() {
-    if (!current_user_can('advaipbl_manage_settings')) {
-        wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
-        wp_die();
-    }
-    check_ajax_referer('advaipbl_get_rules_nonce', 'nonce');
-    if (ob_get_level()) {
-        ob_clean();
-    }
-    
-    // Support fetching a single rule for editing
-    if (isset($_POST['rule_id'])) {
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash
-        $rule_id = sanitize_text_field($_POST['rule_id']);
-        $all_rules = $this->plugin->rules_engine->get_rules();
-        $found_rule = null;
-        foreach ($all_rules as $r) {
-            if (isset($r['id']) && $r['id'] === $rule_id) {
-                $found_rule = $r;
-                break;
-            }
-        }
-        
-        if ($found_rule) {
-             if (isset($this->plugin->rules_metrics)) {
-                 $found_rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($found_rule['id']);
-             }
-             wp_send_json_success(['rules' => [$found_rule]]);
-        } else {
-             wp_send_json_error(['message' => __('Rule not found.', 'advanced-ip-blocker')]);
-        }
-    }
-
-    $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
-    $per_page = 20;
-    $all_rules = $this->plugin->rules_engine->get_rules();
-    // REMOVED REVERSE: We want to display rules in priority order (index 0 first).
-    $all_rules = is_array($all_rules) ? $all_rules : [];
-    $total_items = count($all_rules);
-    $total_pages = ceil($total_items / $per_page);
-    $rules_for_page = array_slice($all_rules, ($page - 1) * $per_page, $per_page);
-    
-    if (isset($this->plugin->rules_metrics)) {
-        foreach ($rules_for_page as &$rule) {
-            $rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($rule['id']);
-        }
-    }
-
-    wp_send_json_success([
-        'rules'       => $rules_for_page,
-        'pagination'  => [
-            'total_items' => $total_items,
-            'total_pages' => $total_pages,
-            'current_page'=> $page,
-        ]
-    ]);
-    wp_die();
-}
 
     /**
-     * AJAX callback para guardar (crear o actualizar) una regla avanzada.
+ * AJAX callback to get advanced rules, with pagination support.
+ */
+    public function ajax_get_advanced_rules()
+    {
+        if (!current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+        check_ajax_referer('advaipbl_get_rules_nonce', 'nonce');
+        if (ob_get_level()) {
+            ob_clean();
+        }
+
+        if (isset($_POST['rule_id'])) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+            $rule_id = sanitize_text_field($_POST['rule_id']);
+            $all_rules = $this->plugin->rules_engine->get_rules();
+            $found_rule = null;
+            foreach ($all_rules as $r) {
+                if (isset($r['id']) && $r['id'] === $rule_id) {
+                    $found_rule = $r;
+                    break;
+                }
+            }
+
+            if ($found_rule) {
+                if (isset($this->plugin->rules_metrics)) {
+                    $found_rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($found_rule['id']);
+                }
+                wp_send_json_success(['rules' => [$found_rule]]);
+            } else {
+                wp_send_json_error(['message' => __('Rule not found.', 'advanced-ip-blocker')]);
+            }
+        }
+
+        $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
+        $per_page = 20;
+        $all_rules = $this->plugin->rules_engine->get_rules();
+
+        $all_rules = is_array($all_rules) ? $all_rules : [];
+        $total_items = count($all_rules);
+        $total_pages = ceil($total_items / $per_page);
+        $rules_for_page = array_slice($all_rules, ($page - 1) * $per_page, $per_page);
+
+        if (isset($this->plugin->rules_metrics)) {
+            foreach ($rules_for_page as &$rule) {
+                $rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($rule['id']);
+            }
+        }
+
+        wp_send_json_success([
+            'rules'       => $rules_for_page,
+            'pagination'  => [
+                'total_items' => $total_items,
+                'total_pages' => $total_pages,
+                'current_page' => $page,
+            ]
+        ]);
+        wp_die();
+    }
+
+    /**
+     * AJAX callback to save (create or update) an advanced rule.
      */
-    public function ajax_save_advanced_rule() {
+    public function ajax_save_advanced_rule()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
         check_ajax_referer('advaipbl_save_rule_nonce', 'nonce');
 
-        // Decode JSON directly after unslashing. We do NOT use sanitize_text_field here as it breaks JSON structure
-        // and stripslashes breaks escaped characters within the JSON strings (e.g., regex backslashes).
-        // Individual fields are sanitized later in Rules_Engine::sanitize_rule().
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $rule_data = isset($_POST['rule']) ? json_decode(wp_unslash($_POST['rule']), true) : null;
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($rule_data)) {
             wp_send_json_error(['message' => __('Invalid rule data received.', 'advanced-ip-blocker')]);
         }
 
-        // Aquí deberíamos añadir una sanitización profunda, pero por ahora confiamos en la entrada
         $rule_id = $rule_data['id'] ?? null;
 
-        if (empty($rule_id)) { // Es una nueva regla
+        if (empty($rule_id)) {
             $saved_rule = $this->plugin->rules_engine->add_rule($rule_data);
             if ($saved_rule) {
                 wp_send_json_success(['message' => __('Rule created successfully.', 'advanced-ip-blocker'), 'rule' => $saved_rule]);
             } else {
                 wp_send_json_error(['message' => __('Failed to create rule.', 'advanced-ip-blocker')]);
             }
-        } else { // Es una actualización
+        } else {
             if ($this->plugin->rules_engine->update_rule($rule_id, $rule_data)) {
                 wp_send_json_success(['message' => __('Rule updated successfully.', 'advanced-ip-blocker'), 'rule' => $rule_data]);
             } else {
@@ -779,7 +775,8 @@ public function ajax_get_advanced_rules() {
         }
     }
 
-    public function ajax_toggle_advanced_rule() {
+    public function ajax_toggle_advanced_rule()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -794,7 +791,7 @@ public function ajax_get_advanced_rules() {
 
         $rules = $this->plugin->rules_engine->get_rules();
         $target_rule = null;
-        
+
         foreach ($rules as $rule) {
             if ($rule['id'] === $rule_id) {
                 $target_rule = $rule;
@@ -815,9 +812,10 @@ public function ajax_get_advanced_rules() {
     }
 
     /**
-     * AJAX callback para eliminar una regla avanzada.
+     * AJAX callback to delete an advanced rule.
      */
-    public function ajax_delete_advanced_rule() {
+    public function ajax_delete_advanced_rule()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -834,76 +832,77 @@ public function ajax_get_advanced_rules() {
             wp_send_json_error(['message' => __('Failed to delete rule. It may have already been deleted.', 'advanced-ip-blocker')]);
         }
     }
-	
-	/**
- * AJAX callback para eliminar reglas avanzadas en lote.
+
+    /**
+ * AJAX callback to bulk delete advanced rules.
  */
-public function ajax_bulk_delete_advanced_rules() {
-    if (!current_user_can('advaipbl_manage_settings')) {
-        wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
-        wp_die();
-    }
-    check_ajax_referer('advaipbl_bulk_delete_rules_nonce', 'nonce');
-
-    $rule_ids = isset($_POST['rule_ids']) && is_array($_POST['rule_ids']) ? array_map('sanitize_text_field', wp_unslash($_POST['rule_ids']) ) : [];
-    if (empty($rule_ids)) {
-        wp_send_json_error(['message' => __('No rules selected.', 'advanced-ip-blocker')]);
-        wp_die();
-    }
-
-    $deleted_count = 0;
-    foreach ($rule_ids as $rule_id) {
-        if ($this->plugin->rules_engine->delete_rule($rule_id)) {
-            $deleted_count++;
+    public function ajax_bulk_delete_advanced_rules()
+    {
+        if (!current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+            wp_die();
         }
-    }
+        check_ajax_referer('advaipbl_bulk_delete_rules_nonce', 'nonce');
 
-    if ($deleted_count > 0) {
-        /* translators: %d: Number of rules deleted. */
-        $message = sprintf(_n('%d rule deleted successfully.', '%d rules deleted successfully.', $deleted_count, 'advanced-ip-blocker'), $deleted_count);
-        wp_send_json_success(['message' => $message]);
-    } else {
-        wp_send_json_error(['message' => __('Failed to delete the selected rules.', 'advanced-ip-blocker')]);
-    }
-    wp_die();
-}
+        $rule_ids = isset($_POST['rule_ids']) && is_array($_POST['rule_ids']) ? array_map('sanitize_text_field', wp_unslash($_POST['rule_ids'])) : [];
+        if (empty($rule_ids)) {
+            wp_send_json_error(['message' => __('No rules selected.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
 
-/**
- * AJAX callback para verificar una clave API de AbuseIPDB.
- */
-public function ajax_verify_abuseipdb_key() {
-    if (!current_user_can('advaipbl_manage_settings')) {
-        wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+        $deleted_count = 0;
+        foreach ($rule_ids as $rule_id) {
+            if ($this->plugin->rules_engine->delete_rule($rule_id)) {
+                $deleted_count++;
+            }
+        }
+
+        if ($deleted_count > 0) {
+            /* translators: %s is a placeholder */
+            $message = sprintf(_n('%d rule deleted successfully.', '%d rules deleted successfully.', $deleted_count, 'advanced-ip-blocker'), $deleted_count);
+            wp_send_json_success(['message' => $message]);
+        } else {
+            wp_send_json_error(['message' => __('Failed to delete the selected rules.', 'advanced-ip-blocker')]);
+        }
         wp_die();
     }
-    check_ajax_referer('advaipbl_verify_abuseipdb_nonce', 'nonce');
 
-    $api_key = isset($_POST['api_key']) ? sanitize_text_field(wp_unslash($_POST['api_key'])) : '';
-    
-    // La lógica de verificación ya está en el manager, simplemente la llamamos.
-    $result = $this->plugin->abuseipdb_manager->verify_api_key($api_key);
-
-    if ($result['success']) {
-        wp_send_json_success(['message' => $result['message']]);
-    } else {
-        wp_send_json_error(['message' => $result['message']]);
-    }
-    wp_die();
-}
-
-/**
-     * AJAX callback para ejecutar el escaneo profundo de vulnerabilidades.
+    /**
+     * AJAX callback to verify an AbuseIPDB API key.
      */
-    public function ajax_run_deep_scan() {
+    public function ajax_verify_abuseipdb_key()
+    {
+        if (!current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+            wp_die();
+        }
+        check_ajax_referer('advaipbl_verify_abuseipdb_nonce', 'nonce');
+
+        $api_key = isset($_POST['api_key']) ? sanitize_text_field(wp_unslash($_POST['api_key'])) : '';
+
+        $result = $this->plugin->abuseipdb_manager->verify_api_key($api_key);
+
+        if ($result['success']) {
+            wp_send_json_success(['message' => $result['message']]);
+        } else {
+            wp_send_json_error(['message' => $result['message']]);
+        }
+        wp_die();
+    }
+
+    /**
+         * AJAX callback to execute the deep vulnerability scan.
+         */
+    public function ajax_run_deep_scan()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
         check_ajax_referer('advaipbl_deep_scan_nonce', 'nonce');
 
-        // Asegurar que el scanner está cargado
         if (!isset($this->plugin->site_scanner)) {
-             require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
-             $this->plugin->site_scanner = new ADVAIPBL_Site_Scanner($this->plugin);
+            require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
+            $this->plugin->site_scanner = new ADVAIPBL_Site_Scanner($this->plugin);
         }
 
         $result = $this->plugin->site_scanner->check_vulnerabilities_via_api();
@@ -914,25 +913,26 @@ public function ajax_verify_abuseipdb_key() {
 
         wp_send_json_success($result);
     }
-	
-	/**
-     * AJAX callback para comprobar la reputación del servidor.
+
+    /**
+     * AJAX callback to check server reputation.
      */
-    public function ajax_check_server_reputation() {
+    public function ajax_check_server_reputation()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
         check_ajax_referer('advaipbl_reputation_nonce', 'nonce');
 
         if (!isset($this->plugin->site_scanner)) {
-             require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
-             $this->plugin->site_scanner = new ADVAIPBL_Site_Scanner($this->plugin);
+            require_once plugin_dir_path(__FILE__) . 'class-advaipbl-site-scanner.php';
+            $this->plugin->site_scanner = new ADVAIPBL_Site_Scanner($this->plugin);
         }
 
         $result = $this->plugin->site_scanner->check_server_reputation();
-        
+
         if (isset($result['status']) && $result['status'] === 'error') {
-             wp_send_json_error(['message' => $result['message']]);
+            wp_send_json_error(['message' => $result['message']]);
         }
 
         wp_send_json_success($result);
@@ -941,7 +941,8 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * Ajax handler to reorder advanced rules.
      */
-    public function ajax_reorder_advanced_rules() {
+    public function ajax_reorder_advanced_rules()
+    {
         check_ajax_referer('advaipbl_reorder_rules_nonce', 'nonce');
 
         if (!current_user_can('advaipbl_manage_settings')) {
@@ -956,12 +957,11 @@ public function ajax_verify_abuseipdb_key() {
         }
 
         $rules = $this->plugin->rules_engine->get_rules();
-        
+
         $rules = array_values($rules);
-        
+
         $target_index = -1;
 
-        // Find current index
         foreach ($rules as $index => $rule) {
             if (isset($rule['id']) && $rule['id'] === $rule_id) {
                 $target_index = $index;
@@ -973,7 +973,6 @@ public function ajax_verify_abuseipdb_key() {
             wp_send_json_error(['message' => __('Rule not found.', 'advanced-ip-blocker')]);
         }
 
-        // Swap logic
         if ($direction === 'up') {
             if ($target_index > 0 && isset($rules[$target_index - 1])) {
                 $temp = $rules[$target_index - 1];
@@ -992,11 +991,12 @@ public function ajax_verify_abuseipdb_key() {
 
         wp_send_json_success(['message' => __('Rule reordered successfully.', 'advanced-ip-blocker')]);
     }
-    
+
     /**
      * AJAX action to clear audit logs.
      */
-    public function ajax_clear_audit_logs() {
+    public function ajax_clear_audit_logs()
+    {
         check_ajax_referer('advaipbl_clear_audit_logs_nonce', 'nonce');
 
         if (!current_user_can('advaipbl_manage_settings')) {
@@ -1010,7 +1010,7 @@ public function ajax_verify_abuseipdb_key() {
         $result = $this->plugin->audit_logger->clear_all_logs();
 
         if ($result !== false) {
-            /* translators: %s: Username. */
+            /* translators: %s is a placeholder */
             $this->plugin->log_event(sprintf(__('Audit logs manually cleared by %s.', 'advanced-ip-blocker'), $this->plugin->get_current_admin_username()), 'warning');
             wp_send_json_success(['message' => __('Audit logs cleared successfully.', 'advanced-ip-blocker')]);
         } else {
@@ -1021,9 +1021,8 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX Handler for manual FIM Scan.
      */
-
-
-    public function ajax_run_fim_scan() {
+    public function ajax_run_fim_scan()
+    {
         check_ajax_referer('advaipbl_run_fim_scan_nonce', 'nonce');
 
         if (!current_user_can('advaipbl_manage_settings')) {
@@ -1035,11 +1034,9 @@ public function ajax_verify_abuseipdb_key() {
         }
 
         if (!isset($this->plugin->file_verifier)) {
-             wp_send_json_error(['message' => __('File Verifier module not loaded.', 'advanced-ip-blocker')]);
+            wp_send_json_error(['message' => __('File Verifier module not loaded.', 'advanced-ip-blocker')]);
         }
 
-        // Before starting a manual scan, ping the Central API to see if there is a new signature version.
-        // This ensures the manual scan always uses the latest signatures without waiting for the cron job.
         $this->plugin->check_fim_signatures_version();
 
         $changes = $this->plugin->file_verifier->scan_files();
@@ -1047,9 +1044,9 @@ public function ajax_verify_abuseipdb_key() {
         if (empty($changes)) {
             wp_send_json_success(['message' => __('Scan complete. No changes detected.', 'advanced-ip-blocker')]);
         } else {
-            // Summary count
             $count = count($changes);
-            /* translators: %d: Number of files changed. */
+
+            /* translators: %s is a placeholder */
             $msg = sprintf(_n('Scan complete. %d file change detected (Alert sent).', 'Scan complete. %d file changes detected (Alert sent).', $count, 'advanced-ip-blocker'), $count);
             wp_send_json_success(['message' => $msg]);
         }
@@ -1058,7 +1055,8 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX callback for Bulk Import of IPs to Whitelist.
      */
-    public function ajax_bulk_import_whitelist() {
+    public function ajax_bulk_import_whitelist()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -1071,7 +1069,6 @@ public function ajax_verify_abuseipdb_key() {
             wp_send_json_error(['message' => __('No data provided.', 'advanced-ip-blocker')]);
         }
 
-        // Split by new lines
         $lines = preg_split('/\r\n|\r|\n/', $raw_data);
         $imported_count = 0;
         $skipped_count = 0;
@@ -1079,13 +1076,14 @@ public function ajax_verify_abuseipdb_key() {
 
         foreach ($lines as $line) {
             $ip_or_range = trim($line);
-            if (empty($ip_or_range)) continue;
+            if (empty($ip_or_range)) {
+                continue;
+            }
 
-            // Use the main class function to handle validation, unblocking, and adding
             if ($this->plugin->add_to_whitelist_and_unblock($ip_or_range, $detail)) {
                 $imported_count++;
             } else {
-                $skipped_count++; // Duplicate or invalid
+                $skipped_count++;
             }
         }
 
@@ -1094,7 +1092,7 @@ public function ajax_verify_abuseipdb_key() {
         }
 
         $message = sprintf(
-            /* translators: 1: Number of imported IPs, 2: Number of skipped IPs. */
+            /* translators: %s is a placeholder */
             __('Import complete. Imported: %1$d. Skipped/Invalid/Duplicate: %2$d.', 'advanced-ip-blocker'),
             $imported_count,
             $skipped_count
@@ -1106,7 +1104,8 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX callback for Bulk Export of Whitelisted IPs.
      */
-    public function ajax_bulk_export_whitelist() {
+    public function ajax_bulk_export_whitelist()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -1114,7 +1113,6 @@ public function ajax_verify_abuseipdb_key() {
 
         $include_details = isset($_POST['include_details']) && $_POST['include_details'] === 'true';
 
-        // Get whitelist from options
         $whitelist = get_option(ADVAIPBL_Main::OPTION_WHITELIST, []);
 
         if (empty($whitelist)) {
@@ -1122,16 +1120,14 @@ public function ajax_verify_abuseipdb_key() {
         }
 
         $export_data = "";
-        
+
         if ($include_details) {
-            // CSV Header
             $export_data .= "IP,Detail,Date\n";
             foreach ($whitelist as $key => $entry) {
                 $ip = '';
                 $detail = '';
                 $date = '';
 
-                // Method 1: IP is the Array Key (Standard Format)
                 if (filter_var($key, FILTER_VALIDATE_IP) || strpos($key, '/') !== false) {
                     $ip = $key;
                     if (is_array($entry)) {
@@ -1139,16 +1135,12 @@ public function ajax_verify_abuseipdb_key() {
                         $ts = $entry['timestamp'] ?? $entry['created_at'] ?? '';
                         $date = $ts ? gmdate('Y-m-d H:i:s', $ts) : '';
                     }
-                } 
-                // Method 2: IP is inside the array (Hypothetical/Migrated)
-                elseif (is_array($entry) && isset($entry['ip'])) {
+                } elseif (is_array($entry) && isset($entry['ip'])) {
                     $ip = $entry['ip'];
                     $detail = isset($entry['detail']) ? $entry['detail'] : '';
                     $ts = $entry['timestamp'] ?? $entry['created_at'] ?? '';
                     $date = $ts ? gmdate('Y-m-d H:i:s', $ts) : '';
-                } 
-                // Method 3: Simple String (Legacy)
-                elseif (is_string($entry)) {
+                } elseif (is_string($entry)) {
                     $ip = $entry;
                 }
 
@@ -1159,9 +1151,7 @@ public function ajax_verify_abuseipdb_key() {
             }
             $filename = 'aib-whitelist-export-' . gmdate('Y-m-d') . '.csv';
             $content_type = 'text/csv';
-
         } else {
-            // Simple text list (IP per line)
             foreach ($whitelist as $key => $entry) {
                 $ip = '';
                 if (filter_var($key, FILTER_VALIDATE_IP) || strpos($key, '/') !== false) {
@@ -1180,7 +1170,6 @@ public function ajax_verify_abuseipdb_key() {
             $content_type = 'text/plain';
         }
 
-        // We return the data URL to be downloaded by JS
         $base64_data = base64_encode($export_data);
         $data_uri = 'data:' . $content_type . ';base64,' . $base64_data;
 
@@ -1190,7 +1179,8 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX callback for Bulk Import of Blocked IPs.
      */
-    public function ajax_bulk_import_blocked_ips() {
+    public function ajax_bulk_import_blocked_ips()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -1198,8 +1188,7 @@ public function ajax_verify_abuseipdb_key() {
 
         $raw_data = isset($_POST['ip_list']) ? sanitize_textarea_field(wp_unslash($_POST['ip_list'])) : '';
         $duration_minutes = isset($_POST['duration']) ? intval($_POST['duration']) : 0;
-        
-        // El motivo es siempre 'Bulk Import'
+
         $hardcoded_reason = __('Bulk Import', 'advanced-ip-blocker');
 
         if (empty($raw_data)) {
@@ -1208,13 +1197,11 @@ public function ajax_verify_abuseipdb_key() {
 
         $current_time = time();
 
-        // Calculate default expiration timestamp from modal
-        $expires_at = 0; // Permanent by default
+        $expires_at = 0;
         if ($duration_minutes > 0) {
             $expires_at = $current_time + ($duration_minutes * 60);
         }
 
-        // Split by new lines
         $lines = preg_split('/\r\n|\r|\n/', $raw_data);
         $imported_count = 0;
         $skipped_count = 0;
@@ -1225,25 +1212,25 @@ public function ajax_verify_abuseipdb_key() {
 
         foreach ($lines as $line) {
             $line = trim($line);
-            if (empty($line)) continue;
-            
-            // Try to parse as CSV line
+            if (empty($line)) {
+                continue;
+            }
+
             $parsed = str_getcsv($line);
             $ip_or_range = isset($parsed[0]) ? trim($parsed[0]) : '';
-            
-            // Skip empty IPs or CSV Header
-            if (empty($ip_or_range) || strtolower($ip_or_range) === 'ip/cidr') continue;
+
+            if (empty($ip_or_range) || strtolower($ip_or_range) === 'ip/cidr') {
+                continue;
+            }
 
             if (!$this->plugin->is_valid_ip_or_range($ip_or_range)) {
                 $invalid_count++;
                 continue;
             }
 
-            // Ignoramos la razón del CSV, forzamos siempre la hardcodeada.
             $item_reason = $hardcoded_reason;
 
-            // Determine Expiration
-            $item_expires_at = $expires_at; // fallback to modal calculated expires_at
+            $item_expires_at = $expires_at;
             if (isset($parsed[2]) && trim($parsed[2]) !== '') {
                 $csv_exp = trim($parsed[2]);
                 if (strtolower($csv_exp) === 'permanent' || $csv_exp == '0') {
@@ -1251,46 +1238,37 @@ public function ajax_verify_abuseipdb_key() {
                 } else {
                     $parsed_time = strtotime($csv_exp);
                     if ($parsed_time !== false) {
-                         // Si es una fecha absoluta (e.g. 2024-01-01)
-                         // Solo la aceptamos si está en el futuro
-                         if ($parsed_time > $current_time) {
-                             $item_expires_at = $parsed_time;
-                         } else {
-                             $item_expires_at = 0; // Ya expiró en el pasado, la tomamos como permanente "rota" o 0
-                         }
+                        if ($parsed_time > $current_time) {
+                            $item_expires_at = $parsed_time;
+                        } else {
+                            $item_expires_at = 0;
+                        }
                     } elseif (is_numeric($csv_exp) && $csv_exp > 0) {
-                         // Si es un delta en segundos desde ahora en base a la línea del texto, asumiéndolo igual.
-                         // Nosotros sabemos que viene como epoch expirado en la DB
-                         // Realmente, en el CSV exportamos "Permanent" o fecha "Y-m-d H:i:s".
                         $item_expires_at = intval($csv_exp);
                     }
                 }
             }
 
-            // Check if already in whitelist
             if ($this->plugin->is_whitelisted($ip_or_range)) {
                 $skipped_count++;
                 continue;
             }
 
-            // Check if actively blocked (expires_at is 0 OR expires_at > current_time)
             $query = "SELECT COUNT(*) FROM {$table_name} WHERE ip_range = %s AND (expires_at = 0 OR expires_at > %d)";
             // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $exists = $wpdb->get_var($wpdb->prepare($query, $ip_or_range, $current_time));
-            // phpcs:enable
-            
+
             if ($exists) {
                 $skipped_count++;
                 continue;
             }
 
-            // Insert new block
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
             $inserted = $wpdb->insert(
                 $table_name,
                 [
                     'ip_range' => $ip_or_range,
-                    'block_type' => 'bulk_import', // NUEVO TIPO
+                    'block_type' => 'bulk_import',
                     'timestamp' => $current_time,
                     'expires_at' => $item_expires_at,
                     'reason' => $item_reason
@@ -1314,16 +1292,14 @@ public function ajax_verify_abuseipdb_key() {
             $this->plugin->update_db_cidrs_cache();
         }
 
-        // Si Cloudflare está habilitado, desencadenamos una sincronización asíncrona casi inmediata.
-        // Hacemos esto porque sincronizar miles de IPs de forma síncrona aquí podría agotar el tiempo de espera PHP.
         if ($imported_count > 0 && !empty($this->plugin->options['enable_cloudflare'])) {
             if (!wp_next_scheduled('advaipbl_cloudflare_sync_event')) {
-                 wp_schedule_single_event(time(), 'advaipbl_cloudflare_sync_event');
+                wp_schedule_single_event(time(), 'advaipbl_cloudflare_sync_event');
             }
         }
 
         $message = sprintf(
-            /* translators: 1: Number of imported IPs, 2: Number of skipped/invalid/duplicate IPs. */
+            /* translators: %s is a placeholder */
             __('Import complete. Imported: %1$d. Skipped/Invalid/Duplicate: %2$d.', 'advanced-ip-blocker'),
             $imported_count,
             $skipped_count + $invalid_count
@@ -1335,7 +1311,8 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX callback for Bulk Export of Blocked IPs.
      */
-    public function ajax_bulk_export_blocked_ips() {
+    public function ajax_bulk_export_blocked_ips()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -1344,8 +1321,7 @@ public function ajax_verify_abuseipdb_key() {
         global $wpdb;
         $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
         $current_time = time();
-        
-        // Fetch ALL actively blocked IPs (permanent or not expired)
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $results = $wpdb->get_results($wpdb->prepare("SELECT ip_range, reason, expires_at, block_type FROM {$table_name} WHERE expires_at = 0 OR expires_at > %d", $current_time), ARRAY_A);
 
@@ -1354,14 +1330,14 @@ public function ajax_verify_abuseipdb_key() {
         }
 
         $export_data = "IP/CIDR,Reason,Expiration,Type\n";
-        
+
         foreach ($results as $row) {
             $reason_csv = '"' . str_replace('"', '""', $row['reason']) . '"';
             $expiration = ($row['expires_at'] == 0) ? 'Permanent' : gmdate('Y-m-d H:i:s', $row['expires_at']);
-            
+
             $export_data .= "{$row['ip_range']},{$reason_csv},{$expiration},{$row['block_type']}\n";
         }
-        
+
         $filename = 'aib-blocked-ips-export-' . gmdate('Y-m-d') . '.csv';
         $content_type = 'text/csv';
 
@@ -1370,10 +1346,12 @@ public function ajax_verify_abuseipdb_key() {
 
         wp_send_json_success(['file_url' => $data_uri, 'filename' => $filename]);
     }
+
     /**
      * AJAX callback for Exporting Advanced Rules securely.
      */
-    public function ajax_export_advanced_rules() {
+    public function ajax_export_advanced_rules()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
             wp_die();
@@ -1394,8 +1372,6 @@ public function ajax_verify_abuseipdb_key() {
             'rules' => $rules
         ];
 
-        // We return the raw JSON payload and the suggested filename.
-        // Javascript will generate a Blob and trigger the download on the client side.
         wp_send_json_success([
             'payload' => $export_payload,
             'filename' => 'aib-advanced-rules-export-' . gmdate('Y-m-d') . '.json'
@@ -1403,7 +1379,8 @@ public function ajax_verify_abuseipdb_key() {
         wp_die();
     }
 
-    public function ajax_export_selected_advanced_rules() {
+    public function ajax_export_selected_advanced_rules()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
             wp_die();
@@ -1418,7 +1395,7 @@ public function ajax_verify_abuseipdb_key() {
 
         $all_rules = $this->plugin->rules_engine->get_rules();
         $selected_rules = [];
-        
+
         foreach ($all_rules as $rule) {
             if (in_array($rule['id'], $rule_ids, true)) {
                 $selected_rules[] = $rule;
@@ -1448,17 +1425,17 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX callback for Importing Advanced Rules securely.
      */
-    public function ajax_import_advanced_rules() {
+    public function ajax_import_advanced_rules()
+    {
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
             wp_die();
         }
         check_ajax_referer('advaipbl_import_adv_rules_nonce', 'nonce');
 
-        // We receive JSON as a raw string to prevent slashes escaping issues.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
         $raw_json = isset($_POST['json_payload']) ? trim(wp_unslash($_POST['json_payload'])) : '';
-        
+
         if (empty($raw_json)) {
             wp_send_json_error(['message' => __('No payload provided.', 'advanced-ip-blocker')]);
             wp_die();
@@ -1470,7 +1447,6 @@ public function ajax_verify_abuseipdb_key() {
             wp_die();
         }
 
-        // Schema Verification
         if (empty($parsed_data['_advaipbl_export']) || $parsed_data['_advaipbl_export'] !== true || empty($parsed_data['rules']) || !is_array($parsed_data['rules'])) {
             wp_send_json_error(['message' => __('JSON validation failed: This file is not a valid Advanced Rules export.', 'advanced-ip-blocker')]);
             wp_die();
@@ -1478,12 +1454,11 @@ public function ajax_verify_abuseipdb_key() {
 
         $imported_count = 0;
         $ignored_count = 0;
-        $skipped_count = 0; // Para contar las duplicadas
+        $skipped_count = 0;
 
         $existing_rules = $this->plugin->rules_engine->get_rules();
 
         foreach ($parsed_data['rules'] as $rule) {
-            // Generamos un hash de la estructura de la regla entrante (ignorando el ID, que puede variar)
             $incoming_hash = md5(json_encode([
                 'name' => $rule['name'] ?? '',
                 'action' => $rule['action'] ?? '',
@@ -1506,19 +1481,16 @@ public function ajax_verify_abuseipdb_key() {
 
             if ($is_duplicate) {
                 $skipped_count++;
-                continue; // Saltamos esta regla, ya existe exactamente igual
+                continue;
             }
 
-            // Strip any existing ID to prevent overriding current site rules
             unset($rule['id']);
-            
-            // Re-route into the engine which intrinsically handles deep sanitization and unique ID allocation
+
             $saved_rule = $this->plugin->rules_engine->add_rule($rule);
-            
+
             if ($saved_rule) {
                 $imported_count++;
-                // Actualizamos el array local para que si la persona importó 2 reglas iguales juntas, 
-                // la segunda no pase el filtro tampoco.
+
                 $existing_rules[] = $saved_rule;
             } else {
                 $ignored_count++;
@@ -1528,15 +1500,15 @@ public function ajax_verify_abuseipdb_key() {
         if ($imported_count > 0 || $skipped_count > 0) {
             $msg = [];
             if ($imported_count > 0) {
-                /* translators: %d: Number of imported rules. */
+                /* translators: %s is a placeholder */
                 $msg[] = sprintf(__('Imported %d new rules.', 'advanced-ip-blocker'), $imported_count);
             }
             if ($skipped_count > 0) {
-                /* translators: %d: Number of skipped rules. */
+                /* translators: %s is a placeholder */
                 $msg[] = sprintf(__('Skipped %d duplicate rules.', 'advanced-ip-blocker'), $skipped_count);
             }
             if ($ignored_count > 0) {
-                /* translators: %d: Number of invalid rules. */
+                /* translators: %s is a placeholder */
                 $msg[] = sprintf(__('Ignored %d invalid rules.', 'advanced-ip-blocker'), $ignored_count);
             }
             wp_send_json_success(['message' => implode(' ', $msg)]);
@@ -1549,9 +1521,10 @@ public function ajax_verify_abuseipdb_key() {
     /**
      * AJAX callback to forcefully run a specific WP-Cron event.
      */
-    public function ajax_force_run_cron() {
+    public function ajax_force_run_cron()
+    {
         check_ajax_referer('advaipbl_admin_nonce_action', 'nonce');
-        
+
         if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
@@ -1563,7 +1536,6 @@ public function ajax_verify_abuseipdb_key() {
             wp_send_json_error(['message' => __('Invalid cron hook.', 'advanced-ip-blocker')]);
         }
 
-        // Recuperar los argumentos originales de la firma si están disponibles
         $args = [];
         if (!empty($sig)) {
             $crons = _get_cron_array();
@@ -1581,19 +1553,17 @@ public function ajax_verify_abuseipdb_key() {
                 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
                 define('DOING_CRON', true);
             }
-            
-            // Ejecutamos la acción síncronamente con los parámetros descubiertos
+
             // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
             do_action_ref_array($hook, $args);
-            
-            /* translators: %s: Cron hook name */
+
+            /* translators: %s is a placeholder */
             $msg = sprintf(__('Cron event "%s" successfully executed.', 'advanced-ip-blocker'), $hook);
-            
-            /* translators: 1: Cron hook name, 2: Username */
+
+            /* translators: %s is a placeholder */
             $log_msg = sprintf(__('Manual WP-Cron trigger: %1$s was forced to run by %2$s.', 'advanced-ip-blocker'), $hook, $this->plugin->get_current_admin_username());
             $this->plugin->log_event($log_msg, 'info');
-            
-            // Insertar también en la tabla de WP-Cron Logs para una mejor UX
+
             global $wpdb;
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $wpdb->insert(
@@ -1613,11 +1583,10 @@ public function ajax_verify_abuseipdb_key() {
 
             wp_send_json_success(['message' => $msg]);
         } catch (Throwable $e) {
-            /* translators: 1: Cron hook name, 2: Error message */
+            /* translators: %s is a placeholder */
             $error_msg = sprintf(__('Error forcing WP-Cron %1$s: %2$s', 'advanced-ip-blocker'), $hook, $e->getMessage());
             $this->plugin->log_event($error_msg, 'error');
             wp_send_json_error(['message' => __('An error occurred while running the task. Check the plugin error log.', 'advanced-ip-blocker')]);
         }
     }
-
 }

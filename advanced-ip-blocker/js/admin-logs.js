@@ -5,13 +5,13 @@ jQuery(document).ready(function ($) {
     const showAdminNotice = window.AdvaipblAdmin.showAdminNotice;
 
     /**
-    * Maneja las acciones en la tabla de IP Trust Log.
+    * Handles actions in the IP Trust Log table.
     */
     function initIpTrustLogActions() {
         const table = $('#the-list');
         if (!table.length) return;
 
-        // Acción para Resetear Puntuación
+        // Action to Reset Score
         table.on('click', '.advaipbl-reset-score', function (e) {
             e.preventDefault();
             const $button = $(this);
@@ -77,7 +77,7 @@ jQuery(document).ready(function ($) {
             });
         });
 
-        // Acción para Ver Historial
+        // Action to View History
         const modal = $('#advaipbl-score-history-modal');
         table.on('click', '.advaipbl-view-score-history', function (e) {
             e.preventDefault();
@@ -104,7 +104,7 @@ jQuery(document).ready(function ($) {
 
                             let detailsText = '-';
                             if (ev.details) {
-                                // Usamos plantillas de texto para escapar HTML y evitar XSS
+                                // We use text templates to escape HTML and prevent XSS
                                 const escapeHtml = (text) => {
                                     if (!text) return 'N/A';
                                     const div = document.createElement('div');
@@ -164,7 +164,7 @@ jQuery(document).ready(function ($) {
     }
 
     /**
-    * Maneja la acción de eliminar firmas maliciosas.
+    * Handles the action of deleting malicious signatures.
     */
     function initBlockedSignaturesActions() {
         $('body').on('click', '.advaipbl-delete-signature', function (e) {
@@ -188,7 +188,7 @@ jQuery(document).ready(function ($) {
                         if (response.success) {
                             $row.fadeOut('slow', function () { $(this).remove(); });
                         } else {
-                            // Comprobamos si el mensaje de error existe antes de mostrarlo.
+                            // Check if error message exists before showing it.
                             const errorMessage = (response.data && response.data.message) ? response.data.message : 'An unknown error occurred.';
                             showAdminNotice(errorMessage, 'error');
                             $row.css('opacity', '1');
@@ -281,7 +281,7 @@ jQuery(document).ready(function ($) {
             modal.fadeOut('fast');
         });
 
-        // Lógica para el botón "Copy Hash"
+        // Logic for the "Copy Hash" button
         $('body').on('click', '.advaipbl-copy-hash', function (e) {
             e.preventDefault();
             const hashToCopy = $(this).data('hash');
@@ -298,7 +298,7 @@ jQuery(document).ready(function ($) {
                         alert('Failed to copy text: ' + err);
                     });
             } else {
-                // Fallback para navegadores antiguos (no recomendado para producción)
+                // Fallback for old browsers (not recommended for production)
                 const tempInput = $('<input>');
                 $('body').append(tempInput);
                 tempInput.val(hashToCopy).select();
@@ -408,7 +408,7 @@ jQuery(document).ready(function ($) {
     function initCopyIpActions() {
         $('body').on('click', '.advaipbl-copy-ip', function (e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevenir que el acordeón se despliegue si se hace clic aquí
+            e.stopPropagation(); // Prevent accordion from expanding if clicked here
             const ipToCopy = $(this).data('ip');
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(ipToCopy)

@@ -33,7 +33,7 @@ class Reader
     /**
      * @var int
      */
-    private static $METADATA_MAX_SIZE = 131072; // 128 * 1024 = 128KiB
+    private static $METADATA_MAX_SIZE = 131072;
 
     /**
      * @var Decoder
@@ -80,7 +80,6 @@ class Reader
         }
 
         if (is_dir($database)) {
-            // This matches the error that the C extension throws.
             throw new InvalidDatabaseException(
                 "Error opening database file ($database). Is this a valid MaxMind DB file?"
             );
@@ -195,14 +194,10 @@ class Reader
 
         $bitCount = \count($rawAddress) * 8;
 
-        // The first node of the tree is always node 0, at the beginning of the
-        // value
         $node = 0;
 
         $metadata = $this->metadata;
 
-        // Check if we are looking up an IPv4 address in an IPv6 tree. If this
-        // is the case, we can skip over the first 96 nodes.
         if ($metadata->ipVersion === 6) {
             if ($bitCount === 32) {
                 $node = $this->ipV4Start;
@@ -223,11 +218,9 @@ class Reader
             $node = $this->readNode($node, $bit);
         }
         if ($node === $nodeCount) {
-            // Record is empty
             return [0, $i];
         }
         if ($node > $nodeCount) {
-            // Record is a data pointer
             return [$node, $i];
         }
 
@@ -238,7 +231,6 @@ class Reader
 
     private function ipV4StartNode(): int
     {
-        // If we have an IPv4 database, the start node is the first node
         if ($this->metadata->ipVersion === 4) {
             return 0;
         }
@@ -324,11 +316,6 @@ class Reader
         return $data;
     }
 
-    /*
-     * This is an extremely naive but reasonably readable implementation. There
-     * are much faster algorithms (e.g., Boyer-Moore) for this if speed is ever
-     * an issue, but I suspect it won't be.
-     */
     private function findMetadataStart(string $filename): int
     {
         $handle = $this->fileHandle;
@@ -369,8 +356,6 @@ class Reader
             );
         }
 
-        // Not technically required, but this makes it consistent with
-        // C extension and it allows us to change our implementation later.
         if (!\is_resource($this->fileHandle)) {
             throw new \BadMethodCallException(
                 'Attempt to read from a closed MaxMind DB.'

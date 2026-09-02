@@ -73,7 +73,6 @@ final class GDLibRenderer implements RendererInterface
         imagealphablending($this->image, false);
         imagesavealpha($this->image, true);
 
-
         $bg = $this->getColor($this->fill->getBackgroundColor());
         imagefilledrectangle($this->image, 0, 0, $this->size, $this->size, $bg);
         imagealphablending($this->image, true);
@@ -149,15 +148,12 @@ final class GDLibRenderer implements RendererInterface
     {
         $maxX = $maxY = 0;
         for ($i = 0; $i < count($points); $i += 2) {
-            // Do manual round as GD just removes decimal part
             $points[$i] = $newX = round($points[$i]);
             $points[$i + 1] = $newY = round($points[$i + 1]);
 
             $maxX = max($maxX, $newX);
             $maxY = max($maxY, $newY);
         }
-
-        // Do trimming only if there are 4 points (8 coordinates), assumes this is square.
 
         for ($i = 0; $i < count($points); $i += 2) {
             $points[$i] = min($points[$i], $maxX - 1);
@@ -222,7 +218,7 @@ final class GDLibRenderer implements RendererInterface
                 $rgb->getRed(),
                 $rgb->getGreen(),
                 $rgb->getBlue(),
-                (int)((100 - $alpha) / 100 * 127) // Alpha for GD is in range 0 (opaque) - 127 (transparent)
+                (int)((100 - $alpha) / 100 * 127)
             );
 
             if ($colorId === false) {

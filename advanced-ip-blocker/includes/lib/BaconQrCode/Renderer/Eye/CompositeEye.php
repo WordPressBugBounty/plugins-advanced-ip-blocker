@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Eye;
 
@@ -14,12 +15,12 @@ final class CompositeEye implements EyeInterface
     {
     }
 
-    public function getExternalPath() : Path
+    public function getExternalPath(): Path
     {
         return $this->externalEye->getExternalPath();
     }
 
-    public function getInternalPath() : Path
+    public function getInternalPath(): Path
     {
         return $this->internalEye->getInternalPath();
     }

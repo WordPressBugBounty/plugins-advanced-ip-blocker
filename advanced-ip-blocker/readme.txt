@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.2
+Stable tag: 8.13.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,13 +271,20 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.2 =
-Hotfix: Refactored the FIM malware scanner to dynamically fetch and store signatures in the database. This hides the dictionary from aggressive server antiviruses and eliminates false positives.
-
-= 8.13.1 =
-Hotfix: Completely refactored the FIM malware signature storage method to use ASCII integer arrays, eliminating false positives triggered by aggressive server antiviruses (e.g. CPGuard).
+= 8.13.3 =
+8.13.3 introduces a fully self-documented WP-CLI Interface and UI enhancements for FIM, Cloud Sync, and Audit Logging. It also resolves a critical false-positive issue blocking legitimate Android users (okhttp/Dalvik) and fixes WPCS warnings. Update now for improved stability and management.
 
 == Changelog ==
+
+= 8.13.3 =
+*   **SECURITY:** Added Zero-Day WAF rules for recent critical vulnerabilities including All-in-One WP Migration SQLi (CVE-2026-19949) and Gravity Forms Arbitrary File Upload (CVE-2026-19513).
+*   **ENHANCEMENT:** Advanced Rules Import/Export now intelligently filters out dynamically synced Cloud Zero-Day Rules (`ar_zd_`) to prevent rule duplication and false positives across different sites, automatically triggering a background cloud sync after import.
+*   **NEW FEATURE:** Fully self-documented WP-CLI Interface. The plugin's command-line interface now includes comprehensive help screens (`## SYNOPSIS`, `## OPTIONS`, and `## EXAMPLES`) for all commands, automatically parsed by WP-CLI.
+*   **ENHANCEMENT:** Updated the "Key Features Overview" panel in the Credits tab to include our newest security modules: File Integrity Monitoring (FIM), Manual Integrity Scanner, Advanced Rules Cloud Sync, and Comprehensive Audit Logging.
+*   **ENHANCEMENT:** The "WP-CLI Interface" section in the plugin's dashboard now displays a complete, logically grouped list of all available CLI commands to help system administrators automate their workflows.
+*   **ENHANCEMENT:** Rebuilt and synchronized the official plugin translation template (`.pot` file) to include all the new user interface strings.
+*   **BUGFIX:** Removed legitimate Android OS signatures (`okhttp`, `Dalvik/`) and developer tools (`Go-http-client`, `PostmanRuntime`) from the default blocked User-Agent list to prevent false positive bans on mobile users and APIs.
+*   **BUGFIX:** Resolved WPCS warnings related to the `DONOTCACHEPAGE` constant across multiple challenge and verification classes.
 
 = 8.13.2 =
 *   **HOTFIX:** Refactored the File Integrity Monitor engine to fetch malware signatures dynamically from the Central API and store them in the database. This prevents the plugin's internal malware dictionary from triggering false positives in server-side antiviruses (e.g., CPGuard, Imunify360).

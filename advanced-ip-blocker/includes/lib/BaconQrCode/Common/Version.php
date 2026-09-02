@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Common;
 
@@ -104,7 +105,7 @@ final class Version
     /**
      * Returns the version number.
      */
-    public function getVersionNumber() : int
+    public function getVersionNumber(): int
     {
         return $this->versionNumber;
     }
@@ -114,7 +115,7 @@ final class Version
      *
      * @return int[]
      */
-    public function getAlignmentPatternCenters() : array
+    public function getAlignmentPatternCenters(): array
     {
         return $this->alignmentPatternCenters;
     }
@@ -122,7 +123,7 @@ final class Version
     /**
      * Returns the total number of codewords.
      */
-    public function getTotalCodewords() : int
+    public function getTotalCodewords(): int
     {
         return $this->totalCodewords;
     }
@@ -130,7 +131,7 @@ final class Version
     /**
      * Calculates the dimension for the current version.
      */
-    public function getDimensionForVersion() : int
+    public function getDimensionForVersion(): int
     {
         return 17 + 4 * $this->versionNumber;
     }
@@ -138,7 +139,7 @@ final class Version
     /**
      * Returns the number of EC blocks for a specific EC level.
      */
-    public function getEcBlocksForLevel(ErrorCorrectionLevel $ecLevel) : EcBlocks
+    public function getEcBlocksForLevel(ErrorCorrectionLevel $ecLevel): EcBlocks
     {
         return $this->ecBlocks[$ecLevel->ordinal()];
     }
@@ -148,7 +149,7 @@ final class Version
      *
      * @throws InvalidArgumentException if dimension is not 1 mod 4
      */
-    public static function getProvisionalVersionForDimension(int $dimension) : self
+    public static function getProvisionalVersionForDimension(int $dimension): self
     {
         if (1 !== $dimension % 4) {
             throw new InvalidArgumentException('Dimension is not 1 mod 4');
@@ -162,7 +163,7 @@ final class Version
      *
      * @throws InvalidArgumentException if version number is out of range
      */
-    public static function getVersionForNumber(int $versionNumber) : self
+    public static function getVersionForNumber(int $versionNumber): self
     {
         if ($versionNumber < 1 || $versionNumber > 40) {
             throw new InvalidArgumentException('Version number must be between 1 and 40');
@@ -174,7 +175,7 @@ final class Version
     /**
      * Decodes version information from an integer and returns the version.
      */
-    public static function decodeVersionInformation(int $versionBits) : ?self
+    public static function decodeVersionInformation(int $versionBits): ?self
     {
         $bestDifference = PHP_INT_MAX;
         $bestVersion = 0;
@@ -202,19 +203,17 @@ final class Version
     /**
      * Builds the function pattern for the current version.
      */
-    public function buildFunctionPattern() : BitMatrix
+    public function buildFunctionPattern(): BitMatrix
     {
         $dimension = $this->getDimensionForVersion();
         $bitMatrix = new BitMatrix($dimension);
 
-        // Top left finder pattern + separator + format
         $bitMatrix->setRegion(0, 0, 9, 9);
-        // Top right finder pattern + separator + format
+
         $bitMatrix->setRegion($dimension - 8, 0, 8, 9);
-        // Bottom left finder pattern + separator + format
+
         $bitMatrix->setRegion(0, $dimension - 8, 9, 8);
 
-        // Alignment patterns
         $max = count($this->alignmentPatternCenters);
 
         for ($x = 0; $x < $max; ++$x) {
@@ -222,7 +221,6 @@ final class Version
 
             for ($y = 0; $y < $max; ++$y) {
                 if (($x === 0 && ($y === 0 || $y === $max - 1)) || ($x === $max - 1 && $y === 0)) {
-                    // No alignment patterns near the three finder paterns
                     continue;
                 }
 
@@ -230,15 +228,13 @@ final class Version
             }
         }
 
-        // Vertical timing pattern
         $bitMatrix->setRegion(6, 9, 1, $dimension - 17);
-        // Horizontal timing pattern
+
         $bitMatrix->setRegion(9, 6, $dimension - 17, 1);
 
         if ($this->versionNumber > 6) {
-            // Version info, top right
             $bitMatrix->setRegion($dimension - 11, 0, 3, 6);
-            // Version info, bottom left
+
             $bitMatrix->setRegion(0, $dimension - 11, 6, 3);
         }
 
@@ -248,7 +244,7 @@ final class Version
     /**
      * Returns a string representation for the version.
      */
-    public function __toString() : string
+    public function __toString(): string
     {
         return (string) $this->versionNumber;
     }
@@ -260,7 +256,7 @@ final class Version
      *
      * @return array<int, self>
      */
-    private static function versions() : array
+    private static function versions(): array
     {
         if (null !== self::$versions) {
             return self::$versions;

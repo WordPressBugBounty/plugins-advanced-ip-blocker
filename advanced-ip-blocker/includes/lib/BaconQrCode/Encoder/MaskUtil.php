@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Encoder;
 
@@ -8,14 +9,10 @@ namespace BaconQrCode\Encoder;
  */
 final class MaskUtil
 {
-    /**#@+
-     * Penalty weights from section 6.8.2.1
-     */
     public const N1 = 3;
     public const N2 = 3;
     public const N3 = 40;
     public const N4 = 10;
-    /**#@-*/
 
     private function __construct()
     {
@@ -27,7 +24,7 @@ final class MaskUtil
      * Finds repetitive cells with the same color and gives penalty to them.
      * Example: 00000 or 11111.
      */
-    public static function applyMaskPenaltyRule1(ByteMatrix $matrix) : int
+    public static function applyMaskPenaltyRule1(ByteMatrix $matrix): int
     {
         return (
             self::applyMaskPenaltyRule1Internal($matrix, true)
@@ -43,7 +40,7 @@ final class MaskUtil
      * give a penalty proportional to (M-1)x(N-1), because this is the number of
      * 2x2 blocks inside such a block.
      */
-    public static function applyMaskPenaltyRule2(ByteMatrix $matrix) : int
+    public static function applyMaskPenaltyRule2(ByteMatrix $matrix): int
     {
         $penalty = 0;
         $array = $matrix->getArray();
@@ -73,7 +70,7 @@ final class MaskUtil
      * to them. If we find patterns like 000010111010000, we give penalties
      * twice (i.e. 40 * 2).
      */
-    public static function applyMaskPenaltyRule3(ByteMatrix $matrix) : int
+    public static function applyMaskPenaltyRule3(ByteMatrix $matrix): int
     {
         $penalty = 0;
         $array = $matrix->getArray();
@@ -149,7 +146,7 @@ final class MaskUtil
      * Calculates the ratio of dark cells and gives penalty if the ratio is far
      * from 50%. It gives 10 penalty for 5% distance.
      */
-    public static function applyMaskPenaltyRule4(ByteMatrix $matrix) : int
+    public static function applyMaskPenaltyRule4(ByteMatrix $matrix): int
     {
         $numDarkCells = 0;
 
@@ -179,7 +176,7 @@ final class MaskUtil
      *
      * See 8.8 of JISX0510:2004 for mask pattern conditions.
      */
-    public static function getDataMaskBit(int $maskPattern, int $x, int $y) : bool
+    public static function getDataMaskBit(int $maskPattern, int $x, int $y): bool
     {
         return 0 === match ($maskPattern) {
             0 => ($x + $y) % 2,
@@ -199,7 +196,7 @@ final class MaskUtil
      * We need this for doing this calculation in both vertical and horizontal
      * orders respectively.
      */
-    private static function applyMaskPenaltyRule1Internal(ByteMatrix $matrix, bool $isHorizontal) : int
+    private static function applyMaskPenaltyRule1Internal(ByteMatrix $matrix, bool $isHorizontal): int
     {
         $penalty = 0;
         $iLimit = $isHorizontal ? $matrix->getHeight() : $matrix->getWidth();

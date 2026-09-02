@@ -4,31 +4,34 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class ADVAIPBL_Security_Headers {
-
+class ADVAIPBL_Security_Headers
+{
     private $plugin;
-    const OPTION_NAME = 'advaipbl_security_headers';
-    const OPTION_GROUP = 'advaipbl_security_headers_group';
+    public const OPTION_NAME = 'advaipbl_security_headers';
+    public const OPTION_GROUP = 'advaipbl_security_headers_group';
 
-    public function __construct(ADVAIPBL_Main $plugin) {
+    public function __construct(ADVAIPBL_Main $plugin)
+    {
         $this->plugin = $plugin;
         add_action('send_headers', [$this, 'add_security_headers']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('update_option_' . self::OPTION_NAME, [$this, 'sync_htaccess']);
     }
 
-    public function sync_htaccess() {
+    public function sync_htaccess()
+    {
         if (isset($this->plugin->htaccess_manager)) {
             $this->plugin->htaccess_manager->update_htaccess();
         }
     }
 
-    public function add_security_headers() {
+    public function add_security_headers()
+    {
         if (headers_sent() || is_admin()) {
             return;
         }
         $options = get_option(self::OPTION_NAME, $this->get_default_options());
-        
+
         if (!is_array($options)) {
             return;
         }
@@ -43,14 +46,16 @@ class ADVAIPBL_Security_Headers {
         }
     }
 
-    public function register_settings() {
+    public function register_settings()
+    {
         register_setting(self::OPTION_GROUP, self::OPTION_NAME, [
             'sanitize_callback' => [$this, 'sanitize_options'],
             'default' => $this->get_default_options()
         ]);
     }
 
-    public function get_default_options() {
+    public function get_default_options()
+    {
         return [
             'referrer_policy' => ['name' => 'Referrer-Policy', 'value' => 'strict-origin-when-cross-origin', 'enabled' => true, 'description' => __('Controls referrer info sent to other sites.', 'advanced-ip-blocker')],
             'permissions_policy' => ['name' => 'Permissions-Policy', 'value' => 'microphone=(), camera=(), geolocation=()', 'enabled' => true, 'description' => __('Controls which browser features can be used.', 'advanced-ip-blocker')],
@@ -65,7 +70,8 @@ class ADVAIPBL_Security_Headers {
         ];
     }
 
-    public function sanitize_options($input) {
+    public function sanitize_options($input)
+    {
         $defaults = $this->get_default_options();
         $output = [];
         foreach ($defaults as $key => $values) {
@@ -73,31 +79,33 @@ class ADVAIPBL_Security_Headers {
             $output[$key]['enabled'] = !empty($input[$key]['enabled']) ? 1 : 0;
             $output[$key]['name'] = isset($input[$key]['name']) ? sanitize_text_field($input[$key]['name']) : $values['name'];
             if ($key === 'csp' || $key === 'csp_report_only') {
-                 // CSP can contain various chars, stripping tags is usually enough but we must be careful.
-                 // wp_kses_post allows too much HTML. sanitize_text_field strips too much (quotes).
-                 // We will use a custom sanitization that preserves CSP syntax but removes tags.
                 $output[$key]['value'] = isset($input[$key]['value']) ? $this->sanitize_csp($input[$key]['value']) : '';
             } else {
                 $output[$key]['value'] = isset($input[$key]['value']) ? sanitize_text_field($input[$key]['value']) : '';
             }
         }
+
         return $output;
     }
 
-    private function sanitize_csp($value) {
-        // Strip tags but allow quotes, semicolons, etc.
+    private function sanitize_csp($value)
+    {
         $value = wp_strip_all_tags($value);
-        // Remove line breaks (copy/paste issue) to prevent .htaccess 500 errors
+
         $value = str_replace(["\r", "\n"], ' ', $value);
-        // Replace double quotes with single quotes to prevent breaking .htaccess string wrapping
+
         $value = str_replace('"', "'", $value);
-        // Compress multiple spaces into one
+
         $value = preg_replace('/\s+/', ' ', $value);
+
         return trim($value);
     }
 
-    public function display_settings_tab() {
-        if (!current_user_can('advaipbl_manage_settings')) return;
+    public function display_settings_tab()
+    {
+        if (!current_user_can('advaipbl_manage_settings')) {
+            return;
+        }
         ?>
         <style>
             .shc-container{display:grid;grid-template-columns:1fr;gap:20px; margin-top: 20px;}
@@ -133,16 +141,15 @@ class ADVAIPBL_Security_Headers {
         <form action="options.php" method="post">
             <?php
             settings_fields(self::OPTION_GROUP);
-            $options = get_option(self::OPTION_NAME, $this->get_default_options());
-            $defaults = $this->get_default_options();
-            
-            // Merge defaults but ignore obsolete keys from DB (like removed server_header)
-            $db_options = is_array($options) ? $options : [];
-            $options = [];
-            foreach ($defaults as $k => $v) {
-                $options[$k] = isset($db_options[$k]) ? $db_options[$k] : $v;
-            }
-            ?>
+        $options = get_option(self::OPTION_NAME, $this->get_default_options());
+        $defaults = $this->get_default_options();
+
+        $db_options = is_array($options) ? $options : [];
+        $options = [];
+        foreach ($defaults as $k => $v) {
+            $options[$k] = isset($db_options[$k]) ? $db_options[$k] : $v;
+        }
+        ?>
             <div class="shc-container">
                 <?php foreach ($options as $key => $header): ?>
                     <?php $is_enabled = !empty($header['enabled']); ?>

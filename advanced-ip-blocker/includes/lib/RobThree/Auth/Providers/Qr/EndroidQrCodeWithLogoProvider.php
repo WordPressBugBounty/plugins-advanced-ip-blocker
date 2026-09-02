@@ -46,6 +46,7 @@ class EndroidQrCodeWithLogoProvider extends EndroidQrCodeProvider
             }
         }
         $writer = new PngWriter();
+
         return $writer->write($this->qrCodeInstance($qrText, $size), $logo)->getString();
     }
 

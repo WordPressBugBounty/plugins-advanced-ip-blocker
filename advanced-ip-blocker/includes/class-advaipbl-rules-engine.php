@@ -1,44 +1,49 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (! defined('ABSPATH')) {
+    exit;
+}
 
-class ADVAIPBL_Rules_Engine {
-
-    const OPTION_RULES = 'advaipbl_advanced_rules';
+class ADVAIPBL_Rules_Engine
+{
+    public const OPTION_RULES = 'advaipbl_advanced_rules';
 
     /**
-     * Instancia de la clase principal del plugin.
+     * Main plugin class instance.
      * @var ADVAIPBL_Main
      */
     private $plugin;
 
     /**
      * Constructor.
-     * @param ADVAIPBL_Main $plugin_instance La instancia de la clase principal.
+     * @param ADVAIPBL_Main $plugin_instance The main class instance.
      */
-    public function __construct(ADVAIPBL_Main $plugin_instance) {
+    public function __construct(ADVAIPBL_Main $plugin_instance)
+    {
         $this->plugin = $plugin_instance;
     }
 
     /**
-     * Contexto temporal para evaluación (ej. username en login).
+     * Temporary context for evaluation (e.g. username on login).
      * @var array
      */
     private $context = [];
 
     /**
-     * Establece el contexto para la evaluación de reglas.
-     * @param array $context Array de datos de contexto (ej. ['username' => 'admin']).
+     * Sets the context for rule evaluation.
+     * @param array $context Array of context data (e.g. ['username' => 'admin']).
      */
-    public function set_context(array $context) {
+    public function set_context(array $context)
+    {
         $this->context = $context;
     }
 
     /**
-     * Obtiene todas las reglas avanzadas almacenadas.
+     * Gets all stored advanced rules.
      * @return array
      */
-    public function get_rules() {
+    public function get_rules()
+    {
         $rules = get_option(self::OPTION_RULES, []);
         if (is_array($rules)) {
             foreach ($rules as &$rule) {
@@ -47,166 +52,174 @@ class ADVAIPBL_Rules_Engine {
                 }
             }
         }
+
         return is_array($rules) ? $rules : [];
     }
 
     /**
- * Sanitiza y valida un array de datos de una regla.
+ * Sanitizes and validates a rule data array.
  *
- * @param array $rule_data Los datos de la regla sin procesar.
- * @return array|false La regla saneada, o false si es inválida.
+ * @param array $rule_data The raw rule data.
+ * @return array|false The sanitized rule, or false if invalid.
  */
-private function sanitize_rule(array $rule_data) {
-    $sanitized_rule = [];
+    private function sanitize_rule(array $rule_data)
+    {
+        $sanitized_rule = [];
 
-    if (isset($rule_data['id']) && !empty($rule_data['id'])) {
-    // Si estamos actualizando una regla, saneamos el ID existente.
-    $sanitized_rule['id'] = sanitize_key($rule_data['id']);
-    } else {
-    $sanitized_rule['id'] = 'ar_' . bin2hex(random_bytes(8));
-    }
-    $sanitized_rule['name'] = isset($rule_data['name']) ? sanitize_text_field($rule_data['name']) : 'Untitled Rule';
-    $sanitized_rule['is_active'] = isset($rule_data['is_active']) ? filter_var($rule_data['is_active'], FILTER_VALIDATE_BOOLEAN) : true;
-
-    $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha', 'score', 'allow'];
-    $sanitized_rule['action'] = isset($rule_data['action']) && in_array($rule_data['action'], $allowed_actions, true) ? $rule_data['action'] : 'block';
-
-    $sanitized_rule['action_params'] = [];
-    if (isset($rule_data['action_params']) && is_array($rule_data['action_params'])) {
-        if (isset($rule_data['action_params']['duration'])) {
-            $sanitized_rule['action_params']['duration'] = absint($rule_data['action_params']['duration']);
+        if (isset($rule_data['id']) && !empty($rule_data['id'])) {
+            $sanitized_rule['id'] = sanitize_key($rule_data['id']);
+        } else {
+            $sanitized_rule['id'] = 'ar_' . bin2hex(random_bytes(8));
         }
-        if (isset($rule_data['action_params']['points'])) {
-            $sanitized_rule['action_params']['points'] = absint($rule_data['action_params']['points']);
-        }
-    }
+        $sanitized_rule['name'] = isset($rule_data['name']) ? sanitize_text_field($rule_data['name']) : 'Untitled Rule';
+        $sanitized_rule['is_active'] = isset($rule_data['is_active']) ? filter_var($rule_data['is_active'], FILTER_VALIDATE_BOOLEAN) : true;
 
+        $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha', 'score', 'allow'];
+        $sanitized_rule['action'] = isset($rule_data['action']) && in_array($rule_data['action'], $allowed_actions, true) ? $rule_data['action'] : 'block';
 
-    if (!isset($rule_data['conditions']) || !is_array($rule_data['conditions']) || empty($rule_data['conditions'])) {
-        return false; // Una regla sin condiciones no es válida.
-    }
-
-    $sanitized_rule['conditions'] = [];
-    $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header', 'payload', 'query_string'];
-    $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex', 'is_empty', 'is_not_empty'];
-
-    foreach ($rule_data['conditions'] as $condition) {
-        if (
-            !isset($condition['type']) || !in_array($condition['type'], $allowed_types, true) ||
-            !isset($condition['operator']) || !in_array($condition['operator'], $allowed_operators, true)
-        ) {
-            continue; // Saltar condición mal formada o vacía.
-        }
-        
-        // Value is required unless operator is is_empty or is_not_empty
-        if (!in_array($condition['operator'], ['is_empty', 'is_not_empty'], true)) {
-            if (!isset($condition['value']) || $condition['value'] === '') {
-                continue;
+        $sanitized_rule['action_params'] = [];
+        if (isset($rule_data['action_params']) && is_array($rule_data['action_params'])) {
+            if (isset($rule_data['action_params']['duration'])) {
+                $sanitized_rule['action_params']['duration'] = absint($rule_data['action_params']['duration']);
+            }
+            if (isset($rule_data['action_params']['points'])) {
+                $sanitized_rule['action_params']['points'] = absint($rule_data['action_params']['points']);
             }
         }
-        
-        $sanitized_condition = [
-            'type'     => $condition['type'],
-            'operator' => $condition['operator'],
-            'target'   => isset($condition['target']) ? sanitize_text_field($condition['target']) : '',
-            'value'    => isset($condition['value']) ? sanitize_text_field($condition['value']) : '' // Sanitización genérica y segura para todos los valores.
-        ];
-        
-        $sanitized_rule['conditions'][] = $sanitized_condition;
-    }
-    
 
-    if (empty($sanitized_rule['conditions'])) {
-        return false;
-    }
+        if (!isset($rule_data['conditions']) || !is_array($rule_data['conditions']) || empty($rule_data['conditions'])) {
+            return false;
+        }
 
-    return $sanitized_rule;
-}
+        $sanitized_rule['conditions'] = [];
+        $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header', 'payload', 'query_string'];
+        $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex', 'is_empty', 'is_not_empty'];
+
+        foreach ($rule_data['conditions'] as $condition) {
+            if (
+                !isset($condition['type']) || !in_array($condition['type'], $allowed_types, true) ||
+                !isset($condition['operator']) || !in_array($condition['operator'], $allowed_operators, true)
+            ) {
+                continue;
+            }
+
+            if (!in_array($condition['operator'], ['is_empty', 'is_not_empty'], true)) {
+                if (!isset($condition['value']) || $condition['value'] === '') {
+                    continue;
+                }
+            }
+
+            $sanitized_condition = [
+                'type'     => $condition['type'],
+                'operator' => $condition['operator'],
+                'target'   => isset($condition['target']) ? sanitize_text_field($condition['target']) : '',
+                'value'    => isset($condition['value']) ? sanitize_text_field($condition['value']) : '' // Sanitización genérica y segura para todos los valores.
+            ];
+
+            $sanitized_rule['conditions'][] = $sanitized_condition;
+        }
+
+        if (empty($sanitized_rule['conditions'])) {
+            return false;
+        }
+
+        return $sanitized_rule;
+    }
 
     /**
-     * Guarda un array completo de reglas.
-     * @param array $rules El array de reglas a guardar.
-     * @return bool True si se actualizó correctamente.
+     * Saves a complete array of rules.
+     * @param array $rules The array of rules to save.
+     * @return bool True if successfully updated.
      */
-    private function save_rules(array $rules) {
+    private function save_rules(array $rules)
+    {
         return update_option(self::OPTION_RULES, $rules);
     }
 
     /**
-     * Añade una nueva regla al conjunto.
-     * @param array $rule_data Los datos de la nueva regla.
-     * @return array|false La regla completa con su nuevo ID, o false si falla.
+     * Adds a new rule to the set.
+     * @param array $rule_data The new rule data.
+     * @return array|false The complete rule with its new ID, or false if failed.
      */
-    public function add_rule(array $rule_data) {
-    $rules = $this->get_rules();
-    
-    $sanitized_rule = $this->sanitize_rule($rule_data);
-    if ($sanitized_rule === false) {
-        return false;
-    }
+    public function add_rule(array $rule_data)
+    {
+        $rules = $this->get_rules();
 
-    $rules[] = $sanitized_rule;
-    
-    if ($this->save_rules($rules)) {
-        return $sanitized_rule;
-    }
-    
-    return false;
-}
-
-    /**
-     * Actualiza una regla existente.
-     * @param string $rule_id El ID de la regla a actualizar.
-     * @param array $rule_data Los nuevos datos para la regla.
-     * @return bool True si se encontró y actualizó.
-     */
-    public function update_rule($rule_id, array $rule_data) {
-    $rules = $this->get_rules();
-    $rule_found = false;
-
-    $sanitized_rule = $this->sanitize_rule($rule_data);
-    if ($sanitized_rule === false) {
-        return false;
-    }
-
-    foreach ($rules as $index => $rule) {
-        if (isset($rule['id']) && $rule['id'] === $rule_id) {
-            // Aseguramos que el ID no se sobrescriba con uno nuevo del sanitizador.
-            $sanitized_rule['id'] = $rule_id;
-            
-            // Si la regla no ha cambiado en absoluto, devolvemos true para evitar el falso error de update_option.
-            if ($rules[$index] === $sanitized_rule) {
-                return true;
-            }
-            
-            $rules[$index] = $sanitized_rule;
-            $rule_found = true;
-            break;
+        $sanitized_rule = $this->sanitize_rule($rule_data);
+        if ($sanitized_rule === false) {
+            return false;
         }
-    }
 
-    if ($rule_found) {
-        $this->save_rules($rules);
-        // Devolvemos true siempre que la regla se encontrara y procesara, 
-        // porque save_rules (update_option) puede devolver false si un array subyacente se serializa igual.
-        return true;
-    }
+        $rules[] = $sanitized_rule;
 
-    return false;
-}
+        if ($this->save_rules($rules)) {
+            return $sanitized_rule;
+        }
+
+        return false;
+    }
 
     /**
-     * Elimina una regla por su ID.
-     * @param string $rule_id El ID de la regla a eliminar.
-     * @return bool True si se encontró y eliminó.
+     * Updates an existing rule.
+     * @param string $rule_id The rule ID to update.
+     * @param array $rule_data The new data for the rule.
+     * @return bool True if found and updated.
      */
-    public function delete_rule($rule_id) {
+    public function update_rule($rule_id, array $rule_data)
+    {
+        $rules = $this->get_rules();
+        $rule_found = false;
+
+        $sanitized_rule = $this->sanitize_rule($rule_data);
+        if ($sanitized_rule === false) {
+            return false;
+        }
+
+        foreach ($rules as $index => $rule) {
+            if (isset($rule['id']) && $rule['id'] === $rule_id) {
+                $sanitized_rule['id'] = $rule_id;
+
+                if (strpos($rule_id, 'ar_zd_') === 0) {
+                    $original_rule = $rule;
+                    $original_rule['is_active'] = $sanitized_rule['is_active'];
+                    $sanitized_rule = $original_rule;
+                }
+
+                if ($rules[$index] === $sanitized_rule) {
+                    return true;
+                }
+
+                $rules[$index] = $sanitized_rule;
+                $rule_found = true;
+                break;
+            }
+        }
+
+        if ($rule_found) {
+            $this->save_rules($rules);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Deletes a rule by its ID.
+     * @param string $rule_id The rule ID to delete.
+     * @return bool True if found and deleted.
+     */
+    public function delete_rule($rule_id)
+    {
         $rules = $this->get_rules();
         $rules_updated = [];
         $rule_found = false;
 
         foreach ($rules as $rule) {
             if (isset($rule['id']) && $rule['id'] === $rule_id) {
+                if (strpos($rule_id, 'ar_zd_') === 0) {
+                    return false;
+                }
                 $rule_found = true;
             } else {
                 $rules_updated[] = $rule;
@@ -220,312 +233,308 @@ private function sanitize_rule(array $rule_data) {
         return false;
     }
 
-/**
- * Evalúa la petición actual contra el conjunto de reglas avanzadas.
- * Se detiene en la primera regla que coincida y ejecuta su acción.
- * 
- * @return bool True si una regla coincidió y se tomó una acción que finaliza la petición (block o challenge), false en caso contrario.
- */
-public function evaluate() {
-    $rules = $this->get_rules();
+    /**
+     * Evaluates the current request against the advanced rule set.
+     * Stops at the first matching rule and executes its action.
+     *
+     * @return bool True if a rule matched and an action was taken that ends the request (block or challenge), false otherwise.
+     */
+    public function evaluate()
+    {
+        $rules = $this->get_rules();
 
-    if (empty($rules)) {
-        return false;
-    }
-
-    // Inmunidad para administradores: No bloqueamos a los usuarios legítimos que están editando la web.
-    // Esto previene falsos positivos con constructores visuales como Avada/Fusion Builder.
-    if (is_user_logged_in() && current_user_can('unfiltered_html')) {
-        return false;
-    }
-
-    $ip = $this->plugin->get_client_ip();
-
-    // Inmunidad Global: Si la IP está en la lista blanca manual o es un bot/ASN verificado, ignoramos las reglas de bloqueo/desafío.
-    if ($this->plugin->is_whitelisted($ip) || !empty($this->plugin->request_is_asn_whitelisted)) {
-        return false;
-    }
-
-	// Si el usuario acaba de pasar un desafío, le damos un pase de gracia de 15s
-   // para evitar un bucle en la redirección. No evaluamos ninguna regla en esta petición.
-    if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
-        return false;
-    }
-	
-	if ($this->plugin->js_challenge_manager->is_vip_pass_valid()) {
-        return false;
-    }
-
-    foreach ($rules as $rule) {
-        if (isset($rule['is_active']) && $rule['is_active'] === false) {
-            continue; // Regla inactiva, la saltamos
-        }
-        
-        if (!isset($rule['conditions']) || empty($rule['conditions']) || !isset($rule['action'])) {
-            continue; // Regla mal formada, la saltamos
+        if (empty($rules)) {
+            return false;
         }
 
-        $all_conditions_met = true;
-        foreach ($rule['conditions'] as $condition) {
-            if (!$this->check_condition($condition, $ip)) {
-                $all_conditions_met = false;
-                break; // Si una condición falla, la regla entera falla
+        if (is_user_logged_in() && current_user_can('unfiltered_html')) {
+            return false;
+        }
+
+        $ip = $this->plugin->get_client_ip();
+
+        if ($this->plugin->is_whitelisted($ip) || !empty($this->plugin->request_is_asn_whitelisted)) {
+            return false;
+        }
+
+        if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
+            return false;
+        }
+
+        if ($this->plugin->js_challenge_manager->is_vip_pass_valid()) {
+            return false;
+        }
+
+        foreach ($rules as $rule) {
+            if (isset($rule['is_active']) && $rule['is_active'] === false) {
+                continue;
+            }
+
+            if (!isset($rule['conditions']) || empty($rule['conditions']) || !isset($rule['action'])) {
+                continue;
+            }
+
+            $all_conditions_met = true;
+            foreach ($rule['conditions'] as $condition) {
+                if (!$this->check_condition($condition, $ip)) {
+                    $all_conditions_met = false;
+                    break;
+                }
+            }
+
+            if ($all_conditions_met) {
+                return $this->execute_action($rule, $ip);
             }
         }
 
-        if ($all_conditions_met) {
-            // ¡Coincidencia! Ejecutamos la acción y terminamos.
-            return $this->execute_action($rule, $ip);
+        return false;
+    }
+
+    /**
+     * Checks if an individual condition is met.
+     *
+     * @param array $condition The condition object.
+     * @param string $ip The visitor's IP.
+     * @return bool True if the condition is met.
+     */
+    private function check_condition($condition, $ip)
+    {
+        $type     = $condition['type'] ?? null;
+        $operator = $condition['operator'] ?? 'is';
+        $value    = $condition['value'] ?? '';
+
+        if ($type === null) {
+            return false;
         }
-    }
 
-    return false; // Ninguna regla coincidió
-}
+        if ($value === '' && !in_array($operator, ['is_empty', 'is_not_empty'], true)) {
+            return false;
+        }
 
-/**
- * Comprueba si una condición individual se cumple.
- *
- * @param array $condition El objeto de condición.
- * @param string $ip La IP del visitante.
- * @return bool True si la condición se cumple.
- */
-private function check_condition($condition, $ip) {
-    $type     = $condition['type'] ?? null;
-    $operator = $condition['operator'] ?? 'is';
-    $value    = $condition['value'] ?? '';
+        $subject = '';
 
-    if ($type === null) {
-        return false;
-    }
-    
-    // Value check is no longer absolute here since is_empty/is_not_empty don't need a value
-    if ($value === '' && !in_array($operator, ['is_empty', 'is_not_empty'], true)) {
-        return false;
-    }
+        switch ($type) {
+            case 'username':
 
-    $subject = ''; // El valor de la petición actual que vamos a comprobar
-
-    // Obtenemos el "sujeto" de la comprobación según el tipo
-    switch ($type) {
-        case 'username':
-            // Si no estamos en contexto de login (context['username'] vacío), la regla no aplica.
-            if (empty($this->context['username'])) {
-                return false;
-            }
-            $subject = $this->context['username'];
-            break;
-        case 'ip':
-        case 'ip_range':
-            $subject = $ip;
-            break;
-        case 'country':
-            $location = $this->plugin->geolocation_manager->fetch_location($ip);
-            $subject = $location['country_code'] ?? '';
-            break;
-        case 'asn':
-            $location = $this->plugin->geolocation_manager->fetch_location($ip);
-            $subject = $this->plugin->asn_manager->extract_asn_from_data($location);
-            break;
-        case 'hostname':
-            $hostname = @gethostbyaddr($ip);
-            $subject = ($hostname && $hostname !== $ip) ? $hostname : '';
-            break;
-        case 'uri':
-            $subject = $this->plugin->get_current_request_uri();
-            break;
-        case 'user_agent':
-            $subject = $this->plugin->get_user_agent();
-            break;
-        case 'request_method':
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-            $subject = $_SERVER['REQUEST_METHOD'] ?? '';
-            break;
-        case 'referer':
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-            $subject = $_SERVER['HTTP_REFERER'] ?? '';
-            break;
-        case 'cookie':
-            $target = $condition['target'] ?? '';
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-            $subject = (!empty($target) && isset($_COOKIE[$target])) ? $_COOKIE[$target] : '';
-            break;
-        case 'header':
-            $target = $condition['target'] ?? '';
-            if (empty($target)) {
-                $subject = '';
-            } else {
-                $header_key = 'HTTP_' . strtoupper(str_replace('-', '_', $target));
+                if (empty($this->context['username'])) {
+                    return false;
+                }
+                $subject = $this->context['username'];
+                break;
+            case 'ip':
+            case 'ip_range':
+                $subject = $ip;
+                break;
+            case 'country':
+                $location = $this->plugin->geolocation_manager->fetch_location($ip);
+                $subject = $location['country_code'] ?? '';
+                break;
+            case 'asn':
+                $location = $this->plugin->geolocation_manager->fetch_location($ip);
+                $subject = $this->plugin->asn_manager->extract_asn_from_data($location);
+                break;
+            case 'hostname':
+                $hostname = @gethostbyaddr($ip);
+                $subject = ($hostname && $hostname !== $ip) ? $hostname : '';
+                break;
+            case 'uri':
+                $subject = $this->plugin->get_current_request_uri();
+                break;
+            case 'user_agent':
+                $subject = $this->plugin->get_user_agent();
+                break;
+            case 'request_method':
                 // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-                $subject = isset($_SERVER[$header_key]) ? $_SERVER[$header_key] : '';
-            }
-            break;
-        case 'payload':
-            $raw_body = @file_get_contents('php://input');
-            // phpcs:disable WordPress.Security.NonceVerification.Missing
-            $post_data = !empty($_POST) ? urldecode(http_build_query($_POST)) : '';
-            // Incluir metadatos de archivos subidos para vulnerabilidades de File Upload / RCE (ej. CVE-2026-18431)
-            $files_data = !empty($_FILES) ? urldecode(http_build_query($_FILES)) : '';
-            // phpcs:enable WordPress.Security.NonceVerification.Missing
-            $subject = $raw_body . "\n" . $post_data . "\n" . $files_data;
-            break;
-        case 'query_string':
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-            $subject = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
-            break;
-        default:
-            return false;
-    }
-    
-    $result = false;
-    // Realizamos la comparación usando el operador
-    switch ($operator) {
-        case 'is_empty':
-            $result = empty($subject);
-            break;
-        case 'is_not_empty':
-            $result = !empty($subject);
-            break;
-        case 'is':
-            if ($type === 'ip_range') {
-                $result = $this->plugin->is_ip_in_range($subject, $value);
-            } else {
-                $result = strcasecmp($subject, $value) === 0;
-            }
-            break;
-        case 'is_not':
-            if ($type === 'ip_range') {
-                $result = !$this->plugin->is_ip_in_range($subject, $value);
-            } else {
-                $result = strcasecmp($subject, $value) !== 0;
-            }
-            break;
-        case 'contains':
-            $result = stripos($subject, $value) !== false;
-            break;
-        case 'does_not_contain':
-            $result = stripos($subject, $value) === false;
-            break;
-        case 'starts_with':
-            // stripos devuelve 0 (que es falsey en PHP) si la cadena empieza, así que la comparación debe ser estricta.
-            $result = stripos($subject, $value) === 0;
-            break;
-        case 'ends_with':
-            $length = strlen($value);
-            if ($length == 0) {
-                $result = true;
-            } else {
-                // Usamos substr_compare para una comparación case-insensitive del final de la cadena.
-                $result = substr_compare($subject, $value, -$length, $length, true) === 0;
-            }
-            break;
-        case 'matches_regex':
-            // Evitamos colisión de delimitadores reemplazando @ por \@ en el valor
-            $safe_value = str_replace('@', '\@', $value);
-            $result = @preg_match('@' . $safe_value . '@i', $subject) === 1;
-            break;
-    }
-    return $result;
-}
-
-/**
- * Ejecuta la acción definida en una regla.
- *
- * @param array $rule La regla completa que ha coincidido.
- * @param string $ip La IP del visitante.
- * @return bool True si la acción termina la petición.
- */
-private function execute_action($rule, $ip) {
-    $action = $rule['action'];
-    $params = $rule['action_params'] ?? [];
-    $rule_name = $rule['name'] ?? 'Untitled Rule';
-
-    // Increment analytics counter
-    if (isset($this->plugin->rules_metrics) && !empty($rule['id'])) {
-        $this->plugin->rules_metrics->increment($rule['id'], 'hits');
-    }
-
-    // Preparamos los datos de log comunes para todas las acciones
-    $log_data = [
-        'rule_id'   => $rule['id'],
-        'rule_name' => $rule_name,
-        'uri'       => $this->plugin->get_current_request_uri()
-    ];
-
-    switch ($action) {
-		case 'allow':          
-		   $this->plugin->log_specific_error(
-           'advanced_rule_allow',
-            $ip,
-            $log_data,
-            'info' // Es un evento informativo, no una amenaza
-            );
-            
-            // Set global allow flag to bypass subsequent checks (e.g. AbuseIPDB)
-            $this->plugin->is_advanced_rule_allowed = true;
-
-            // Devolvemos true para indicar a run_all_block_checks que debe detenerse.
-            return true;
-        case 'block':
-            // La duración viene en minutos desde la UI. 0 para permanente.
-            $duration_minutes = isset($params['duration']) ? (int) $params['duration'] : 0;
-            $duration_seconds = ($duration_minutes > 0) ? $duration_minutes * 60 : 0;
-            
-            /* translators: %s: The name of the custom rule. */
-            $reason = sprintf(__('Blocked by Advanced Rule: %s', 'advanced-ip-blocker'), $rule_name);
-            
-            // Llamamos a block_ip_instantly
-            $this->plugin->block_ip_instantly($ip, 'advanced_rule', $reason, $log_data, 'frontend_block', $duration_seconds);
-            return true; // block_ip_instantly ya hace exit()
-
-        case 'challenge':
-        case 'challenge_automatic':
-        case 'challenge_turnstile':
-        case 'challenge_hcaptcha':
-            // Si el usuario ya tiene un VIP pass válido, pasamos de largo.
-            if (isset($this->plugin->js_challenge_manager) && $this->plugin->js_challenge_manager->is_vip_pass_valid()) {
+                $subject = $_SERVER['REQUEST_METHOD'] ?? '';
+                break;
+            case 'referer':
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $subject = $_SERVER['HTTP_REFERER'] ?? '';
+                break;
+            case 'cookie':
+                $target = $condition['target'] ?? '';
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $subject = (!empty($target) && isset($_COOKIE[$target])) ? $_COOKIE[$target] : '';
+                break;
+            case 'header':
+                $target = $condition['target'] ?? '';
+                if (empty($target)) {
+                    $subject = '';
+                } else {
+                    $header_key = 'HTTP_' . strtoupper(str_replace('-', '_', $target));
+                    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                    $subject = isset($_SERVER[$header_key]) ? $_SERVER[$header_key] : '';
+                }
+                break;
+            case 'payload':
+                $raw_body = @file_get_contents('php://input');
+                // phpcs:disable WordPress.Security.NonceVerification.Missing
+                $post_data = !empty($_POST) ? urldecode(http_build_query($_POST)) : '';
+                // Incluir metadatos de archivos subidos para vulnerabilidades de File Upload / RCE (ej. CVE-2026-18431)
+                $files_data = !empty($_FILES) ? urldecode(http_build_query($_FILES)) : '';
+                // phpcs:enable WordPress.Security.NonceVerification.Missing
+                $subject = $raw_body . "\n" . $post_data . "\n" . $files_data;
+                break;
+            case 'query_string':
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $subject = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+                break;
+            default:
                 return false;
-            }
+        }
 
-            // Si el usuario está enviando el resultado del desafío, permitimos que el flujo
-            // continúe para que verify_submission lo valide, en lugar de servir el desafío de nuevo (bucle).
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            if (isset($_POST['_advaipbl_js_token']) || isset($_POST['_advaipbl_challenge_type'])) {
-                return false;
-            }
+        $result = false;
 
-            $mode = str_replace('challenge_', '', $action);
-            if ($mode === 'challenge') $mode = 'managed';
-            if ($mode === 'managed') $mode = 'js_managed';
-            if ($mode === 'automatic') $mode = 'js_automatic';
-            
-            $log_data['mode'] = $mode;
+        switch ($operator) {
+            case 'is_empty':
+                $result = empty($subject);
+                break;
+            case 'is_not_empty':
+                $result = !empty($subject);
+                break;
+            case 'is':
+                if ($type === 'ip_range') {
+                    $result = $this->plugin->is_ip_in_range($subject, $value);
+                } else {
+                    $result = strcasecmp($subject, $value) === 0;
+                }
+                break;
+            case 'is_not':
+                if ($type === 'ip_range') {
+                    $result = !$this->plugin->is_ip_in_range($subject, $value);
+                } else {
+                    $result = strcasecmp($subject, $value) !== 0;
+                }
+                break;
+            case 'contains':
+                $result = stripos($subject, $value) !== false;
+                break;
+            case 'does_not_contain':
+                $result = stripos($subject, $value) === false;
+                break;
+            case 'starts_with':
 
-            $this->plugin->log_specific_error(
-                'advanced_rule_challenge', // Usamos un tipo especifico para challenges
-                $ip,
-                $log_data,
-                'warning' // Nivel 'warning' porque no es un bloqueo, es un desafío
-            );
-            $this->plugin->js_challenge_manager->serve_challenge('advanced_rule_challenge', $mode);
-            return true; // serve_challenge ya hace exit()
+                $result = stripos($subject, $value) === 0;
+                break;
+            case 'ends_with':
+                $length = strlen($value);
+                if ($length == 0) {
+                    $result = true;
+                } else {
+                    $result = substr_compare($subject, $value, -$length, $length, true) === 0;
+                }
+                break;
+            case 'matches_regex':
 
-        case 'score':
-            $points = isset($params['points']) ? (int)$params['points'] : 10;
-            $log_data['points_added'] = $points;
-            
-            $this->plugin->log_specific_error(
-                'advanced_rule', // Usamos el tipo base y el nivel lo diferencia
-                $ip,
-                $log_data,
-                'info' // Nivel 'info' ya que solo es una suma de puntos.
-            );
-            
-            $this->plugin->threat_score_manager->increment_score($ip, $points, 'advanced_rule', ['rule_name' => $rule_name]);
-            return false;
+                $safe_value = str_replace('@', '\@', $value);
+                $result = @preg_match('@' . $safe_value . '@i', $subject) === 1;
+                break;
+        }
 
-        default:
-            return false;
+        return $result;
     }
-  }
 
+    /**
+     * Executes the action defined in a rule.
+     *
+     * @param array $rule The matched rule.
+     * @param string $ip The visitor's IP.
+     * @return bool True if the action ends the request.
+     */
+    private function execute_action($rule, $ip)
+    {
+        $action = $rule['action'];
+        $params = $rule['action_params'] ?? [];
+        $rule_name = $rule['name'] ?? 'Untitled Rule';
+
+        if (isset($this->plugin->rules_metrics) && !empty($rule['id'])) {
+            $this->plugin->rules_metrics->increment($rule['id'], 'hits');
+        }
+
+        $log_data = [
+            'rule_id'   => $rule['id'],
+            'rule_name' => $rule_name,
+            'uri'       => $this->plugin->get_current_request_uri()
+        ];
+
+        switch ($action) {
+            case 'allow':
+                $this->plugin->log_specific_error(
+                    'advanced_rule_allow',
+                    $ip,
+                    $log_data,
+                    'info'
+                );
+
+                $this->plugin->is_advanced_rule_allowed = true;
+
+                return true;
+            case 'block':
+
+                $duration_minutes = isset($params['duration']) ? (int) $params['duration'] : 0;
+                $duration_seconds = ($duration_minutes > 0) ? $duration_minutes * 60 : 0;
+
+                /* translators: %s is a placeholder */
+                $reason = sprintf(__('Blocked by Advanced Rule: %s', 'advanced-ip-blocker'), $rule_name);
+
+                $this->plugin->block_ip_instantly($ip, 'advanced_rule', $reason, $log_data, 'frontend_block', $duration_seconds);
+
+                return true;
+
+            case 'challenge':
+            case 'challenge_automatic':
+            case 'challenge_turnstile':
+            case 'challenge_hcaptcha':
+
+                if (isset($this->plugin->js_challenge_manager) && $this->plugin->js_challenge_manager->is_vip_pass_valid()) {
+                    return false;
+                }
+
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                if (isset($_POST['_advaipbl_js_token']) || isset($_POST['_advaipbl_challenge_type'])) {
+                    return false;
+                }
+
+                $mode = str_replace('challenge_', '', $action);
+                if ($mode === 'challenge') {
+                    $mode = 'managed';
+                }
+                if ($mode === 'managed') {
+                    $mode = 'js_managed';
+                }
+                if ($mode === 'automatic') {
+                    $mode = 'js_automatic';
+                }
+
+                $log_data['mode'] = $mode;
+
+                $this->plugin->log_specific_error(
+                    'advanced_rule_challenge',
+                    $ip,
+                    $log_data,
+                    'warning' // Nivel 'warning' porque no es un bloqueo, es un desafío
+                );
+                $this->plugin->js_challenge_manager->serve_challenge('advanced_rule_challenge', $mode);
+
+                return true;
+
+            case 'score':
+                $points = isset($params['points']) ? (int)$params['points'] : 10;
+                $log_data['points_added'] = $points;
+
+                $this->plugin->log_specific_error(
+                    'advanced_rule',
+                    $ip,
+                    $log_data,
+                    'info'
+                );
+
+                $this->plugin->threat_score_manager->increment_score($ip, $points, 'advanced_rule', ['rule_name' => $rule_name]);
+
+                return false;
+
+            default:
+                return false;
+        }
+    }
 }

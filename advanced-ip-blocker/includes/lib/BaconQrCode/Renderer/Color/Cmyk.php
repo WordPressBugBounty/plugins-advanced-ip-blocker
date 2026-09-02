@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Color;
 
@@ -36,27 +37,27 @@ final class Cmyk implements ColorInterface
         }
     }
 
-    public function getCyan() : int
+    public function getCyan(): int
     {
         return $this->cyan;
     }
 
-    public function getMagenta() : int
+    public function getMagenta(): int
     {
         return $this->magenta;
     }
 
-    public function getYellow() : int
+    public function getYellow(): int
     {
         return $this->yellow;
     }
 
-    public function getBlack() : int
+    public function getBlack(): int
     {
         return $this->black;
     }
 
-    public function toRgb() : Rgb
+    public function toRgb(): Rgb
     {
         $c = $this->cyan / 100;
         $m = $this->magenta / 100;
@@ -70,12 +71,12 @@ final class Cmyk implements ColorInterface
         );
     }
 
-    public function toCmyk() : Cmyk
+    public function toCmyk(): Cmyk
     {
         return $this;
     }
 
-    public function toGray() : Gray
+    public function toGray(): Gray
     {
         return $this->toRgb()->toGray();
     }

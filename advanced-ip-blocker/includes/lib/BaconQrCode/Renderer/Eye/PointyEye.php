@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Eye;
 
@@ -19,12 +20,12 @@ final class PointyEye implements EyeInterface
     {
     }
 
-    public static function instance() : self
+    public static function instance(): self
     {
         return self::$instance ?: self::$instance = new self();
     }
 
-    public function getExternalPath() : Path
+    public function getExternalPath(): Path
     {
         return (new Path())
             ->move(-3.5, 3.5)
@@ -42,7 +43,7 @@ final class PointyEye implements EyeInterface
         ;
     }
 
-    public function getInternalPath() : Path
+    public function getInternalPath(): Path
     {
         return (new Path())
             ->move(1.5, 0)

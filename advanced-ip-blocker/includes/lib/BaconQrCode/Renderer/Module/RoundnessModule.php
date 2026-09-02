@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Module;
 
@@ -26,7 +27,7 @@ final class RoundnessModule implements ModuleInterface
         $this->intensity = $intensity / 2;
     }
 
-    public function createPath(ByteMatrix $matrix) : Path
+    public function createPath(ByteMatrix $matrix): Path
     {
         $path = new Path();
 

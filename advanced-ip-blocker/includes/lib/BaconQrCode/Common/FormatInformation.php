@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BaconQrCode
  *
@@ -82,7 +83,7 @@ class FormatInformation
     /**
      * Checks how many bits are different between two integers.
      */
-    public static function numBitsDiffering(int $a, int $b) : int
+    public static function numBitsDiffering(int $a, int $b): int
     {
         $a ^= $b;
 
@@ -101,7 +102,7 @@ class FormatInformation
     /**
      * Decodes format information.
      */
-    public static function decodeFormatInformation(int $maskedFormatInfo1, int $maskedFormatInfo2) : ?self
+    public static function decodeFormatInformation(int $maskedFormatInfo1, int $maskedFormatInfo2): ?self
     {
         $formatInfo = self::doDecodeFormatInformation($maskedFormatInfo1, $maskedFormatInfo2);
 
@@ -109,8 +110,6 @@ class FormatInformation
             return $formatInfo;
         }
 
-        // Should return null, but, some QR codes apparently do not mask this info. Try again by actually masking the
-        // pattern first.
         return self::doDecodeFormatInformation(
             $maskedFormatInfo1 ^ self::FORMAT_INFO_MASK_QR,
             $maskedFormatInfo2 ^ self::FORMAT_INFO_MASK_QR
@@ -120,7 +119,7 @@ class FormatInformation
     /**
      * Internal method for decoding format information.
      */
-    private static function doDecodeFormatInformation(int $maskedFormatInfo1, int $maskedFormatInfo2) : ?self
+    private static function doDecodeFormatInformation(int $maskedFormatInfo1, int $maskedFormatInfo2): ?self
     {
         $bestDifference = PHP_INT_MAX;
         $bestFormatInfo = 0;
@@ -129,7 +128,6 @@ class FormatInformation
             $targetInfo = $decodeInfo[0];
 
             if ($targetInfo === $maskedFormatInfo1 || $targetInfo === $maskedFormatInfo2) {
-                // Found an exact match
                 return new self($decodeInfo[1]);
             }
 
@@ -141,7 +139,6 @@ class FormatInformation
             }
 
             if ($maskedFormatInfo1 !== $maskedFormatInfo2) {
-                // Also try the other option
                 $bitsDifference = self::numBitsDiffering($maskedFormatInfo2, $targetInfo);
 
                 if ($bitsDifference < $bestDifference) {
@@ -151,7 +148,6 @@ class FormatInformation
             }
         }
 
-        // Hamming distance of the 32 masked codes is 7, by construction, so <= 3 bits differing means we found a match.
         if ($bestDifference <= 3) {
             return new self($bestFormatInfo);
         }
@@ -162,7 +158,7 @@ class FormatInformation
     /**
      * Returns the error correction level.
      */
-    public function getErrorCorrectionLevel() : ErrorCorrectionLevel
+    public function getErrorCorrectionLevel(): ErrorCorrectionLevel
     {
         return $this->ecLevel;
     }
@@ -170,7 +166,7 @@ class FormatInformation
     /**
      * Returns the data mask.
      */
-    public function getDataMask() : int
+    public function getDataMask(): int
     {
         return $this->dataMask;
     }
@@ -178,7 +174,7 @@ class FormatInformation
     /**
      * Hashes the code of the EC level.
      */
-    public function hashCode() : int
+    public function hashCode(): int
     {
         return ($this->ecLevel->getBits() << 3) | $this->dataMask;
     }
@@ -186,7 +182,7 @@ class FormatInformation
     /**
      * Verifies if this instance equals another one.
      */
-    public function equals(self $other) : bool
+    public function equals(self $other): bool
     {
         return (
             $this->ecLevel === $other->ecLevel

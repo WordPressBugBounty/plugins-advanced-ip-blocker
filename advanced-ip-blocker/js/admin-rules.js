@@ -5,7 +5,7 @@ jQuery(document).ready(function ($) {
     const showAdminNotice = window.AdvaipblAdmin.showAdminNotice;
 
     /**
-     * Maneja la lógica de las acciones masivas (Bulk Actions) de forma robusta.
+     * Robustly handles the logic of bulk actions.
      */
     function initBulkActions() {
         const form = $('#advaipbl-blocked-ips-form');
@@ -71,19 +71,19 @@ jQuery(document).ready(function ($) {
     }
 
     /**
-     * Maneja la lógica de las acciones masivas para la tabla de la Whitelist.
+     * Handles the logic of bulk actions for the Whitelist table.
      */
     function initWhitelistBulkActions() {
         const form = $('#advaipbl-whitelist-form');
         if (!form.length) return;
 
-        // Lógica para los checkboxes "seleccionar todo"
+        // Logic for "select all" checkboxes
         form.find('#cb-select-all-1').on('click', function () {
             const isChecked = $(this).prop('checked');
             form.find('#the-list input[type="checkbox"][name="entries_to_process[]"]').prop('checked', isChecked);
         });
 
-        // Lógica para los botones "Apply"
+        // Logic for "Apply" buttons
         form.find('input[type="submit"].action').on('click', function (e) {
             e.preventDefault();
 
@@ -110,7 +110,7 @@ jQuery(document).ready(function ($) {
                     message: ((adminData.text && adminData.text.confirm_bulk_whitelist_remove_message) ? adminData.text.confirm_bulk_whitelist_remove_message : 'Are you sure you want to remove the selected %d entries from the whitelist?').replace('%d', checkedItems.length),
                     confirmText: 'Yes, Remove Selected',
                     onConfirm: function () {
-                        // Asegurarse de que ambos selectores tienen el valor correcto antes de enviar
+                        // Ensure both selectors have the correct value before submitting
                         form.find('select[name="bulk_action"], select[name="bulk_action2"]').val(action);
                         form.submit();
                     }
@@ -120,10 +120,10 @@ jQuery(document).ready(function ($) {
     }
 
     /**
-    * Maneja el cambio de los filtros de la tabla de IPs Bloqueadas para recargar la página.
+    * Handles changes to the Blocked IPs table filters to reload the page.
     */
     function initBlockedIpsFilters() {
-        // Seleccionamos los filtros que NO están dentro del formulario de acciones masivas
+        // Select filters NOT inside the bulk actions form
         $('#filter-by-type, .advaipbl-per-page-selector').not('#advaipbl-blocked-ips-form .advaipbl-per-page-selector').on('change', function () {
             let currentUrl = window.location.href.split('?')[0];
             let params = new URLSearchParams(window.location.search);
@@ -138,12 +138,12 @@ jQuery(document).ready(function ($) {
     }
 
     /**
-     * Adjunta las advertencias de seguridad a todos los selectores de países (Geoblock y Geo-Challenge).
+     * Attaches security warnings to all country selectors (Geoblock and Geo-Challenge).
      */
     function attachGeoblockWarning() {
         if (typeof adminData.geoblock === 'undefined') return;
 
-        // Iteramos sobre cada selector de país que tengamos en la página
+        // Iterate over each country selector on the page
         $('.advaipbl-country-select').each(function () {
             const $selector = $(this);
             const selectorId = $selector.attr('id');
@@ -192,7 +192,7 @@ jQuery(document).ready(function ($) {
             };
 
             $selector.on('change', checkAndDisplayWarnings);
-            checkAndDisplayWarnings(); // Ejecutar al cargar la página
+            checkAndDisplayWarnings(); // Execute on page load
         });
     }
 

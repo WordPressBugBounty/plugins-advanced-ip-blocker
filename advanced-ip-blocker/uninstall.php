@@ -8,19 +8,19 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-// FunciÃ³n auxiliar para borrado recursivo
-// phpcs:disable WordPress.WP.AlternativeFunctions
+
+
 function advaipbl_uninstall_recursive_rmdir( $dir ) {
     if (!is_dir($dir)) return;
     $files = array_diff( scandir( $dir ), array( '.', '..' ) );
     foreach ( $files as $file ) {
+        // phpcs:ignore WordPress.WP.AlternativeFunctions
         ( is_dir( "$dir/$file" ) ) ? advaipbl_uninstall_recursive_rmdir( "$dir/$file" ) : unlink( "$dir/$file" );
     }
+    // phpcs:ignore WordPress.WP.AlternativeFunctions
     rmdir( $dir );
 }
-// phpcs:enable WordPress.WP.AlternativeFunctions
 
-// FunciÃ³n auxiliar simple para peticiones CF
 if (!function_exists('advaipbl_uninstall_cf_req')) {
     function advaipbl_uninstall_cf_req($method, $endpoint, $token) {
         $url = 'https://api.cloudflare.com/client/v4/' . $endpoint;
@@ -38,11 +38,11 @@ if (!function_exists('advaipbl_uninstall_cf_req')) {
     }
 }
 
-// FunciÃ³n principal de limpieza para un sitio especÃ­fico
+
 function advaipbl_process_site_uninstallation() {
     global $wpdb;
 
-    // Obtener la opciÃ³n de borrado de forma segura
+    
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $settings_option = get_option( 'advaipbl_settings' );
     
@@ -50,7 +50,7 @@ function advaipbl_process_site_uninstallation() {
 
     if ( $should_delete ) {
 
-        // --- 0. UNREGISTER FROM CENTRAL SERVER ---
+        
         $advaipbl_api_token = $settings_option['api_token_v3'] ?? '';
         if (!empty($advaipbl_api_token)) {
             wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/unregister', [
@@ -60,11 +60,11 @@ function advaipbl_process_site_uninstallation() {
                     'Accept'        => 'application/json'
                 ],
                 'timeout' => 10,
-                'blocking' => false // No need to wait for response during uninstall
+                'blocking' => false 
             ]);
         }
 
-        // --- 1. Borrar Tablas Personalizadas ---
+        
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
         $tables_to_drop = [
             'advaipbl_logs', 'advaipbl_notifications_queue', 'advaipbl_ip_scores',
@@ -79,14 +79,14 @@ function advaipbl_process_site_uninstallation() {
             $wpdb->query( "DROP TABLE IF EXISTS `{$full_table_name}`" );
         }
 
-        // --- 1.5. Limpiar Cloudflare (Si estÃ¡ habilitado) ---
+        
         if ( ! empty( $settings_option['enable_cloudflare'] ) && '1' === $settings_option['enable_cloudflare'] &&
              ! empty( $settings_option['cf_api_token'] ) && ! empty( $settings_option['cf_zone_id'] ) ) {
             
             $advaipbl_cf_token = $settings_option['cf_api_token'];
             $advaipbl_cf_zone  = $settings_option['cf_zone_id'];
 
-            // Buscar reglas [AIB]
+            
             $page = 1;
             $advaipbl_has_more = true;
             $advaipbl_rules_to_delete = [];
@@ -109,16 +109,16 @@ function advaipbl_process_site_uninstallation() {
                 else $page++;
             }
 
-            // Eliminar reglas
+            
             foreach ($advaipbl_rules_to_delete as $advaipbl_rule_id) {
                 advaipbl_uninstall_cf_req('DELETE', "zones/{$advaipbl_cf_zone}/firewall/access_rules/rules/{$advaipbl_rule_id}", $advaipbl_cf_token);
             }
         }
 
-        // --- 2. Borrar Opciones de la Tabla `wp_options` ---
+        
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
         $options_to_delete = [
-            // Opciones principales y de configuraciÃ³n
+            
             'advaipbl_settings',
             'advaipbl_waf_rules',
             'advaipbl_blocked_asns',
@@ -132,6 +132,9 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_challenge_stats',
             'advaipbl_zeroday_waf_rules',
             'advaipbl_zeroday_waf_last_sync',
+            'advaipbl_zeroday_waf_version',
+            'advaipbl_advanced_zeroday_waf_last_sync',
+            'advaipbl_advanced_zeroday_waf_version',
             'advaipbl_fim_signatures',
             'advaipbl_fim_signatures_raw',
             'advaipbl_fim_signatures_regex',
@@ -142,7 +145,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_fim_signatures_version',
             'advaipbl_fim_signatures_last_sync',
             
-            // Opciones de sistema y estado
+            
             'advaipbl_db_version',
             'advaipbl_version_installed',
             'advaipbl_run_setup_wizard',
@@ -159,15 +162,15 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_bot_ips',
             'advaipbl_last_cron_ip',
             
-            // Community Network
+            
             'advaipbl_community_blocklist',
             'advaipbl_community_last_update',
             'advaipbl_network_degraded',
             
-            // Database Cache
+            
             'advaipbl_db_cidrs_cache',
             
-            // Opciones de bloqueo (ahora obsoletas, para limpieza de instalaciones antiguas)
+            
             'advaipbl_blocked_ips_manual',
             'advaipbl_blocked_ips_404',
             'advaipbl_blocked_ips_403',
@@ -193,7 +196,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_ips_bloqueadas_asn',
             'advaipbl_ips_bloqueadas_xmlrpc_block',
 
-            // Opciones de legado con prefijo antiguo (con guion)
+            
             'advanced-ip-blocker_ips_bloqueadas_404',
             'advanced-ip-blocker_ips_bloqueadas_403',
             'advanced-ip-blocker_ips_bloqueadas_login',
@@ -215,7 +218,7 @@ function advaipbl_process_site_uninstallation() {
             // Security Headers
             'advaipbl_security_headers',
             
-            // System Flags
+            
             'advaipbl_flush_firewalls_needed',
             'advaipbl_telemetry_notice_dismissed',
             'advaipbl_legacy_options_cleaned',
@@ -229,16 +232,16 @@ function advaipbl_process_site_uninstallation() {
             delete_option( $option_name );
         }
 
-        // --- 4. Borrar Transients ---
+        
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE `option_name` LIKE %s OR `option_name` LIKE %s", $wpdb->esc_like( '_transient_advaipbl_' ) . '%', $wpdb->esc_like( '_transient_timeout_advaipbl_' ) . '%' ) );
 
-        // --- 5. Borrar Metadatos de Usuario de 2FA ---
+        
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE `meta_key` LIKE %s", $wpdb->esc_like( '_advaipbl_2fa_' ) . '%' ) );
     }
 
-    // --- Limpiar Tareas de Cron SIEMPRE (Incluso si no se borran datos) ---
+    
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $cron_hooks = [
         'advaipbl_purge_old_logs_event', 'advaipbl_send_summary_email',
@@ -269,18 +272,11 @@ function advaipbl_process_site_uninstallation() {
     }
 }
 
-// -----------------------------------------------------------------------------------------
-// EJECUCIÃ“N PRINCIPAL DEL SCRIPT DE UNINSTALL
-// -----------------------------------------------------------------------------------------
-
-// Guardamos la configuraciÃ³n global ANTES de empezar a borrar opciones, 
-// de lo contrario el paso 2 fallarÃ­a al intentar leer una opciÃ³n ya borrada.
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 $advaipbl_global_settings = get_option( 'advaipbl_settings' );
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 $advaipbl_global_should_delete = is_array($advaipbl_global_settings) && isset($advaipbl_global_settings['delete_data_on_uninstall']) && (bool) $advaipbl_global_settings['delete_data_on_uninstall'];
 
-// 1. Procesar bases de datos (soporte completo para Multisite)
 if ( is_multisite() ) {
     global $wpdb;
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
@@ -297,34 +293,32 @@ if ( is_multisite() ) {
     advaipbl_process_site_uninstallation();
 }
 
-// 2. Limpieza de Archivos y Directorios (Solo se hace una vez, a nivel global)
-// Usamos la variable $advaipbl_global_should_delete obtenida al principio del script
 if ( $advaipbl_global_should_delete ) {
     
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $upload_dir = wp_upload_dir();
     
-    // A. Directorio GeoIP
+    
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $geoip_dir  = $upload_dir['basedir'] . '/advaipbl_geoip';
     if ( is_dir( $geoip_dir ) ) {
         advaipbl_uninstall_recursive_rmdir( $geoip_dir );
     }
 
-    // B. Directorio de Backups Htaccess
+    
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $backup_dir = $upload_dir['basedir'] . '/advaipbl-backups';
     if ( is_dir( $backup_dir ) ) {
         advaipbl_uninstall_recursive_rmdir( $backup_dir );
     }
 
-    // B.1. Directorio de Cuarentena (FIM)
+    
     $advaipbl_quarantine_dir = $upload_dir['basedir'] . '/advaipbl_quarantine';
     if ( is_dir( $advaipbl_quarantine_dir ) ) {
         advaipbl_uninstall_recursive_rmdir( $advaipbl_quarantine_dir );
     }
 
-    // C. Limpiar reglas del .htaccess (Borrado COMPLETO, no solo vaciar marcadores)
+    
     if ( function_exists('get_home_path') ) {
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound   
         $htaccess_path = get_home_path() . '.htaccess';
@@ -340,8 +334,7 @@ if ( $advaipbl_global_should_delete ) {
             }
         }
     }
-    
-    // D. Limpiar reglas del .htaccess de Uploads
+        
     $advaipbl_uploads_htaccess_path = trailingslashit($upload_dir['basedir']) . '.htaccess';
     // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
     if ( file_exists( $advaipbl_uploads_htaccess_path ) && is_writable( $advaipbl_uploads_htaccess_path ) ) {

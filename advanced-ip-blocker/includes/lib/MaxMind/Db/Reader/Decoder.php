@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace MaxMind\Db\Reader;
 
-// @codingStandardsIgnoreLine
-
 class Decoder
 {
     /**
@@ -42,8 +40,7 @@ class Decoder
     private const _UINT64 = 9;
     private const _UINT128 = 10;
     private const _ARRAY = 11;
-    // 12 is the container type
-    // 13 is the end marker type
+
     private const _BOOLEAN = 14;
     private const _FLOAT = 15;
 
@@ -73,13 +70,9 @@ class Decoder
 
         $type = $ctrlByte >> 5;
 
-        // Pointers are a special case, we don't read the next $size bytes, we
-        // use the size to determine the length of the pointer and then follow
-        // it.
         if ($type === self::_POINTER) {
             [$pointer, $offset] = $this->decodePointer($ctrlByte, $offset);
 
-            // for unit testing
             if ($this->pointerTestHack) {
                 return [$pointer];
             }
@@ -194,8 +187,6 @@ class Decoder
 
     private function decodeDouble(string $bytes): float
     {
-        // This assumes IEEE 754 doubles, but most (all?) modern platforms
-        // use them.
         $rc = unpack('E', $bytes);
         if ($rc === false) {
             throw new InvalidDatabaseException(
@@ -209,8 +200,6 @@ class Decoder
 
     private function decodeFloat(string $bytes): float
     {
-        // This assumes IEEE 754 floats, but most (all?) modern platforms
-        // use them.
         $rc = unpack('G', $bytes);
         if ($rc === false) {
             throw new InvalidDatabaseException(
@@ -311,8 +300,6 @@ class Decoder
             case 3:
                 $packed = \chr($ctrlByte & 0x7) . $buffer;
 
-                // It is safe to use 'N' here, even on 32 bit machines as the
-                // first bit is 0.
                 $rc = unpack('N', $packed);
                 if ($rc === false) {
                     throw new InvalidDatabaseException(
@@ -325,8 +312,7 @@ class Decoder
                 break;
 
             case 4:
-                // We cannot use unpack here as we might overflow on 32 bit
-                // machines
+
                 $pointerOffset = $this->decodeUint($buffer, $pointerSize);
 
                 $pointerBase = $this->pointerBase;
@@ -350,16 +336,12 @@ class Decoder
         return [$pointer, $offset];
     }
 
-    // @phpstan-ignore-next-line
     private function decodeUint(string $bytes, int $byteLength)
     {
         if ($byteLength === 0) {
             return 0;
         }
 
-        // PHP integers are signed. PHP_INT_SIZE - 1 is the number of
-        // complete bytes that can be converted to an integer. However,
-        // we can convert another byte if the leading bit is zero.
         $useRealInts = $byteLength <= \PHP_INT_SIZE - 1
             || ($byteLength === \PHP_INT_SIZE && (\ord($bytes[0]) & 0x80) === 0);
 
@@ -373,7 +355,6 @@ class Decoder
             return $integer;
         }
 
-        // We only use gmp or bcmath if the final value is too big
         $integerAsString = '0';
         for ($i = 0; $i < $byteLength; ++$i) {
             $part = \ord($bytes[$i]);

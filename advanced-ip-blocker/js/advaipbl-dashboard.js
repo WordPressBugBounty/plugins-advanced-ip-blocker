@@ -5,8 +5,8 @@ jQuery(document).ready(function ($) {
         return;
     }
 
-    // Variables dedicadas para mantener las instancias del mapa y del grupo de capas.
-    // Se inicializan una sola vez para todo el ciclo de vida de la página.
+    // Dedicated variables to maintain map and layer group instances.
+    // Initialized only once for the entire page lifecycle.
     let advaipblMapInstance = null;
     let advaipblMarkersLayer = null;
 
@@ -136,14 +136,14 @@ jQuery(document).ready(function ($) {
     function renderTopLists(topIps, topCountries) { const ipsListContainer = $('#advaipbl-top-ips-list'); const countriesListContainer = $('#advaipbl-top-countries-list'); const attacksLabel = advaipbl_admin_data.text.attacks_label || 'attacks'; const blocksLabel = advaipbl_admin_data.text.blocks_label || 'blocks'; let ipsHtml = '<table>'; if (topIps && topIps.length > 0) { topIps.forEach(item => { ipsHtml += `<tr><td><code>${item.ip}</code></td><td class="count-cell">${item.count} ${attacksLabel}</td></tr>`; }); } else { ipsHtml += '<tr><td>No data available.</td></tr>'; } ipsHtml += '</table>'; ipsListContainer.html(ipsHtml); let countriesHtml = '<table>'; if (topCountries && topCountries.length > 0) { topCountries.forEach(item => { const countryCode = item.country_code ? item.country_code.toLowerCase() : ''; const countryName = item.country || item.country_code || 'Unknown'; let flagHtml = ''; if (countryCode) { const flagUrl = `https://flagcdn.com/w20/${countryCode}.png`; flagHtml = `<img src="${flagUrl}" width="20" height="15" alt="${countryCode.toUpperCase()}" class="country-flag">`; } countriesHtml += `<tr><td class="country-cell">${flagHtml}<span>${countryName}</span></td><td class="count-cell">${item.count} ${blocksLabel}</td></tr>`; }); } else { countriesHtml += '<tr><td>No data available.</td></tr>'; } countriesHtml += '</table>'; countriesListContainer.html(countriesHtml); }
 
     /**
-     * Renderiza el widget de estado del sistema agrupado.
-     * @param {object} statusData - Datos del estado de los mÃ³dulos.
+     * Renders the grouped system status widget.
+     * @param {object} statusData - Module status data.
      */
     function renderSystemStatus(statusData) {
         const container = $('#advaipbl-system-status-list');
         if (!container.length || !statusData) return;
 
-        // Mapa de estados agrupados por categorÃ­as lÃ³gicas
+        // Map of states grouped by logical categories
         const groupedStatusMap = {
             'Infrastructure & Edge': {
                 'cloudflare_sync': 'Cloud Edge Defense',
@@ -154,7 +154,7 @@ jQuery(document).ready(function ($) {
                 'bot_verification': 'Verify Known Bots',
                 'ai_bot_verification': 'Verify AI Bots (CIDR)',
                 'monitoring_bot_verification': 'Verify Monitoring Bots',
-                'xmlrpc_lockdown': 'XML-RPC Protection', // LÃ³gica especial inyectada abajo
+                'xmlrpc_lockdown': 'XML-RPC Protection', // Special logic injected below
                 'under_attack_mode': 'Auto-Panic Mode'
             },
             'Core Protection Engine': {
@@ -203,7 +203,7 @@ jQuery(document).ready(function ($) {
             let groupHtml = '';
             
             for (const [key, label] of Object.entries(features)) {
-                // Caso especial para XML-RPC
+                // Special case for XML-RPC
                 if (key === 'xmlrpc_lockdown' && typeof statusData.xmlrpc_mode !== 'undefined') {
                     const mode = statusData.xmlrpc_mode;
                     let icon = 'dashicons-yes-alt advaipbl-status-icon-success';
@@ -225,7 +225,7 @@ jQuery(document).ready(function ($) {
                             <span class="advaipbl-status-tag ${tagClass}">${text}</span>
                         </div>`;
                 } 
-                // Casos estÃ¡ndar
+                // Standard cases
                 else if (typeof statusData[key] !== 'undefined') {
                     const isEnabled = statusData[key];
                     const icon = isEnabled ? 'dashicons-yes-alt advaipbl-status-icon-success' : 'dashicons-no-alt advaipbl-status-icon-disabled';
@@ -239,7 +239,7 @@ jQuery(document).ready(function ($) {
                 }
             }
 
-            // Si hay elementos activos en este grupo, aÃ±adimos el encabezado y los elementos
+            // If there are active items in this group, we add the header and items
             if (groupHtml !== '') {
                 html += `
                     <div class="advaipbl-status-group">
@@ -256,16 +256,16 @@ jQuery(document).ready(function ($) {
         const mapWrapper = $('#advaipbl-map-wrapper');
         if (!mapWrapper.length || typeof L === 'undefined') return;
 
-        // Obtenemos el número de IPs del backend a través de los datos del dashboard.
+        // Get the number of IPs from the backend via the dashboard data.
         const blockedCount = (window.advaipbl_admin_data && window.advaipbl_admin_data.counts) ? window.advaipbl_admin_data.counts.blocked : 0;
         const $title = mapWrapper.closest('.advaipbl-dashboard-widget').find('h3');
 
-        // Limpiamos contadores anteriores para evitar duplicados.
+        // Clear previous counters to avoid duplicates.
         $title.find('.advaipbl-map-counter').remove();
 
         if (blockedCount > 0) {
-            // Usamos las mismas clases que en el resto del plugin y añadimos una clase específica para el mapa.
-            // Añadimos también un espacio antes del span para que no se pegue al texto.
+            // We use the same classes as in the rest of the plugin and add a specific class for the map.
+            // We also add a space before the span so it doesn't stick to the text.
             const counterHtml = ` <span class="advaipbl-block-count advaipbl-map-counter">${blockedCount}</span>`;
             $title.append(counterHtml);
         }

@@ -1,31 +1,33 @@
 <?php
-// /includes/class-advaipbl-asn-manager.php
 
 if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+    exit;
 }
 
-class ADVAIPBL_Asn_Manager {
-
+class ADVAIPBL_Asn_Manager
+{
     private $main_class;
+
     private $geolocation_manager;
 
     /**
      * Constructor.
-     * @param ADVAIPBL_Main        $main_class  La instancia de la clase principal.
-     * @param ADVAIPBL_geolocation_manager $geolocation_manager La instancia del gestor de APIs.
+     * @param ADVAIPBL_Main        $main_class  The main class instance.
+     * @param ADVAIPBL_geolocation_manager $geolocation_manager The API manager instance.
      */
-    public function __construct(ADVAIPBL_Main $main_class, ADVAIPBL_Geolocation_Manager $geolocation_manager) {
+    public function __construct(ADVAIPBL_Main $main_class, ADVAIPBL_Geolocation_Manager $geolocation_manager)
+    {
         $this->main_class  = $main_class;
         $this->geolocation_manager = $geolocation_manager;
     }
 
-     /**
-     * Comprueba el ASN de una IP y, si está en una lista negra, devuelve los detalles del bloqueo.
-     * @param string $ip La IP del visitante.
-     * @return array|false Un array con los detalles del bloqueo o false si no hay coincidencia.
-     */
-    public function check_asn_block($ip) {
+    /**
+    * Checks an IP's ASN and, if on a blacklist, returns block details.
+    * @param string $ip The visitor's IP.
+    * @return array|false An array with block details or false if no match.
+    */
+    public function check_asn_block($ip)
+    {
         $enable_manual_list = !empty($this->main_class->options['enable_manual_asn']);
         $enable_spamhaus_list = !empty($this->main_class->options['enable_spamhaus_asn']);
 
@@ -40,26 +42,25 @@ class ADVAIPBL_Asn_Manager {
             return false;
         }
 
-        // Helper to check ASN against a raw list containing comments
-        $in_asn_list = function($asn, $raw_list) {
-            if (empty($raw_list)) return false;
+        $in_asn_list = function ($asn, $raw_list) {
+            if (empty($raw_list)) {
+                return false;
+            }
             foreach ($raw_list as $entry) {
                 $parts = explode('#', $entry);
                 if (strtoupper(trim($parts[0])) === strtoupper($asn)) {
                     return true;
                 }
             }
+
             return false;
         };
 
-        // --- NEW: Check Whitelist First ---
         $whitelisted_asns = get_option(ADVAIPBL_Main::OPTION_WHITELISTED_ASNS, []);
         if ($in_asn_list($visitor_asn, $whitelisted_asns)) {
-            // Explicitly allowed, so we skip any block checks.
             return false;
         }
 
-        
         $is_blocked = false;
         $block_source = '';
 
@@ -70,7 +71,7 @@ class ADVAIPBL_Asn_Manager {
                 $block_source = 'Manual List';
             }
         }
-        
+
         if (!$is_blocked && $enable_spamhaus_list) {
             $blocked_asns_spamhaus = get_option('advaipbl_spamhaus_asn_list', []);
             if (!empty($blocked_asns_spamhaus) && in_array($visitor_asn, $blocked_asns_spamhaus, true)) {
@@ -81,7 +82,8 @@ class ADVAIPBL_Asn_Manager {
 
         if ($is_blocked) {
             $asn_name = $location_data['as'] ?? ($location_data['asn']['name'] ?? '');
-			/* translators: %1$s: AS number, %2$s: AS provider, %3$s: Spamhaus or manual list */
+
+            /* translators: %s is a placeholder */
             $reason = sprintf(__('Blocked ASN: %1$s (%2$s) - Source: %3$s', 'advanced-ip-blocker'), $visitor_asn, $asn_name, $block_source);
             $log_data = [
                 'asn_number' => $visitor_asn,
@@ -92,27 +94,26 @@ class ADVAIPBL_Asn_Manager {
 
             return ['reason_message' => $reason, 'log_data' => $log_data];
         }
-        
+
         return false;
     }
 
     /**
-     * Extrae el número de ASN (ej. "AS15169") de los datos devueltos por la API.
-     * Es compatible con el formato de ip-api.com e ipinfo.io.
-     * @param array|null $data Los datos de la API.
-     * @return string|false El número de ASN o false si no se encuentra.
+     * Extracts the ASN number (e.g. "AS15169") from API data.
+     * Compatible with ip-api.com and ipinfo.io formats.
+     * @param array|null $data The API data.
+     * @return string|false The ASN number or false if not found.
      */
-    public function extract_asn_from_data($data) {
+    public function extract_asn_from_data($data)
+    {
         if (empty($data) || !is_array($data)) {
             return false;
         }
-        
-        // Formato de ipinfo.io: $data['asn']['asn'] = "AS15169"
+
         if (isset($data['asn']['asn']) && preg_match('/^AS\d+$/i', $data['asn']['asn'])) {
             return strtoupper($data['asn']['asn']);
         }
-        
-        // Formato de ip-api.com: $data['as'] = "AS15169 Google LLC"
+
         if (isset($data['as'])) {
             preg_match('/(AS\d+)/i', $data['as'], $matches);
             if (!empty($matches[1])) {
@@ -122,29 +123,30 @@ class ADVAIPBL_Asn_Manager {
 
         return false;
     }
-	
-	    /**
-     * Obtiene los detalles del log (historial de eventos) para una IP específica.
+
+    /**
+     * Gets the log details (event history) for a specific IP.
      *
-     * @param string $ip La dirección IP a consultar.
-     * @return array|false Un array con el historial de eventos o false si no se encuentra.
+     * @param string $ip The IP address to query.
+     * @return array|false An array with the event history or false if not found.
      */
-    public function get_log_details($ip) {
+    public function get_log_details($ip)
+    {
         global $wpdb;
-        
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $log_json = $wpdb->get_var($wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             "SELECT log_details FROM {$this->table_name} WHERE ip = %s",
             $ip
         ));
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
         if ($log_json === null) {
             return false;
         }
-        
+
         $log_details = json_decode($log_json, true);
-        
+
         return is_array($log_details) ? $log_details : [];
     }
 }

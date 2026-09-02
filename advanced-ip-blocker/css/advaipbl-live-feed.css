@@ -2,7 +2,6 @@
  * Advanced IP Blocker - Live Feed Styles (High Specificity Version)
  */
 
-/* Usamos un selector de cuerpo común de WordPress para aumentar la especificidad. */
 body.post-template-default #advaipbl-live-feed-container,
 body.page-template-default #advaipbl-live-feed-container,
 body.single-post #advaipbl-live-feed-container,
@@ -15,7 +14,7 @@ body.page #advaipbl-live-feed-container {
     border: 1px solid #334155 !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
     overflow: hidden !important;
-    margin: 2em 0; /* Añadimos un margen para separarlo del contenido. */
+    margin: 2em 0;
 }
 
 #advaipbl-live-feed-container h3 {

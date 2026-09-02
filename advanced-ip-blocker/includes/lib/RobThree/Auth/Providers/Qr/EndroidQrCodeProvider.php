@@ -54,6 +54,7 @@ class EndroidQrCodeProvider implements IQRCodeProvider
         }
 
         $writer = new PngWriter();
+
         return $writer->write($this->qrCodeInstance($qrText, $size))->getString();
     }
 
@@ -77,6 +78,7 @@ class EndroidQrCodeProvider implements IQRCodeProvider
         $qrCode->setMargin($this->margin);
         $qrCode->setBackgroundColor($this->bgcolor);
         $qrCode->setForegroundColor($this->color);
+
         return $qrCode;
     }
 
@@ -92,7 +94,6 @@ class EndroidQrCodeProvider implements IQRCodeProvider
 
     private function handleErrorCorrectionLevel(string $level): ErrorCorrectionLevelInterface|ErrorCorrectionLevel
     {
-        // First check for version 5 (using enums)
         if ($this->endroid5) {
             return match ($level) {
                 'L' => ErrorCorrectionLevel::Low,
@@ -102,7 +103,6 @@ class EndroidQrCodeProvider implements IQRCodeProvider
             };
         }
 
-        // If not check for version 4 (using classes)
         if ($this->endroid4) {
             return match ($level) {
                 'L' => new ErrorCorrectionLevelLow(),
@@ -112,7 +112,6 @@ class EndroidQrCodeProvider implements IQRCodeProvider
             };
         }
 
-        // Any other version will be using strings
         return match ($level) {
             'L' => ErrorCorrectionLevel::LOW(),
             'M' => ErrorCorrectionLevel::MEDIUM(),

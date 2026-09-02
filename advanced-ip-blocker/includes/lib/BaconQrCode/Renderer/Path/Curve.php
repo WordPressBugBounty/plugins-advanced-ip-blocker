@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace BaconQrCode\Renderer\Path;
 
@@ -15,32 +16,32 @@ final class Curve implements OperationInterface
     ) {
     }
 
-    public function getX1() : float
+    public function getX1(): float
     {
         return $this->x1;
     }
 
-    public function getY1() : float
+    public function getY1(): float
     {
         return $this->y1;
     }
 
-    public function getX2() : float
+    public function getX2(): float
     {
         return $this->x2;
     }
 
-    public function getY2() : float
+    public function getY2(): float
     {
         return $this->y2;
     }
 
-    public function getX3() : float
+    public function getX3(): float
     {
         return $this->x3;
     }
 
-    public function getY3() : float
+    public function getY3(): float
     {
         return $this->y3;
     }
@@ -48,7 +49,7 @@ final class Curve implements OperationInterface
     /**
      * @return self
      */
-    public function translate(float $x, float $y) : OperationInterface
+    public function translate(float $x, float $y): OperationInterface
     {
         return new self(
             $this->x1 + $x,
@@ -63,7 +64,7 @@ final class Curve implements OperationInterface
     /**
      * @return self
      */
-    public function rotate(int $degrees) : OperationInterface
+    public function rotate(int $degrees): OperationInterface
     {
         $radians = deg2rad($degrees);
         $sin = sin($radians);
@@ -74,6 +75,7 @@ final class Curve implements OperationInterface
         $y2r = $this->x2 * $sin + $this->y2 * $cos;
         $x3r = $this->x3 * $cos - $this->y3 * $sin;
         $y3r = $this->x3 * $sin + $this->y3 * $cos;
+
         return new self(
             $x1r,
             $y1r,
