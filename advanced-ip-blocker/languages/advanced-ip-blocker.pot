@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.3\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -8966,4 +8966,30 @@ msgstr ""
 
 #: includes/class-advaipbl-site-scanner.php:637
 msgid "Remediation:"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:551
+msgid "User-Agent URI Exclusions"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:551
+msgid "Add one URL path or fragment per line. Requests containing these strings will completely bypass User-Agent blocking and scoring."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:551
+msgid "<strong>Warning:</strong> Be as specific as possible to avoid inadvertently exposing your site to scraping and scanning."
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+#: includes/class-advaipbl-captcha-manager.php
+#: includes/class-advaipbl-js-challenge.php
+msgid "Performance &amp; security by"
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "Login blocked by IP Whitelist (IP: %s)"
+msgstr ""
+
+#: includes/class-advaipbl-main.php
+msgid "Login Whitelist"
 msgstr ""

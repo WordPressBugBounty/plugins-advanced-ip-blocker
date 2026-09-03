@@ -548,6 +548,7 @@ class ADVAIPBL_Settings_Manager
         add_settings_section('advaipbl_user_agent_settings_section', null, null, $page);
         add_settings_field('advaipbl_enable_user_agent_blocking', __('Enable User-Agent Blocking', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_user_agent_settings_section', ['name' => 'enable_user_agent_blocking', 'label' => __('Activate User-Agent based blocking.', 'advanced-ip-blocker'), 'description' => sprintf(/* translators: %s is a placeholder */ __('Manage User-Agent lists in the <a href="%s">Blocking Rules</a> tab.', 'advanced-ip-blocker'), admin_url('admin.php?page=advaipbl_settings_page&tab=rules&sub-tab=user_agents'))]);
         add_settings_field('advaipbl_duration_user_agent', __('User-Agent Duration (min)', 'advanced-ip-blocker'), [$this, 'text_field_callback'], $page, 'advaipbl_user_agent_settings_section', ['name' => 'duration_user_agent', 'default' => 1440, 'description' => __('Block duration for IPs with a malicious User-Agent. Set to 0 for a permanent block.', 'advanced-ip-blocker')]);
+        add_settings_field('advaipbl_ua_excluded_urls', __('User-Agent URI Exclusions', 'advanced-ip-blocker'), [$this, 'textarea_field_callback'], $page, 'advaipbl_user_agent_settings_section', ['name' => 'ua_excluded_urls', 'label' => __('Add one URL path or fragment per line. Requests containing these strings will completely bypass User-Agent blocking and scoring.', 'advanced-ip-blocker'), 'description' => __('<strong>Warning:</strong> Be as specific as possible to avoid inadvertently exposing your site to scraping and scanning.', 'advanced-ip-blocker')]);
         add_settings_field(
             'advaipbl_enable_bot_verification',
             __('Verify Known Bots', 'advanced-ip-blocker'),
@@ -1495,7 +1496,7 @@ class ADVAIPBL_Settings_Manager
         }
 
         $text_fields = [
-            'notification_frequency', 'custom_block_message', 'excluded_error_urls', 'waf_excluded_urls',
+            'notification_frequency', 'custom_block_message', 'excluded_error_urls', 'waf_excluded_urls', 'ua_excluded_urls',
             'push_webhook_urls', 'push_mentions', 'trusted_signature_hashes', 'notification_email',
             'signature_notification_frequency', 'signature_notification_recipient', 'signature_notification_custom_email',
             'api_key_ipapicom', 'api_key_ipstackcom', 'api_key_ipinfocom', 'api_key_ip_apicom', 'maxmind_license_key',

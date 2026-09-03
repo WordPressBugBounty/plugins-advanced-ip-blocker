@@ -1500,26 +1500,7 @@ $default_waf_rules_list = [
     <?php
         $blocked_user_agents = get_option('advaipbl_blocked_user_agents', []);
         $whitelisted_user_agents = get_option('advaipbl_whitelisted_user_agents', []);
-
-        $default_uas_list = [
-            '# === Vulnerability Scanners & Pentesting Tools ===',
-            'Acunetix', 'Arachni', 'Burp', 'Dirb', 'DirBuster', 'Feroxbuster', '#Go-http-client', 'Havij', 'Nessus', 'Nikto', 'Nmap', 'Netsparker', 'OpenVAS', 'Photon/1.0', 'sqlmap', 'Vega', 'Wfuzz', 'WhatWeb', 'WPScan', 'WPSec', 'ZAP/', 'masscan', 'ScanNG', 'PressVuln', '#PostmanRuntime', 'CensysInspect', 'Expanse', 'internet-measurement', 'JSScanner/',
-            '',
-            '# === Generic Bots & Scripting Libraries ===',
-            '#curl', 'HTTrack', '#Java/', '#okhttp', 'perl', 'php/', 'Python', 'python-requests', 'Scrapy', 'wget', 'libwww', 'ruby',
-            '',
-            '# === Aggressive Scrapers & Black Hat SEO Bots ===',
-            '#AhrefsBot', 'Bytespider', 'contabot', 'dataprovider', 'DigExt', '#DotBot', 'EmailCollector', 'ExtractorPro', 'MegaIndex', '#MJ12bot', 'SemrushBot', 'WebCollector', 'WebCopier', 'AliyunSecBot', 'AwarioBot', 'BW/', '#GoogleOther', 'IonCrawl', 'ISSCyberRiskCrawler',
-            '',
-            '# === Spam, Low-Quality AI & Comment Bots ===',
-            '#Applebot-Extended', 'ClaudeBot', 'Diffbot', '#FacebookBot', 'FriendlyCrawler', '#Google-Extended', 'ImagesiftBot', 'Image2dataset', '#Meta-ExternalAgent', 'omgili', 'Timpibot', 'omgilibot', 'AcoonBot/', 'anthropic-ai', 'BoardReader', 'CCBot', '#ChatGPT-User', 'Claude-Web', 'DataForSeoBot', '#GPTBot', 'PerplexityBot', '#petalbot', '#YandexBot', 'ZmEu',
-            '',
-            '# === Aggressive Regional Crawlers (optional) ===',
-            'Baiduspider', 'Baiduspider-image', 'Baiduspider-news', 'Barkrowler', 'msnbot-media', 'SeznamBot', 'Sogou', 'YisouSpider', 'BLEXBot', 'news-please', 'Orbbot', 'peer39_crawler', 'VelenPublicWebCrawler', '#wp_is_mobile', 'Zoominfobot',
-            '',
-            '# === Suspicious or Malformed User-Agents ===',
-            '#Dalvik/', 'morfeus', 'ShellBot', 'zgrab', 'Chrome/45', 'Mozilla/4.0', 'Empty', 'Mozlila', 'GRequests/'
-        ];
+        $default_uas_list = ADVAIPBL_Main::get_instance()->get_default_user_agents();
         $default_uas_text = implode("\n", $default_uas_list);
         ?>
         <h2><?php esc_html_e('User-Agent Blocking Management', 'advanced-ip-blocker'); ?></h2>
@@ -2097,7 +2078,7 @@ $default_waf_rules_list = [
             'abuseipdb',
             'aib_network', 'signature_flagged',
             'impersonation', 'ghost_ip',
-            'advanced_rule', 'login_geoblock'
+            'advanced_rule', 'login_geoblock', 'login_whitelist_block'
         ];
         $this->display_log_table_generic($security_log_types, ['critical', 'warning'], null, null, true);
     }
@@ -2685,6 +2666,7 @@ $default_waf_rules_list = [
                             }
                             break;
                         case 'login_geoblock':
+                        case 'login_whitelist_block':
                             $detail_display = '<strong>' . esc_html($entry['message']) . '</strong>';
                             if (!empty($uri)) {
                                 $detail_display .= '<br><small>' . $uri . '</small>';
@@ -4902,3 +4884,4 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
         <?php
     }
 }
+

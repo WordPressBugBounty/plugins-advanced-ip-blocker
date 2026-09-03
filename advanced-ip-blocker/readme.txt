@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.3
+Stable tag: 8.13.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,17 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.3 =
-8.13.3 introduces a fully self-documented WP-CLI Interface and UI enhancements for FIM, Cloud Sync, and Audit Logging. It also resolves a critical false-positive issue blocking legitimate Android users (okhttp/Dalvik) and fixes WPCS warnings. Update now for improved stability and management.
+= 8.13.4 =
+8.13.4 adds a new URI exclusions setting for User-Agent blocking, granting granular control to bypass protections on specific API endpoints or webhooks. It also resolves a UI synchronization issue with the default blocked User-Agents list. Update now for improved accuracy.
 
 == Changelog ==
+
+= 8.13.4 =
+*   **ENHANCEMENT:** Added a new "User-Agent URI Exclusions" text box in Settings. Site administrators can now specify particular URIs (like `/wp-json/`) that will completely bypass User-Agent blocking and scoring, providing granular control for APIs and webhooks.
+*   **BUGFIX:** Unified the default User-Agent blocked list structure. The UI now dynamically syncs with the core configuration to guarantee both lists always reflect the same active protections, preventing legacy tools from being erroneously restored.
+*   **BUGFIX:** Fixed an issue where the "Whitelist Login Access" engine failed to generate a Security Log event when blocking a request. Added a dedicated "Login Whitelist" filter to the Security Logs UI.
+*   **ENHANCEMENT:** Standardized the plugin's branding signature ("Performance & security by Advanced IP Blocker") across all blocking screens, Captchas, and JS Challenges to improve brand visibility and consistency.
+*   **TWEAK:** Optimized the early-init login restrictions (Whitelist and Geo-blocking) to bypass the threat scoring system and 403-challenge interceptions, instantly blocking attackers and saving server resources.
 
 = 8.13.3 =
 *   **SECURITY:** Added Zero-Day WAF rules for recent critical vulnerabilities including All-in-One WP Migration SQLi (CVE-2026-19949) and Gravity Forms Arbitrary File Upload (CVE-2026-19513).

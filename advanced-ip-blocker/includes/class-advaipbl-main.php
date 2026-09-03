@@ -2779,13 +2779,17 @@ class ADVAIPBL_Main
             if (! $this->is_whitelisted($client_ip)) {
                 /* translators: %s is a placeholder */
                 $this->log_event(sprintf(__('Access to wp-login.php denied for non-whitelisted IP: %s', 'advanced-ip-blocker'), $client_ip), 'critical', ['ip' => $client_ip]);
+                $this->log_specific_error('login_whitelist_block', $client_ip, ['ip' => $client_ip, 'action' => 'Whitelist Login Access'], 'critical');
+
+                $this->error_handled_this_request = true;
 
                 if (!empty($this->options['enable_login_lockdown'])) {
                     $this->increment_login_lockdown_counter();
                 }
 
+                $branding_html = '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
                 wp_die(
-                    esc_html__('Access to this page has been restricted by the administrator.', 'advanced-ip-blocker'),
+                    wp_kses_post(esc_html__('Access to this page has been restricted by the administrator.', 'advanced-ip-blocker') . $branding_html),
                     esc_html__('Access Denied', 'advanced-ip-blocker'),
                     [ 'response' => 403 ]
                 );
@@ -2826,8 +2830,9 @@ class ADVAIPBL_Main
                     $this->increment_login_lockdown_counter();
                 }
 
+                $branding_html = '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
                 wp_die(
-                    esc_html__('Login access from your location is not allowed.', 'advanced-ip-blocker'),
+                    wp_kses_post(esc_html__('Login access from your location is not allowed.', 'advanced-ip-blocker') . $branding_html),
                     esc_html__('Access Denied', 'advanced-ip-blocker'),
                     [ 'response' => 403 ]
                 );
@@ -3133,8 +3138,21 @@ class ADVAIPBL_Main
         }
 
         if (!empty($this->options['enable_user_agent_blocking'])) {
-            $user_agent = $this->get_user_agent();
-            if (!empty($user_agent) && !$this->is_internal_request($user_agent)) {
+            $skip_ua = false;
+            if (!empty($this->options['ua_excluded_urls'])) {
+                $request_uri = $this->get_current_request_uri();
+                $excluded_uris = array_filter(array_map('trim', explode("\n", $this->options['ua_excluded_urls'])));
+                foreach ($excluded_uris as $uri) {
+                    if (stripos($request_uri, $uri) !== false) {
+                        $skip_ua = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$skip_ua) {
+                $user_agent = $this->get_user_agent();
+                if (!empty($user_agent) && !$this->is_internal_request($user_agent)) {
                 $is_ua_whitelisted = false;
                 $whitelisted_user_agents = get_option('advaipbl_whitelisted_user_agents', []);
                 if (!empty($whitelisted_user_agents)) {
@@ -3168,6 +3186,7 @@ class ADVAIPBL_Main
                     }
                 }
             }
+            } // Close if (!$skip_ua)
         }
 
         if (! empty($this->options['enable_waf'])) {
@@ -4368,6 +4387,10 @@ class ADVAIPBL_Main
             /* translators: %s is a placeholder */
             case 'login_geoblock': $message = sprintf(__('Login blocked by Location Whitelist from: %s', 'advanced-ip-blocker'), $details['country'] ?? 'N/A');
                 break;
+                
+            /* translators: %s is a placeholder */
+            case 'login_whitelist_block': $message = sprintf(__('Login blocked by IP Whitelist (IP: %s)', 'advanced-ip-blocker'), $details['ip'] ?? 'N/A');
+                break;
 
             /* translators: %s is a placeholder */
             case 'user_agent': $message = sprintf(__('Blocked due to User-Agent match: %s', 'advanced-ip-blocker'), $details['user_agent'] ?? 'N/A');
@@ -5215,6 +5238,9 @@ class ADVAIPBL_Main
             $display_message = $default_title . '<br>' . $default_body;
         }
 
+        $branding_html = '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
+        $display_message .= $branding_html;
+
         if ($is_xmlrpc_request) {
             if (!headers_sent()) {
                 header('HTTP/1.1 403 Forbidden');
@@ -5653,6 +5679,7 @@ class ADVAIPBL_Main
             'custom_block_message' => '<h1>' . esc_html__('Access Restricted', 'advanced-ip-blocker') . '</h1><br>' . esc_html__('Your request was blocked by the security firewall.', 'advanced-ip-blocker'),
             'excluded_error_urls' => implode("\n", $default_exclusions_404_403),
             'waf_excluded_urls' => implode("\n", $default_waf_exclusions),
+            'ua_excluded_urls' => '',
             'rows_per_page' => 20, 'delete_data_on_uninstall' => '0', 'show_admin_bar_menu' => '1',
             'trusted_proxies'    => "# Cloudflare\nAS13335\nAS209242\n# Fastly\nAS54113\n# Local Nginx/Varnish Proxy\n127.0.0.1\n::1",
 
@@ -6332,6 +6359,10 @@ class ADVAIPBL_Main
             ],
             'login_geoblock' => [
                 'label'         => __('Login Geoblock', 'advanced-ip-blocker'),
+                'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
+            ],
+            'login_whitelist_block' => [
+                'label'         => __('Login Whitelist', 'advanced-ip-blocker'),
                 'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
             ],
             'honeypot' => [

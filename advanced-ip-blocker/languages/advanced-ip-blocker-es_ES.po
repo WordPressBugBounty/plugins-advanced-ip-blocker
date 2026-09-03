@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-09-01 09:03+0200\n"
+"PO-Revision-Date: 2026-09-03 13:01+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10593,6 +10593,40 @@ msgstr "No hay detalles de la corrección disponibles."
 #: includes/class-advaipbl-site-scanner.php:637
 msgid "Remediation:"
 msgstr "Remediación:"
+
+#: includes/class-advaipbl-settings-manager.php:551
+msgid "User-Agent URI Exclusions"
+msgstr "Exclusiones de URI por User-Agent"
+
+#: includes/class-advaipbl-settings-manager.php:551
+msgid ""
+"Add one URL path or fragment per line. Requests containing these strings "
+"will completely bypass User-Agent blocking and scoring."
+msgstr ""
+"Añada una ruta de URL o un fragmento por línea. Las solicitudes que "
+"contengan estas cadenas eludirán por completo el bloqueo y la puntuación "
+"basados ​​en el User-Agent."
+
+#: includes/class-advaipbl-settings-manager.php:551
+msgid ""
+"<strong>Warning:</strong> Be as specific as possible to avoid inadvertently "
+"exposing your site to scraping and scanning."
+msgstr ""
+"<strong>Advertencia:</strong> Sea lo más específico posible para evitar "
+"exponer involuntariamente su sitio al *scraping* y al escaneo."
+
+#: includes/class-advaipbl-main.php includes/class-advaipbl-captcha-manager.php
+#: includes/class-advaipbl-js-challenge.php
+msgid "Performance &amp; security by"
+msgstr "Performance &amp; security by"
+
+#: includes/class-advaipbl-main.php
+msgid "Login blocked by IP Whitelist (IP: %s)"
+msgstr "Inicio de sesión bloqueado por la lista blanca de IP (IP: %s)"
+
+#: includes/class-advaipbl-main.php
+msgid "Login Whitelist"
+msgstr "Lista blanca de inicio de sesión"
 
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"
