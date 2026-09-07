@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-09-03 13:01+0200\n"
+"PO-Revision-Date: 2026-09-07 10:38+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10628,6 +10628,61 @@ msgstr "Inicio de sesión bloqueado por la lista blanca de IP (IP: %s)"
 msgid "Login Whitelist"
 msgstr "Lista blanca de inicio de sesión"
 
+#: includes/class-advaipbl-settings-manager.php:1316
+msgid "Deep Scan Chunk Size"
+msgstr "Tamaño de fragmento para análisis profundo"
+
+#: includes/class-advaipbl-settings-manager.php:1321
+msgid "Number of files to process per batch (Max 100)"
+msgstr "Número de archivos a procesar por lote (máx. 100)"
+
+#. translators: This refers to the File Integrity Monitor (Deep Scan) settings. A "chunk" is a batch of files sent to the server for processing.
+#: includes/class-advaipbl-settings-manager.php:1322
+msgid ""
+"Lower this value (e.g. 50 or 25) if your server times out during a Deep Scan."
+msgstr ""
+"Reduce este valor (por ejemplo, 50 o 25) si tu servidor agota el tiempo de "
+"espera durante un análisis profundo."
+
+#: includes/class-advaipbl-notification-manager.php:325
+msgid "[%1$s] Security Alert: Malware Auto-Quarantined"
+msgstr ""
+"[%1$s] Alerta de seguridad: Malware puesto en cuarentena automáticamente"
+
+#: includes/class-advaipbl-notification-manager.php:326
+msgid "Malware Auto-Quarantined"
+msgstr "Malware puesto en cuarentena automáticamente"
+
+#: includes/class-advaipbl-notification-manager.php:330
+msgid ""
+"The File Integrity Monitor has detected an exact malware signature match "
+"(MD5 or SHA256) and has automatically moved the malicious file to the "
+"quarantine vault to protect your site."
+msgstr ""
+"El monitor de integridad de archivos ha detectado una coincidencia exacta de "
+"firma de malware (MD5 o SHA256) y ha movido automáticamente el archivo "
+"malicioso a la zona de cuarentena para proteger su sitio."
+
+#: includes/class-advaipbl-notification-manager.php:332
+msgid "Quarantined File"
+msgstr "Archivo en cuarentena"
+
+#: includes/class-advaipbl-notification-manager.php:333
+msgid "Malware Signature"
+msgstr "Firma de malware"
+
+#: includes/class-advaipbl-notification-manager.php:335
+msgid ""
+"The file is safely disabled. You can review and delete it from the "
+"Quarantine Vault in the plugin dashboard."
+msgstr ""
+"El archivo se ha deshabilitado de forma segura. Puedes revisarlo y "
+"eliminarlo desde la bóveda de cuarentena en el panel del plugin."
+
+#: includes/class-advaipbl-notification-manager.php:337
+msgid "View Quarantine Vault"
+msgstr "Ver la bóveda de cuarentena"
+
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"
 #~ msgstr "Entrada %1$s bloqueada manualmente mediante WP-CLI. Motivo: %2$s"
@@ -10724,10 +10779,6 @@ msgstr "Lista blanca de inicio de sesión"
 #, php-format
 #~ msgid "%d old log records have been migrated to the new table."
 #~ msgstr "%d registros de log antiguos han sido migrados a la nueva tabla."
-
-#, php-format
-#~ msgid "[%s] Security Alert: IP Automatically Blocked"
-#~ msgstr "[%s] Alerta de Seguridad: IP Bloqueada Automáticamente"
 
 #~ msgid "Security Alert: IP Blocked"
 #~ msgstr "Alerta de seguridad: IP bloqueada"

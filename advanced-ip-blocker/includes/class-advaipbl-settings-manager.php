@@ -1315,6 +1315,22 @@ class ADVAIPBL_Settings_Manager
         );
 
         add_settings_field(
+            'advaipbl_fim_chunk_size',
+            __('Deep Scan Chunk Size', 'advanced-ip-blocker'),
+            [$this, 'number_field_callback'],
+            $page,
+            'advaipbl_internal_security_section',
+            [
+                'name' => 'fim_chunk_size',
+                'label' => __('Number of files to process per batch (Max 100)', 'advanced-ip-blocker'),
+                'description' => __('Lower this value (e.g. 50 or 25) if your server times out during a Deep Scan.', 'advanced-ip-blocker'),
+                'default' => 100,
+                'min' => 10,
+                'max' => 100
+            ]
+        );
+
+        add_settings_field(
             'advaipbl_fim_enable_domains',
             __('Enable Domain Signatures', 'advanced-ip-blocker'),
             [$this, 'switch_field_callback'],
@@ -1436,6 +1452,11 @@ class ADVAIPBL_Settings_Manager
             if (isset($input[$field])) {
                 $new_input[$field] = absint($input[$field]);
             }
+        }
+
+        if (isset($input['fim_chunk_size'])) {
+            $chunk_size = absint($input['fim_chunk_size']);
+            $new_input['fim_chunk_size'] = max(10, min(100, $chunk_size));
         }
 
         $checkbox_fields = [
@@ -1652,6 +1673,33 @@ class ADVAIPBL_Settings_Manager
                 esc_attr($class)
             );
         }
+
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo $this->get_help_link_html($args);
+
+        if (isset($args['description'])) {
+            echo '<p class="description">' . wp_kses_post($args['description']) . '</p>';
+        }
+    }
+
+    public function number_field_callback($args)
+    {
+        $value = $this->plugin->options[$args['name']] ?? $args['default'] ?? '';
+        $class = $args['class'] ?? '';
+        $min = isset($args['min']) ? 'min="' . esc_attr($args['min']) . '"' : '';
+        $max = isset($args['max']) ? 'max="' . esc_attr($args['max']) . '"' : '';
+
+        printf(
+            '<input type="number" id="%1$s" name="%2$s" value="%3$s" %4$s %5$s class="regular-text %6$s" />',
+            esc_attr($args['name']),
+            esc_attr('advaipbl_settings[' . $args['name'] . ']'),
+            esc_attr($value),
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            $min,
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            $max,
+            esc_attr($class)
+        );
 
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         echo $this->get_help_link_html($args);

@@ -2369,6 +2369,7 @@ class ADVAIPBL_Main
                 wp_enqueue_script('advaipbl-integrity-scanner', plugin_dir_url(dirname(__FILE__)) . 'js/advaipbl-integrity-scanner-v2.js', ['jquery', 'advaipbl-admin-core-js'], filemtime(plugin_dir_path(dirname(__FILE__)) . 'js/advaipbl-integrity-scanner-v2.js'), true);
                 wp_localize_script('advaipbl-integrity-scanner', 'advaipbl_fim_vars', [
                     'nonce' => wp_create_nonce('advaipbl_admin_ajax_nonce'),
+                    'chunk_size' => isset($this->options['fim_chunk_size']) ? (int) $this->options['fim_chunk_size'] : 100,
                     'update_url' => admin_url('update-core.php'),
                     'i18n'  => [
                         'gathering'          => __('Gathering File List...', 'advanced-ip-blocker'),
@@ -5795,6 +5796,7 @@ class ADVAIPBL_Main
             'fim_alert_email' => '',
             'fim_scan_frequency' => 'daily',
             'fim_excluded_paths' => '',
+            'fim_chunk_size' => 100,
 
             'disable_imagick'        => '0',
             'remove_x_powered_by'    => '0',

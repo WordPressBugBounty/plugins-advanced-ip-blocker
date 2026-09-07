@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.4
+Stable tag: 8.13.5
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,19 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.4 =
-8.13.4 adds a new URI exclusions setting for User-Agent blocking, granting granular control to bypass protections on specific API endpoints or webhooks. It also resolves a UI synchronization issue with the default blocked User-Agents list. Update now for improved accuracy.
+= 8.13.5 =
+Critical update! Features a 200x faster Deep Scanner, auto-quarantine for MD5/SHA256 malware, and fixes for RAW signature false positives. Includes new safeguards preventing core file breakage and configurable batch sizes for low-resource hosts.
 
 == Changelog ==
+
+= 8.13.5 =
+* **PERFORMANCE:** Massive 200x speed optimization in the File Integrity Monitor (FIM). Over 10,000 RegEx malware signatures are now compiled dynamically into a single unified pattern to prevent Deep Scan timeouts.
+* **NEW FEATURE:** FIM now automatically quarantines highly confident threats (MD5 & SHA256 matches) immediately upon detection, accompanied by an automatic email/push notification alert.
+* **NEW FEATURE:** Added a configurable "Deep Scan Chunk Size" setting under Internal Security. Users on shared hosting can now lower the batch size to completely prevent server execution timeouts during deep scans.
+* **SECURITY:** Built a new anti-breakage safeguard into the FIM Engine. The scanner strictly protects WordPress core files (e.g., wp-config.php, index.php), active themes, and plugins from being auto-quarantined to prevent site downtime.
+* **BUGFIX:** Resolved a false-positive issue in FIM caused by structural changes in the upstream signatures payload format.
+* **TWEAK:** Expanded default FIM exclusions to include safe cache/backup directories (advaipbl-backups, redux, wpforms) to prevent empty index.php false positives.
+* **SECURITY:** Added Zero-Day WAF rules.
 
 = 8.13.4 =
 *   **ENHANCEMENT:** Added a new "User-Agent URI Exclusions" text box in Settings. Site administrators can now specify particular URIs (like `/wp-json/`) that will completely bypass User-Agent blocking and scoring, providing granular control for APIs and webhooks.
@@ -342,3 +351,5 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 *   **BUGFIX:** Updated hardcoded URLs in email templates and system redirects to correctly point to the new top-level `admin.php` menu structure instead of the legacy `options-general.php` location.
 *   **IMPROVEMENT:** Removed emojis from WordPress admin notices and email templates to prevent character encoding issues on certain server environments, keeping them exclusively for push webhook notifications (Slack, Discord, etc.).
 *   **IMPROVEMENT:** The "Unblock ALL IPs" bulk action now properly resets the Threat Score of all unblocked IPs to 0, ensuring consistent UX with individual unblocking and preventing immediate re-blocking upon minor infractions.
+
+

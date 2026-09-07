@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.4\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.5\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -8992,4 +8992,45 @@ msgstr ""
 
 #: includes/class-advaipbl-main.php
 msgid "Login Whitelist"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1316
+msgid "Deep Scan Chunk Size"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:1321
+msgid "Number of files to process per batch (Max 100)"
+msgstr ""
+
+#. translators: This refers to the File Integrity Monitor (Deep Scan) settings. A "chunk" is a batch of files sent to the server for processing.
+#: includes/class-advaipbl-settings-manager.php:1322
+msgid "Lower this value (e.g. 50 or 25) if your server times out during a Deep Scan."
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:325
+msgid "[%1$s] Security Alert: Malware Auto-Quarantined"
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:326
+msgid "Malware Auto-Quarantined"
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:330
+msgid "The File Integrity Monitor has detected an exact malware signature match (MD5 or SHA256) and has automatically moved the malicious file to the quarantine vault to protect your site."
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:332
+msgid "Quarantined File"
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:333
+msgid "Malware Signature"
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:335
+msgid "The file is safely disabled. You can review and delete it from the Quarantine Vault in the plugin dashboard."
+msgstr ""
+
+#: includes/class-advaipbl-notification-manager.php:337
+msgid "View Quarantine Vault"
 msgstr ""

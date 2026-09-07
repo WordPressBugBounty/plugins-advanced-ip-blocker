@@ -309,7 +309,8 @@ class ADVAIPBL_File_Verifier
         $body_content .= '<p><em>' . esc_html__('The baseline has been updated to these new versions.', 'advanced-ip-blocker') . '</em></p>';
 
         if (isset($this->main_instance->notification_manager)) {
-            $body = $this->main_instance->notification_manager->get_html_email_template($template_title, $body_content);
+            $fim_settings_url = admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-internal_security');
+            $body = $this->main_instance->notification_manager->get_html_email_template($template_title, $body_content, $fim_settings_url);
 
             add_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
             wp_mail($to, $subject, $body);

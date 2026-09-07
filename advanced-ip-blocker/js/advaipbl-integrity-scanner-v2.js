@@ -2,7 +2,7 @@ jQuery(document).ready(function($) {
     var filesToScan = [];
     var totalFiles = 0;
     var scannedFilesCount = 0;
-    var chunkSize = 100;
+    var chunkSize = advaipbl_fim_vars.chunk_size || 100;
     
     var cleanCount = 0;
     var modifiedCount = 0;
@@ -322,7 +322,12 @@ jQuery(document).ready(function($) {
             var actionsHtml = '<button type="button" class="button advaipbl-add-whitelist-btn" data-path="' + res.rel_path + '">' + advaipbl_fim_vars.i18n.mark_safe + '</button>';
             
             if (res.type === 'upload_php' || res.type === 'deep_scan_file' || res.type === 'high_risk') {
-                if (res.rel_path.indexOf('wp-content/plugins/') !== 0 && res.rel_path.indexOf('wp-admin/') !== 0 && res.rel_path.indexOf('wp-includes/') !== 0 && res.rel_path.indexOf('wp-content/themes/') !== 0) {
+                var isRootFile = (res.rel_path.indexOf('/') === -1);
+                var isThemeFunctions = (res.rel_path.indexOf('wp-content/themes/') === 0 && res.rel_path.endsWith('/functions.php'));
+                var isCriticalCore = ['wp-config.php', 'wp-settings.php', 'wp-load.php', 'index.php', '.htaccess', 'php.ini', '.user.ini'].indexOf(res.rel_path) !== -1;
+                var isProtectedAdminIncludes = (res.rel_path.indexOf('wp-admin/') === 0 || res.rel_path.indexOf('wp-includes/') === 0 || res.rel_path.indexOf('wp-content/plugins/') === 0);
+
+                if (!isRootFile && !isThemeFunctions && !isCriticalCore && !isProtectedAdminIncludes) {
                     actionsHtml += ' <button type="button" class="button advaipbl-quarantine-btn" style="color: #d63638; border-color: #d63638; margin-left: 5px;" data-path="' + res.rel_path + '" data-malware="' + res.malware + '">' + advaipbl_fim_vars.i18n.quarantine_btn + '</button>';
                 }
             }
