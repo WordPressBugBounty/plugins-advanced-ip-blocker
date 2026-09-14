@@ -2954,7 +2954,7 @@ $default_waf_rules_list = [
                 <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: center; margin-top: 20px;">
                     <div>
                         <stripe-buy-button
-                            buy-button-id="buy_btn_1RaKehINpxSnWCEmchYRAa51"
+                            buy-button-id="buy_btn_1UEvUVINpxSnWCEmXWxHexeK"
                             publishable-key="pk_live_51RaIn8INpxSnWCEmruyFaKF1LquLWcjRN3huLYpvWq5WvVxf50ZyX50OF7PI6tkIUGwNeINduiIJxJzC9zxFHkOL00X3REvrtt"
                         ></stripe-buy-button>
                     </div>
@@ -2962,7 +2962,7 @@ $default_waf_rules_list = [
                        <h2><?php esc_html_e('You are free to choose the amount you donate.', 'advanced-ip-blocker'); ?></h2>
                         <p><strong><?php esc_html_e('Other ways to support:', 'advanced-ip-blocker'); ?></strong></p>
                         <ul style="list-style: disc; padding-left: 20px;">
-                            <li><a href="https://donate.stripe.com/bJe00kaIP89O1wFfargUM00" target="_blank" rel="noopener">Stripe</a></li>
+                            <li><a href="https://donate.stripe.com/14AdRa04bgGk7V35zRgUM01" target="_blank" rel="noopener">Stripe</a></li>
                             <li><strong><?php esc_html_e('Bitcoin (BTC):', 'advanced-ip-blocker'); ?></strong> <code style="background: #f0f0f1; padding: 2px 4px; border-radius: 3px;">bc1qxfsmpqk0q7an82ckm7380pzpsea2sa294824lg</code></li>
                             <li><strong><?php esc_html_e('Ethereum (ETH):', 'advanced-ip-blocker'); ?></strong> <code style="background: #f0f0f1; padding: 2px 4px; border-radius: 3px;">0xAF8CC1B71EAbF5dffDa2aF58AEF43b2559163284</code></li>
                         </ul>
@@ -3950,6 +3950,7 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
                                     <option value="challenge_turnstile"><?php esc_html_e('Cloudflare Turnstile', 'advanced-ip-blocker'); ?></option>
                                     <option value="challenge_hcaptcha"><?php esc_html_e('hCaptcha', 'advanced-ip-blocker'); ?></option>
                                     <option value="score"><?php esc_html_e('Add Threat Score', 'advanced-ip-blocker'); ?></option>									
+                                    <option value="rate_limit"><?php esc_html_e('Rate Limit', 'advanced-ip-blocker'); ?></option>
                                 </select>
                             </td>
                         </tr>
@@ -3988,6 +3989,7 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
                 <option value="header"><?php esc_html_e('Request Header', 'advanced-ip-blocker'); ?></option>
                 <option value="payload"><?php esc_html_e('Payload / Request Body', 'advanced-ip-blocker'); ?></option>
                 <option value="query_string"><?php esc_html_e('Query String', 'advanced-ip-blocker'); ?></option>
+                <option value="requires_version"><?php esc_html_e('Requires Plugin Version', 'advanced-ip-blocker'); ?></option>
             </select>
             <div class="condition-target-container" style="display:none; margin-right: 5px;"></div>
             <select class="condition-operator"></select>

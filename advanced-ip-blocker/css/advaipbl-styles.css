@@ -1,6 +1,6 @@
 /**
  * Advanced IP Blocker - Admin Panel Styles
- * Version: 8.13.5
+ * Version: 8.13.6
  */
 
 /* ==========================================================================
@@ -649,3 +649,10 @@
 #advaipbl-attack-map .leaflet-layer {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
+
+/* Fix for long Regex strings in Advanced Rules breaking out of their containers */
+.rule-component-value {
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+

@@ -74,8 +74,11 @@ class ADVAIPBL_Rules_Engine
         $sanitized_rule['name'] = isset($rule_data['name']) ? sanitize_text_field($rule_data['name']) : 'Untitled Rule';
         $sanitized_rule['is_active'] = isset($rule_data['is_active']) ? filter_var($rule_data['is_active'], FILTER_VALIDATE_BOOLEAN) : true;
 
-        $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha', 'score', 'allow'];
-        $sanitized_rule['action'] = isset($rule_data['action']) && in_array($rule_data['action'], $allowed_actions, true) ? $rule_data['action'] : 'block';
+        $allowed_actions = ['block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha', 'score', 'allow', 'rate_limit'];
+        if (!isset($rule_data['action']) || !in_array($rule_data['action'], $allowed_actions, true)) {
+            return false; // Fail-safe: Reject the entire rule if the action is unknown
+        }
+        $sanitized_rule['action'] = $rule_data['action'];
 
         $sanitized_rule['action_params'] = [];
         if (isset($rule_data['action_params']) && is_array($rule_data['action_params'])) {
@@ -85,6 +88,19 @@ class ADVAIPBL_Rules_Engine
             if (isset($rule_data['action_params']['points'])) {
                 $sanitized_rule['action_params']['points'] = absint($rule_data['action_params']['points']);
             }
+            if (isset($rule_data['action_params']['limit'])) {
+                $sanitized_rule['action_params']['limit'] = absint($rule_data['action_params']['limit']);
+            }
+            if (isset($rule_data['action_params']['window'])) {
+                $sanitized_rule['action_params']['window'] = absint($rule_data['action_params']['window']);
+            }
+            if (isset($rule_data['action_params']['fallback_action'])) {
+                $allowed_fallbacks = ['429', 'block', 'challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha'];
+                $sanitized_rule['action_params']['fallback_action'] = in_array($rule_data['action_params']['fallback_action'], $allowed_fallbacks, true) ? $rule_data['action_params']['fallback_action'] : '429';
+            }
+            if (isset($rule_data['action_params']['fallback_duration'])) {
+                $sanitized_rule['action_params']['fallback_duration'] = absint($rule_data['action_params']['fallback_duration']);
+            }
         }
 
         if (!isset($rule_data['conditions']) || !is_array($rule_data['conditions']) || empty($rule_data['conditions'])) {
@@ -92,7 +108,7 @@ class ADVAIPBL_Rules_Engine
         }
 
         $sanitized_rule['conditions'] = [];
-        $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header', 'payload', 'query_string'];
+        $allowed_types = ['ip', 'ip_range', 'country', 'asn', 'hostname', 'uri', 'user_agent', 'username', 'request_method', 'referer', 'cookie', 'header', 'payload', 'query_string', 'requires_version'];
         $allowed_operators = ['is', 'is_not', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'matches_regex', 'is_empty', 'is_not_empty'];
 
         foreach ($rule_data['conditions'] as $condition) {
@@ -100,12 +116,12 @@ class ADVAIPBL_Rules_Engine
                 !isset($condition['type']) || !in_array($condition['type'], $allowed_types, true) ||
                 !isset($condition['operator']) || !in_array($condition['operator'], $allowed_operators, true)
             ) {
-                continue;
+                return false; // Fail-safe: Reject the entire rule instead of dropping the condition
             }
 
             if (!in_array($condition['operator'], ['is_empty', 'is_not_empty'], true)) {
                 if (!isset($condition['value']) || $condition['value'] === '') {
-                    continue;
+                    return false; // Fail-safe: Reject the entire rule instead of dropping the condition
                 }
             }
 
@@ -379,6 +395,8 @@ class ADVAIPBL_Rules_Engine
                 // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
                 $subject = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
                 break;
+            case 'requires_version':
+                return version_compare(ADVAIPBL_VERSION, $value, '>=');
             default:
                 return false;
         }
@@ -458,6 +476,25 @@ class ADVAIPBL_Rules_Engine
         ];
 
         switch ($action) {
+            case 'rate_limit':
+                $limit = isset($params['limit']) ? (int)$params['limit'] : 30;
+                $window = isset($params['window']) ? (int)$params['window'] : 60;
+                $fallback = isset($params['fallback_action']) ? $params['fallback_action'] : '429';
+                $fallback_duration = isset($params['fallback_duration']) ? (int)$params['fallback_duration'] : 1440;
+
+                if ($this->plugin->rate_limit_manager->check_advanced_rate_limit($ip, $rule['id'], $limit, $window)) {
+                    if ($fallback === '429') {
+                        $log_data = ['rule_id' => $rule['id'], 'rule_name' => $rule_name, 'uri' => $this->plugin->get_current_request_uri(), 'hits' => $limit, 'limit' => $limit];
+                        $this->plugin->log_specific_error('advanced_rule_rate_limit', $ip, $log_data);
+                        $this->plugin->rate_limit_manager->serve_429_response($window);
+                        return true;
+                    } else {
+                        $rule['action'] = $fallback;
+                        $rule['action_params']['duration'] = $fallback_duration;
+                        return $this->execute_action($rule, $ip);
+                    }
+                }
+                return false;
             case 'allow':
                 $this->plugin->log_specific_error(
                     'advanced_rule_allow',
@@ -538,3 +575,7 @@ class ADVAIPBL_Rules_Engine
         }
     }
 }
+
+
+
+

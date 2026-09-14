@@ -726,7 +726,11 @@ class ADVAIPBL_Ajax_Handler
 
         if (isset($this->plugin->rules_metrics)) {
             foreach ($rules_for_page as &$rule) {
-                $rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($rule['id']);
+                if (isset($rule['id'])) {
+                    $rule['metrics'] = $this->plugin->rules_metrics->get_rule_metrics($rule['id']);
+                } else {
+                    $rule['metrics'] = [];
+                }
             }
         }
 
@@ -826,7 +830,9 @@ class ADVAIPBL_Ajax_Handler
             wp_send_json_error(['message' => __('Invalid rule ID.', 'advanced-ip-blocker')]);
         }
 
-        if ($this->plugin->rules_engine->delete_rule($rule_id)) {
+        if (strpos($rule_id, 'ar_zd_') === 0) {
+            wp_send_json_error(['message' => __('Cloud rules are centrally managed and cannot be deleted from the local plugin.', 'advanced-ip-blocker')]);
+        } elseif ($this->plugin->rules_engine->delete_rule($rule_id)) {
             wp_send_json_success(['message' => __('Rule deleted successfully.', 'advanced-ip-blocker')]);
         } else {
             wp_send_json_error(['message' => __('Failed to delete rule. It may have already been deleted.', 'advanced-ip-blocker')]);

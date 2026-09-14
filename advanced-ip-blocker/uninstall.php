@@ -262,7 +262,7 @@ function advaipbl_process_site_uninstallation() {
         'advaipbl_zeroday_sync_event',
         'advaipbl_zeroday_version_check_event',
         'advaipbl_advanced_zeroday_sync_event',
-        'advaipbl_advanced_version_check_event',
+        'advaipbl_advanced_zeroday_version_check_event',
         'advaipbl_fim_signatures_sync_event',
         'advaipbl_fim_signatures_version_check_event'
     ];

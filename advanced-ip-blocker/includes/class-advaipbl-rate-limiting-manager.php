@@ -132,6 +132,26 @@ class ADVAIPBL_Rate_Limiting_Manager
         }
     }
 
+    
+    public function check_advanced_rate_limit($ip, $rule_id, $limit, $window)
+    {
+        $transient_name = 'advaipbl_rl_' . md5($ip . '_' . $rule_id);
+        $current_hits = (int) get_transient($transient_name);
+
+        if ($current_hits >= $limit) {
+            return true;
+        }
+
+        // Increment hit counter
+        if ($current_hits === 0) {
+            set_transient($transient_name, 1, $window);
+        } else {
+            set_transient($transient_name, $current_hits + 1, $window);
+        }
+
+        return false;
+    }
+
     private function serve_429_response($retry_after = 60)
     {
         if (!headers_sent()) {
@@ -146,3 +166,5 @@ class ADVAIPBL_Rate_Limiting_Manager
         exit;
     }
 }
+
+

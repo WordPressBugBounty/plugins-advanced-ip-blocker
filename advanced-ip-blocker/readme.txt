@@ -1,12 +1,12 @@
 === Advanced IP Blocker ===
 Contributors: inilerm
 Author URI: https://advaipbl.com/
-Donate link: https://donate.stripe.com/bJe00kaIP89O1wFfargUM00
+Donate link: https://donate.stripe.com/14AdRa04bgGk7V35zRgUM01
 Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.5
+Stable tag: 8.13.6
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,18 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.5 =
-Critical update! Features a 200x faster Deep Scanner, auto-quarantine for MD5/SHA256 malware, and fixes for RAW signature false positives. Includes new safeguards preventing core file breakage and configurable batch sizes for low-resource hosts.
+= 8.13.6 =
+Critical update! Introduces Advanced Rate Limiting with dynamic fallbacks (Challenges, 403, 429) to mitigate DoS attacks. Fixes UI bugs in the Rules Engine and hardens WAF rules against false positives.
 
 == Changelog ==
+
+= 8.13.6 =
+* **NEW FEATURE:** Rate Limiting in Advanced Rules. You can now apply granular rate limits (reqs/secs) to specific URIs or payloads.
+* **NEW FEATURE:** Dynamic Rate Limit Fallbacks. Define custom penalty actions (e.g., Turnstile Challenge, 403 Block, or 429 Slow Down) when a rate limit is exceeded.
+* **ENHANCEMENT:** Hardened Zero-Day WAF Generic rules for XSS and SQLi to drastically reduce false positives on valid payloads.
+* **BUGFIX:** Fixed a pagination bug in the Advanced Rules UI that prevented editing rules on pages 2 and beyond.
+* **BUGFIX:** Fixed a CSS layout issue where very long Regex payloads caused the action buttons to break out of their container.
+* **BUGFIX:** Patched the rules evaluation engine loop that caused premature termination on non-blocking actions.
 
 = 8.13.5 =
 * **PERFORMANCE:** Massive 200x speed optimization in the File Integrity Monitor (FIM). Over 10,000 RegEx malware signatures are now compiled dynamically into a single unified pattern to prevent Deep Scan timeouts.

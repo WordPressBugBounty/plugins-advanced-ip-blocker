@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.5\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.6\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -7288,7 +7288,7 @@ msgid "Minimum Threat Score"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:467
-msgid "Only import IPs that have been reported by at least this many unique community members. (Default: 1)"
+msgid "Only import IPs that have been reported by at least this many unique community members. (Default: 3)"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:474
@@ -9033,4 +9033,8 @@ msgstr ""
 
 #: includes/class-advaipbl-notification-manager.php:337
 msgid "View Quarantine Vault"
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php:830
+msgid "Cloud rules are centrally managed and cannot be deleted from the local plugin."
 msgstr ""

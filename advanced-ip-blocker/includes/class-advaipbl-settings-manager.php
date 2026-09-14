@@ -463,8 +463,8 @@ class ADVAIPBL_Settings_Manager
             'advaipbl_community_network_section',
             [
                 'name' => 'community_min_score',
-                'default' => 1,
-                'description' => __('Only import IPs that have been reported by at least this many unique community members. (Default: 1)', 'advanced-ip-blocker')
+                'default' => 3,
+                'description' => __('Only import IPs that have been reported by at least this many unique community members. (Default: 3)', 'advanced-ip-blocker')
             ]
         );
 

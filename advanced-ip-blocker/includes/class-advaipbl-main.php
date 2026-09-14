@@ -1454,12 +1454,13 @@ class ADVAIPBL_Main
             return;
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/zero-day';
+        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/zero-day?v=' . ADVAIPBL_VERSION;
 
         $response = wp_remote_get($api_url, [
             'headers' => [
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
-                'Accept'        => 'application/json'
+                'Accept'        => 'application/json',
+                'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
             ],
             'timeout' => 30
         ]);
@@ -1515,7 +1516,8 @@ class ADVAIPBL_Main
         $response = wp_remote_get($api_url, [
             'headers' => [
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
-                'Accept'        => 'application/json'
+                'Accept'        => 'application/json',
+                'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
             ],
             'timeout' => 10
         ]);
@@ -1554,12 +1556,13 @@ class ADVAIPBL_Main
             return;
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/advanced-zero-day';
+        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/advanced-zero-day?v=' . ADVAIPBL_VERSION;
 
         $response = wp_remote_get($api_url, [
             'headers' => [
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
-                'Accept'        => 'application/json'
+                'Accept'        => 'application/json',
+                'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
             ],
             'timeout' => 30
         ]);
@@ -1618,7 +1621,8 @@ class ADVAIPBL_Main
         $response = wp_remote_get($api_url, [
             'headers' => [
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
-                'Accept'        => 'application/json'
+                'Accept'        => 'application/json',
+                'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
             ],
             'timeout' => 10
         ]);
@@ -1657,12 +1661,13 @@ class ADVAIPBL_Main
             return 'Central API Token V3 not configured.';
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/fim/signatures';
+        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/fim/signatures?v=' . ADVAIPBL_VERSION;
 
         $response = wp_remote_get($api_url, [
             'headers' => [
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
-                'Accept'        => 'application/json'
+                'Accept'        => 'application/json',
+                'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
             ],
             'timeout' => 30
         ]);
@@ -1746,7 +1751,8 @@ class ADVAIPBL_Main
         $response = wp_remote_get($api_url, [
             'headers' => [
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
-                'Accept'        => 'application/json'
+                'Accept'        => 'application/json',
+                'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
             ],
             'timeout' => 10
         ]);
@@ -3633,6 +3639,10 @@ class ADVAIPBL_Main
                 $this->auto_migrate_default_exclusions_8_11_9();
             }
 
+            if (version_compare($installed_plugin_ver, '8.13.6', '<') && $installed_plugin_ver !== '0.0.0') {
+                $this->auto_migrate_8_13_6();
+            }
+
             update_option('advaipbl_version_installed', ADVAIPBL_VERSION);
         }
 
@@ -3687,6 +3697,43 @@ class ADVAIPBL_Main
             update_option(self::OPTION_SETTINGS, $settings);
             $this->options = $settings;
             $this->log_event('Successfully injected v8.11.9 default URL exclusions into existing settings.', 'info');
+        }
+    }
+
+    /**
+     * Automatic migration for version 8.13.6.
+     * Safely updates the community_min_score and cleans false-positive User-Agents.
+     */
+    private function auto_migrate_8_13_6()
+    {
+        // 1. Migrate Blocked User Agents
+        $blocked_uas = get_option(self::OPTION_BLOCKED_UAS, []);
+        $ua_updated = false;
+        
+        if (is_array($blocked_uas) && !empty($blocked_uas)) {
+            foreach ($blocked_uas as $key => $ua) {
+                $ua_trimmed = trim($ua);
+                if ($ua_trimmed === 'Dalvik/' || $ua_trimmed === 'okhttp' || $ua_trimmed === 'okhttp/') {
+                    // Comment out the false positive instead of deleting it, so the user knows what happened
+                    $blocked_uas[$key] = '# ' . ltrim($ua_trimmed, '# ') . ' # Removed by AIB update (false positive)';
+                    $ua_updated = true;
+                }
+            }
+            if ($ua_updated) {
+                update_option(self::OPTION_BLOCKED_UAS, $blocked_uas);
+                $this->log_event('Migrated blocked user agents to remove Dalvik/okhttp false positives.', 'info');
+            }
+        }
+
+        // 2. Migrate Minimum Threat Score
+        $settings = get_option(self::OPTION_SETTINGS, []);
+        if (is_array($settings) && isset($settings['community_min_score'])) {
+            if ((int)$settings['community_min_score'] === 1) {
+                $settings['community_min_score'] = 3;
+                update_option(self::OPTION_SETTINGS, $settings);
+                $this->options = $settings;
+                $this->log_event('Migrated community_min_score from 1 to 3.', 'info');
+            }
         }
     }
 
@@ -4411,6 +4458,14 @@ class ADVAIPBL_Main
             case 'aib_network_challenge':
                 $message = __('Visitor challenged by AIB Community Intelligence.', 'advanced-ip-blocker');
                 break;
+            case 'advanced_rule_rate_limit':
+                /* translators: %s is a placeholder */
+                $message = sprintf(__('Rate limit exceeded by Advanced Rule: %s', 'advanced-ip-blocker'), $details['rule_name'] ?? 'N/A');
+                break;
+            case 'advanced_rule_challenge':
+                /* translators: %s is a placeholder */
+                $message = sprintf(__('Challenged by Advanced Rule: %s', 'advanced-ip-blocker'), $details['rule_name'] ?? 'N/A');
+                break;
             case 'advanced_rule':
                 if ($level === 'critical') {
                     /* translators: %s is a placeholder */
@@ -4834,6 +4889,14 @@ class ADVAIPBL_Main
                 break;
             case 'threat_score':
                 $reason = $extra_data['_reason'] ?? __('Threat score threshold exceeded', 'advanced-ip-blocker');
+                break;
+            case 'advanced_rule_rate_limit':
+                /* translators: %s is a placeholder */
+                $reason = sprintf(__('Rate limit exceeded by Advanced Rule: %s', 'advanced-ip-blocker'), $extra_data['rule_name'] ?? 'N/A');
+                break;
+            case 'advanced_rule_challenge':
+                /* translators: %s is a placeholder */
+                $reason = sprintf(__('Challenged by Advanced Rule: %s', 'advanced-ip-blocker'), $extra_data['rule_name'] ?? 'N/A');
                 break;
             case 'advanced_rule':
 
@@ -5716,7 +5779,7 @@ class ADVAIPBL_Main
             'enable_community_blocking' => '1',
             'community_blocking_action' => 'block',
             'duration_aib_network' => 1440,
-            'community_min_score' => 1,
+            'community_min_score' => 3,
 
             'enable_abuseipdb' => '0',
             'abuseipdb_api_key' => '',
@@ -6499,6 +6562,10 @@ class ADVAIPBL_Main
                 'option_key'    => null,
                 'duration_key'  => null,
                 'uses_transient' => true
+            ],
+            'advanced_rule_rate_limit' => [
+                'label'         => __('Advanced Rule Rate Limit', 'advanced-ip-blocker'),
+                'option_key'    => null, 'duration_key' => null, 'uses_transient' => false
             ],
             'advanced_rule_challenge' => [
                 'label'         => __('Advanced Rule Challenge', 'advanced-ip-blocker'),

@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-09-07 10:38+0200\n"
+"PO-Revision-Date: 2026-09-13 10:50+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -8455,10 +8455,10 @@ msgstr "Puntuación mínima de amenaza"
 #: includes/class-advaipbl-settings-manager.php:467
 msgid ""
 "Only import IPs that have been reported by at least this many unique "
-"community members. (Default: 1)"
+"community members. (Default: 3)"
 msgstr ""
 "Importar únicamente las direcciones IP que hayan sido reportadas por al "
-"menos esta cantidad de miembros únicos de la comunidad. (Predeterminado: 1)"
+"menos esta cantidad de miembros únicos de la comunidad. (Predeterminado: 3)"
 
 #: includes/class-advaipbl-settings-manager.php:474
 msgid "API Provider"
@@ -10682,6 +10682,14 @@ msgstr ""
 #: includes/class-advaipbl-notification-manager.php:337
 msgid "View Quarantine Vault"
 msgstr "Ver la bóveda de cuarentena"
+
+#: includes/class-advaipbl-ajax-handler.php:830
+msgid ""
+"Cloud rules are centrally managed and cannot be deleted from the local "
+"plugin."
+msgstr ""
+"Las reglas en la nube se gestionan de forma centralizada y no se pueden "
+"eliminar desde el plugin local."
 
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"

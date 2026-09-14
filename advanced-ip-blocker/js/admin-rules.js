@@ -305,6 +305,13 @@ jQuery(document).ready(function ($) {
         function updateOperatorDropdown(conditionRow) {
             const type = conditionRow.find('.condition-type').val();
             const operatorDropdown = conditionRow.find('.condition-operator');
+            
+            if (type === 'requires_version') {
+                operatorDropdown.empty();
+                operatorDropdown.append($('<option>', { value: 'is', text: '>=' }));
+                return;
+            }
+
             let ops = [...operators.string];
             if (type === 'ip' || type === 'request_method') ops = [...operators.ip];
             if (type === 'ip_range' || type === 'country' || type === 'asn') ops = [...operators.ip_range];
@@ -400,6 +407,9 @@ jQuery(document).ready(function ($) {
                 paramsContainer.html('<input type="number" id="param-duration" class="small-text" min="0"> minutes. <span class="description">(Set to 0 for a permanent block)</span>');
             } else if (action === 'score') {
                 paramsContainer.html('<input type="number" id="param-points" class="small-text" min="1" value="10"> points.');
+            } else if (action === 'rate_limit') {
+                paramsContainer.html('<input type="number" id="param-limit" class="small-text" min="1" value="30"> reqs / <input type="number" id="param-window" class="small-text" min="1" value="60"> secs &rarr; <select id="param-fallback-action"><option value="429">429 Slow Down</option><option value="block">403 Block</option><option value="challenge">Managed JS Challenge</option><option value="challenge_automatic">Automatic JS Challenge</option><option value="challenge_turnstile">Cloudflare Turnstile</option><option value="challenge_hcaptcha">hCaptcha</option></select> <span id="param-fallback-duration-container" style="display:none;"><input type="number" id="param-fallback-duration" class="small-text" min="0" value="1440"> min</span>');
+                $('#param-fallback-action').on('change', function() { if ($(this).val() === 'block') { $('#param-fallback-duration-container').show(); } else { $('#param-fallback-duration-container').hide(); } });
             } else {
                 $('#advaipbl-rule-action-params-row').hide();
             }
@@ -638,7 +648,7 @@ jQuery(document).ready(function ($) {
         $('#advaipbl-add-condition-btn').on('click', addConditionRow);
         $('#advaipbl-rule-action').on('change', updateActionParams);
 
-        $('#advaipbl-save-rule-btn').on('click', function () { const button = $(this); button.prop('disabled', true); const feedback = $('#advaipbl-rule-builder-feedback'); feedback.text('Saving...').css('color', ''); const rule = { id: $('#advaipbl-rule-id').val(), name: $('#advaipbl-rule-name').val().trim(), conditions: [], action: $('#advaipbl-rule-action').val(), action_params: {} }; if (!rule.name) { feedback.text('Rule name is required.').css('color', 'red'); button.prop('disabled', false); return; } conditionsContainer.find('.advaipbl-condition-row').each(function () { const row = $(this); rule.conditions.push({ type: row.find('.condition-type').val(), target: row.find('.condition-target').val() || '', operator: row.find('.condition-operator').val(), value: row.find('.condition-value').val() }); }); if (rule.action === 'block') rule.action_params.duration = parseInt($('#param-duration').val()) || 0; if (rule.action === 'score') rule.action_params.points = parseInt($('#param-points').val()) || 10; $.post(ajaxurl, { action: 'advaipbl_save_advanced_rule', nonce: adminData.nonces.save_rule_nonce, rule: JSON.stringify(rule) }).done(function (response) { if (response.success) { feedback.text(response.data.message).css('color', 'green'); setTimeout(() => { modal.hide(); loadRules(); }, 1000); } else { feedback.text(response.data.message).css('color', 'red'); } }).fail(function () { feedback.text('An AJAX error occurred.').css('color', 'red'); }).always(function () { button.prop('disabled', false); }); });
+        $('#advaipbl-save-rule-btn').on('click', function () { const button = $(this); button.prop('disabled', true); const feedback = $('#advaipbl-rule-builder-feedback'); feedback.text('Saving...').css('color', ''); const rule = { id: $('#advaipbl-rule-id').val(), name: $('#advaipbl-rule-name').val().trim(), conditions: [], action: $('#advaipbl-rule-action').val(), action_params: {} }; if (!rule.name) { feedback.text('Rule name is required.').css('color', 'red'); button.prop('disabled', false); return; } conditionsContainer.find('.advaipbl-condition-row').each(function () { const row = $(this); rule.conditions.push({ type: row.find('.condition-type').val(), target: row.find('.condition-target').val() || '', operator: row.find('.condition-operator').val(), value: row.find('.condition-value').val() }); }); if (rule.action === 'block') rule.action_params.duration = parseInt($('#param-duration').val()) || 0; if (rule.action === 'score') rule.action_params.points = parseInt($('#param-points').val()) || 10; if (rule.action === 'rate_limit') { rule.action_params.limit = parseInt($('#param-limit').val()) || 30; rule.action_params.window = parseInt($('#param-window').val()) || 60; rule.action_params.fallback_action = $('#param-fallback-action').val() || '429'; rule.action_params.fallback_duration = parseInt($('#param-fallback-duration').val()) || 1440; } $.post(ajaxurl, { action: 'advaipbl_save_advanced_rule', nonce: adminData.nonces.save_rule_nonce, rule: JSON.stringify(rule) }).done(function (response) { if (response.success) { feedback.text(response.data.message).css('color', 'green'); setTimeout(() => { modal.hide(); loadRules(); }, 1000); } else { feedback.text(response.data.message).css('color', 'red'); } }).fail(function () { feedback.text('An AJAX error occurred.').css('color', 'red'); }).always(function () { button.prop('disabled', false); }); });
         rulesListContainer.on('click', '.delete-rule', function (e) {
             e.preventDefault();
             const card = $(this).closest('.advaipbl-rule-card');
@@ -654,7 +664,7 @@ jQuery(document).ready(function ($) {
                 }
             });
         });
-        rulesListContainer.on('click', '.edit-rule', function () { const card = $(this).closest('.advaipbl-rule-card'); const ruleId = card.data('rule-id'); $.post(ajaxurl, { action: 'advaipbl_get_advanced_rules', nonce: adminData.nonces.get_rules_nonce }, function (response) { if (response.success) { const ruleToEdit = response.data.rules.find(r => r.id === ruleId); if (ruleToEdit) { $('#advaipbl-rule-id').val(ruleToEdit.id); $('#advaipbl-rule-name').val(ruleToEdit.name); conditionsContainer.empty(); ruleToEdit.conditions.forEach(c => addConditionRow(c)); $('#advaipbl-rule-action').val(ruleToEdit.action); updateActionParams(); if (ruleToEdit.action === 'block') $('#param-duration').val(ruleToEdit.action_params.duration); if (ruleToEdit.action === 'score') $('#param-points').val(ruleToEdit.action_params.points); modal.find('.advaipbl-modal-title').text('Edit Rule'); modal.show(); } } }); });
+        rulesListContainer.on('click', '.edit-rule', function () { const card = $(this).closest('.advaipbl-rule-card'); const ruleId = card.data('rule-id'); $.post(ajaxurl, { action: 'advaipbl_get_advanced_rules', nonce: adminData.nonces.get_rules_nonce, rule_id: ruleId }, function (response) { if (response.success) { const ruleToEdit = response.data.rules.find(r => r.id === ruleId); if (ruleToEdit) { $('#advaipbl-rule-id').val(ruleToEdit.id); $('#advaipbl-rule-name').val(ruleToEdit.name); conditionsContainer.empty(); ruleToEdit.conditions.forEach(c => addConditionRow(c)); $('#advaipbl-rule-action').val(ruleToEdit.action); updateActionParams(); if (ruleToEdit.action === 'block') $('#param-duration').val(ruleToEdit.action_params.duration); if (ruleToEdit.action === 'score') $('#param-points').val(ruleToEdit.action_params.points); if (ruleToEdit.action === 'rate_limit') { $('#param-limit').val(ruleToEdit.action_params.limit); $('#param-window').val(ruleToEdit.action_params.window); $('#param-fallback-action').val(ruleToEdit.action_params.fallback_action || '429').trigger('change'); if (ruleToEdit.action_params.fallback_duration !== undefined) { $('#param-fallback-duration').val(ruleToEdit.action_params.fallback_duration); } } modal.find('.advaipbl-modal-title').text('Edit Rule'); modal.show(); } } }); });
         $('.advaipbl-rules-nav-bar').on('click', 'a.prev-page, a.next-page', function (e) { e.preventDefault(); if ($(this).hasClass('disabled')) return; const page = $(this).data('page'); loadRules(page); });
 
         const navs = $('.advaipbl-rules-nav-bar');
@@ -1011,3 +1021,5 @@ jQuery(document).ready(function ($) {
     initBulkImportExport();
 
 });
+
+
