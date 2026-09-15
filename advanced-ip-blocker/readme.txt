@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.6
+Stable tag: 8.13.7
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,16 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.6 =
-Critical update! Introduces Advanced Rate Limiting with dynamic fallbacks (Challenges, 403, 429) to mitigate DoS attacks. Fixes UI bugs in the Rules Engine and hardens WAF rules against false positives.
+= 8.13.7 =
+Critical security update! Patches a Path Traversal vulnerability in the File Integrity Monitor, hardens API Telemetry endpoints against bot spam, and fixes WAF parsing for zero-day exploits. Update immediately to ensure maximum protection.
 
 == Changelog ==
+
+= 8.13.7 =
+* **SECURITY:** Patched a critical Arbitrary File Move (Path Traversal) vulnerability in the File Integrity Monitor quarantine endpoint.
+* **SECURITY:** Added strict IP-based transient rate limiting to legacy V1 and V2 telemetry endpoints to prevent database poisoning and bot spam.
+* **SECURITY:** Security Audit completed. Verified 100% CSRF (Nonce) and Privilege Escalation protection across all 40+ AJAX and Admin Post endpoints.
+* **BUGFIX:** Fixed WAF payload parsing for `multipart/form-data` to accurately block zero-day exploits hidden in file uploads.
 
 = 8.13.6 =
 * **NEW FEATURE:** Rate Limiting in Advanced Rules. You can now apply granular rate limits (reqs/secs) to specific URIs or payloads.
