@@ -152,7 +152,7 @@ class ADVAIPBL_Rate_Limiting_Manager
         return false;
     }
 
-    private function serve_429_response($retry_after = 60)
+    public function serve_429_response($retry_after = 60)
     {
         if (!headers_sent()) {
             header('HTTP/1.1 429 Too Many Requests', true, 429);

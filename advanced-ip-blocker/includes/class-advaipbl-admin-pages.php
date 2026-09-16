@@ -2078,7 +2078,7 @@ $default_waf_rules_list = [
             'abuseipdb',
             'aib_network', 'signature_flagged',
             'impersonation', 'ghost_ip',
-            'advanced_rule', 'login_geoblock', 'login_whitelist_block'
+            'advanced_rule', 'advanced_rule_rate_limit', 'login_geoblock', 'login_whitelist_block'
         ];
         $this->display_log_table_generic($security_log_types, ['critical', 'warning'], null, null, true);
     }
@@ -2616,6 +2616,7 @@ $default_waf_rules_list = [
                             break;
                         case 'advanced_rule':
                         case 'advanced_rule_challenge':
+                        case 'advanced_rule_rate_limit':
                             $level = $entry['level'];
                             $rule_name_html = '<strong>' . esc_html__('Rule:', 'advanced-ip-blocker') . '</strong> ' . esc_html($details['rule_name'] ?? 'N/A');
 

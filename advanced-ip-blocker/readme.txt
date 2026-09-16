@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.7
+Stable tag: 8.13.8
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,15 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.7 =
-Critical security update! Patches a Path Traversal vulnerability in the File Integrity Monitor, hardens API Telemetry endpoints against bot spam, and fixes WAF parsing for zero-day exploits. Update immediately to ensure maximum protection.
+= 8.13.8 =
+Critical update: Fixes a 500 error in the Advanced Rules Rate Limiting engine, restores missing rate limit logs in the Security Dashboard, and adds Zero-Day WAF protection against the recent Bookly AI IDOR vulnerability (CVE-2026-89063).
 
 == Changelog ==
+
+= 8.13.8 =
+* **SECURITY:** Added Zero-Day WAF protection against the Bookly AI IDOR vulnerability (CVE-2026-89063) via Advanced Rate Limiting.
+* **BUGFIX:** Resolved a PHP Fatal Error (500 Internal Server Error) triggered by the Advanced Rules engine when a rate limit (`429`) action was executed.
+* **BUGFIX:** Fixed an issue where Advanced Rule rate limit blocks were not being displayed in the Security Logs dashboard.
 
 = 8.13.7 =
 * **SECURITY:** Patched a critical Arbitrary File Move (Path Traversal) vulnerability in the File Integrity Monitor quarantine endpoint.
