@@ -10,7 +10,7 @@ class ADVAIPBL_Community_Manager
 
     private $feed_url_v2 = 'https://advaipbl.com/wp-content/uploads/advaipbl-feed/blocklist.json';
 
-    private $feed_url_v3 = 'https://advaipbl.com/wp-json/aib-api/v3/community-blocklist';
+    private $feed_url_v4 = 'https://advaipbl.com/wp-json/aib-api/v4/community-blocklist';
 
     private $last_update_option = 'advaipbl_community_last_update';
 
@@ -20,39 +20,39 @@ class ADVAIPBL_Community_Manager
     }
 
     /**
-     * Downloads and updates the community list in the DEDICATED TABLE.
+     * Downloads and processes the community blocklist JSON file.
+     * Uses the V4 token endpoint if available, falling back to V2 static file.
      *
-     * @return int|false Number of imported IPs or false if failed.
+     * @return int|bool Returns the number of IPs synced, or false on failure.
      */
     public function update_list()
     {
+        $use_v4 = false;
         $feed_data = false;
-        $api_token = $this->plugin->options['api_token_v3'] ?? '';
 
-        $use_v3 = false;
-        if (!empty($api_token)) {
-            $response = wp_remote_get($this->feed_url_v3, [
+        $api_token_v3 = $this->plugin->options['api_token_v3'] ?? '';
+
+        if (!empty($api_token_v3)) {
+            $response = wp_remote_get($this->feed_url_v4, [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $api_token,
-                    'Accept'        => 'application/json'
+                    'Authorization' => 'Bearer ' . $api_token_v3
                 ],
                 'timeout' => 30
             ]);
 
-            $status_code = wp_remote_retrieve_response_code($response);
-            if (!is_wp_error($response) && $status_code === 200) {
+            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
                 $feed_data = wp_remote_retrieve_body($response);
-                $use_v3 = true;
+                $use_v4 = true;
             } else {
-                $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . $status_code;
-                if (!get_transient('advaipbl_community_api_error_cooldown_v3')) {
-                    $this->plugin->log_event('AIB Network Sync: V3 failed (' . $error_msg . '), falling back to V2.', 'warning');
-                    set_transient('advaipbl_community_api_error_cooldown_v3', true, HOUR_IN_SECONDS);
+                $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($response);
+                if (!get_transient('advaipbl_community_api_error_cooldown_v4')) {
+                    $this->plugin->log_event('AIB Network Sync: V4 failed (' . $error_msg . '), falling back to V2.', 'warning');
+                    set_transient('advaipbl_community_api_error_cooldown_v4', true, HOUR_IN_SECONDS);
                 }
             }
         }
 
-        if (!$use_v3) {
+        if (!$use_v4) {
             $response = wp_remote_get($this->feed_url_v2, [
                 'timeout' => 30
             ]);
@@ -73,7 +73,7 @@ class ADVAIPBL_Community_Manager
 
         if (!$feed_data) {
             if (!get_transient('advaipbl_community_api_error_cooldown_nodata')) {
-                $this->plugin->log_event('AIB Network list download failed: No data received from V3 or V2.', 'error');
+                $this->plugin->log_event('AIB Network list download failed: No data received from V4 or V2.', 'error');
                 set_transient('advaipbl_community_api_error_cooldown_nodata', true, HOUR_IN_SECONDS);
             }
 
@@ -101,6 +101,7 @@ class ADVAIPBL_Community_Manager
         $wpdb->query("TRUNCATE TABLE {$table_name}");
 
         $raw_ips = $data['ips'];
+        $actions = $data['actions'] ?? [];
 
         $min_score = (int) ($this->plugin->options['community_min_score'] ?? 1);
         if ($min_score > 1 && isset($data['scores']) && is_array($data['scores'])) {
@@ -151,13 +152,15 @@ class ADVAIPBL_Community_Manager
             $values = [];
             foreach ($chunk as $ip) {
                 if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                    $placeholders[] = "(%s)";
+                    $action = $actions[$ip] ?? null;
+                    $placeholders[] = "(%s, %s)";
                     $values[] = $ip;
+                    $values[] = $action;
                 }
             }
 
             if (!empty($placeholders)) {
-                $query = "INSERT IGNORE INTO {$table_name} (ip) VALUES " . implode(', ', $placeholders);
+                $query = "INSERT IGNORE INTO {$table_name} (ip, action) VALUES " . implode(', ', $placeholders);
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                 $wpdb->query($wpdb->prepare($query, $values));
             }
@@ -186,6 +189,27 @@ class ADVAIPBL_Community_Manager
         $exists = $wpdb->get_var($wpdb->prepare("SELECT 1 FROM {$table_name} WHERE ip = %s LIMIT 1", $ip));
 
         return (bool) $exists;
+    }
+
+    /**
+     * Gets the specific action override for a community IP (e.g. 'challenge').
+     *
+     * @param string $ip The IP to check.
+     * @return string|null The action string, or null if no override exists, or false if not blocked.
+     */
+    public function get_ip_action($ip)
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'advaipbl_community_ips';
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $row = $wpdb->get_row($wpdb->prepare("SELECT action FROM {$table_name} WHERE ip = %s LIMIT 1", $ip), ARRAY_A);
+
+        if (!$row) {
+            return false; // Not in the network
+        }
+
+        return !empty($row['action']) ? $row['action'] : null;
     }
 
     public function get_stats()

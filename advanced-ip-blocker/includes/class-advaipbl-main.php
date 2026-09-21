@@ -185,6 +185,7 @@ class ADVAIPBL_Main
             'class-advaipbl-live-feed-manager.php',
             'class-advaipbl-cron-manager.php',
             'class-advaipbl-notification-manager.php',
+            'class-advaipbl-remote-notices.php',
             'class-advaipbl-challenge-metrics.php'
         ];
 
@@ -243,6 +244,7 @@ class ADVAIPBL_Main
         $this->live_feed_manager = new ADVAIPBL_Live_Feed_Manager($this);
         $this->cron_manager = new ADVAIPBL_Cron_Manager($this);
         $this->notification_manager = new ADVAIPBL_Notification_Manager($this);
+        new ADVAIPBL_Remote_Notices();
 
         if (version_compare(PHP_VERSION, '8.1', '>=')) {
             if (($this->options['geolocation_method'] ?? 'api') === 'local_db') {
@@ -3105,8 +3107,16 @@ class ADVAIPBL_Main
         }
 
         if (!empty($this->options['enable_community_blocking'])) {
-            if ($this->community_manager->is_ip_blocked($ip)) {
+            $network_action = $this->community_manager->get_ip_action($ip);
+            if ($network_action !== false) {
                 $action = $this->options['community_blocking_action'] ?? 'block';
+
+                // Smart VPN Override (V4 API)
+                if ($network_action === 'challenge' && strpos($action, 'challenge') === false) {
+                    // Downgrade 'block' to a managed challenge for VPN/Shared IPs.
+                    // This will respect the user's captcha integrations (Turnstile/hCaptcha).
+                    $action = 'challenge_managed';
+                }
 
                 $log_data = [
                     'source' => 'AIB Community Network',
@@ -3119,6 +3129,9 @@ class ADVAIPBL_Main
                     }
 
                     $mode = ($action === 'challenge_automatic') ? 'automatic' : 'managed';
+                    if ($mode === 'managed') {
+                        $log_data['engine'] = $this->options['default_challenge_engine'] ?? 'js_managed';
+                    }
                     $log_data['mode'] = $mode;
                     $this->log_specific_error('aib_network_challenge', $ip, $log_data, 'warning');
                     $this->js_challenge_manager->serve_challenge('aib_network', $mode);
@@ -4018,6 +4031,7 @@ class ADVAIPBL_Main
         $table_name_community = $wpdb->prefix . 'advaipbl_community_ips';
         $sql_community = "CREATE TABLE $table_name_community (
             ip VARCHAR(45) NOT NULL,
+            action VARCHAR(20) DEFAULT NULL,
             PRIMARY KEY  (ip)
         ) $charset_collate;";
         dbDelta($sql_community);
@@ -8895,6 +8909,9 @@ class ADVAIPBL_Main
                 }
 
                 $mode = ($action_to_take === 'challenge_automatic') ? 'automatic' : 'managed';
+                if ($mode === 'managed') {
+                    $log_data['engine'] = $this->options['default_challenge_engine'] ?? 'js_managed';
+                }
                 $log_data['mode'] = $mode;
                 $this->log_specific_error('abuseipdb_challenge', $ip, $log_data, 'warning');
 

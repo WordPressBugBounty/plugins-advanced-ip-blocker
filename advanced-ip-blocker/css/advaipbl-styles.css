@@ -1,6 +1,6 @@
 /**
  * Advanced IP Blocker - Admin Panel Styles
- * Version: 8.13.8
+ * Version: 8.13.9
  */
 
 /* ==========================================================================
@@ -656,3 +656,11 @@
     white-space: pre-wrap;
 }
 
+
+/* Captured Request Payload Code Wrapping */
+.advaipbl-payload-box {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    word-break: break-all !important;
+    overflow-x: hidden !important;
+}

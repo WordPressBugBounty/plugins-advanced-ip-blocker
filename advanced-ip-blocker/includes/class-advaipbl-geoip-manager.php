@@ -14,6 +14,9 @@ class ADVAIPBL_GeoIP_Manager
 
     private $upload_dir_info;
 
+    private $city_reader = null;
+    private $asn_reader = null;
+
     public function __construct(ADVAIPBL_Main $main_class)
     {
         $this->main_class = $main_class;
@@ -189,34 +192,51 @@ class ADVAIPBL_GeoIP_Manager
 
         try {
             if (! class_exists('\GeoIp2\Database\Reader')) {
-                $this->main_class->log_event('GeoIP Error: The GeoIp2 library classes cause a fatal error or are missing. Please reinstall the plugin.', 'critical');
-
+                static $geoip_error_logged = false;
+                if (!$geoip_error_logged) {
+                    $this->main_class->log_event('GeoIP Error: The GeoIp2 library classes cause a fatal error or are missing. Please reinstall the plugin.', 'critical');
+                    $geoip_error_logged = true;
+                }
                 return ['error' => true, 'error_message' => 'GeoIP library missing.'];
             }
 
-            $city_reader = new \GeoIp2\Database\Reader($city_db_path);
-            $city_record = $city_reader->city($ip);
+            try {
+                if ($this->city_reader === null) {
+                    $this->city_reader = new \GeoIp2\Database\Reader($city_db_path);
+                }
+                $city_record = $this->city_reader->city($ip);
 
-            $location_data['country'] = $city_record->country->name ?? null;
-            $location_data['country_code'] = $city_record->country->isoCode ?? null;
-            if (! empty($city_record->subdivisions)) {
-                $location_data['region'] = $city_record->subdivisions[0]->name ?? null;
-            } else {
-                $location_data['region'] = null;
+                $location_data['country'] = $city_record->country->name ?? null;
+                $location_data['country_code'] = $city_record->country->isoCode ?? null;
+                if (! empty($city_record->subdivisions)) {
+                    $location_data['region'] = $city_record->subdivisions[0]->name ?? null;
+                } else {
+                    $location_data['region'] = null;
+                }
+                $location_data['city'] = $city_record->city->name ?? null;
+                $location_data['lat'] = $city_record->location->latitude ?? null;
+                $location_data['lon'] = $city_record->location->longitude ?? null;
+            } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
+                // Not found in City DB, continue
             }
-            $location_data['city'] = $city_record->city->name ?? null;
-            $location_data['lat'] = $city_record->location->latitude ?? null;
-            $location_data['lon'] = $city_record->location->longitude ?? null;
 
-            $asn_reader = new \GeoIp2\Database\Reader($asn_db_path);
-            $asn_record = $asn_reader->asn($ip);
+            try {
+                if ($this->asn_reader === null) {
+                    $this->asn_reader = new \GeoIp2\Database\Reader($asn_db_path);
+                }
+                $asn_record = $this->asn_reader->asn($ip);
 
-            $location_data['isp'] = $asn_record->autonomousSystemOrganization ?? null;
-            $location_data['as'] = isset($asn_record->autonomousSystemNumber)
-                ? 'AS' . $asn_record->autonomousSystemNumber . ' ' . $asn_record->autonomousSystemOrganization
-                : null;
-        } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
-            return ['error' => true, 'error_message' => 'IP address not found in GeoIP database.'];
+                $location_data['isp'] = $asn_record->autonomousSystemOrganization ?? null;
+                $location_data['as'] = isset($asn_record->autonomousSystemNumber)
+                    ? 'AS' . $asn_record->autonomousSystemNumber . ' ' . $asn_record->autonomousSystemOrganization
+                    : null;
+            } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
+                // Not found in ASN DB, continue
+            }
+
+            if (empty($location_data)) {
+                return ['error' => true, 'error_message' => 'IP address not found in GeoIP database.'];
+            }
         } catch (\MaxMind\Db\Reader\InvalidDatabaseException $e) {
             $this->main_class->log_event('GeoIP DB Error: Invalid or corrupt database file. Please re-download. Details: ' . $e->getMessage(), 'critical');
 

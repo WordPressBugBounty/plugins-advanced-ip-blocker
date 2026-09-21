@@ -117,8 +117,7 @@ function advaipbl_process_site_uninstallation() {
 
         
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-        $options_to_delete = [
-            
+        $options_to_delete = [            
             'advaipbl_settings',
             'advaipbl_waf_rules',
             'advaipbl_blocked_asns',
@@ -128,6 +127,8 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_ips_whitelist',
             'advaipbl_honeypot_urls',
             'advaipbl_advanced_rules',
+            'advaipbl_remote_notices',
+            'advaipbl_dismissed_notices',
             'advaipbl_advanced_rules_metrics',
             'advaipbl_challenge_stats',
             'advaipbl_zeroday_waf_rules',
@@ -143,9 +144,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_fim_signatures_sha256',
             'advaipbl_fim_signatures_split',
             'advaipbl_fim_signatures_version',
-            'advaipbl_fim_signatures_last_sync',
-            
-            
+            'advaipbl_fim_signatures_last_sync',                        
             'advaipbl_db_version',
             'advaipbl_version_installed',
             'advaipbl_run_setup_wizard',
@@ -160,17 +159,11 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_spamhaus_drop_list',
             'advaipbl_ai_bot_ips',
             'advaipbl_bot_ips',
-            'advaipbl_last_cron_ip',
-            
-            
+            'advaipbl_last_cron_ip',                       
             'advaipbl_community_blocklist',
             'advaipbl_community_last_update',
-            'advaipbl_network_degraded',
-            
-            
-            'advaipbl_db_cidrs_cache',
-            
-            
+            'advaipbl_network_degraded',                        
+            'advaipbl_db_cidrs_cache',                        
             'advaipbl_blocked_ips_manual',
             'advaipbl_blocked_ips_404',
             'advaipbl_blocked_ips_403',
@@ -194,9 +187,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_ips_bloqueadas_threat_score',
             'advaipbl_ips_bloqueadas_rate_limit',
             'advaipbl_ips_bloqueadas_asn',
-            'advaipbl_ips_bloqueadas_xmlrpc_block',
-
-            
+            'advaipbl_ips_bloqueadas_xmlrpc_block',            
             'advanced-ip-blocker_ips_bloqueadas_404',
             'advanced-ip-blocker_ips_bloqueadas_403',
             'advanced-ip-blocker_ips_bloqueadas_login',
@@ -207,18 +198,12 @@ function advaipbl_process_site_uninstallation() {
             'advanced-ip-blocker_whitelisted_user_agents',
             'advanced-ip-blocker_ips_whitelist',
             'advanced-ip-blocker_ips_bloqueadas_manual',
-            'advanced-ip-blocker_honeypot_urls',
-            
-            // Internal Security
+            'advanced-ip-blocker_honeypot_urls',            
             'advaipbl_fim_baseline_hashes',
             'advaipbl_fim_whitelist',
             'advaipbl_fim_history',
-            'advaipbl_vip_salt_modifier',
-            
-            // Security Headers
-            'advaipbl_security_headers',
-            
-            
+            'advaipbl_vip_salt_modifier',            
+            'advaipbl_security_headers',                        
             'advaipbl_flush_firewalls_needed',
             'advaipbl_telemetry_notice_dismissed',
             'advaipbl_legacy_options_cleaned',

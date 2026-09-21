@@ -2858,7 +2858,7 @@ $default_waf_rules_list = [
                             <?php if (!empty($details['payload'])): ?>
                             <div style="margin-top: 20px;">
                                 <strong style="color: #666; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px;"><?php esc_html_e('Captured Request Payload (POST/GET)', 'advanced-ip-blocker'); ?></strong>
-                                <pre style="background: #1e1e1e; color: #a9dc76; padding: 10px 15px; border-radius: 4px; overflow-y: auto; max-height: 200px; font-size: 12px; line-height: 1.5; margin: 0; border: 1px solid #444;"><code><?php
+                                <pre class="advaipbl-payload-box" style="background: #1e1e1e; color: #a9dc76; padding: 10px 15px; border-radius: 4px; overflow-y: auto; max-height: 200px; font-size: 12px; line-height: 1.5; margin: 0; border: 1px solid #444;"><code><?php
                                     $parsed_payload = is_string($details['payload']) ? json_decode($details['payload'], true) : $details['payload'];
                                 if (json_last_error() === JSON_ERROR_NONE && !empty($parsed_payload)) {
                                     echo esc_html(wp_json_encode($parsed_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -3050,7 +3050,7 @@ wp advaipbl cloudflare &lt;sync|clear&gt;
                     <li><a href="https://www.maxmind.com" target="_blank" rel="noopener">MaxMind GeoLite2</a> - <?php esc_html_e('For local database geolocation.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://www.spamhaus.org/drop/" target="_blank" rel="noopener">Spamhaus ASN DROP List</a> - <?php esc_html_e('For automated blocking of malicious networks.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a>, <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet.js</a> & <a href="https://github.com/Leaflet/Leaflet.markercluster" target="_blank" rel="noopener">Leaflet.markercluster</a> - <?php esc_html_e('For the interactive Security Dashboard.', 'advanced-ip-blocker'); ?></li>
-                    <li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> &amp; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> - <?php esc_html_e('For the Dashboard map tiles.', 'advanced-ip-blocker'); ?></li>
+                    <li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> &amp; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> &amp; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> - <?php esc_html_e('For the Dashboard map tiles.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://github.com/RobThree/TwoFactorAuth" target="_blank" rel="noopener">RobThree/TwoFactorAuth</a> - <?php esc_html_e('The core library powering our 2FA functionality.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://select2.org/" target="_blank" rel="noopener">Select2</a> - <?php esc_html_e('For the user-friendly country selector.', 'advanced-ip-blocker'); ?></li>
                     <li><a href="https://www.abuseipdb.com/" target="_blank" rel="noopener">AbuseIPDB</a> - <?php esc_html_e('For crowdsourced IP reputation checking.', 'advanced-ip-blocker'); ?></li>

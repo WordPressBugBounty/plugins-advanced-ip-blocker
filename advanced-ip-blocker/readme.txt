@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.8
+Stable tag: 8.13.9
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,18 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.8 =
-Critical update: Fixes a 500 error in the Advanced Rules Rate Limiting engine, restores missing rate limit logs in the Security Dashboard, and adds Zero-Day WAF protection against the recent Bookly AI IDOR vulnerability (CVE-2026-89063).
+= 8.13.9 =
+New Feature: Introduced a Remote Admin Notifications system.
 
 == Changelog ==
+
+= 8.13.9 =
+* **NEW FEATURE:** Introduced a Remote Admin Notifications system. You will now receive important security alerts, zero-day warnings, and feature updates directly in your WordPress dashboard without needing a plugin update.
+* **ENHANCEMENT:** True 'Hybrid' Dual-Logging for Telemetry. Telemetry events are now reliably tracked in the database without altering or duplicating the native `debug.log` formats.
+* **BUGFIX:** Fixed a UI layout issue in the Security Logs where massive Captured Request Payloads (like reCAPTCHA tokens) stretched the container horizontally. Added proper CSS word-wrapping.
+* **BUGFIX:** Resolved a PHP Fatal Error caused by a missing variable (`$stripe_webhook_ips`) during array merging for immune IPs.
+* **TWEAK:** Added Redsys and Paddle to the global immune IPs list to prevent accidental blocks on legitimate payment webhooks.
+
 
 = 8.13.8 =
 * **SECURITY:** Added Zero-Day WAF protection against the Bookly AI IDOR vulnerability (CVE-2026-89063) via Advanced Rate Limiting.
