@@ -51,7 +51,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.9';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.10';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {

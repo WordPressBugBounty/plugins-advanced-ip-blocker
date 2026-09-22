@@ -380,6 +380,16 @@ class ADVAIPBL_Rules_Engine
                     $header_key = 'HTTP_' . strtoupper(str_replace('-', '_', $target));
                     // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
                     $subject = isset($_SERVER[$header_key]) ? $_SERVER[$header_key] : '';
+                    if (empty($subject) && function_exists('apache_request_headers')) {
+                        $apache_headers = apache_request_headers();
+                        $target_lower = strtolower($target);
+                        foreach ($apache_headers as $k => $v) {
+                            if (strtolower($k) === $target_lower) {
+                                $subject = $v;
+                                break;
+                            }
+                        }
+                    }
                 }
                 break;
             case 'payload':

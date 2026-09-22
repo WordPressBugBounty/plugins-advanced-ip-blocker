@@ -35,7 +35,8 @@ class ADVAIPBL_Community_Manager
         if (!empty($api_token_v3)) {
             $response = wp_remote_get($this->feed_url_v4, [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $api_token_v3
+                    'Authorization' => 'Bearer ' . $api_token_v3,
+                    'X-AIB-Auth'    => 'Bearer ' . $api_token_v3
                 ],
                 'timeout' => 30
             ]);

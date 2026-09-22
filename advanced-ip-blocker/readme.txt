@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.9
+Stable tag: 8.13.10
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.9 =
-New Feature: Introduced a Remote Admin Notifications system.
+= 8.13.10 =
+Added the fallback header to the V4 Community Blocklist & Upgraded the Advanced WAF Rules Engine.
 
 == Changelog ==
+
+= 8.13.10 =
+* **ENHANCEMENT:** Upgraded the Advanced WAF Rules Engine to use `apache_request_headers()` as a fallback, ensuring sensitive headers (like `Authorization`) can be evaluated even on restrictive Apache/LiteSpeed environments that hide them from `$_SERVER`.
+* **BUGFIX:** Added the fallback header to the V4 Community Blocklist fetch routine to ensure API tokens are reliably transmitted and bypass strict CGI server configurations.
 
 = 8.13.9 =
 * **NEW FEATURE:** Introduced a Remote Admin Notifications system. You will now receive important security alerts, zero-day warnings, and feature updates directly in your WordPress dashboard without needing a plugin update.
