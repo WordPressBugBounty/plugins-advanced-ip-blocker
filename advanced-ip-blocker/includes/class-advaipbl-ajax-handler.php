@@ -129,9 +129,10 @@ class ADVAIPBL_Ajax_Handler
 
                 $api_token = $this->plugin->options['api_token_v3'] ?? '';
                 if (!empty($api_token)) {
-                    $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . urlencode($ip), [
+                    $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . urlencode($ip) . '&v=' . ADVAIPBL_VERSION, [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $api_token,
+                            'X-AIB-Auth' => 'Bearer ' . $api_token,
                             'Accept'        => 'application/json'
                         ],
                         'timeout' => 5
@@ -493,9 +494,10 @@ class ADVAIPBL_Ajax_Handler
                 wp_send_json_error(['message' => __('API Key is missing.', 'advanced-ip-blocker')]);
             }
 
-            $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token', [
+            $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token?v=' . ADVAIPBL_VERSION, [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $api_key,
+                    'X-AIB-Auth' => 'Bearer ' . $api_key,
                     'Accept'        => 'application/json'
                 ],
                 'timeout' => 10

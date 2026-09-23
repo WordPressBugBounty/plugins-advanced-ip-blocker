@@ -28,6 +28,7 @@ if (!function_exists('advaipbl_uninstall_cf_req')) {
             'method' => $method,
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
+                'X-AIB-Auth' => 'Bearer ' . $token,
                 'Content-Type' => 'application/json',
             ],
             'timeout' => 15
@@ -53,9 +54,10 @@ function advaipbl_process_site_uninstallation() {
         
         $advaipbl_api_token = $settings_option['api_token_v3'] ?? '';
         if (!empty($advaipbl_api_token)) {
-            wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/unregister', [
+            wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/unregister?v=' . get_option('advaipbl_version_installed', 'unknown'), [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $advaipbl_api_token,
+                    'X-AIB-Auth' => 'Bearer ' . $advaipbl_api_token,
                     'Content-Type'  => 'application/json',
                     'Accept'        => 'application/json'
                 ],
@@ -220,6 +222,10 @@ function advaipbl_process_site_uninstallation() {
         
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE `option_name` LIKE %s OR `option_name` LIKE %s", $wpdb->esc_like( '_transient_advaipbl_' ) . '%', $wpdb->esc_like( '_transient_timeout_advaipbl_' ) . '%' ) );
+
+        // Clean up FIM signature chunks
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE `option_name` LIKE %s OR `option_name` LIKE %s OR `option_name` LIKE %s", $wpdb->esc_like('advaipbl_fim_signatures_raw_') . '%', $wpdb->esc_like('advaipbl_fim_signatures_regex_') . '%', $wpdb->esc_like('advaipbl_fim_signatures_domains_') . '%' ) );
 
         
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

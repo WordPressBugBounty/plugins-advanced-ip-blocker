@@ -1551,9 +1551,10 @@ class ADVAIPBL_Settings_Manager
 
         if (isset($new_input['api_token_v3']) && $new_input['api_token_v3'] !== ($this->plugin->options['api_token_v3'] ?? '')) {
             if (!empty($new_input['api_token_v3'])) {
-                $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token', [
+                $response = wp_remote_get('https://advaipbl.com/wp-json/aib-api/v3/verify-token?v=' . ADVAIPBL_VERSION, [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $new_input['api_token_v3'],
+                        'X-AIB-Auth'    => 'Bearer ' . $new_input['api_token_v3'],
                         'Accept'        => 'application/json'
                     ],
                     'timeout' => 15

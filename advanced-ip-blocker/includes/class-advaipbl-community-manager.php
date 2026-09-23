@@ -10,7 +10,7 @@ class ADVAIPBL_Community_Manager
 
     private $feed_url_v2 = 'https://advaipbl.com/wp-content/uploads/advaipbl-feed/blocklist.json';
 
-    private $feed_url_v4 = 'https://advaipbl.com/wp-json/aib-api/v4/community-blocklist';
+    private $feed_url_v4 = 'https://advaipbl.com/wp-json/aib-api/v4/community-blocklist?v=' . ADVAIPBL_VERSION;
 
     private $last_update_option = 'advaipbl_community_last_update';
 
@@ -241,7 +241,7 @@ class ADVAIPBL_Community_Manager
     {
         $site_url = home_url();
 
-        $response = wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/register', [
+        $response = wp_remote_post('https://advaipbl.com/wp-json/aib-api/v3/register?v=' . ADVAIPBL_VERSION, [
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept'       => 'application/json'

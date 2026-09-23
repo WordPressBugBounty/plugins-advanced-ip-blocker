@@ -247,7 +247,7 @@ class ADVAIPBL_Site_Scanner
             $payload[$slug] = $theme->get('Version');
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-scanner/v2/check';
+        $api_url = 'https://advaipbl.com/wp-json/aib-scanner/v2/check?v=' . ADVAIPBL_VERSION;
         $site_hash = hash('sha256', get_site_url());
 
         $headers = [
@@ -256,8 +256,9 @@ class ADVAIPBL_Site_Scanner
         ];
 
         if (!empty($this->plugin->options['api_token_v3'])) {
-            $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/scanner/check';
+            $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/scanner/check?v=' . ADVAIPBL_VERSION;
             $headers['Authorization'] = 'Bearer ' . $this->plugin->options['api_token_v3'];
+            $headers['X-AIB-Auth'] = 'Bearer ' . $this->plugin->options['api_token_v3'];
         }
 
         $response = wp_remote_post($api_url, [
@@ -308,7 +309,7 @@ class ADVAIPBL_Site_Scanner
         $aib_status = 'clean';
         $aib_detail = '';
 
-        $api_check_url = 'https://advaipbl.com/wp-json/aib-scanner/v2/check-ip?ip=' . $server_ip;
+        $api_check_url = 'https://advaipbl.com/wp-json/aib-scanner/v2/check-ip?ip=' . $server_ip . '&v=' . ADVAIPBL_VERSION;
         $site_hash = hash('sha256', get_site_url());
 
         $headers = [
@@ -316,8 +317,9 @@ class ADVAIPBL_Site_Scanner
         ];
 
         if (!empty($this->plugin->options['api_token_v3'])) {
-            $api_check_url = 'https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . $server_ip;
+            $api_check_url = 'https://advaipbl.com/wp-json/aib-api/v3/scanner/check-ip?ip=' . $server_ip . '&v=' . ADVAIPBL_VERSION;
             $headers['Authorization'] = 'Bearer ' . $this->plugin->options['api_token_v3'];
+            $headers['X-AIB-Auth'] = 'Bearer ' . $this->plugin->options['api_token_v3'];
         }
 
         $response = wp_remote_get($api_check_url, [

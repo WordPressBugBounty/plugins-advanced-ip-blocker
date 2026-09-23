@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 class ADVAIPBL_Remote_Notices {
 
-    private $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/notifications';
+    private $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/notifications?v=' . ADVAIPBL_VERSION;
     
     public function __construct() {
         add_action('admin_notices', [$this, 'display_notices']);
@@ -51,7 +51,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.10';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.11';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {

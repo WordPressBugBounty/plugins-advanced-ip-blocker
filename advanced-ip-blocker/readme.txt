@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.10
+Stable tag: 8.13.11
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,15 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.10 =
-Added the fallback header to the V4 Community Blocklist & Upgraded the Advanced WAF Rules Engine.
+= 8.13.11 =
+Critical update! Fixes MySQL errors during FIM sync on shared hosts, adds X-AIB-Auth for strict firewalls, and improves API compatibility. Update highly recommended for stable malware scanner operations.
 
 == Changelog ==
+
+= 8.13.11 =
+* **SECURITY:** Implemented a new internal authentication header (`X-AIB-Auth`) across all API endpoints to improve communication security and bypass restrictive firewall/CGI configurations that strip standard authorization headers.
+* **ENHANCEMENT:** Added version tracking parameters to all API requests to ensure better backward compatibility and diagnostic capabilities with the central server.
+* **BUGFIX:** Resolved a critical MySQL `max_allowed_packet` error that caused the File Integrity Monitor (FIM) malware signatures synchronization to fail on local environments (like XAMPP) and restrictive shared hosting. Signatures are now smartly chunked into smaller payloads before being saved to the database.
 
 = 8.13.10 =
 * **ENHANCEMENT:** Upgraded the Advanced WAF Rules Engine to use `apache_request_headers()` as a fallback, ensuring sensitive headers (like `Authorization`) can be evaluated even on restrictive Apache/LiteSpeed environments that hide them from `$_SERVER`.

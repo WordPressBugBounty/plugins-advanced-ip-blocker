@@ -1460,6 +1460,7 @@ class ADVAIPBL_Main
 
         $response = wp_remote_get($api_url, [
             'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
                 'Accept'        => 'application/json',
                 'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
@@ -1513,10 +1514,11 @@ class ADVAIPBL_Main
             return;
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/version';
+        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/version?v=' . ADVAIPBL_VERSION;
 
         $response = wp_remote_get($api_url, [
             'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
                 'Accept'        => 'application/json',
                 'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
@@ -1562,6 +1564,7 @@ class ADVAIPBL_Main
 
         $response = wp_remote_get($api_url, [
             'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
                 'Accept'        => 'application/json',
                 'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
@@ -1618,10 +1621,11 @@ class ADVAIPBL_Main
             return;
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/advanced-version';
+        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/waf/advanced-version?v=' . ADVAIPBL_VERSION;
 
         $response = wp_remote_get($api_url, [
             'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
                 'Accept'        => 'application/json',
                 'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
@@ -1667,6 +1671,7 @@ class ADVAIPBL_Main
 
         $response = wp_remote_get($api_url, [
             'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
                 'Accept'        => 'application/json',
                 'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
@@ -1698,19 +1703,19 @@ class ADVAIPBL_Main
         $enable_sha256 = !empty($opts['fim_enable_sha256']);
 
         if ($enable_raw) {
-            update_option('advaipbl_fim_signatures_raw', $data['raw'] ?? [], 'no');
+            $this->save_chunked_option('advaipbl_fim_signatures_raw', $data['raw'] ?? []);
         } else {
-            delete_option('advaipbl_fim_signatures_raw');
+            $this->delete_chunked_option('advaipbl_fim_signatures_raw');
         }
         if ($enable_regex) {
-            update_option('advaipbl_fim_signatures_regex', $data['regex'] ?? [], 'no');
+            $this->save_chunked_option('advaipbl_fim_signatures_regex', $data['regex'] ?? []);
         } else {
-            delete_option('advaipbl_fim_signatures_regex');
+            $this->delete_chunked_option('advaipbl_fim_signatures_regex');
         }
         if ($enable_domains) {
-            update_option('advaipbl_fim_signatures_domains', $data['domains'] ?? [], 'no');
+            $this->save_chunked_option('advaipbl_fim_signatures_domains', $data['domains'] ?? []);
         } else {
-            delete_option('advaipbl_fim_signatures_domains');
+            $this->delete_chunked_option('advaipbl_fim_signatures_domains');
         }
         if ($enable_md5) {
             update_option('advaipbl_fim_signatures_md5', $data['md5'] ?? '', 'no');
@@ -1723,7 +1728,7 @@ class ADVAIPBL_Main
             delete_option('advaipbl_fim_signatures_sha256');
         }
 
-        update_option('advaipbl_fim_signatures_split', '1', 'yes');
+        update_option('advaipbl_fim_signatures_split', '2', 'yes');
 
         update_option('advaipbl_fim_signatures_last_sync', time());
 
@@ -1732,6 +1737,35 @@ class ADVAIPBL_Main
         $this->log_event('FIM Signatures Sync successful: Splitted signatures stored locally.', 'info');
 
         return true;
+    }
+
+    private function save_chunked_option($option_name, $array, $chunk_size = 500) {
+        if (!is_array($array)) {
+            $array = [];
+        }
+        $chunks = array_chunk($array, $chunk_size, true);
+        update_option($option_name . '_chunks', count($chunks), 'no');
+        
+        // Clean up any old chunks if the new array is smaller
+        $old_count = get_option($option_name . '_chunks_last_count', 0);
+        for ($i = count($chunks); $i < $old_count; $i++) {
+            delete_option($option_name . '_' . $i);
+        }
+        update_option($option_name . '_chunks_last_count', count($chunks), 'no');
+
+        foreach ($chunks as $index => $chunk) {
+            update_option($option_name . '_' . $index, $chunk, 'no');
+        }
+    }
+
+    private function delete_chunked_option($option_name) {
+        $count = get_option($option_name . '_chunks', 0);
+        for ($i = 0; $i < $count; $i++) {
+            delete_option($option_name . '_' . $i);
+        }
+        delete_option($option_name . '_chunks');
+        delete_option($option_name . '_chunks_last_count');
+        delete_option($option_name);
     }
 
     /**
@@ -1748,10 +1782,11 @@ class ADVAIPBL_Main
             return;
         }
 
-        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/fim/version';
+        $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/fim/version?v=' . ADVAIPBL_VERSION;
 
         $response = wp_remote_get($api_url, [
             'headers' => [
+                'Authorization' => 'Bearer ' . $api_token,
                 'X-AIB-Auth' => 'Bearer ' . $api_token,
                 'Accept'        => 'application/json',
                 'X-AIB-Plugin-Version' => ADVAIPBL_VERSION
@@ -6212,6 +6247,11 @@ class ADVAIPBL_Main
 
     public function display_admin_notice()
     {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if ($screen && strpos($screen->id, 'advaipbl_') === false) {
+            return;
+        }
+
         if (get_option('advaipbl_network_degraded')) {
             echo '<div class="notice notice-warning is-dismissible"><p>';
             printf(
@@ -7141,7 +7181,7 @@ class ADVAIPBL_Main
 
         $telemetry_data = $this->get_telemetry_payload();
 
-        $endpoint_url = 'https://advaipbl.com/wp-json/telemetry/v2/submit';
+        $endpoint_url = 'https://advaipbl.com/wp-json/telemetry/v2/submit?v=' . ADVAIPBL_VERSION;
         $secret_key   = 'yV.vZRp|g6E{zJ,DI7WcMIiGDejmH($$~<0-I$$Bd7Y) D5Z65M/*P:h>w:/E<D<';
 
         $headers = [
@@ -7151,6 +7191,7 @@ class ADVAIPBL_Main
 
         if (!empty($this->options['api_token_v3'])) {
             $headers['Authorization'] = 'Bearer ' . $this->options['api_token_v3'];
+            $headers['X-AIB-Auth'] = 'Bearer ' . $this->options['api_token_v3'];
         }
 
         wp_remote_post($endpoint_url, [
@@ -8365,7 +8406,7 @@ class ADVAIPBL_Main
             }
         }
 
-        $sensitive_headers = ['cookie', 'set-cookie', 'authorization'];
+        $sensitive_headers = ['cookie', 'set-cookie', 'authorization', 'x-aib-auth'];
         $sanitized_headers = [];
 
         foreach ($headers as $name => $value) {
@@ -9097,10 +9138,11 @@ class ADVAIPBL_Main
         $payload_data['site_hash'] = $payload['site_hash'] ?? hash('sha256', get_site_url());
 
         if ($has_v3_token) {
-            $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/report';
+            $api_url = 'https://advaipbl.com/wp-json/aib-api/v3/report?v=' . ADVAIPBL_VERSION;
             $headers = [
                 'Content-Type'  => 'application/json',
-                'Authorization' => 'Bearer ' . $this->options['api_token_v3']
+                'Authorization' => 'Bearer ' . $this->options['api_token_v3'],
+                'X-AIB-Auth'    => 'Bearer ' . $this->options['api_token_v3']
             ];
 
             if (!empty($this->options['allow_telemetry']) && '1' === $this->options['allow_telemetry']) {
@@ -9113,7 +9155,7 @@ class ADVAIPBL_Main
                 return;
             }
         } else {
-            $api_url = 'https://advaipbl.com/wp-json/aib-network/v2/report';
+            $api_url = 'https://advaipbl.com/wp-json/aib-network/v2/report?v=' . ADVAIPBL_VERSION;
             $headers = [
                 'Content-Type'    => 'application/json',
                 'X-AIB-Site-Hash' => $payload_data['site_hash'],
