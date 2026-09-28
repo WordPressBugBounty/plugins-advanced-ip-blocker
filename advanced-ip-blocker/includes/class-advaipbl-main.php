@@ -83,6 +83,8 @@ class ADVAIPBL_Main
 
     public $geolocation_manager;
 
+    public $remote_notices;
+
     public $admin_pages;
 
     public $action_handler;
@@ -244,7 +246,7 @@ class ADVAIPBL_Main
         $this->live_feed_manager = new ADVAIPBL_Live_Feed_Manager($this);
         $this->cron_manager = new ADVAIPBL_Cron_Manager($this);
         $this->notification_manager = new ADVAIPBL_Notification_Manager($this);
-        new ADVAIPBL_Remote_Notices();
+        $this->remote_notices = new ADVAIPBL_Remote_Notices();
 
         if (version_compare(PHP_VERSION, '8.1', '>=')) {
             if (($this->options['geolocation_method'] ?? 'api') === 'local_db') {
@@ -424,6 +426,7 @@ class ADVAIPBL_Main
             add_action('wp_ajax_advaipbl_verify_api_key', [$this->ajax_handler, 'ajax_verify_api_key']);
             add_action('wp_ajax_advaipbl_get_free_api_key', [$this->ajax_handler, 'ajax_get_free_api_key']);
             add_action('wp_ajax_advaipbl_update_geoip_db', [$this->ajax_handler, 'ajax_update_geoip_db']);
+            add_action('wp_ajax_advaipbl_force_sync_community', [$this->ajax_handler, 'ajax_force_sync_community']);
             add_action('wp_ajax_advaipbl_get_dashboard_stats', [$this->ajax_handler, 'ajax_get_dashboard_stats']);
             add_action('wp_ajax_advaipbl_export_settings_ajax', [ $this, 'handle_export_settings_ajax' ]);
             add_action('wp_ajax_advaipbl_handle_telemetry_notice', [$this->ajax_handler, 'ajax_handle_telemetry_notice']);
@@ -2402,11 +2405,6 @@ class ADVAIPBL_Main
                 wp_enqueue_script('advaipbl-dashboard-js', plugin_dir_url(dirname(__FILE__)) . 'js/advaipbl-dashboard.js', ['jquery', 'chartjs', 'leaflet-markercluster-js', 'advaipbl-admin-core-js'], ADVAIPBL_VERSION, true);
             }
 
-            if ('ip_inspector' === $active_sub_tab) {
-                // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
-                wp_enqueue_style('leaflet-css', plugin_dir_url(dirname(__FILE__)) . 'assets/css/leaflet.css');
-                wp_enqueue_script('leaflet-js', plugin_dir_url(dirname(__FILE__)) . 'assets/js/leaflet.js', [], '1.9.4', true);
-            }
 
             if ('fim_dashboard' === $active_sub_tab) {
                 wp_enqueue_script('advaipbl-integrity-scanner', plugin_dir_url(dirname(__FILE__)) . 'js/advaipbl-integrity-scanner-v2.js', ['jquery', 'advaipbl-admin-core-js'], filemtime(plugin_dir_path(dirname(__FILE__)) . 'js/advaipbl-integrity-scanner-v2.js'), true);
@@ -2500,6 +2498,7 @@ class ADVAIPBL_Main
                     'test_connection'     => wp_create_nonce('advaipbl_test_connection_nonce'),
                     'add_whitelist'       => wp_create_nonce('advaipbl_add_whitelist_nonce'),
                     'export'              => wp_create_nonce('advaipbl_export_nonce'),
+                    'force_sync_community'=> wp_create_nonce('advaipbl_force_sync_community_nonce'),
                     'clear_log_nonce'     => wp_create_nonce('advaipbl_clear_audit_logs_nonce'),
                     'verify_api'          => wp_create_nonce('advaipbl_verify_api_nonce'),
                     'get_dashboard_stats' => wp_create_nonce('wp_ajax_advaipbl_get_dashboard_stats'),
@@ -2559,6 +2558,10 @@ class ADVAIPBL_Main
                     'revoke_vip_btn'           => __('Yes, Revoke All', 'advanced-ip-blocker'),
 
                     'ajax_error'               => __('AJAX error. Check browser console.', 'advanced-ip-blocker'),
+                    'syncing'                  => __('Syncing...', 'advanced-ip-blocker'),
+                    'synced'                   => __('Synced!', 'advanced-ip-blocker'),
+                    'sync_now'                 => __('Sync Now', 'advanced-ip-blocker'),
+                    'server_error'             => __('Server Error', 'advanced-ip-blocker'),
                     'missing_detail'           => __('Please provide a reason/detail for these IPs (Required).', 'advanced-ip-blocker'),
                     'discard_title'            => __('Discard Changes?', 'advanced-ip-blocker'),
                     'discard_message'          => __('You have unsaved changes. Are you sure you want to discard them?', 'advanced-ip-blocker'),
@@ -2863,10 +2866,10 @@ class ADVAIPBL_Main
             $country_code = $location['country_code'] ?? '';
 
             if (empty($country_code) || ! in_array($country_code, $this->options['login_restrict_countries'], true)) {
-                $this->log_specific_error('login_geoblock', $client_ip, [
+                $this->handle_error('login_geoblock', [
                     'country' => $location['country'] ?? ($country_code ?: __('Unknown Location', 'advanced-ip-blocker')),
                     'action'  => 'Whitelist Login Countries restriction',
-                ], 'warning');
+                ]);
 
                 $this->error_handled_this_request = true;
 
@@ -4621,8 +4624,9 @@ class ADVAIPBL_Main
         }
 
         if (!empty($this->options['enable_threat_scoring'])) {
-            $points_to_add = (int) ($this->options['score_' . $type] ?? 0);
-
+            $score_val = $this->options['score_' . $type] ?? '';
+            $points_to_add = ($score_val === '') ? (int) ($this->get_default_settings()['score_' . $type] ?? 0) : (int) $score_val;
+            
             if ($points_to_add > 0) {
                 $new_score = $this->threat_score_manager->increment_score($ip, $points_to_add, $type, $extra_data);
 
@@ -4774,7 +4778,8 @@ class ADVAIPBL_Main
         }
 
         if ($scoring_system_active) {
-            $points_to_add = (int) ($this->options['score_' . $type] ?? 0);
+            $score_val = $this->options['score_' . $type] ?? '';
+            $points_to_add = ($score_val === '') ? (int) ($this->get_default_settings()['score_' . $type] ?? 0) : (int) $score_val;
             if ($points_to_add <= 0) {
                 return;
             }
@@ -5861,6 +5866,7 @@ class ADVAIPBL_Main
             'score_404'                 => 5,
             'score_403'                 => 10,
             'score_login'               => 15,
+            'score_login_geoblock'      => 25,
             'score_user_agent'          => 100,
             'score_waf'                 => 100,
             'score_honeypot'            => 100,
@@ -6079,6 +6085,21 @@ class ADVAIPBL_Main
                 remove_all_actions('all_admin_notices');
 
                 add_action('admin_notices', [$this, 'display_under_attack_notice']);
+                
+                // Rescue Setup Wizard Notice
+                add_action('admin_notices', [$this, 'display_setup_wizard_notice']);
+                
+                // Rescue Force 2FA Setup Notice
+                add_action('admin_notices', [$this, 'display_force_2fa_setup_notice']);
+                
+                // Rescue Community Threat Feed & Telemetry Notice
+                add_action('admin_notices', [$this, 'display_admin_notice']);
+                
+                // Rescue AIB Alerts (Remote Notices)
+                if (isset($this->remote_notices)) {
+                    add_action('admin_notices', [$this->remote_notices, 'display_notices']);
+                }
+
                 if (isset($this->settings_manager)) {
                     add_action('admin_notices', [$this->settings_manager, 'display_captcha_keys_warning']);
                 }

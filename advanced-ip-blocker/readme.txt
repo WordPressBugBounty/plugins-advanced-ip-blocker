@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.11
+Stable tag: 8.13.12
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,20 +21,20 @@ A complete WordPress security firewall: blocks IPs, bots, countries & ASN. Inclu
 > To ensure maximum security and access to all features, we strongly recommend using **PHP 8.1 or higher**. Some advanced features (like the local MaxMind database or full 2FA management via WP-CLI) require PHP 8.1.
 
 **Key Features:**
-*   **(NEW) File Integrity Scanner (Beta):** Instantly detect unauthorized changes to core WordPress files and your active plugins/themes. A vital tool to detect malware infections or backdoor placements on your server.
-*   **(NEW) Admin Access Control:** Granular control over which administrators can access the plugin's configuration dashboard. Restrict plugin management while keeping firewall rules intact for all editors and admins.
-*   **(NEW) Hardening & Core Protection:** Powerful tools to disable WordPress application passwords, turn off the dangerous built-in file editor, block PHP execution in the uploads folder, and hide the WordPress version from attackers.
-*   **(NEW) Intelligent Zero-Day WAF Sync:** Automatically download and apply critical WAF signatures from the AIB Central Server every day. Stay protected against zero-day vulnerabilities (like wp2shell) without needing to update the plugin manually! The rules run completely independent of your custom WAF configuration.
-*   **(NEW) Block Ghost IPs:** Automatically block IPs without ASN and Reverse DNS to stop anonymous traffic (Warning: Could cause false positives if rDNS is misconfigured by ISPs).
-*   **(NEW) Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
-*   **(NEW) Rate Limiting Advanced Rules:** Create highly specific rate limits for different endpoints. For example, set a strict limit with a Turnstile challenge for `/login`, while keeping a more generous limit with a temporary block for your main API, all without affecting the rest of the site.
-*   **(NEW) Distributed Attack Protection (Auto-Panic):** Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.
+*   **File Integrity Scanner (Beta):** Instantly detect unauthorized changes to core WordPress files and your active plugins/themes. A vital tool to detect malware infections or backdoor placements on your server.
+*   **Admin Access Control:** Granular control over which administrators can access the plugin's configuration dashboard. Restrict plugin management while keeping firewall rules intact for all editors and admins.
+*   **Hardening & Core Protection:** Powerful tools to disable WordPress application passwords, turn off the dangerous built-in file editor, block PHP execution in the uploads folder, and hide the WordPress version from attackers.
+*   **Intelligent Zero-Day WAF Sync:** Automatically download and apply critical WAF signatures from the AIB Central Server every day. Stay protected against zero-day vulnerabilities (like wp2shell) without needing to update the plugin manually! The rules run completely independent of your custom WAF configuration.
+*   **Block Ghost IPs:** Automatically block IPs without ASN and Reverse DNS to stop anonymous traffic (Warning: Could cause false positives if rDNS is misconfigured by ISPs).
+*   **Captcha Integrations (Turnstile & hCaptcha):** Seamlessly integrate modern verification challenges like Cloudflare Turnstile and hCaptcha, with granular control per module and a smart fallback to our invisible JS Challenge to prevent accidental lockouts.
+*   **Rate Limiting Advanced Rules:** Create highly specific rate limits for different endpoints. For example, set a strict limit with a Turnstile challenge for `/login`, while keeping a more generous limit with a temporary block for your main API, all without affecting the rest of the site.
+*   **Distributed Attack Protection (Auto-Panic):** Automatically shields your entire site with a global JS challenge during massive traffic spikes, keeping your server online while intelligently bypassing trusted bots and excluded routes.
 *   **IP & ASN Diagnostics Tool:** A complete Inspector tool integrated directly into the admin bar. Quickly audit any IP or ASN against your Geolocation database, Threat Scoring system, Spamhaus drops, and manual blocking rules in real-time.
 *   **Advanced Rules Import/Export:** Seamlessly migrate or backup your complex custom security rules across multiple WordPress websites. With full JSON validation, structural deduplication, and "cost-zero" client-side file generation, agency users can clone their perfect firewall setups in seconds.
 *   **Granular JS Challenge Modes:** You can now choose exactly how the security challenge behaves. Select "Managed" for ultimate security requiring human interaction (a checkbox), or "Automatic" for an invisible, transparent Proof-of-Work execution that stops bots silently. Apply different modes per module!
 *   **Country Selector Copy/Paste:** Say goodbye to manually selecting 50+ countries. You can now instantly copy and paste a raw list of 2-letter country codes directly into Geoblocking, Geo-Challenge, and Whitelist Login fields.
 *   **AIB Cloud Network V3:** Upgrade to the next-generation distributed threat intelligence network. The new API V3 provides secure, individual API Keys per site, drastically improving synchronization reliability, threat telemetry, and global network stability.
-*   **Whitelist Login Countries:** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, instantly blocking unauthorized foreign login attempts.
+*   **Whitelist Login Countries (with Threat Scoring Integration):** Take absolute control over administrative access. Easily restrict your WordPress login page and XML-RPC to only allow connections from specific, whitelisted countries, automatically accumulating Threat Score points and triggering global hard-blocks for persistent bots while keeping the door open for legitimate travelers.
 *   **(IMPROVED) Bulk Import/Export for Blocked IPs & Whitelist:** Seamlessly import massive lists of IPs via CSV or manual entry. The system now features a bulletproof "Bulk Import" type, strict duration inheritance, and intelligent conflict resolution.
 *   **Internal Security & Forensics:** A complete audit suite solely for WordPress. Track every sensitive event (plugin installs, settings changes, user logins) and monitor your critical files for unauthorized modifications with the integrated File Integrity Monitor.
 *   **Activity Audit Log:** Gain complete visibility into what's happening on your site. Who deactivated a plugin? Who changed a setting? The Audit Log answers these questions with timestamped, immutable records.
@@ -271,10 +271,21 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.11 =
-Critical update! Fixes MySQL errors during FIM sync on shared hosts, adds X-AIB-Auth for strict firewalls, and improves API compatibility. Update highly recommended for stable malware scanner operations.
+= 8.13.12 =
+Critical update: Upgrades the Advanced Rules Engine to catch file-upload exploits, adds Zero-Day attack analytics, and introduces a manual sync button for the Community Defense Network.
 
 == Changelog ==
+
+= 8.13.12 =
+* **NEW FEATURE:** Zero-Day Advanced Telemetry. The dashboard now tracks exact analytics (`first_seen`, `unique_ips`, `unique_sites`) for each blocked Zero-Day attack to provide deeper threat intelligence.
+* **NEW FEATURE:** Manual Sync for the Community Defense Network. Added a "Sync Now" button with AJAX feedback to manually force the latest community threat feed update.
+* **ENHANCEMENT:** Advanced Rules Engine can now seamlessly parse and flatten `multipart/form-data` payloads (including `$_FILES`), drastically improving the interception of Arbitrary File Upload zero-day exploits.
+* **ENHANCEMENT:** Increased the responsiveness of the Remote Security Notices synchronization by updating the local cron interval from 24 hours to 6 hours.
+* **BUGFIX:** Implemented an API transient lock for the Wordfence Vulnerability Importer to protect the free tier API quota from being suspended by repetitive WP-Cron executions.
+* **ENHANCEMENT:** Integrated the "Whitelist Login Countries" feature with the Threat Scoring Engine. Failed login attempts from unauthorized countries now accumulate threat score points (default: 25) instead of just showing a soft block, leading to an automatic hard block for persistent bots.
+* **OPTIMIZATION:** Drastically improved WordPress Admin performance by implementing a Smart Transient Cache system for database pagination `COUNT()` queries. This allows viewing the full history of millions of records (e.g. 100,000+ pages) without crashing the server or triggering MySQL 'Slow Queries'.
+* **BUGFIX/OPTIMIZATION:** Resolved 'API Required' map errors on the IP Inspector tab by replacing the CARTO map tiles with an embedded OpenStreetMap iframe. This change also eliminates unnecessary map-related Javascript (Leaflet) from loading on this tab, improving dashboard performance.
+* **BUGFIX:** Fixed an issue where critical plugin notifications (AIB Alerts, Force 2FA, Setup Wizard, and Threat Feed Status) were being incorrectly suppressed within the plugin's own dashboard pages.
 
 = 8.13.11 =
 * **SECURITY:** Implemented a new internal authentication header (`X-AIB-Auth`) across all API endpoints to improve communication security and bypass restrictive firewall/CGI configurations that strip standard authorization headers.

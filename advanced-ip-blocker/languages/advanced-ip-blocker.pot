@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.11\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.12\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -9037,4 +9037,32 @@ msgstr ""
 
 #: includes/class-advaipbl-ajax-handler.php:830
 msgid "Cloud rules are centrally managed and cannot be deleted from the local plugin."
+msgstr ""
+#: js/admin-settings.js
+msgid "Syncing..."
+msgstr ""
+
+#: js/admin-settings.js
+msgid "Synced!"
+msgstr ""
+
+#: js/admin-settings.js
+#: includes/class-advaipbl-admin-pages.php
+msgid "Sync Now"
+msgstr ""
+
+#: js/admin-settings.js
+msgid "Server Error"
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "You have synced recently. Please wait 15 minutes before trying again."
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Sync successful!"
+msgstr ""
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Sync failed. Please check the logs."
 msgstr ""

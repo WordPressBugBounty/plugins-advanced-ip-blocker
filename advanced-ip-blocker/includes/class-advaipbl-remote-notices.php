@@ -10,12 +10,17 @@ class ADVAIPBL_Remote_Notices {
     public function __construct() {
         add_action('admin_notices', [$this, 'display_notices']);
         add_action('wp_ajax_advaipbl_dismiss_notice', [$this, 'ajax_dismiss_notice']);
-        add_action('advaipbl_daily_notices_sync', [$this, 'fetch_remote_notices']);
+        add_action('advaipbl_fetch_notices_event', [$this, 'fetch_remote_notices']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
         
-        // Register cron if not exists
-        if (!wp_next_scheduled('advaipbl_daily_notices_sync')) {
-            wp_schedule_event(time(), 'daily', 'advaipbl_daily_notices_sync');
+        // Clear old daily cron hook
+        if (wp_next_scheduled('advaipbl_daily_notices_sync')) {
+            wp_clear_scheduled_hook('advaipbl_daily_notices_sync');
+        }
+
+        // Register new 6-hour cron if not exists
+        if (!wp_next_scheduled('advaipbl_fetch_notices_event')) {
+            wp_schedule_event(time(), 'advaipbl_6_hours', 'advaipbl_fetch_notices_event');
         }
     }
 
@@ -51,7 +56,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.11';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.12';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {

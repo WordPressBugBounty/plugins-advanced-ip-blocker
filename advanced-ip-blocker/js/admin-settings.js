@@ -923,6 +923,40 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    $('#advaipbl-force-sync-community').on('click', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var $status = $('#advaipbl-sync-status');
+        
+        $btn.prop('disabled', true).text(adminData.text.syncing);
+        $status.text('').css('color', '');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'advaipbl_force_sync_community',
+                nonce: adminData.nonces.force_sync_community
+            },
+            success: function(response) {
+                if (response.success) {
+                    $btn.text(adminData.text.synced);
+                    $status.css('color', 'green').text(response.data.message);
+                    if (response.data.html) {
+                        $('#advaipbl-community-sync-text').html(response.data.html);
+                    }
+                } else {
+                    $btn.prop('disabled', false).text(adminData.text.sync_now);
+                    $status.css('color', 'red').text(response.data.message || 'Error');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(adminData.text.sync_now);
+                $status.css('color', 'red').text(adminData.text.server_error);
+            }
+        });
+    });
+
     initWizardEnhancements();
     initWhitelistAjaxButton();
 

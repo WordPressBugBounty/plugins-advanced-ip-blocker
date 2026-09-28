@@ -84,6 +84,7 @@ class ADVAIPBL_Reporter_Manager
             'method' => $this->plugin->get_request_method(),
             'score' => $extra_data['abuse_score'] ?? 0,
             'rule' => $extra_data['rule'] ?? '',
+            'rule_id' => $extra_data['rule_id'] ?? null,
         ];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery

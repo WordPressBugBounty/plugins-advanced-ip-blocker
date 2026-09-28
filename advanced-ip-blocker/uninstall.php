@@ -255,7 +255,9 @@ function advaipbl_process_site_uninstallation() {
         'advaipbl_advanced_zeroday_sync_event',
         'advaipbl_advanced_zeroday_version_check_event',
         'advaipbl_fim_signatures_sync_event',
-        'advaipbl_fim_signatures_version_check_event'
+        'advaipbl_fim_signatures_version_check_event',
+        'advaipbl_fetch_notices_event',
+        'advaipbl_daily_notices_sync'
     ];
     // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     foreach ($cron_hooks as $hook) {

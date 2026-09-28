@@ -261,8 +261,13 @@ class ADVAIPBL_Admin_Pages
         }
         $where_sql = implode(' AND ', $where_clauses);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $total_items = $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
+        $cache_key = 'advaipbl_cnt_' . md5($table_name . $where_sql);
+        $total_items = get_transient($cache_key);
+        if ($total_items === false) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $total_items = (int) $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
+            set_transient($cache_key, $total_items, 10 * MINUTE_IN_SECONDS);
+        }
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -1187,6 +1192,7 @@ $default_waf_rules_list = [
                                 <div class="advaipbl-status-indicator" style="margin-bottom: 15px; padding: 10px; background: #f0f6fc; border: 1px solid #cce5ff; border-radius: 4px;">
                                     <span class="dashicons dashicons-cloud-saved" style="color: #2271b1; vertical-align: middle;"></span>
                                     <strong><?php esc_html_e('Protection Active:', 'advanced-ip-blocker'); ?></strong> 
+                                    <span id="advaipbl-community-sync-text">
                                     <?php
                                     if ($list_count > 0 && $last_update > 0) {
                                         printf(
@@ -1208,7 +1214,12 @@ $default_waf_rules_list = [
                                     } else {
                                         esc_html_e('Waiting for initial download...', 'advanced-ip-blocker');
                                     }
-        ?>
+                                    ?>
+                                    </span>
+                                    <button type="button" id="advaipbl-force-sync-community" class="button button-small" style="margin-left: 10px;">
+                                        <?php esc_html_e('Sync Now', 'advanced-ip-blocker'); ?>
+                                    </button>
+                                    <span id="advaipbl-sync-status" style="margin-left:5px; font-size:12px;"></span>
                                 </div>
                             <?php endif; ?>
                             <p><?php esc_html_e('Join forces with other WordPress admins. By sharing verified attack data, we build a real-time blocklist specifically tailored for WordPress threats.', 'advanced-ip-blocker'); ?></p>
@@ -2130,8 +2141,13 @@ $default_waf_rules_list = [
         }
         $where_sql = implode(' AND ', $where_clauses);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $total_items = $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
+        $cache_key = 'advaipbl_cnt_' . md5($table_name . $where_sql);
+        $total_items = get_transient($cache_key);
+        if ($total_items === false) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $total_items = (int) $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
+            set_transient($cache_key, $total_items, 10 * MINUTE_IN_SECONDS);
+        }
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -2445,8 +2461,14 @@ $default_waf_rules_list = [
         }
 
         $where_sql = implode(' AND ', $where_clauses);
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $total_items = $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
+        
+        $cache_key = 'advaipbl_cnt_' . md5($table_name . $where_sql);
+        $total_items = get_transient($cache_key);
+        if ($total_items === false) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $total_items = (int) $wpdb->get_var("SELECT COUNT(log_id) FROM $table_name WHERE $where_sql");
+            set_transient($cache_key, $total_items, 10 * MINUTE_IN_SECONDS);
+        }
         $total_pages = ceil($total_items / $per_page);
         $offset = ($current_page - 1) * $per_page;
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -4171,20 +4193,12 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
                         html += '</div>';
                         
                         $('#advaipbl-inspector-results').html(html).slideDown(400, function() {
-                            // Initialize Leaflet Map after the DOM is ready and visible
-                            if (data.geo.lat && data.geo.lon && typeof L !== 'undefined') {
+                            // Initialize OSM Iframe Map after the DOM is ready and visible
+                            if (data.geo.lat && data.geo.lon) {
                                 var lat = parseFloat(data.geo.lat);
                                 var lon = parseFloat(data.geo.lon);
-                                var map = L.map('advaipbl-inspector-map').setView([lat, lon], 12);
-                                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                                    subdomains: 'abcd',
-                                    maxZoom: 19
-                                }).addTo(map);
-                                L.marker([lat, lon]).addTo(map);
-                                
-                                // Fix Leaflet rendering issue inside hidden divs that are shown
-                                setTimeout(function(){ map.invalidateSize(); }, 10);
+                                var osmUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + (lon - 0.01) + ',' + (lat - 0.01) + ',' + (lon + 0.01) + ',' + (lat + 0.01) + '&layer=mapnik&marker=' + lat + ',' + lon;
+                                $('#advaipbl-inspector-map').html('<iframe width="100%" height="200" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="' + osmUrl + '"></iframe>');
                             }
                         });
                     } else {

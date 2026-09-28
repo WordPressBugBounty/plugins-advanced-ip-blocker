@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-09-13 10:50+0200\n"
+"PO-Revision-Date: 2026-09-28 09:58+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10690,6 +10690,36 @@ msgid ""
 msgstr ""
 "Las reglas en la nube se gestionan de forma centralizada y no se pueden "
 "eliminar desde el plugin local."
+
+#: js/admin-settings.js
+msgid "Syncing..."
+msgstr "Sincronizando..."
+
+#: js/admin-settings.js
+msgid "Synced!"
+msgstr "¡Sincronizado!"
+
+#: js/admin-settings.js includes/class-advaipbl-admin-pages.php
+msgid "Sync Now"
+msgstr "Sincronizar ahora"
+
+#: js/admin-settings.js
+msgid "Server Error"
+msgstr "Error del servidor"
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "You have synced recently. Please wait 15 minutes before trying again."
+msgstr ""
+"Has realizado una sincronización recientemente. Por favor, espera 15 minutos "
+"antes de volver a intentarlo."
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Sync successful!"
+msgstr "¡Sincronización realizada con éxito!"
+
+#: includes/class-advaipbl-ajax-handler.php
+msgid "Sync failed. Please check the logs."
+msgstr "La sincronización falló. Por favor, revisa los registros."
 
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"

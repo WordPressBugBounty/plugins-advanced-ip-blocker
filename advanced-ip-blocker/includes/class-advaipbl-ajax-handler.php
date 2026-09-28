@@ -37,6 +37,42 @@ class ADVAIPBL_Ajax_Handler
     }
 
     /**
+     * AJAX callback to force sync the AIB Community Defense Network list.
+     */
+    public function ajax_force_sync_community()
+    {
+        check_ajax_referer('advaipbl_force_sync_community_nonce', 'nonce');
+
+        if (!current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+        }
+
+        if (get_transient('advaipbl_community_manual_sync_cooldown')) {
+            wp_send_json_error(['message' => __('You have synced recently. Please wait 15 minutes before trying again.', 'advanced-ip-blocker')]);
+        }
+
+        set_transient('advaipbl_community_manual_sync_cooldown', true, 15 * MINUTE_IN_SECONDS);
+
+        $result = $this->plugin->community_manager->update_list();
+
+        if ($result !== false) {
+            $last_update = get_option('advaipbl_community_last_update', 0);
+            $time_diff = human_time_diff($last_update);
+            $count = number_format_i18n($result);
+            $message = sprintf(
+                /* translators: 1: IP count, 2: Time diff */
+                __('Blocking %1$s known malicious IPs. Updated %2$s ago.', 'advanced-ip-blocker'),
+                '<strong>' . $count . '</strong>',
+                $time_diff
+            );
+            wp_send_json_success(['message' => __('Sync successful!', 'advanced-ip-blocker'), 'html' => wp_kses($message, ['strong' => []])]);
+        } else {
+            delete_transient('advaipbl_community_manual_sync_cooldown');
+            wp_send_json_error(['message' => __('Sync failed. Please check the logs.', 'advanced-ip-blocker')]);
+        }
+    }
+
+    /**
      * AJAX callback for the IP Inspector.
      */
     public function ajax_inspect_ip()
