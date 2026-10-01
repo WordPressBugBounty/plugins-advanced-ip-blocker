@@ -5498,7 +5498,6 @@ class ADVAIPBL_Main
                  `option_name` LIKE %s OR 
                  `option_name` LIKE %s OR
                  `option_name` LIKE %s OR
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                  `option_name` LIKE %s",
                 $wpdb->esc_like('_transient_advaipbl_bloqueo_') . '%',
                 $wpdb->esc_like('_transient_timeout_advaipbl_bloqueo_') . '%',

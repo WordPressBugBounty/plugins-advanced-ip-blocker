@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.12
+Stable tag: 8.13.13
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,17 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.12 =
-Critical update: Upgrades the Advanced Rules Engine to catch file-upload exploits, adds Zero-Day attack analytics, and introduces a manual sync button for the Community Defense Network.
+= 8.13.13 =
+Compatibility update: Introduces full Nginx environment awareness to prevent unsupported .htaccess operations, and resolves a critical SQL syntax error.
 
 == Changelog ==
+
+= 8.13.13 =
+* **COMPATIBILITY:** Full Nginx Environment Support. The plugin now intelligently detects Nginx servers and automatically adapts its UI to disable unsupported `.htaccess` features in the Setup Wizard and Settings pages.
+* **ENHANCEMENT:** Added a built-in Nginx Vhost snippet generator. Nginx users are now provided with exact copy-paste configuration rules to protect sensitive plugin directories and block malicious PHP execution in the uploads folder.
+* **ENHANCEMENT:** The HTTP Security Headers module now explicitly notifies Nginx users of its dynamic PHP fallback mechanism and provides guidance for static file protection.
+* **ENHANCEMENT:** The System Status dashboard now accurately reports `.htaccess` core file permission checks as 'Not Applicable' on Nginx servers instead of showing misleading errors.
+* **BUGFIX:** Resolved a critical MySQL syntax error triggered during the "Unblock All IPs" and expired IP cleanup routines, caused by a misplaced code validation comment inside the database query.
 
 = 8.13.12 =
 * **NEW FEATURE:** Zero-Day Advanced Telemetry. The dashboard now tracks exact analytics (`first_seen`, `unique_ips`, `unique_sites`) for each blocked Zero-Day attack to provide deeper threat intelligence.

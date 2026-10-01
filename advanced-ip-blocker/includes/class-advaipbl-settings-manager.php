@@ -174,6 +174,15 @@ class ADVAIPBL_Settings_Manager
             ]
         );
 
+        $server_software = isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '';
+        $is_apache_ls = (stripos($server_software, 'Apache') !== false || stripos($server_software, 'LiteSpeed') !== false);
+        $is_nginx_only = (stripos($server_software, 'nginx') !== false && !$is_apache_ls);
+
+        $block_php_desc = __('Creates an isolated .htaccess file to immunize your media folder against PHP shell execution.', 'advanced-ip-blocker');
+        if ($is_nginx_only) {
+            $block_php_desc .= '<br><strong style="color: #d63638;">' . esc_html__('Disabled: Nginx server detected. .htaccess is not supported.', 'advanced-ip-blocker') . '</strong>';
+        }
+
         add_settings_field(
             'advaipbl_block_php_uploads',
             __('Block PHP in Uploads', 'advanced-ip-blocker'),
@@ -183,7 +192,8 @@ class ADVAIPBL_Settings_Manager
             [
                 'name' => 'block_php_uploads',
                 'label' => __('Block execution of PHP files in the `/wp-content/uploads/` directory.', 'advanced-ip-blocker'),
-                'description' => __('Creates an isolated .htaccess file to immunize your media folder against PHP shell execution.', 'advanced-ip-blocker')
+                'description' => $block_php_desc,
+                'disabled' => $is_nginx_only
             ]
         );
 
@@ -973,6 +983,16 @@ class ADVAIPBL_Settings_Manager
 
         add_settings_section('advaipbl_htaccess_settings_section', null, null, $page);
 
+        $server_software = isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '';
+        $is_nginx = (stripos($server_software, 'nginx') !== false);
+        $is_apache_ls = (stripos($server_software, 'Apache') !== false || stripos($server_software, 'LiteSpeed') !== false);
+        $is_nginx_only = ($is_nginx && !$is_apache_ls);
+
+        $htaccess_desc = __('This is required for all server-level blocking features. The plugin creates a backup before every write operation.', 'advanced-ip-blocker');
+        if ($is_nginx_only) {
+            $htaccess_desc .= '<br><strong style="color: #d63638;">' . esc_html__('Disabled: Nginx server detected. .htaccess is not supported.', 'advanced-ip-blocker') . '</strong>';
+        }
+
         add_settings_field(
             'advaipbl_enable_htaccess_write',
             __('Enable Htaccess Writer', 'advanced-ip-blocker'),
@@ -982,8 +1002,9 @@ class ADVAIPBL_Settings_Manager
             [
                 'name' => 'enable_htaccess_write',
                 'label' => __('Allow the plugin to modify the .htaccess file.', 'advanced-ip-blocker'),
-                'description' => __('This is required for all server-level blocking features. The plugin creates a backup before every write operation.', 'advanced-ip-blocker'),
-                'help_url' => 'https://advaipbl.com/high-performance-server-level-firewall-htaccess/'
+                'description' => $htaccess_desc,
+                'help_url' => 'https://advaipbl.com/high-performance-server-level-firewall-htaccess/',
+                'disabled' => $is_nginx_only
             ]
         );
 
@@ -1892,20 +1913,28 @@ class ADVAIPBL_Settings_Manager
     {
         $default = $args['default'] ?? '0';
         $value = $this->plugin->options[$args['name']] ?? $default;
+        
+        // If the field is forcefully disabled (e.g., due to Nginx), it must visually appear OFF
+        if (!empty($args['disabled'])) {
+            $value = '0';
+        }
+
         $id_attr = isset($args['id']) ? 'id="' . esc_attr($args['id']) . '"' : 'advaipbl_switch_' . esc_attr($args['name']);
 
+        $disabled_attr = !empty($args['disabled']) ? 'disabled="disabled"' : '';
         $html = sprintf(
             '<!-- HIDDEN FALLBACK FOR WP SETTINGS API -->
              <input type="hidden" name="%s" value="0" />
              <label for="%s" class="advaipbl-switch">
-                <input type="checkbox" name="%s" id="%s" value="1" %s />
+                <input type="checkbox" name="%s" id="%s" value="1" %s %s />
                 <span class="advaipbl-slider"></span>
             </label>',
             esc_attr('advaipbl_settings[' . $args['name'] . ']'),
             esc_attr($id_attr),
             esc_attr('advaipbl_settings[' . $args['name'] . ']'),
             esc_attr($id_attr),
-            checked('1', $value, false)
+            checked('1', $value, false),
+            $disabled_attr
         );
 
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

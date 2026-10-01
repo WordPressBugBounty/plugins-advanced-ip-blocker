@@ -134,9 +134,21 @@ class ADVAIPBL_Security_Headers
         </h2>
         <p><?php esc_html_e('Manage the HTTP Security Headers sent by your website to improve browser-side security.', 'advanced-ip-blocker'); ?></p>
         
-        <div class="notice notice-success inline">
-            <p><?php esc_html_e('These security headers are automatically synchronized with your .htaccess file (providing comprehensive full-site protection, including static files) and are also sent via PHP as a fallback if your server does not support .htaccess.', 'advanced-ip-blocker'); ?></p>
-        </div>
+        <?php
+        $server_software = isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '';
+        $is_nginx = (stripos($server_software, 'nginx') !== false);
+        
+        if ($is_nginx) : ?>
+            <div class="notice notice-warning inline">
+                <p><strong><?php esc_html_e('Nginx Server Detected', 'advanced-ip-blocker'); ?></strong></p>
+                <p><?php esc_html_e('Your server is running Nginx, which does not support .htaccess files. The plugin will automatically send these security headers via PHP for your dynamic pages, which safely protects your main website content.', 'advanced-ip-blocker'); ?></p>
+                <p><?php esc_html_e('However, for maximum security (to also protect static files like images and CSS), we recommend manually copying these headers into your Nginx Vhost configuration.', 'advanced-ip-blocker'); ?></p>
+            </div>
+        <?php else : ?>
+            <div class="notice notice-success inline">
+                <p><?php esc_html_e('These security headers are automatically synchronized with your .htaccess file (providing comprehensive full-site protection, including static files) and are also sent via PHP as a fallback if your server does not support .htaccess.', 'advanced-ip-blocker'); ?></p>
+            </div>
+        <?php endif; ?>
         
         <form action="options.php" method="post">
             <?php

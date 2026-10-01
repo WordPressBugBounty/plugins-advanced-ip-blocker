@@ -1120,9 +1120,64 @@ $default_waf_rules_list = [
 
         if ($is_nginx && !$is_apache_ls) {
             echo '<div class="notice notice-warning inline"><p>';
-            echo '<strong>' . esc_html__('Compatibility Warning:', 'advanced-ip-blocker') . '</strong> ';
-            echo esc_html__('Your server appears to be running Nginx independently. Nginx does NOT support .htaccess files. Enabling these options will write to the file, but the server will likely ignore them.', 'advanced-ip-blocker');
-            echo '</p></div>';
+            echo '<strong>' . esc_html__('Nginx Compatibility Warning:', 'advanced-ip-blocker') . '</strong> ';
+            echo esc_html__('Your server appears to be running Nginx independently. Nginx does NOT support .htaccess files. Enabling the options below will write to the file, but your server will ignore them.', 'advanced-ip-blocker');
+            echo '</p><hr style="margin: 10px 0;"><p style="margin-bottom: 5px;">';
+            echo '<strong>' . esc_html__('Required Nginx Configuration:', 'advanced-ip-blocker') . '</strong><br>';
+            echo esc_html__('To ensure your site remains fully protected on Nginx, please complete these steps:', 'advanced-ip-blocker') . '</p>';
+            echo '<ul style="list-style-type: disc; margin-left: 20px;">';
+            echo '<li>' . esc_html__('Enable Cloud Edge Defense (Cloudflare) below to offload IP blocking to the cloud.', 'advanced-ip-blocker') . '</li>';
+            echo '<li>' . esc_html__('Copy the following security snippet into your Nginx Vhost configuration to protect sensitive plugin directories and prevent malicious PHP execution:', 'advanced-ip-blocker') . '</li>';
+            echo '</ul>';
+            echo '<textarea readonly="readonly" style="width: 100%; height: 480px; font-family: monospace; margin-top: 10px; padding: 10px; background: #f0f0f1; border: 1px solid #8c8f94; white-space: pre;">';
+            echo "# ==========================================\n";
+            echo "# 1. REQUIRED: Advanced IP Blocker Rules\n";
+            echo "# ==========================================\n";
+            echo "# Protect sensitive plugin directories\n";
+            echo "location ~* ^/wp-content/uploads/(advaipbl-backups|advaipbl_geoip|advaipbl_quarantine)/ {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n\n";
+            echo "# Block PHP execution in Uploads folder\n";
+            echo "location ~* ^/wp-content/uploads/.*\.php$ {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n\n";
+            echo "# ==========================================\n";
+            echo "# 2. RECOMMENDED: General WP Hardening\n";
+            echo "# (Adapt to your specific server environment)\n";
+            echo "# ==========================================\n";
+            echo "# Global block for hidden files (Dotfiles) except Let's Encrypt\n";
+            echo "location ~ /\.(?!well-known).* {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n\n";
+            echo "# Block sensitive file extensions (backups, logs, databases)\n";
+            echo "location ~* \.(7z|bak|bz2|com|conf|dist|fla|git|env|inc|ini|log|old|psd|rar|tar|tgz|save|sh|sql|svn|swo|swp)$ {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n\n";
+            echo "# Block access to critical WordPress files\n";
+            echo "location ~* ^/(wp-config(-sample)?\.php|\.ds_store|readme\.(html|txt)|license\.txt)$ {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n\n";
+            echo "# Block direct PHP execution in wp-includes\n";
+            echo "location ~* ^/wp-includes/.*\.php$ {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n\n";
+            echo "# Block XML-RPC and Trackbacks (DDoS & Spam vectors)\n";
+            echo "# WARNING: Do NOT use the xmlrpc.php rule if you use Jetpack or the WP Mobile App.\n";
+            echo "location = /xmlrpc.php {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}\n";
+            echo "location = /wp-trackback.php {\n";
+            echo "    deny all;\n";
+            echo "    return 403;\n";
+            echo "}</textarea>";
+            echo '</div>';
         }
         ?>
 
@@ -3343,10 +3398,18 @@ wp advaipbl cloudflare &lt;sync|clear&gt;
                 <th scope="row"><?php esc_html_e('Core File Permissions', 'advanced-ip-blocker'); ?></th>
                 <td>
                     <?php
+        $server_software = isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '';
+        $is_apache_ls = (stripos($server_software, 'Apache') !== false || stripos($server_software, 'LiteSpeed') !== false);
+        $is_nginx_only = (stripos($server_software, 'nginx') !== false && !$is_apache_ls);
+
         $htaccess_file = get_home_path() . '.htaccess';
         $wpconfig_file = ABSPATH . 'wp-config.php';
 
-        $htaccess_status = file_exists($htaccess_file) ? (wp_is_writable($htaccess_file) ? '<span style="color: green;">' . esc_html__('Writable', 'advanced-ip-blocker') . '</span>' : '<span style="color: #d63638;">' . esc_html__('Read-Only', 'advanced-ip-blocker') . '</span>') : esc_html__('Not Found', 'advanced-ip-blocker');
+        if ($is_nginx_only) {
+            $htaccess_status = '<span style="color: #72777c;">' . esc_html__('Not Applicable (Nginx server detected)', 'advanced-ip-blocker') . '</span>';
+        } else {
+            $htaccess_status = file_exists($htaccess_file) ? (wp_is_writable($htaccess_file) ? '<span style="color: green;">' . esc_html__('Writable', 'advanced-ip-blocker') . '</span>' : '<span style="color: #d63638;">' . esc_html__('Read-Only', 'advanced-ip-blocker') . '</span>') : esc_html__('Not Found', 'advanced-ip-blocker');
+        }
         $wpconfig_status = file_exists($wpconfig_file) ? (wp_is_writable($wpconfig_file) ? '<span style="color: green;">' . esc_html__('Writable', 'advanced-ip-blocker') . '</span>' : '<span style="color: #d63638;">' . esc_html__('Read-Only', 'advanced-ip-blocker') . '</span>') : esc_html__('Not Found', 'advanced-ip-blocker');
         ?>
                     <strong>.htaccess:</strong> <?php echo wp_kses_post($htaccess_status); ?><br>
@@ -3691,12 +3754,21 @@ wp advaipbl cloudflare &lt;sync|clear&gt;
                                 </div>
                             </label>
                         </div>
+                        <?php 
+                        $server_software = isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '';
+                        $is_nginx = (stripos($server_software, 'nginx') !== false);
+                        ?>
 						<div class="wizard-option-item">
                             <label>
-                                <input type="checkbox" name="activate_htaccess" value="1" checked>
+                                <input type="checkbox" name="activate_htaccess" value="1" <?php checked(false, $is_nginx); ?> <?php disabled(true, $is_nginx); ?>>
                                 <div>
                                     <strong><?php esc_html_e('Enable Server-Level Firewall (.htaccess)', 'advanced-ip-blocker'); ?></strong>
-                                    <p class="description"><?php esc_html_e('Automatically writes blocking rules and file hardening protections to your .htaccess file for maximum performance.', 'advanced-ip-blocker'); ?></p>
+                                    <p class="description">
+                                        <?php esc_html_e('Automatically writes blocking rules and file hardening protections to your .htaccess file for maximum performance.', 'advanced-ip-blocker'); ?>
+                                        <?php if ($is_nginx): ?>
+                                            <br><strong style="color: #d63638;"><?php esc_html_e('Disabled: Nginx server detected. .htaccess is not supported.', 'advanced-ip-blocker'); ?></strong>
+                                        <?php endif; ?>
+                                    </p>
                                 </div>
                             </label>
                         </div>

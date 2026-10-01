@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.12\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.13\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -9065,4 +9065,49 @@ msgstr ""
 
 #: includes/class-advaipbl-ajax-handler.php
 msgid "Sync failed. Please check the logs."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Nginx Compatibility Warning:"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Your server appears to be running Nginx independently. Nginx does NOT support .htaccess files. Enabling the options below will write to the file, but your server will ignore them."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Required Nginx Configuration:"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "To ensure your site remains fully protected on Nginx, please complete these steps:"
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Enable Cloud Edge Defense (Cloudflare) below to offload IP blocking to the cloud."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Copy the following security snippet into your Nginx Vhost configuration to protect sensitive plugin directories and prevent malicious PHP execution:"
+msgstr ""
+
+#: includes/class-advaipbl-security-headers.php
+msgid "Nginx Server Detected"
+msgstr ""
+
+#: includes/class-advaipbl-security-headers.php
+msgid "Your server is running Nginx, which does not support .htaccess files. The plugin will automatically send these security headers via PHP for your dynamic pages, which safely protects your main website content."
+msgstr ""
+
+#: includes/class-advaipbl-security-headers.php
+msgid "However, for maximum security (to also protect static files like images and CSS), we recommend manually copying these headers into your Nginx Vhost configuration."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-settings-manager.php
+msgid "Disabled: Nginx server detected. .htaccess is not supported."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not Applicable (Nginx server detected)"
 msgstr ""

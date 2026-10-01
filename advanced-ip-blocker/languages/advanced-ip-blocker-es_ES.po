@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-09-28 09:58+0200\n"
+"PO-Revision-Date: 2026-10-01 10:25+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10720,6 +10720,84 @@ msgstr "¡Sincronización realizada con éxito!"
 #: includes/class-advaipbl-ajax-handler.php
 msgid "Sync failed. Please check the logs."
 msgstr "La sincronización falló. Por favor, revisa los registros."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Nginx Compatibility Warning:"
+msgstr "Advertencia de compatibilidad con Nginx:"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Your server appears to be running Nginx independently. Nginx does NOT "
+"support .htaccess files. Enabling the options below will write to the file, "
+"but your server will ignore them."
+msgstr ""
+"Parece que tu servidor ejecuta Nginx de forma independiente. Nginx NO admite "
+"archivos .htaccess. Habilitar estas opciones escribirá en el archivo, pero "
+"probablemente el servidor las ignorará."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Required Nginx Configuration:"
+msgstr "Configuración de Nginx requerida:"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"To ensure your site remains fully protected on Nginx, please complete these "
+"steps:"
+msgstr ""
+"Para asegurarse de que su sitio permanezca totalmente protegido en Nginx, "
+"por favor complete los siguientes pasos:"
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Enable Cloud Edge Defense (Cloudflare) below to offload IP blocking to the "
+"cloud."
+msgstr ""
+"Habilite Cloud Edge Defense (Cloudflare) a continuación para delegar el "
+"bloqueo de IP a la nube."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid ""
+"Copy the following security snippet into your Nginx Vhost configuration to "
+"protect sensitive plugin directories and prevent malicious PHP execution:"
+msgstr ""
+"Copia el siguiente fragmento de seguridad en la configuración del Vhost de "
+"Nginx para proteger los directorios sensibles de los plugins y evitar la "
+"ejecución maliciosa de PHP:"
+
+#: includes/class-advaipbl-security-headers.php
+msgid "Nginx Server Detected"
+msgstr "Se ha detectado un servidor Nginx"
+
+#: includes/class-advaipbl-security-headers.php
+msgid ""
+"Your server is running Nginx, which does not support .htaccess files. The "
+"plugin will automatically send these security headers via PHP for your "
+"dynamic pages, which safely protects your main website content."
+msgstr ""
+"Tu servidor utiliza Nginx, que no admite archivos .htaccess. El plugin "
+"enviará automáticamente estas cabeceras de seguridad mediante PHP para tus "
+"páginas dinámicas, protegiendo así de forma segura el contenido principal de "
+"tu sitio web."
+
+#: includes/class-advaipbl-security-headers.php
+msgid ""
+"However, for maximum security (to also protect static files like images and "
+"CSS), we recommend manually copying these headers into your Nginx Vhost "
+"configuration."
+msgstr ""
+"Sin embargo, para una seguridad máxima (y proteger también archivos "
+"estáticos como imágenes y CSS), recomendamos copiar manualmente estas "
+"cabeceras en la configuración del Vhost de Nginx."
+
+#: includes/class-advaipbl-admin-pages.php
+#: includes/class-advaipbl-settings-manager.php
+msgid "Disabled: Nginx server detected. .htaccess is not supported."
+msgstr ""
+"Desactivado: Se ha detectado un servidor Nginx. No se admite .htaccess."
+
+#: includes/class-advaipbl-admin-pages.php
+msgid "Not Applicable (Nginx server detected)"
+msgstr "No aplicable (se ha detectado un servidor Nginx)"
 
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"
