@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-10-01 10:25+0200\n"
+"PO-Revision-Date: 2026-10-02 15:49+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10799,6 +10799,31 @@ msgstr ""
 msgid "Not Applicable (Nginx server detected)"
 msgstr "No aplicable (se ha detectado un servidor Nginx)"
 
+#: includes/class-advaipbl-main.php:7584
+msgid "Authentication error: Invalid user."
+msgstr "Error de autenticación: Usuario inválido."
+
+#: includes/class-advaipbl-main.php:7590 includes/class-advaipbl-main.php:7743
+#: includes/class-advaipbl-main.php:7821
+msgid "Session expired or invalid. Please login again."
+msgstr ""
+"La sesión ha caducado o no es válida. Por favor, inicie sesión de nuevo."
+
+#: includes/class-advaipbl-main.php:7596
+msgid ""
+"Too many failed 2FA attempts. Account temporarily locked for 15 minutes."
+msgstr ""
+"Demasiados intentos fallidos de autenticación de dos factores (2FA). La "
+"cuenta ha sido bloqueada temporalmente durante 15 minutos."
+
+#: includes/class-advaipbl-main.php:7738
+msgid "Invalid 2FA request."
+msgstr "Solicitud de 2FA no válida."
+
+#: includes/class-advaipbl-main.php:7816
+msgid "Invalid recovery code request."
+msgstr "Solicitud de código de recuperación no válido."
+
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"
 #~ msgstr "Entrada %1$s bloqueada manualmente mediante WP-CLI. Motivo: %2$s"
@@ -11746,9 +11771,6 @@ msgstr "No aplicable (se ha detectado un servidor Nginx)"
 
 #~ msgid "[%s] Security Alert: Endpoint Lockdown Activated for %s"
 #~ msgstr "[%s] Alerta de Seguridad: Endpoint Lockdown Activado para %s"
-
-#~ msgid "Invalid recovery code request."
-#~ msgstr "Solicitud de código de recuperación no válida."
 
 #~ msgid ""
 #~ "Useful for trusted services like Google (AS15169) or Cloudflare (AS13335) "

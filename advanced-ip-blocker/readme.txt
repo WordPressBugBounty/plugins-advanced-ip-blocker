@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.13
+Stable tag: 8.13.14
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,16 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.13 =
-Compatibility update: Introduces full Nginx environment awareness to prevent unsupported .htaccess operations, and resolves a critical SQL syntax error.
+= 8.13.14 =
+CRITICAL SECURITY UPDATE: Patches a vulnerability in the 2FA module. We strongly recommend updating immediately to keep your site fully protected.
 
 == Changelog ==
+
+= 8.13.14 =
+* **Security (Critical):** Fixed an Authentication Bypass vulnerability in the Two-Factor Authentication (2FA) login flow.
+* **Security:** Implemented strict anti-brute-force rate limiting for 2FA TOTP verification (accounts are temporarily locked for 15 minutes after 5 failed attempts).
+* **Security:** Failed 2FA attempts now correctly trigger the native WordPress wp_login_failed hook, ensuring compatibility with server-level IP banning tools like Fail2Ban.
+* **I18n:** Added missing translation strings for the new 2FA security prompts to the .pot file.
 
 = 8.13.13 =
 * **COMPATIBILITY:** Full Nginx Environment Support. The plugin now intelligently detects Nginx servers and automatically adapts its UI to disable unsupported `.htaccess` features in the Setup Wizard and Settings pages.

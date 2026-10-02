@@ -48,6 +48,16 @@ class ADVAIPBL_Live_Feed_Manager
             return new WP_REST_Response(['message' => 'Unauthorized or Live Feed inactive.'], 403);
         }
 
+        $user_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0.0.0.0';
+        $rl_key  = 'advaipbl_lf_rl_' . md5($user_ip);
+        $requests = (int) get_transient($rl_key);
+
+        if ($requests >= 10) {
+            return new WP_REST_Response(['message' => 'Too Many Requests.'], 429);
+        }
+
+        set_transient($rl_key, $requests + 1, 10);
+
         global $wpdb;
 
         $since_id = $request->get_param('since');

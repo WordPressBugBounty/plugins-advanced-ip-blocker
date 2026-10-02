@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.13\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.14\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -9110,4 +9110,26 @@ msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php
 msgid "Not Applicable (Nginx server detected)"
+msgstr ""
+
+#: includes/class-advaipbl-main.php:7584
+msgid "Authentication error: Invalid user."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:7590
+#: includes/class-advaipbl-main.php:7743
+#: includes/class-advaipbl-main.php:7821
+msgid "Session expired or invalid. Please login again."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:7596
+msgid "Too many failed 2FA attempts. Account temporarily locked for 15 minutes."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:7738
+msgid "Invalid 2FA request."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:7816
+msgid "Invalid recovery code request."
 msgstr ""
