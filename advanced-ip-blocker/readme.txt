@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.14
+Stable tag: 8.13.15
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.14 =
-CRITICAL SECURITY UPDATE: Patches a vulnerability in the 2FA module. We strongly recommend updating immediately to keep your site fully protected.
+= 8.13.15 =
+SECURITY ENHANCEMENT: Adds configurable 2FA rate limiting and Critical Audit Log alerts for compromised passwords (failed 2FA).
 
 == Changelog ==
+
+= 8.13.15 =
+* **Security:** Enhanced 2FA brute-force protection. Administrators can now configure the "Max 2FA Failures" and "Lockout Duration" directly from the Login Security settings.
+* **Security:** Differentiated generic login failures from 2FA failures. The Audit Log now flags failed 2FA attempts as "Critical - Password Compromised" instead of generic invalid credentials.
 
 = 8.13.14 =
 * **Security (Critical):** Fixed an Authentication Bypass vulnerability in the Two-Factor Authentication (2FA) login flow.

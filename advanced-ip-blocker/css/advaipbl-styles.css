@@ -663,3 +663,76 @@
     word-break: break-all !important;
     overflow-x: hidden !important;
 }
+
+/* Advanced Rules Action Buttons */
+.advaipbl-rules-action-buttons {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+@media screen and (max-width: 600px) {
+    .advaipbl-rules-action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .advaipbl-rules-action-buttons .button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   RESPONSIVE LOG TABLES (Fix disappearing filters on mobile)
+   ========================================================================== */
+@media screen and (max-width: 782px) {
+    /* WP Core hides .tablenav .actions on mobile. We force them to show. */
+    .advaipbl-wrap .tablenav .actions {
+        display: block !important;
+        float: none;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .advaipbl-wrap .tablenav.top {
+        height: auto;
+        padding-bottom: 10px;
+    }
+
+    /* Stack the filter form fields gracefully */
+    .advaipbl-wrap .advaipbl-filters-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    
+    .advaipbl-wrap .advaipbl-filters-form select,
+    .advaipbl-wrap .advaipbl-filters-form input[type="search"],
+    .advaipbl-wrap .advaipbl-filters-form input[type="submit"],
+    .advaipbl-wrap .advaipbl-filters-form label {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 !important;
+        box-sizing: border-box;
+    }
+
+    /* Keep the checkbox alignment natural inside the full-width label */
+    .advaipbl-wrap .advaipbl-filters-form label input[type="checkbox"] {
+        width: auto;
+        margin-right: 8px !important;
+        flex-shrink: 0;
+    }
+
+    /* Ensure Clear Log buttons also stretch */
+    .advaipbl-wrap .tablenav .actions button,
+    .advaipbl-wrap .tablenav .actions .button-danger {
+        width: 100%;
+        margin-top: 5px;
+        text-align: center;
+        justify-content: center;
+    }
+}

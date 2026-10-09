@@ -22,7 +22,7 @@ class ADVAIPBL_Audit_Logger
     private function init_hooks()
     {
         add_action('wp_login', [$this, 'log_login'], 10, 2);
-        add_action('wp_login_failed', [$this, 'log_login_failed']);
+        add_action('wp_login_failed', [$this, 'log_login_failed'], 10, 2);
 
         add_action('activated_plugin', [$this, 'log_plugin_activation'], 10, 2);
         add_action('deactivated_plugin', [$this, 'log_plugin_deactivation'], 10, 2);
@@ -89,9 +89,17 @@ class ADVAIPBL_Audit_Logger
         $this->log_activity('user_login', 'info', ['username' => $user_login], $user->ID);
     }
 
-    public function log_login_failed($username)
+    public function log_login_failed($username, $error = null)
     {
-        $this->log_activity('login_failed', 'warning', ['username' => $username, 'error' => 'Invalid credentials'], 0);
+        $severity = 'warning';
+        $error_msg = 'Invalid credentials';
+        
+        if (is_wp_error($error) && $error->get_error_code() === 'failed_2fa') {
+            $severity = 'critical';
+            $error_msg = __('2FA Failed (Password Compromised!)', 'advanced-ip-blocker');
+        }
+
+        $this->log_activity('login_failed', $severity, ['username' => $username, 'error' => $error_msg], 0);
     }
 
     public function log_plugin_activation($plugin, $network_wide)

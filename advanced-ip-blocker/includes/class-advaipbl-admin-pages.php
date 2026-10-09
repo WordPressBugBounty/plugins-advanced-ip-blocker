@@ -3970,7 +3970,7 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
 
     </div>
     </div>
-    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+    <div class="advaipbl-rules-action-buttons">
         <button id="advaipbl-add-new-rule-btn" class="button button-primary">
             <span class="dashicons dashicons-plus-alt"></span>
             <?php esc_html_e('Add New Rule', 'advanced-ip-blocker'); ?>
@@ -4973,4 +4973,5 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
         <?php
     }
 }
+
 

@@ -48,20 +48,34 @@ class ADVAIPBL_Live_Feed_Manager
             return new WP_REST_Response(['message' => 'Unauthorized or Live Feed inactive.'], 403);
         }
 
-        $user_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0.0.0.0';
+        $user_ip = method_exists($this->plugin, 'get_client_ip') ? $this->plugin->get_client_ip() : (isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0.0.0.0');
         $rl_key  = 'advaipbl_lf_rl_' . md5($user_ip);
-        $requests = (int) get_transient($rl_key);
+        
+        $rate_data = get_transient($rl_key);
+        $current_time = time();
 
-        if ($requests >= 10) {
-            return new WP_REST_Response(['message' => 'Too Many Requests.'], 429);
+        if (false === $rate_data) {
+            $rate_data = ['count' => 1, 'start_time' => $current_time];
+            set_transient($rl_key, $rate_data, 60);
+        } else {
+            if ($rate_data['count'] >= 6) {
+                return new WP_REST_Response(['message' => 'Too Many Requests.'], 429);
+            }
+            $rate_data['count']++;
+            $expiration = max(1, 60 - ($current_time - $rate_data['start_time']));
+            set_transient($rl_key, $rate_data, $expiration);
         }
-
-        set_transient($rl_key, $requests + 1, 10);
 
         global $wpdb;
 
         $since_id = $request->get_param('since');
         $since_id = isset($since_id) ? (int) $since_id : 0;
+
+        $cache_key = 'advaipbl_live_feed_' . $since_id;
+        $cached_response = get_transient($cache_key);
+        if (false !== $cached_response) {
+            return new WP_REST_Response($cached_response, 200);
+        }
 
         $table_name = $wpdb->prefix . 'advaipbl_activity_log';
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -152,10 +166,14 @@ class ADVAIPBL_Live_Feed_Manager
             }
         }
 
-        return new WP_REST_Response([
+        $response_data = [
             'attacks'  => $attacks,
             'last_id'  => $last_id,
-        ], 200);
+        ];
+
+        set_transient($cache_key, $response_data, 10);
+
+        return new WP_REST_Response($response_data, 200);
     }
 
     /**

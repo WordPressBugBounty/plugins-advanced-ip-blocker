@@ -981,6 +981,36 @@ class ADVAIPBL_Settings_Manager
             'advaipbl_2fa_settings_section'
         );
 
+        add_settings_field(
+            'advaipbl_2fa_max_failures',
+            __('Max 2FA Failures', 'advanced-ip-blocker'),
+            [$this, 'number_field_callback'],
+            $page,
+            'advaipbl_2fa_settings_section',
+            [
+                'name' => '2fa_max_failures',
+                'description' => __('Number of failed 2FA attempts before the account is temporarily locked.', 'advanced-ip-blocker'),
+                'min' => 1,
+                'max' => 50,
+                'default' => 5
+            ]
+        );
+
+        add_settings_field(
+            'advaipbl_2fa_lockout_duration',
+            __('2FA Lockout Duration (Minutes)', 'advanced-ip-blocker'),
+            [$this, 'number_field_callback'],
+            $page,
+            'advaipbl_2fa_settings_section',
+            [
+                'name' => '2fa_lockout_duration',
+                'description' => __('How long the account will remain locked after reaching the maximum failed 2FA attempts.', 'advanced-ip-blocker'),
+                'min' => 1,
+                'max' => 1440,
+                'default' => 15
+            ]
+        );
+
         add_settings_section('advaipbl_htaccess_settings_section', null, null, $page);
 
         $server_software = isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '';
@@ -1452,6 +1482,7 @@ class ADVAIPBL_Settings_Manager
         $new_input = $existing_options;
 
         $numeric_fields = [
+            '2fa_max_failures', '2fa_lockout_duration',
             'threshold_404', 'duration_404', 'transient_expiration_404',
             'threshold_403', 'duration_403', 'transient_expiration_403',
             'threshold_login', 'duration_login', 'transient_expiration_login',

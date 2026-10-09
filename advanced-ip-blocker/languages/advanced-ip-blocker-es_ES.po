@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-10-02 15:49+0200\n"
+"PO-Revision-Date: 2026-10-07 12:05+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10824,6 +10824,52 @@ msgstr "Solicitud de 2FA no válida."
 msgid "Invalid recovery code request."
 msgstr "Solicitud de código de recuperación no válido."
 
+#: includes/class-advaipbl-main.php:2576
+msgid "Cloud Zero-Day Rules"
+msgstr "Cloud Zero-Day Rules"
+
+#: includes/class-advaipbl-main.php:2577
+msgid ""
+"Info: These rules are automatically synchronized from the cloud to protect "
+"your site against recent attacks (Zero-Day). If a rule causes issues, we "
+"recommend <strong>Disabling</strong> it using the switch instead of deleting "
+"it."
+msgstr ""
+"Información: Estas reglas se sincronizan automáticamente desde la nube para "
+"proteger su sitio frente a ataques recientes (Zero-Day). Si alguna regla "
+"causa problemas, recomendamos <strong>desactivarla</strong> mediante el "
+"interruptor en lugar de eliminarla."
+
+#: includes/class-advaipbl-main.php:7644
+msgid "2FA Verification Failed (Password was compromised)"
+msgstr "Error en la verificación de 2FA (la contraseña estaba comprometida)"
+
+#: includes/class-advaipbl-audit-logger.php:99
+msgid "2FA Failed (Password Compromised!)"
+msgstr "Error en la autenticación de dos factores (¡contraseña comprometida!)"
+
+#: includes/class-advaipbl-settings-manager.php:986
+msgid "Max 2FA Failures"
+msgstr "Máximo de intentos fallidos de 2FA"
+
+#: includes/class-advaipbl-settings-manager.php:992
+msgid "Number of failed 2FA attempts before the account is temporarily locked."
+msgstr ""
+"Número de intentos fallidos de 2FA antes de que la cuenta se bloquee "
+"temporalmente."
+
+#: includes/class-advaipbl-settings-manager.php:1000
+msgid "2FA Lockout Duration (Minutes)"
+msgstr "Duración del bloqueo por 2FA (minutos)"
+
+#: includes/class-advaipbl-settings-manager.php:1006
+msgid ""
+"How long the account will remain locked after reaching the maximum failed "
+"2FA attempts."
+msgstr ""
+"Cuánto tiempo permanecerá bloqueada la cuenta tras alcanzar el límite máximo "
+"de intentos fallidos de 2FA."
+
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"
 #~ msgstr "Entrada %1$s bloqueada manualmente mediante WP-CLI. Motivo: %2$s"
@@ -11077,9 +11123,6 @@ msgstr "Solicitud de código de recuperación no válido."
 
 #~ msgid "Untrusted XML-RPC Request"
 #~ msgstr "Solicitud XML-RPC no confiable"
-
-#~ msgid "Main Features:"
-#~ msgstr "Características principales:"
 
 #~ msgid ""
 #~ "Intelligent Web Application Firewall (WAF) to block malicious requests "

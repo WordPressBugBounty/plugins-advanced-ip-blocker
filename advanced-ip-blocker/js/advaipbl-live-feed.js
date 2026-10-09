@@ -36,6 +36,11 @@ jQuery(document).ready(function ($) {
         if (isFetching || !apiUrl || !feedToken) {
             return;
         }
+
+        if (document.hidden) {
+            return;
+        }
+
         isFetching = true;
 
         const params = new URLSearchParams();

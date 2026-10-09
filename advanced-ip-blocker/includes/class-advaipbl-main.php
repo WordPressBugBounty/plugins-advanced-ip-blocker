@@ -360,7 +360,7 @@ class ADVAIPBL_Main
         add_action('init', [$this, 'prevent_author_enumeration_redirect'], 9);
         add_filter('the_author_login', [$this, 'prevent_user_enumeration_via_feeds']);
         add_filter('get_the_author_login', [$this, 'prevent_user_enumeration_via_feeds']);
-        add_action('wp_login_failed', [$this, 'registrar_intento_login_fallido']);
+        add_action('wp_login_failed', [$this, 'registrar_intento_login_fallido'], 10, 2);
         add_action('init', [ $this, 'handle_login_page_restriction' ], 5);
         add_action('init', [ $this, 'handle_login_geo_restriction' ], 6);
         add_action('wp_login', [$this, 'auto_whitelist_admin_on_login'], 10, 2);
@@ -369,13 +369,7 @@ class ADVAIPBL_Main
         add_filter('authenticate', [$this, 'prevent_login_hinting'], 99, 1);
         add_action('lostpassword_post', [$this, 'prevent_lostpassword_hinting']);
         add_action('rest_api_init', [$this, 'register_live_feed_api_endpoint']);
-        add_action('rest_api_init', function () {
-            register_rest_route('advaipbl/v1', '/live-feed-nonce', [
-                'methods'  => WP_REST_Server::READABLE,
-                'callback' => [$this, 'get_live_feed_nonce'],
-                'permission_callback' => '__return_true',
-            ]);
-        });
+
         add_shortcode('advaipbl_live_feed', [$this, 'render_live_feed_shortcode']);
         $this->add_2fa_hooks();
 
@@ -1235,18 +1229,7 @@ class ADVAIPBL_Main
         return $this->live_feed_manager->get_live_attacks($request);
     }
 
-    /**
-    * REST API endpoint to get a fresh nonce for the live feed.
-    * This prevents page cache issues.
-    */
-    public function get_live_feed_nonce()
-    {
-        if (! isset($this->live_feed_manager)) {
-            $this->live_feed_manager = new ADVAIPBL_Live_Feed_Manager($this);
-        }
 
-        return $this->live_feed_manager->get_nonce();
-    }
 
     /**
     * Function for the [advaipbl_live_feed] shortcode.
@@ -2590,6 +2573,8 @@ class ADVAIPBL_Main
                     'bulk_delete_rules_confirm_message' => __('Are you sure you want to delete the selected %d rule(s)? This action cannot be undone.', 'advanced-ip-blocker'),
                     'bulk_delete_rules_confirm_button' => __('Yes, Delete Selected', 'advanced-ip-blocker'),
                     'no_advanced_rules' => __('No advanced rules have been created yet.', 'advanced-ip-blocker'),
+                    'cloud_rules_title' => __('Cloud Zero-Day Rules', 'advanced-ip-blocker'),
+                    'cloud_rules_notice' => __('Info: These rules are automatically synchronized from the cloud to protect your site against recent attacks (Zero-Day). If a rule causes issues, we recommend <strong>Disabling</strong> it using the switch instead of deleting it.', 'advanced-ip-blocker'),
                     'could_not_load_rules' => __('Could not load rules.', 'advanced-ip-blocker'),
                     'import_rules_process' => __('Importing rules...', 'advanced-ip-blocker'),
                     'export_rules_process' => __('Generating export file...', 'advanced-ip-blocker'),
@@ -4588,9 +4573,13 @@ class ADVAIPBL_Main
         }
     }
 
-    public function registrar_intento_login_fallido($username)
+    public function registrar_intento_login_fallido($username, $error = null)
     {
-        $this->handle_error('login', [ 'username' => $username ]);
+        $extra_data = [ 'username' => $username ];
+        if (is_wp_error($error) && $error->get_error_code() === 'failed_2fa') {
+            $extra_data['reason'] = '2fa_failed';
+        }
+        $this->handle_error('login', $extra_data);
     }
 
     private function handle_error($type, $extra_data = [])
@@ -5743,6 +5732,7 @@ class ADVAIPBL_Main
             'threshold_404' => 10, 'duration_404' => 360, 'transient_expiration_404' => 60,
             'threshold_403' => 5, 'duration_403' => 60, 'transient_expiration_403' => 30,
             'threshold_login' => 5, 'duration_login' => 360, 'transient_expiration_login' => 60,
+            '2fa_max_failures' => 5, '2fa_lockout_duration' => 15,
             'duration_geoblock' => 1440, 'duration_honeypot' => 1440, 'duration_user_agent' => 1440,
             'duration_waf' => 1440, 'duration_rate_limit' => 30, 'duration_xmlrpc_block' => 1440,
             'duration_asn' => 1440,
@@ -7590,10 +7580,16 @@ class ADVAIPBL_Main
             wp_die(esc_html__('Session expired or invalid. Please login again.', 'advanced-ip-blocker'));
         }
 
+        $max_fails = isset($this->options['2fa_max_failures']) ? (int) $this->options['2fa_max_failures'] : 5;
+        $lockout_mins = isset($this->options['2fa_lockout_duration']) ? (int) $this->options['2fa_lockout_duration'] : 15;
         $rate_limit_key = 'advaipbl_2fa_fails_' . $user_id;
         $failures = (int) get_transient($rate_limit_key);
-        if ($failures >= 5) {
-            wp_die(esc_html__('Too many failed 2FA attempts. Account temporarily locked for 15 minutes.', 'advanced-ip-blocker'));
+        if ($failures >= $max_fails) {
+            wp_die(sprintf(
+                /* translators: %d: number of minutes */
+                esc_html__('Too many failed 2FA attempts. Account temporarily locked for %d minutes.', 'advanced-ip-blocker'),
+                absint($lockout_mins)
+            ));
         }
         $is_valid = false;
         $nonce_action = '';
@@ -7642,9 +7638,9 @@ class ADVAIPBL_Main
             wp_safe_redirect($redirect_to);
             exit;
         } else {
-            set_transient($rate_limit_key, $failures + 1, 15 * MINUTE_IN_SECONDS);
+            set_transient($rate_limit_key, $failures + 1, $lockout_mins * MINUTE_IN_SECONDS);
             // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-            do_action('wp_login_failed', $user->user_login);
+            do_action('wp_login_failed', $user->user_login, new WP_Error('failed_2fa', __('2FA Verification Failed (Password was compromised)', 'advanced-ip-blocker')));
 
             $error_message = ('backup' === $step)
                 ? __('<strong>ERROR</strong>: The recovery code is incorrect or has already been used.', 'advanced-ip-blocker')
@@ -9254,3 +9250,4 @@ class ADVAIPBL_Main
         }
     }
 }
+

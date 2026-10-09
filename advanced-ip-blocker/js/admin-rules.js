@@ -446,13 +446,30 @@ jQuery(document).ready(function ($) {
                 ${rule.metrics ? `<span style="display: inline-block; margin-left: 15px; padding: 2px 6px; background: #f0f0f1; border-radius: 3px; color: #50575e; font-size: 12px; font-weight: 500;" title="Total times this rule was triggered"><span class="dashicons dashicons-chart-bar" style="font-size: 14px; width: 14px; height: 14px; line-height: 14px; vertical-align: text-top;"></span> Hits: ${rule.metrics.hits || 0}</span>` : ''}
             </div>
             <div class="rule-actions">
+                ${!isCloudRule ? `
                 <button class="button button-secondary move-rule-up" title="Move Up"><span class="dashicons dashicons-arrow-up-alt2"></span></button>
                 <button class="button button-secondary move-rule-down" title="Move Down"><span class="dashicons dashicons-arrow-down-alt2"></span></button>
                 <button class="button button-secondary edit-rule">Edit</button>
                 <button class="button button-link-delete delete-rule">Delete</button>
+                ` : `
+                
+                `}
             </div>
         </div>`;
         }
+
+                // Tab switching logic
+        rulesListContainer.on('click', '.advaipbl-tab-btn', function() {
+            const target = $(this).data('target');
+            
+            // Update buttons
+            rulesListContainer.find('.advaipbl-tab-btn').removeClass('active').css({'font-weight': 'normal', 'color': '#50575e', 'border-bottom-color': 'transparent'});
+            $(this).addClass('active').css({'font-weight': 'bold', 'color': '#2271b1', 'border-bottom-color': '#2271b1'});
+            
+            // Show target, hide others
+            rulesListContainer.find('.advaipbl-tab-content').hide();
+            rulesListContainer.find('.' + target).show();
+        });
 
         rulesListContainer.on('change', '.toggle-rule-status', function () {
             const checkbox = $(this);
@@ -512,22 +529,67 @@ jQuery(document).ready(function ($) {
             paginationContainers.html(paginationHtml);
         }
 
+                        let currentRuleType = 'manual';
+
         function loadRules(page = 1) {
             rulesListContainer.html('<div class="advaipbl-loader-wrapper"><div class="advaipbl-loader"></div></div>');
             navContainers.hide();
             $.post(ajaxurl, {
                 action: 'advaipbl_get_advanced_rules',
                 nonce: adminData.nonces.get_rules_nonce,
-                page: page
+                page: page,
+                rule_type: currentRuleType
             }).done(function (response) {
                 rulesListContainer.empty();
                 if (response.success) {
+                    if (response.data.counts) {
+                        // Backend provided totals
+                        var manualCount = response.data.counts.manual;
+                        var cloudCount = response.data.counts.cloud;
+                    } else {
+                        var manualCount = 0;
+                        var cloudCount = 0;
+                    }
+
+                    // Render Tabs Header
+                    let tabsHtml = `
+                    <div class="advaipbl-rules-tabs" style="margin-bottom: 20px; border-bottom: 1px solid #ccd0d4; padding-bottom: 0; display: flex; gap: 10px;">
+                        <button type="button" class="advaipbl-tab-btn ${currentRuleType === 'manual' ? 'active' : ''}" data-target="manual" style="background: none; border: none; border-bottom: 3px solid ${currentRuleType === 'manual' ? '#2271b1' : 'transparent'}; padding: 10px 15px; cursor: pointer; font-weight: ${currentRuleType === 'manual' ? 'bold' : 'normal'}; color: ${currentRuleType === 'manual' ? '#2271b1' : '#50575e'}; font-size: 14px; outline: none;">
+                            Custom Rules <span style="background: #f0f0f1; border: 1px solid #c3c4c7; color: #3c434a; border-radius: 10px; padding: 1px 6px; font-size: 11px; margin-left: 5px;">${manualCount}</span>
+                        </button>
+                        <button type="button" class="advaipbl-tab-btn ${currentRuleType === 'cloud' ? 'active' : ''}" data-target="cloud" style="background: none; border: none; border-bottom: 3px solid ${currentRuleType === 'cloud' ? '#2271b1' : 'transparent'}; padding: 10px 15px; cursor: pointer; font-weight: ${currentRuleType === 'cloud' ? 'bold' : 'normal'}; color: ${currentRuleType === 'cloud' ? '#2271b1' : '#50575e'}; font-size: 14px; outline: none;">
+                            <span class="dashicons dashicons-cloud" style="font-size: 16px; line-height: 18px; color: #d63384; margin-right: 4px;"></span>${adminData.text.cloud_rules_title || 'Cloud Zero-Day Rules'} 
+                            <span style="background: #f0f0f1; border: 1px solid #c3c4c7; color: #3c434a; border-radius: 10px; padding: 1px 6px; font-size: 11px; margin-left: 5px;">${cloudCount}</span>
+                        </button>
+                    </div>`;
+
+                    let finalHtml = tabsHtml;
+
+                    // Render Content
+                    if (currentRuleType === 'cloud') {
+                        finalHtml += `
+                        <div class="notice notice-info inline" style="margin-bottom: 20px; border-left-color: #d63384; background: #fff;">
+                            <p>${adminData.text.cloud_rules_notice || 'These rules are maintained by the Cloud.'}</p>
+                        </div>`;
+                    }
+
                     if (response.data.rules && response.data.rules.length > 0) {
                         navContainers.show();
-                        response.data.rules.forEach(rule => { rulesListContainer.append(renderRule(rule)); });
+                        let rulesHtml = '';
+                        response.data.rules.forEach(rule => { 
+                            rulesHtml += renderRule(rule);
+                        });
+                        finalHtml += `<div class="rules-container advaipbl-tab-content">${rulesHtml}</div>`;
+                    } else {
+                        finalHtml += `<div class="rules-container advaipbl-tab-content"><p>${currentRuleType === 'manual' ? (adminData.text.no_advanced_rules || 'No custom rules have been created yet.') : 'No cloud rules synced.'}</p></div>`;
+                    }
+
+                    rulesListContainer.html(finalHtml);
+                    
+                    if (response.data.rules && response.data.rules.length > 0) {
                         renderPagination(response.data.pagination);
                     } else {
-                        rulesListContainer.html(`<p>${adminData.text.no_advanced_rules || 'No advanced rules have been created yet.'}</p>`);
+                        navContainers.hide();
                     }
                 } else {
                     rulesListContainer.html(`<p class="error">${adminData.text.could_not_load_rules || 'Could not load rules.'}</p>`);
@@ -538,6 +600,14 @@ jQuery(document).ready(function ($) {
             });
         }
 
+        // Tab switching logic (AJAX reload)
+        $('#advaipbl-advanced-rules-list').off('click', '.advaipbl-tab-btn').on('click', '.advaipbl-tab-btn', function() {
+            const target = $(this).data('target');
+            if (currentRuleType !== target) {
+                currentRuleType = target;
+                loadRules(1); // Reload from page 1
+            }
+        });
         $('#advaipbl-add-new-rule-btn').on('click', function () { modal.find('.advaipbl-modal-title').text('Add New Rule'); $('#advaipbl-rule-id').val(''); $('#advaipbl-rule-name').val(''); conditionsContainer.empty(); addConditionRow(); updateActionParams(); modal.show(); });
         
         $('#advaipbl-export-rules-btn').on('click', function () {
@@ -1021,5 +1091,12 @@ jQuery(document).ready(function ($) {
     initBulkImportExport();
 
 });
+
+
+
+
+
+
+
 
 

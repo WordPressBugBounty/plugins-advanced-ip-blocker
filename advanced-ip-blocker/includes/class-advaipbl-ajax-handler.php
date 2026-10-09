@@ -754,10 +754,34 @@ class ADVAIPBL_Ajax_Handler
         }
 
         $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+        $rule_type = isset($_POST['rule_type']) ? sanitize_text_field(wp_unslash($_POST['rule_type'])) : 'all';
         $per_page = 20;
-        $all_rules = $this->plugin->rules_engine->get_rules();
+        $raw_rules = $this->plugin->rules_engine->get_rules();
+        $raw_rules = is_array($raw_rules) ? $raw_rules : [];
+        
+        $all_rules = [];
+        $total_manual = 0;
+        $total_cloud = 0;
 
-        $all_rules = is_array($all_rules) ? $all_rules : [];
+        foreach ($raw_rules as $r) {
+            $is_cloud = (isset($r['id']) && strpos($r['id'], 'ar_zd_') === 0);
+            
+            if ($is_cloud) {
+                $total_cloud++;
+            } else {
+                $total_manual++;
+            }
+
+            if ($rule_type === 'cloud' && !$is_cloud) {
+                continue;
+            }
+            if ($rule_type === 'manual' && $is_cloud) {
+                continue;
+            }
+            
+            $all_rules[] = $r;
+        }
         $total_items = count($all_rules);
         $total_pages = ceil($total_items / $per_page);
         $rules_for_page = array_slice($all_rules, ($page - 1) * $per_page, $per_page);
@@ -774,6 +798,10 @@ class ADVAIPBL_Ajax_Handler
 
         wp_send_json_success([
             'rules'       => $rules_for_page,
+            'counts'      => [
+                'manual' => $total_manual,
+                'cloud'  => $total_cloud,
+            ],
             'pagination'  => [
                 'total_items' => $total_items,
                 'total_pages' => $total_pages,
@@ -1634,3 +1662,6 @@ class ADVAIPBL_Ajax_Handler
         }
     }
 }
+
+
+
