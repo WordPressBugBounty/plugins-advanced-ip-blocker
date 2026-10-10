@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.15
+Stable tag: 8.13.16
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,18 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.15 =
-SECURITY ENHANCEMENT: Adds configurable 2FA rate limiting and Critical Audit Log alerts for compromised passwords (failed 2FA).
+= 8.13.16 =
+SECURITY UPDATE: Patches a critical XML-RPC authentication bypass in the 2FA system and hardens the interim login token by migrating it to a secure HttpOnly cookie. Also integrates Login Whitelist blocks into the Threat Score engine. Upgrade immediately.
 
 == Changelog ==
+
+= 8.13.16 =
+* **Security (Critical):** Fixed an Authentication Bypass vulnerability where users with Two-Factor Authentication (2FA) enabled could bypass 2FA checks via XML-RPC using their standard password.
+* **Security:** Hardened the 2FA authentication flow by migrating the interim Step-1 token from URL parameters to a secure, HttpOnly cookie, preventing token leakage in server access logs and browser history.
+* **Enhancement:** Integrated the 'Login Whitelist Block' restriction into the core Threat Score engine. Repeated unauthorized login attempts now accumulate points and trigger network-level bans (Cloudflare/.htaccess).
+* **Feature:** Added 'Login Whitelist Block' to the Threat Score configuration UI so administrators can customize the penalty points.
+* **Fix:** Corrected a visual bug in the Security Audit Log where access rejections (such as Login Whitelist, Geo-blocking) were erroneously displayed as "Blocked: Permanent". They are now accurately labeled as "Request Rejected".
+* **Fix:** Fixed an issue where the attacker's IP was displayed as "N/A" in the Security Log for Login Whitelist block events.
 
 = 8.13.15 =
 * **Security:** Enhanced 2FA brute-force protection. Administrators can now configure the "Max 2FA Failures" and "Lockout Duration" directly from the Login Security settings.

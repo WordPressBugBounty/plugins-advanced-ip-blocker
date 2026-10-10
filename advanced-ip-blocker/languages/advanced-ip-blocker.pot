@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.15\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.16\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -9164,4 +9164,12 @@ msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:1006
 msgid "How long the account will remain locked after reaching the maximum failed 2FA attempts."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:2621
+msgid "Request Rejected"
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:2261
+msgid "Login Whitelist Block"
 msgstr ""

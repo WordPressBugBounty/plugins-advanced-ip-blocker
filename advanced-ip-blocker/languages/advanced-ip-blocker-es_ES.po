@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-10-07 12:05+0200\n"
+"PO-Revision-Date: 2026-10-10 09:32+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -10869,6 +10869,14 @@ msgid ""
 msgstr ""
 "Cuánto tiempo permanecerá bloqueada la cuenta tras alcanzar el límite máximo "
 "de intentos fallidos de 2FA."
+
+#: includes/class-advaipbl-admin-pages.php:2621
+msgid "Request Rejected"
+msgstr "Solicitud rechazada"
+
+#: includes/class-advaipbl-settings-manager.php:2261
+msgid "Login Whitelist Block"
+msgstr "Bloqueo Whitelist de inicio de sesión"
 
 #, php-format
 #~ msgid "Entry %1$s manually blocked via WP-CLI. Reason: %2$s"

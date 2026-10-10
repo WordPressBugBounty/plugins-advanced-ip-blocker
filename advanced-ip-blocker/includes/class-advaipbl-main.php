@@ -717,7 +717,7 @@ class ADVAIPBL_Main
         add_action('wp_ajax_advaipbl_2fa_activate', [$this->ajax_handler, 'ajax_2fa_activate']);
         add_action('wp_ajax_advaipbl_2fa_deactivate', [$this->ajax_handler, 'ajax_2fa_deactivate']);
 
-        add_filter('authenticate', [$this, 'intercept_login_step_1'], 20, 3);
+        add_filter('authenticate', [$this, 'intercept_login_step_1'], 99, 3);
         add_action('login_form_advaipbl_validate_2fa', [$this, 'display_2fa_login_form_step_2']);
         add_action('login_form_advaipbl_validate_2fa_backup', [$this, 'display_2fa_backup_code_form']);
         add_action('login_form_login', [$this, 'handle_login_action']);
@@ -2809,9 +2809,10 @@ class ADVAIPBL_Main
             $client_ip = $this->get_client_ip();
 
             if (! $this->is_whitelisted($client_ip)) {
-                /* translators: %s is a placeholder */
-                $this->log_event(sprintf(__('Access to wp-login.php denied for non-whitelisted IP: %s', 'advanced-ip-blocker'), $client_ip), 'critical', ['ip' => $client_ip]);
-                $this->log_specific_error('login_whitelist_block', $client_ip, ['ip' => $client_ip, 'action' => 'Whitelist Login Access'], 'critical');
+                $this->handle_error('login_whitelist_block', [
+                    'ip'     => $client_ip,
+                    'action' => 'Whitelist Login Access restriction'
+                ]);
 
                 $this->error_handled_this_request = true;
 
@@ -4576,8 +4577,11 @@ class ADVAIPBL_Main
     public function registrar_intento_login_fallido($username, $error = null)
     {
         $extra_data = [ 'username' => $username ];
-        if (is_wp_error($error) && $error->get_error_code() === 'failed_2fa') {
-            $extra_data['reason'] = '2fa_failed';
+        if (is_wp_error($error)) {
+            $code = $error->get_error_code();
+            if ($code === 'failed_2fa' || $code === 'advaipbl_2fa_required_xmlrpc') {
+                $extra_data['reason'] = '2fa_failed';
+            }
         }
         $this->handle_error('login', $extra_data);
     }
@@ -5856,6 +5860,7 @@ class ADVAIPBL_Main
             'score_403'                 => 10,
             'score_login'               => 15,
             'score_login_geoblock'      => 25,
+            'score_login_whitelist_block' => 25,
             'score_user_agent'          => 100,
             'score_waf'                 => 100,
             'score_honeypot'            => 100,
@@ -7574,7 +7579,7 @@ class ADVAIPBL_Main
             wp_die(esc_html__('Authentication error: Invalid user.', 'advanced-ip-blocker'));
         }
 
-        $token = isset($_POST['step1_token']) ? sanitize_text_field(wp_unslash($_POST['step1_token'])) : '';
+        $token = isset($_COOKIE['advaipbl_2fa_step1_' . $user_id]) ? sanitize_text_field(wp_unslash($_COOKIE['advaipbl_2fa_step1_' . $user_id])) : '';
         $saved_token = get_user_meta($user_id, 'advaipbl_2fa_step1_token', true);
         if (empty($saved_token) || empty($token) || !hash_equals($saved_token, $token)) {
             wp_die(esc_html__('Session expired or invalid. Please login again.', 'advanced-ip-blocker'));
@@ -7609,6 +7614,7 @@ class ADVAIPBL_Main
         }
         if ($is_valid) {
             delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+            setcookie('advaipbl_2fa_step1_' . $user_id, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
             delete_transient($rate_limit_key);
             wp_set_auth_cookie($user->ID, isset($_POST['rememberme']));
 
@@ -7651,7 +7657,6 @@ class ADVAIPBL_Main
                 'action' => $error_action_redirect,
                 'user_id' => $user->ID,
                 'wp_auth_nonce' => wp_create_nonce('advaipbl-2fa-interim-' . $user->ID),
-                'step1_token' => $token,
                 'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
             ];
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -7678,28 +7683,43 @@ class ADVAIPBL_Main
             return $user;
         }
 
-        if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
-            return $user;
-        }
-
         $global_2fa_enabled = ! empty($this->options['enable_2fa']) && '1' === $this->options['enable_2fa'];
 
+        if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST && $global_2fa_enabled) {
+            if (! $this->tfa_manager || ! method_exists($this->tfa_manager, 'is_2fa_enabled_for_user')) {
+                require_once plugin_dir_path(__FILE__) . 'class-advaipbl-2fa-manager.php';
+                if (class_exists('BaconQrCode\Renderer\ImageRenderer')) {
+                    $this->tfa_manager = new ADVAIPBL_2FA_Manager($this);
+                }
+            }
+        }
+
         if (! $global_2fa_enabled || ! $this->tfa_manager || ! method_exists($this->tfa_manager, 'is_2fa_enabled_for_user')) {
+            if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
+                return $user;
+            }
             return $user;
         }
 
         $user_has_2fa_setup = $this->tfa_manager->is_2fa_enabled_for_user($user->ID);
         $user_is_forced = $this->tfa_manager->is_2fa_forced_for_user($user);
 
+        if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
+            if ($user_has_2fa_setup || $user_is_forced) {
+                return new WP_Error('advaipbl_2fa_required_xmlrpc', esc_html__('Two-Factor Authentication is required for this account. Please use Application Passwords for XML-RPC.', 'advanced-ip-blocker'));
+            }
+            return $user;
+        }
+
         if ($user_has_2fa_setup) {
             $step1_token = wp_generate_password(32, false, false);
             update_user_meta($user->ID, 'advaipbl_2fa_step1_token', $step1_token);
+            setcookie('advaipbl_2fa_step1_' . $user->ID, $step1_token, time() + 600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
 
             $args = [
                 'action' => 'advaipbl_validate_2fa',
                 'user_id' => $user->ID,
                 'wp_auth_nonce' => wp_create_nonce('advaipbl-2fa-interim-' . $user->ID),
-                'step1_token' => $step1_token,
                 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
                 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -7729,7 +7749,7 @@ class ADVAIPBL_Main
     {
         $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
         $nonce = isset($_GET['wp_auth_nonce']) ? sanitize_text_field(wp_unslash($_GET['wp_auth_nonce'])) : '';
-        $token = isset($_GET['step1_token']) ? sanitize_text_field(wp_unslash($_GET['step1_token'])) : '';
+        $token = isset($_COOKIE['advaipbl_2fa_step1_' . $user_id]) ? sanitize_text_field(wp_unslash($_COOKIE['advaipbl_2fa_step1_' . $user_id])) : '';
 
         if (! $user_id || ! wp_verify_nonce($nonce, 'advaipbl-2fa-interim-' . $user_id)) {
             wp_die(esc_html__('Invalid 2FA request.', 'advanced-ip-blocker'));
@@ -7762,7 +7782,6 @@ class ADVAIPBL_Main
                 <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" pattern="[0-9]*" inputmode="numeric" autocomplete="one-time-code" placeholder="123 456" autofocus />
             </p>
             <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>" />
-            <input type="hidden" name="step1_token" value="<?php echo esc_attr($token); ?>" />
             <input type="hidden" name="redirect_to" value="<?php echo esc_attr(isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : ''); ?>" />
             <input type="hidden" name="rememberme" value="<?php echo esc_attr(isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : ''); ?>" />
             <input type="hidden" name="advaipbl_2fa_login_step" value="2" />
@@ -7781,7 +7800,6 @@ class ADVAIPBL_Main
                         'action' => 'advaipbl_validate_2fa_backup',
                         'user_id' => $user_id,
                         'wp_auth_nonce' => $nonce,
-                        'step1_token' => $token,
                         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                         'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
                     ];
@@ -7807,7 +7825,7 @@ class ADVAIPBL_Main
     {
         $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
         $nonce = isset($_GET['wp_auth_nonce']) ? sanitize_text_field(wp_unslash($_GET['wp_auth_nonce'])) : '';
-        $token = isset($_GET['step1_token']) ? sanitize_text_field(wp_unslash($_GET['step1_token'])) : '';
+        $token = isset($_COOKIE['advaipbl_2fa_step1_' . $user_id]) ? sanitize_text_field(wp_unslash($_COOKIE['advaipbl_2fa_step1_' . $user_id])) : '';
 
         if (! $user_id || ! wp_verify_nonce($nonce, 'advaipbl-2fa-interim-' . $user_id)) {
             wp_die(esc_html__('Invalid recovery code request.', 'advanced-ip-blocker'));
@@ -7839,7 +7857,6 @@ class ADVAIPBL_Main
                 <input type="text" name="advaipbl_2fa_code" id="advaipbl_2fa_code" class="input" value="" size="20" autocomplete="off" placeholder="XXXXX-XXXXX" autofocus />
             </p>
             <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>" />
-            <input type="hidden" name="step1_token" value="<?php echo esc_attr($token); ?>" />
             <input type="hidden" name="redirect_to" value="<?php echo esc_attr(isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : ''); ?>" />
             <input type="hidden" name="rememberme" value="<?php echo esc_attr(isset($_REQUEST['rememberme']) ? sanitize_text_field(wp_unslash($_REQUEST['rememberme'])) : ''); ?>" />
             <input type="hidden" name="advaipbl_2fa_login_step" value="backup" />
@@ -7859,7 +7876,6 @@ class ADVAIPBL_Main
                         'action' => 'advaipbl_validate_2fa',
                         'user_id' => $user_id,
                         'wp_auth_nonce' => $nonce,
-                        'step1_token' => $token,
                         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                         'redirect_to' => isset($_REQUEST['redirect_to']) ? sanitize_text_field(wp_unslash($_REQUEST['redirect_to'])) : '',
                     ];

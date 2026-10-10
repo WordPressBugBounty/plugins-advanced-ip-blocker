@@ -77,7 +77,7 @@ class ADVAIPBL_Audit_Logger
                 'user_id'    => $user_id,
                 'event_type' => sanitize_key($type),
                 'severity'   => sanitize_key($severity),
-                'details'    => wp_json_encode($details),
+                'details'    => wp_json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'ip_address' => $ip,
                 'timestamp'  => current_time('mysql'),
             ]
@@ -94,9 +94,14 @@ class ADVAIPBL_Audit_Logger
         $severity = 'warning';
         $error_msg = 'Invalid credentials';
         
-        if (is_wp_error($error) && $error->get_error_code() === 'failed_2fa') {
-            $severity = 'critical';
-            $error_msg = __('2FA Failed (Password Compromised!)', 'advanced-ip-blocker');
+        if (is_wp_error($error)) {
+            if ($error->get_error_code() === 'failed_2fa') {
+                $severity = 'critical';
+                $error_msg = __('2FA Failed (Password Compromised!)', 'advanced-ip-blocker');
+            } elseif ($error->get_error_code() === 'advaipbl_2fa_required_xmlrpc') {
+                $severity = 'critical';
+                $error_msg = __('XML-RPC 2FA Blocked (Password Compromised!)', 'advanced-ip-blocker');
+            }
         }
 
         $this->log_activity('login_failed', $severity, ['username' => $username, 'error' => $error_msg], 0);

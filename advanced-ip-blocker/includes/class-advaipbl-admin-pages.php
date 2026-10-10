@@ -2615,22 +2615,28 @@ $default_waf_rules_list = [
                         <?php echo esc_html(ADVAIPBL_Main::get_formatted_datetime($entry['timestamp'])); ?>
                         <?php
                         if ('critical' === $entry['level'] && 'signature_flagged' !== $log_type) {
-                            $duration_minutes = 0;
-
-                            // CRITICAL FIX: Prioritize explicit duration from details (e.g. from Impersonation or Advanced Rules)
-                            if (isset($details['duration_seconds'])) {
-                                $duration_minutes = round((int)$details['duration_seconds'] / 60);
-                            } elseif (isset($this->plugin->options['duration_' . $log_type])) {
-                                $duration_minutes = (int) $this->plugin->options['duration_' . $log_type];
-                            }
-
-                            $duration_text = '';
-                            if ($duration_minutes <= 0) {
-                                $duration_text = __('Permanent', 'advanced-ip-blocker');
+                            $access_denied_types = ['login_whitelist_block', 'login_geoblock', 'failed_2fa'];
+                            
+                            if (in_array($log_type, $access_denied_types, true)) {
+                                echo '<br><strong style="color: #d63638;">' . esc_html__('Request Rejected', 'advanced-ip-blocker') . '</strong>';
                             } else {
-                                $duration_text = sprintf(/* translators: %s is a placeholder */ esc_html__('%d min', 'advanced-ip-blocker'), $duration_minutes);
+                                $duration_minutes = 0;
+
+                                // CRITICAL FIX: Prioritize explicit duration from details (e.g. from Impersonation or Advanced Rules)
+                                if (isset($details['duration_seconds'])) {
+                                    $duration_minutes = round((int)$details['duration_seconds'] / 60);
+                                } elseif (isset($this->plugin->options['duration_' . $log_type])) {
+                                    $duration_minutes = (int) $this->plugin->options['duration_' . $log_type];
+                                }
+
+                                $duration_text = '';
+                                if ($duration_minutes <= 0) {
+                                    $duration_text = __('Permanent', 'advanced-ip-blocker');
+                                } else {
+                                    $duration_text = sprintf(/* translators: %s is a placeholder */ esc_html__('%d min', 'advanced-ip-blocker'), $duration_minutes);
+                                }
+                                echo '<br><strong style="color: #c00;">' . esc_html__('Blocked:', 'advanced-ip-blocker') . '</strong> ' . esc_html($duration_text);
                             }
-                            echo '<br><strong style="color: #c00;">' . esc_html__('Blocked:', 'advanced-ip-blocker') . '</strong> ' . esc_html($duration_text);
                         }
                     ?>
                     </td>
@@ -4638,7 +4644,7 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
                     $user_info = $log['user_id'] ? get_userdata($log['user_id']) : null;
                     $username = $user_info ? $user_info->user_login : __('System/Guest', 'advanced-ip-blocker');
                     $details = json_decode($log['details'], true);
-                    $formatted_details = $details ? '<pre style="margin:0; white-space:pre-wrap;">' . esc_html(json_encode($details, JSON_PRETTY_PRINT)) . '</pre>' : '';
+                    $formatted_details = $details ? '<pre style="margin:0; white-space:pre-wrap;">' . esc_html(json_encode($details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) . '</pre>' : '';
                     ?>
                     <tr>
                         <td class="date column-date" data-colname="<?php esc_attr_e('Date', 'advanced-ip-blocker'); ?>"><?php echo esc_html($log['timestamp']); ?></td>
