@@ -309,6 +309,13 @@ class ADVAIPBL_Dashboard_Manager
             return [];
         }
 
+        usort($all_blocked_entries, function ($a, $b) {
+            return ($b['timestamp'] ?? 0) <=> ($a['timestamp'] ?? 0);
+        });
+
+        $limit = 200;
+        $all_blocked_entries = array_slice($all_blocked_entries, 0, $limit);
+
         $ips_to_locate = [];
         foreach ($all_blocked_entries as $entry) {
             $ip = $entry['ip'];
@@ -362,8 +369,6 @@ class ADVAIPBL_Dashboard_Manager
             }
         }
 
-        $limit = 200;
-
-        return array_slice($attacks_for_map, 0, $limit);
+        return $attacks_for_map;
     }
 }

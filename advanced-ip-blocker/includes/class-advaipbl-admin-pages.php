@@ -994,7 +994,7 @@ $default_waf_rules_list = [
                     </div>
                 </div>
                 <div class="advaipbl-dashboard-widget widget-two-thirds">
-                    <h3><?php esc_html_e('Live Attack Map', 'advanced-ip-blocker'); ?></h3>
+                    <h3><?php esc_html_e('Live Attack Map (Latest 200 Attacks)', 'advanced-ip-blocker'); ?></h3>
                     <div id="advaipbl-map-wrapper">
                         <div id="advaipbl-attack-map" style="height: 100%; width: 100%; min-height: 350px;"></div>
                     </div>

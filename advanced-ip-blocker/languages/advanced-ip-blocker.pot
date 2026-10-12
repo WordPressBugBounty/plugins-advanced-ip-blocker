@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.16\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.17\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1020,8 +1020,8 @@ msgstr ""
 msgid "Manage Settings"
 msgstr ""
 
-#: includes/class-advaipbl-admin-pages.php:992
-msgid "Live Attack Map"
+#: includes/class-advaipbl-admin-pages.php:997
+msgid "Live Attack Map (Latest 200 Attacks)"
 msgstr ""
 
 #: includes/class-advaipbl-admin-pages.php:1002

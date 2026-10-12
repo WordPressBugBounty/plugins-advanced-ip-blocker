@@ -380,13 +380,12 @@ class ADVAIPBL_User_Session_Manager
      * @param array $ips An array of IPs to locate.
      * @return array An associative array of [ip => location_data].
      */
-    public function get_cached_locations($ips)
+    public function get_cached_locations($ips, $max_fetch = 20)
     {
         if (! $this->plugin_instance) {
             return [];
         }
 
-        // La clave de caché ahora es un identificador simple para todo el grupo de localizaciones.
         $cache_key = ADVAIPBL_USM_LOCATION_CACHE_KEY;
         $cache = $this->plugin_instance->get_from_custom_cache($cache_key);
 
@@ -403,12 +402,22 @@ class ADVAIPBL_User_Session_Manager
             return $cache;
         }
 
+        $method = $this->plugin_instance->options['geolocation_method'] ?? 'api';
+        $fetched_count = 0;
+
         foreach ($ips_to_fetch as $ip) {
+            if ($method !== 'local_db' && $max_fetch > 0 && $fetched_count >= $max_fetch) {
+                break;
+            }
+
             if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                 $location = $this->geolocation_manager->fetch_location($ip);
                 if (is_array($location)) {
                     $cache[ $ip ] = $location;
+                } else {
+                    $cache[ $ip ] = ['error' => true];
                 }
+                $fetched_count++;
             }
         }
 

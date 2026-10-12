@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-09-01T08:40:44+02:00\n"
-"PO-Revision-Date: 2026-10-10 09:32+0200\n"
+"PO-Revision-Date: 2026-10-12 11:09+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -1107,9 +1107,9 @@ msgstr "Top bloqueos por país"
 msgid "Manage Settings"
 msgstr "Administrar configuración"
 
-#: includes/class-advaipbl-admin-pages.php:992
-msgid "Live Attack Map"
-msgstr "Mapa de ataque en vivo"
+#: includes/class-advaipbl-admin-pages.php:997
+msgid "Live Attack Map (Latest 200 Attacks)"
+msgstr "Mapa de ataques en vivo (Últimos 200 ataques)"
 
 #: includes/class-advaipbl-admin-pages.php:1002
 msgid "Threat Activity Timeline"

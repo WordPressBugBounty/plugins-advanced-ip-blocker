@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.16
+Stable tag: 8.13.17
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.16 =
-SECURITY UPDATE: Patches a critical XML-RPC authentication bypass in the 2FA system and hardens the interim login token by migrating it to a secure HttpOnly cookie. Also integrates Login Whitelist blocks into the Threat Score engine. Upgrade immediately.
+= 8.13.17 =
+PERFORMANCE UPDATE: Optimizes Security Dashboard map loading during large DDoS and botnet attacks, preventing PHP timeouts and AJAX errors when thousands of IPs are blocked.
 
 == Changelog ==
+
+= 8.13.17 =
+* **PERFORMANCE:** Optimized Security Dashboard map loading during large DDoS and botnet attacks. The live attack map now pre-sorts and limits attack events to the 200 most recent entries before performing geolocation lookups, completely eliminating 30-second PHP execution timeouts and AJAX errors when thousands of IPs are blocked.
+* **UI/UX:** Updated the Security Dashboard map widget title to "Live Attack Map (Latest 200 Attacks)" to clearly differentiate the rendered map markers from the total blocked IPs counter badge.
 
 = 8.13.16 =
 * **Security (Critical):** Fixed an Authentication Bypass vulnerability where users with Two-Factor Authentication (2FA) enabled could bypass 2FA checks via XML-RPC using their standard password.
