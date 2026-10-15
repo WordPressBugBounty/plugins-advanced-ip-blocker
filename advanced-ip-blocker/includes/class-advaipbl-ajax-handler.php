@@ -1125,6 +1125,41 @@ class ADVAIPBL_Ajax_Handler
     }
 
     /**
+     * AJAX callback to reset File Integrity Monitor baseline hashes.
+     */
+    public function ajax_reset_fim_baseline()
+    {
+        check_ajax_referer('advaipbl_reset_fim_baseline_nonce', 'nonce');
+
+        if (!current_user_can('advaipbl_manage_settings')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
+        }
+
+        if (empty($this->plugin->options['enable_fim'])) {
+            wp_send_json_error(['message' => __('File Integrity Monitor is disabled.', 'advanced-ip-blocker')]);
+        }
+
+        if (!isset($this->plugin->file_verifier)) {
+            wp_send_json_error(['message' => __('File Verifier module not loaded.', 'advanced-ip-blocker')]);
+        }
+
+        $baseline = $this->plugin->file_verifier->reset_baseline();
+
+        if (isset($this->plugin->audit_logger)) {
+            $this->plugin->audit_logger->log_activity(
+                'fim_info',
+                'info',
+                ['message' => 'FIM baseline hashes reset by administrator.']
+            );
+        }
+
+        wp_send_json_success([
+            'message' => __('FIM baseline hashes successfully synchronized with current file versions.', 'advanced-ip-blocker'),
+            'baseline_count' => count($baseline)
+        ]);
+    }
+
+    /**
      * AJAX callback for Bulk Import of IPs to Whitelist.
      */
     public function ajax_bulk_import_whitelist()

@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.17
+Stable tag: 8.13.18
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,16 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.17 =
-PERFORMANCE UPDATE: Optimizes Security Dashboard map loading during large DDoS and botnet attacks, preventing PHP timeouts and AJAX errors when thousands of IPs are blocked.
+= 8.13.18 =
+Fixes File Integrity Monitor false-positive alert loops on critical files (wp-config.php and .htaccess), adds a one-click Reset Baseline button, and enhances path normalization across Apache and Nginx.
 
 == Changelog ==
+
+= 8.13.18 =
+* **BUGFIX:** Resolved File Integrity Monitor (FIM) false-positive alert loop where updated baseline hashes were not committed after sending modification alerts for critical files (wp-config.php and .htaccess).
+* **NEW FEATURE:** Added a one-click "Reset Baseline Hashes" button in Internal Security settings allowing administrators to immediately re-synchronize FIM snapshots after making legitimate server modifications.
+* **ENHANCEMENT:** Added support for `wp-config.php` located in the parent directory above the WordPress root (standard WordPress hardening architecture).
+* **ENHANCEMENT:** Enhanced path normalization and matching in the File Verifier engine across Apache, Nginx, and Windows server environments.
 
 = 8.13.17 =
 * **PERFORMANCE:** Optimized Security Dashboard map loading during large DDoS and botnet attacks. The live attack map now pre-sorts and limits attack events to the 200 most recent entries before performing geolocation lookups, completely eliminating 30-second PHP execution timeouts and AJAX errors when thousands of IPs are blocked.

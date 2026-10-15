@@ -25,8 +25,6 @@ class ADVAIPBL_Cron_Manager
         add_action('advaipbl_update_spamhaus_list_event', [$this, 'update_spamhaus_list']);
 
         // Note: The following actions are registered in ADVAIPBL_Main::add_hooks() to avoid duplication:
-
-        add_action('advaipbl_daily_fim_scan', [$this->plugin->file_verifier, 'scan_files']);
         add_action('advaipbl_cloudflare_cleanup_event', [$this->plugin->cloudflare_manager, 'clear_all_aib_rules']);
         add_action('advaipbl_cloudflare_sync_event', [$this->plugin->cloudflare_manager, 'sync_blocked_ips']);
         add_action('advaipbl_update_community_list_event', [$this->plugin->community_manager, 'update_list']);

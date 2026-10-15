@@ -1467,6 +1467,14 @@ class ADVAIPBL_Settings_Manager
             $page,
             'advaipbl_internal_security_section'
         );
+
+        add_settings_field(
+            'advaipbl_fim_reset_baseline_button',
+            __('Reset Baseline Hashes', 'advanced-ip-blocker'),
+            [$this, 'fim_reset_baseline_button_callback'],
+            $page,
+            'advaipbl_internal_security_section'
+        );
     }
 
     public function sanitize_settings($input)
@@ -2620,6 +2628,29 @@ class ADVAIPBL_Settings_Manager
         <span id="advaipbl-fim-scan-status" class="advaipbl-fim-status" style="margin-left: 10px; font-style: italic;"></span>
         <p class="description">
             <?php esc_html_e('Triggers an immediate file integrity check. Results will be shown here and logged to the Audit Log if changes are found.', 'advanced-ip-blocker'); ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * Renders the "Reset Baseline Hashes" button on the settings page.
+     */
+    public function fim_reset_baseline_button_callback()
+    {
+        if (empty($this->plugin->options['enable_fim'])) {
+            echo '<p class="description">' . esc_html__('Enable the File Integrity Monitor to manage baseline hashes.', 'advanced-ip-blocker') . '</p>';
+
+            return;
+        }
+
+        $nonce = wp_create_nonce('advaipbl_reset_fim_baseline_nonce');
+        ?>
+        <button type="button" id="advaipbl-reset-fim-baseline-btn" class="button button-secondary advaipbl-reset-fim-baseline" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <?php esc_html_e('Reset Baseline Hashes', 'advanced-ip-blocker'); ?>
+        </button>
+        <span id="advaipbl-fim-reset-status" class="advaipbl-fim-status" style="margin-left: 10px; font-style: italic;"></span>
+        <p class="description">
+            <?php esc_html_e('Forces an immediate re-synchronization of your critical file baselines (wp-config.php, .htaccess, index.php) to their current disk versions. Use this after making legitimate server modifications to prevent false-positive alerts.', 'advanced-ip-blocker'); ?>
         </p>
         <?php
     }

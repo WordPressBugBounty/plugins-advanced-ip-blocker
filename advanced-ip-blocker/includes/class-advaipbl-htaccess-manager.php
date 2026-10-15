@@ -274,6 +274,12 @@ class ADVAIPBL_Htaccess_Manager
             require_once ABSPATH . 'wp-admin/includes/misc.php';
         }
 
-        return insert_with_markers($this->get_htaccess_path(), $this->marker, []);
+        $result = insert_with_markers($this->get_htaccess_path(), $this->marker, []);
+
+        if ($result && isset($this->plugin->file_verifier) && ! empty($this->plugin->options['enable_fim'])) {
+            $this->plugin->file_verifier->update_file_hash($this->get_htaccess_path());
+        }
+
+        return $result;
     }
 }

@@ -8,6 +8,7 @@ class ADVAIPBL_File_Verifier
 {
     private $main_instance;
     public const OPTION_BASELINE_HASHES = 'advaipbl_fim_baseline_hashes';
+    public const OPTION_BASELINE_VERSION = 'advaipbl_fim_baseline_version';
 
     public function __construct($main_instance)
     {
@@ -39,11 +40,16 @@ class ADVAIPBL_File_Verifier
      */
     public function get_monitored_files()
     {
+        $wp_config_path = ABSPATH . 'wp-config.php';
+        if (!file_exists($wp_config_path) && file_exists(dirname(ABSPATH) . '/wp-config.php') && !file_exists(dirname(ABSPATH) . '/wp-settings.php')) {
+            $wp_config_path = dirname(ABSPATH) . '/wp-config.php';
+        }
+
         return [
-            'wp-config.php' => ABSPATH . 'wp-config.php',
-            'index.php'     => ABSPATH . 'index.php',
-            'wp-settings.php' => ABSPATH . 'wp-settings.php',
-            '.htaccess'     => ABSPATH . '.htaccess',
+            'wp-config.php'   => wp_normalize_path($wp_config_path),
+            'index.php'       => wp_normalize_path(ABSPATH . 'index.php'),
+            'wp-settings.php' => wp_normalize_path(ABSPATH . 'wp-settings.php'),
+            '.htaccess'       => wp_normalize_path(ABSPATH . '.htaccess'),
         ];
     }
 
@@ -63,8 +69,16 @@ class ADVAIPBL_File_Verifier
             }
         }
         update_option(self::OPTION_BASELINE_HASHES, $baseline);
+        if (defined('ADVAIPBL_VERSION')) {
+            update_option(self::OPTION_BASELINE_VERSION, ADVAIPBL_VERSION);
+        }
 
         return $baseline;
+    }
+
+    public function reset_baseline()
+    {
+        return $this->create_baseline();
     }
 
     /**
@@ -78,8 +92,17 @@ class ADVAIPBL_File_Verifier
         }
 
         $baseline = get_option(self::OPTION_BASELINE_HASHES, []);
-        if (empty($baseline)) {
+        $baseline_version = get_option(self::OPTION_BASELINE_VERSION, '');
+
+        if (empty($baseline) || (defined('ADVAIPBL_VERSION') && $baseline_version !== ADVAIPBL_VERSION)) {
             $this->create_baseline();
+            if (isset($this->main_instance->audit_logger)) {
+                $this->main_instance->audit_logger->log_activity(
+                    'fim_info',
+                    'info',
+                    ['message' => sprintf('FIM baseline automatically synchronized for version %s', defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '')]
+                );
+            }
 
             return [];
         }
@@ -160,6 +183,28 @@ class ADVAIPBL_File_Verifier
 
         if (!empty($changes)) {
             $this->handle_fim_alert($changes);
+
+            $baseline_updated = false;
+            foreach ($changes as $change) {
+                $file_key = $change['file'] ?? '';
+                $type = $change['type'] ?? '';
+                if (isset($baseline[$file_key]) && ($type === 'modified' || $type === 'added')) {
+                    if (!empty($change['new_hash'])) {
+                        $baseline[$file_key] = [
+                            'hash' => $change['new_hash'],
+                            'timestamp' => time()
+                        ];
+                        $baseline_updated = true;
+                    }
+                } elseif (isset($baseline[$file_key]) && $type === 'deleted') {
+                    unset($baseline[$file_key]);
+                    $baseline_updated = true;
+                }
+            }
+
+            if ($baseline_updated) {
+                update_option(self::OPTION_BASELINE_HASHES, $baseline);
+            }
         }
 
         return $changes;
@@ -350,8 +395,20 @@ class ADVAIPBL_File_Verifier
             return false;
         }
 
+        $normalized_input = wp_normalize_path($filepath);
         $monitored_files = $this->get_monitored_files();
-        $key = array_search($filepath, $monitored_files);
+        $key = false;
+
+        foreach ($monitored_files as $file_key => $monitored_path) {
+            if (wp_normalize_path($monitored_path) === $normalized_input) {
+                $key = $file_key;
+                break;
+            }
+        }
+
+        if (!$key && (basename($normalized_input) === '.htaccess')) {
+            $key = '.htaccess';
+        }
 
         if (!$key) {
             return false;

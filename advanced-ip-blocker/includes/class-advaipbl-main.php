@@ -345,6 +345,7 @@ class ADVAIPBL_Main
         add_action('wp_ajax_advaipbl_check_server_reputation', [$this->ajax_handler, 'ajax_check_server_reputation']);
         add_action('wp_ajax_advaipbl_clear_audit_log', [$this->ajax_handler, 'ajax_clear_audit_logs']);
         add_action('wp_ajax_advaipbl_run_fim_scan', [$this->ajax_handler, 'ajax_run_fim_scan']);
+        add_action('wp_ajax_advaipbl_reset_fim_baseline', [$this->ajax_handler, 'ajax_reset_fim_baseline']);
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
@@ -2501,6 +2502,7 @@ class ADVAIPBL_Main
                     'import_adv_rules_nonce' => wp_create_nonce('advaipbl_import_adv_rules_nonce'),
                     'verify_abuseipdb' => wp_create_nonce('advaipbl_verify_abuseipdb_nonce'),
                     'run_fim_scan' => wp_create_nonce('advaipbl_run_fim_scan_nonce'),
+                    'reset_fim_baseline' => wp_create_nonce('advaipbl_reset_fim_baseline_nonce'),
                     'bulk_import_nonce' => wp_create_nonce('advaipbl_bulk_import_whitelist_nonce'),
                     'bulk_export_nonce' => wp_create_nonce('advaipbl_bulk_export_whitelist_nonce'),
                     'bulk_import_blocked_nonce' => wp_create_nonce('advaipbl_bulk_import_blocked_ips_nonce'),
@@ -2612,6 +2614,11 @@ class ADVAIPBL_Main
                     'fim_scan_confirm' => __('Start manual file integrity scan? This may take a few seconds.', 'advanced-ip-blocker'),
                     'fim_scan_btn'     => __('Scan Now', 'advanced-ip-blocker'),
                     'fim_complete_title' => __('Scan Complete', 'advanced-ip-blocker'),
+                    'fim_reset_title'   => __('Reset File Baseline Hashes', 'advanced-ip-blocker'),
+                    'fim_reset_confirm' => __('Reset File Integrity baseline? This will update the snapshot of your critical files (wp-config.php, .htaccess, index.php) to their current state.', 'advanced-ip-blocker'),
+                    'fim_reset_btn'     => __('Reset Baseline Now', 'advanced-ip-blocker'),
+                    'fim_reset_complete_title' => __('Baseline Reset', 'advanced-ip-blocker'),
+                    'resetting'         => __('Resetting...', 'advanced-ip-blocker'),
                     'reload_btn'       => __('Reload', 'advanced-ip-blocker'),
                     'scan_error_generic' => __('Error occurred during scan.', 'advanced-ip-blocker'),
 
@@ -3678,6 +3685,17 @@ class ADVAIPBL_Main
 
             if (version_compare($installed_plugin_ver, '8.13.6', '<') && $installed_plugin_ver !== '0.0.0') {
                 $this->auto_migrate_8_13_6();
+            }
+
+            if (isset($this->file_verifier) && !empty($this->options['enable_fim'])) {
+                $this->file_verifier->reset_baseline();
+                if (isset($this->audit_logger)) {
+                    $this->audit_logger->log_activity(
+                        'fim_info',
+                        'info',
+                        ['message' => sprintf('FIM baseline automatically updated to version %s', ADVAIPBL_VERSION)]
+                    );
+                }
             }
 
             update_option('advaipbl_version_installed', ADVAIPBL_VERSION);

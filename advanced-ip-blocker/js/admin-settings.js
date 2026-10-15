@@ -687,6 +687,47 @@ jQuery(document).ready(function ($) {
                 });
             });
         }
+
+        const resetBaselineBtn = $('#advaipbl-reset-fim-baseline-btn');
+        if (resetBaselineBtn.length) {
+            resetBaselineBtn.on('click', function (e) {
+                e.preventDefault();
+                const $button = $(this);
+                const originalText = $button.text();
+                const nonce = (adminData.nonces && adminData.nonces.reset_fim_baseline) ? adminData.nonces.reset_fim_baseline : $button.data('nonce');
+
+                showConfirmModal({
+                    title: adminData.text.fim_reset_title || 'Reset File Baseline Hashes',
+                    message: adminData.text.fim_reset_confirm || 'Reset File Integrity baseline? This will update the snapshot of your critical files (wp-config.php, .htaccess, index.php) to their current state.',
+                    confirmText: adminData.text.fim_reset_btn || 'Reset Baseline Now',
+                    onConfirm: function () {
+                        $button.prop('disabled', true).text((adminData.text.resetting || 'Resetting') + '...');
+
+                        $.post(ajaxurl, {
+                            action: 'advaipbl_reset_fim_baseline',
+                            nonce: nonce
+                        }).done(function (response) {
+                            if (response.success) {
+                                showConfirmModal({
+                                    title: adminData.text.fim_reset_complete_title || 'Baseline Reset',
+                                    message: response.data.message || 'Baseline hashes synchronized successfully.',
+                                    confirmText: adminData.text.reload_btn || 'Reload',
+                                    onConfirm: function () {
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                showAdminNotice(response.data.message || adminData.text.server_error || 'Error resetting baseline.', 'error');
+                            }
+                        }).fail(function () {
+                            showAdminNotice(adminData.text.ajax_error || 'AJAX Error', 'error');
+                        }).always(function () {
+                            $button.prop('disabled', false).text(originalText);
+                        });
+                    }
+                });
+            });
+        }
     }
 
     function initFloatingSaveBar() {
