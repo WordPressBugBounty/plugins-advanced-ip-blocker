@@ -54,6 +54,29 @@ class ADVAIPBL_File_Verifier
     }
 
     /**
+     * Formats bytes into a human-readable string.
+     *
+     * @param int|null $bytes File size in bytes.
+     * @return string Formatted size.
+     */
+    public function format_file_size($bytes)
+    {
+        if ($bytes === null || $bytes === false) {
+            return 'N/A';
+        }
+
+        $bytes = (int) $bytes;
+        if (function_exists('size_format')) {
+            $formatted = size_format($bytes, 2);
+            if ($formatted) {
+                return $formatted;
+            }
+        }
+
+        return $bytes . ' B';
+    }
+
+    /**
      * Creates and stores the initial baseline hashes.
      */
     public function create_baseline()
@@ -63,8 +86,9 @@ class ADVAIPBL_File_Verifier
             $hash = $this->get_file_hash($path);
             if ($hash && $hash !== 'skipped_too_large') {
                 $baseline[$key] = [
-                    'hash' => $hash,
-                    'timestamp' => time()
+                    'hash'      => $hash,
+                    'size'      => file_exists($path) ? filesize($path) : 0,
+                    'timestamp' => time(),
                 ];
             }
         }
@@ -122,11 +146,16 @@ class ADVAIPBL_File_Verifier
 
         foreach ($this->get_monitored_files() as $key => $path) {
             $current_hash = $this->get_file_hash($path);
+            $current_size = ($current_hash && file_exists($path)) ? filesize($path) : 0;
+            $old_hash = $baseline[$key]['hash'] ?? null;
+            $old_size = isset($baseline[$key]['size']) ? (int) $baseline[$key]['size'] : null;
 
             if (!$current_hash && isset($baseline[$key])) {
                 $changes[] = [
-                    'file' => $key,
-                    'type' => 'deleted'
+                    'file'     => $key,
+                    'type'     => 'deleted',
+                    'old_hash' => $old_hash,
+                    'old_size' => $old_size,
                 ];
                 continue;
             }
@@ -136,9 +165,10 @@ class ADVAIPBL_File_Verifier
                     
                     if (isset($core_checksums[$key]) && md5_file($path) === $core_checksums[$key]) {
                         $silent_updates[] = [
-                            'file' => $key,
-                            'type' => 'official_update',
-                            'new_hash' => $current_hash
+                            'file'     => $key,
+                            'type'     => 'official_update',
+                            'new_hash' => $current_hash,
+                            'new_size' => $current_size,
                         ];
                         continue;
                     }
@@ -146,18 +176,21 @@ class ADVAIPBL_File_Verifier
                     $malware_status = $fim_engine ? $fim_engine->scan_for_malware($path) : 'Unknown';
 
                     $changes[] = [
-                        'file' => $key,
-                        'type' => 'modified',
-                        'old_hash' => $baseline[$key]['hash'],
-                        'new_hash' => $current_hash,
-                        'malware_status' => $malware_status
+                        'file'           => $key,
+                        'type'           => 'modified',
+                        'old_hash'       => $old_hash,
+                        'new_hash'       => $current_hash,
+                        'old_size'       => $old_size,
+                        'new_size'       => $current_size,
+                        'malware_status' => $malware_status,
                     ];
                 }
             } elseif ($current_hash && !isset($baseline[$key])) {
                 $changes[] = [
-                    'file' => $key,
-                    'type' => 'added',
-                    'new_hash' => $current_hash
+                    'file'     => $key,
+                    'type'     => 'added',
+                    'new_hash' => $current_hash,
+                    'new_size' => $current_size,
                 ];
             }
         }
@@ -169,7 +202,11 @@ class ADVAIPBL_File_Verifier
 
         if (!empty($silent_updates)) {
             foreach ($silent_updates as $upd) {
-                $baseline[$upd['file']] = ['hash' => $upd['new_hash'], 'timestamp' => time()];
+                $baseline[$upd['file']] = [
+                    'hash'      => $upd['new_hash'],
+                    'size'      => $upd['new_size'] ?? 0,
+                    'timestamp' => time(),
+                ];
                 if (isset($this->main_instance->audit_logger)) {
                     $this->main_instance->audit_logger->log_activity(
                         'fim_info',
@@ -188,11 +225,12 @@ class ADVAIPBL_File_Verifier
             foreach ($changes as $change) {
                 $file_key = $change['file'] ?? '';
                 $type = $change['type'] ?? '';
-                if (isset($baseline[$file_key]) && ($type === 'modified' || $type === 'added')) {
+                if ($type === 'modified' || $type === 'added') {
                     if (!empty($change['new_hash'])) {
                         $baseline[$file_key] = [
-                            'hash' => $change['new_hash'],
-                            'timestamp' => time()
+                            'hash'      => $change['new_hash'],
+                            'size'      => $change['new_size'] ?? 0,
+                            'timestamp' => time(),
                         ];
                         $baseline_updated = true;
                     }
@@ -275,9 +313,10 @@ class ADVAIPBL_File_Verifier
                     }
 
                     $anomalies[] = [
-                        'file' => str_replace(ABSPATH, '', $fileinfo->getPathname()),
-                        'type' => 'suspicious_upload',
-                        'malware_status' => $malware_status
+                        'file'           => str_replace(ABSPATH, '', $fileinfo->getPathname()),
+                        'type'           => 'suspicious_upload',
+                        'new_size'       => $fileinfo->getSize(),
+                        'malware_status' => $malware_status,
                     ];
                 }
             }
@@ -290,8 +329,30 @@ class ADVAIPBL_File_Verifier
     {
         $change_summary = [];
         foreach ($changes as $change) {
-            $malware_info = (isset($change['malware_status']) && $change['malware_status'] !== 'Clean' && $change['malware_status'] !== 'Unknown') ? " [{$change['malware_status']}]" : "";
-            $change_summary[] = "{$change['file']} ({$change['type']}){$malware_info}";
+            $diag_parts = [];
+            if (!empty($change['old_hash']) && !empty($change['new_hash'])) {
+                $diag_parts[] = 'Hash: ' . substr($change['old_hash'], 0, 8) . '... -> ' . substr($change['new_hash'], 0, 8) . '...';
+            } elseif (!empty($change['new_hash'])) {
+                $diag_parts[] = 'Hash: ' . substr($change['new_hash'], 0, 8) . '...';
+            }
+
+            if (isset($change['new_size'])) {
+                if (isset($change['old_size']) && $change['old_size'] !== null) {
+                    $size_text = 'Size: ' . $this->format_file_size($change['old_size']) . ' -> ' . $this->format_file_size($change['new_size']);
+                    if ((int) $change['old_size'] === (int) $change['new_size']) {
+                        $size_text .= ' (identical size)';
+                    }
+                    $diag_parts[] = $size_text;
+                } else {
+                    $diag_parts[] = 'Size: ' . $this->format_file_size($change['new_size']);
+                }
+            } elseif (isset($change['old_size']) && $change['old_size'] !== null) {
+                $diag_parts[] = 'Former size: ' . $this->format_file_size($change['old_size']);
+            }
+
+            $diag_str = !empty($diag_parts) ? ' [' . implode(' | ', $diag_parts) . ']' : '';
+            $malware_info = (isset($change['malware_status']) && $change['malware_status'] !== 'Clean' && $change['malware_status'] !== 'Unknown') ? " [{$change['malware_status']}]" : '';
+            $change_summary[] = "{$change['file']} ({$change['type']}){$diag_str}{$malware_info}";
         }
         $summary_string = implode(', ', $change_summary);
 
@@ -335,17 +396,54 @@ class ADVAIPBL_File_Verifier
         $body_content .= '<hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">';
 
         $body_content .= '<p>' . esc_html__('The Advanced IP Blocker File Integrity Monitor has detected unauthorized changes to critical system files:', 'advanced-ip-blocker') . '</p>';
-        $body_content .= '<ul>';
+        $body_content .= '<ul style="list-style-type: none; padding-left: 0;">';
 
         foreach ($changes as $change) {
             $malware_info = (isset($change['malware_status']) && $change['malware_status'] !== 'Clean' && $change['malware_status'] !== 'Unknown') ? ' <strong style="color:#dc3232;">[' . esc_html($change['malware_status']) . ']</strong>' : '';
+
+            $details = [];
+            if (!empty($change['old_hash']) && !empty($change['new_hash'])) {
+                $details[] = '<strong>' . esc_html__('Hash:', 'advanced-ip-blocker') . '</strong> <code>' . esc_html(substr($change['old_hash'], 0, 8)) . '... &rarr; ' . esc_html(substr($change['new_hash'], 0, 8)) . '...</code>';
+            } elseif (!empty($change['new_hash'])) {
+                $details[] = '<strong>' . esc_html__('Hash:', 'advanced-ip-blocker') . '</strong> <code>' . esc_html(substr($change['new_hash'], 0, 8)) . '...</code>';
+            }
+
+            if (isset($change['new_size'])) {
+                if (isset($change['old_size']) && $change['old_size'] !== null) {
+                    $size_label = esc_html($this->format_file_size($change['old_size'])) . ' &rarr; ' . esc_html($this->format_file_size($change['new_size']));
+                    if ((int) $change['old_size'] === (int) $change['new_size']) {
+                        $size_label .= ' <em>(' . esc_html__('identical size, content/line-ending changed', 'advanced-ip-blocker') . ')</em>';
+                    }
+                    $details[] = '<strong>' . esc_html__('Size:', 'advanced-ip-blocker') . '</strong> ' . $size_label;
+                } else {
+                    $details[] = '<strong>' . esc_html__('Size:', 'advanced-ip-blocker') . '</strong> ' . esc_html($this->format_file_size($change['new_size']));
+                }
+            } elseif (isset($change['old_size']) && $change['old_size'] !== null) {
+                $details[] = '<strong>' . esc_html__('Former Size:', 'advanced-ip-blocker') . '</strong> ' . esc_html($this->format_file_size($change['old_size']));
+            }
+
+            $details_html = '';
+            if (!empty($details)) {
+                $details_html = '<div style="margin: 4px 0 8px 14px; font-size: 12px; color: #555; line-height: 1.5;">' . implode('<br>', $details) . '</div>';
+            }
+
+            $badge_color = '#00a32a';
+            if ($change['type'] === 'deleted') {
+                $badge_color = '#dc3232';
+            } elseif ($change['type'] === 'modified') {
+                $badge_color = '#dba617';
+            } elseif (strpos($change['type'], 'suspicious') !== false) {
+                $badge_color = '#ff6600';
+            }
+
             $body_content .= sprintf(
-                '<li><strong>%s:</strong> %s <span style="color:%s;">(%s)</span>%s</li>',
+                '<li style="margin-bottom: 8px;"><strong>%s:</strong> <code>%s</code> <span style="display:inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; color: #fff; background-color: %s;">%s</span>%s%s</li>',
                 __('File', 'advanced-ip-blocker'),
                 esc_html($change['file']),
-                $change['type'] === 'deleted' ? '#dc3232' : ($change['type'] === 'modified' ? '#dba617' : ($change['type'] === 'suspicious' ? '#ff6600' : '#00a32a')),
-                strtoupper($change['type']),
-                $malware_info
+                $badge_color,
+                strtoupper(str_replace('_', ' ', $change['type'])),
+                $malware_info,
+                $details_html
             );
         }
         $body_content .= '</ul>';
@@ -365,10 +463,13 @@ class ADVAIPBL_File_Verifier
                 $push_message_lines = [
                     sprintf('*:file_folder: [%s] CRITICAL: File Change Detected*', $site_name),
                     '> The File Integrity Monitor has detected unauthorized changes to critical system files.',
-                    sprintf('> • *Files:* %s', implode(', ', $change_summary)),
-                    sprintf('> • *Time:* %s', $date_time),
-                    sprintf('> • *Trigger:* %s', $trigger_source . $user_info),
                 ];
+                foreach ($change_summary as $summary_item) {
+                    $push_message_lines[] = sprintf('> • *File:* %s', $summary_item);
+                }
+                $push_message_lines[] = sprintf('> • *Time:* %s', $date_time);
+                $push_message_lines[] = sprintf('> • *Trigger:* %s', $trigger_source . $user_info);
+
                 $this->main_instance->notification_manager->execute_webhook_send(implode("\n", $push_message_lines));
             }
         } else {
@@ -417,8 +518,9 @@ class ADVAIPBL_File_Verifier
         $new_hash = $this->get_file_hash($filepath);
         if ($new_hash && $new_hash !== 'skipped_too_large') {
             $baseline[$key] = [
-                'hash' => $new_hash,
-                'timestamp' => time()
+                'hash'      => $new_hash,
+                'size'      => file_exists($filepath) ? filesize($filepath) : 0,
+                'timestamp' => time(),
             ];
             update_option(self::OPTION_BASELINE_HASHES, $baseline);
 

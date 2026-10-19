@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.18
+Stable tag: 8.13.19
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,15 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.18 =
-Fixes File Integrity Monitor false-positive alert loops on critical files (wp-config.php and .htaccess), adds a one-click Reset Baseline button, and enhances path normalization across Apache and Nginx.
+= 8.13.19 =
+Enhances File Integrity Monitor alerts with hash and file size comparisons to easily distinguish line-ending changes from modifications, adds size tracking to baselines, and fixes baseline persistence for newly added files.
 
 == Changelog ==
+
+= 8.13.19 =
+* **ENHANCEMENT:** File Integrity Monitor (FIM) now captures cryptographic hash and file size deltas (e.g., `old_size` -> `new_size`, `old_hash` -> `new_hash`) in alert emails and the Audit Log, helping administrators instantly distinguish between byte-level line-ending changes and file modifications.
+* **ENHANCEMENT:** Added file size tracking to the baseline snapshots (`advaipbl_fim_baseline_hashes`) with full backward compatibility for existing installations.
+* **BUGFIX:** Fixed an issue in the FIM baseline updater where newly discovered or added files were not being committed to the stored baseline.
 
 = 8.13.18 =
 * **BUGFIX:** Resolved File Integrity Monitor (FIM) false-positive alert loop where updated baseline hashes were not committed after sending modification alerts for critical files (wp-config.php and .htaccess).
