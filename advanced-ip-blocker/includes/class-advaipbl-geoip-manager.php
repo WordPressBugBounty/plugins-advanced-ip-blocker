@@ -15,6 +15,7 @@ class ADVAIPBL_GeoIP_Manager
     private $upload_dir_info;
 
     private $city_reader = null;
+    private $country_reader = null;
     private $asn_reader = null;
 
     public function __construct(ADVAIPBL_Main $main_class)
@@ -206,8 +207,14 @@ class ADVAIPBL_GeoIP_Manager
                 }
                 $city_record = $this->city_reader->city($ip);
 
-                $location_data['country'] = $city_record->country->name ?? null;
-                $location_data['country_code'] = $city_record->country->isoCode ?? null;
+                $location_data['country'] = $city_record->country->name
+                    ?? $city_record->registeredCountry->name
+                    ?? $city_record->representedCountry->name
+                    ?? null;
+                $location_data['country_code'] = $city_record->country->isoCode
+                    ?? $city_record->registeredCountry->isoCode
+                    ?? $city_record->representedCountry->isoCode
+                    ?? null;
                 if (! empty($city_record->subdivisions)) {
                     $location_data['region'] = $city_record->subdivisions[0]->name ?? null;
                 } else {
@@ -218,6 +225,27 @@ class ADVAIPBL_GeoIP_Manager
                 $location_data['lon'] = $city_record->location->longitude ?? null;
             } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
                 // Not found in City DB, continue
+            }
+
+            $country_db_path = $db_path . self::DB_COUNTRY_FILENAME;
+            if (empty($location_data['country_code']) && file_exists($country_db_path)) {
+                try {
+                    if ($this->country_reader === null) {
+                        $this->country_reader = new \GeoIp2\Database\Reader($country_db_path);
+                    }
+                    $country_record = $this->country_reader->country($ip);
+
+                    $location_data['country'] = $country_record->country->name
+                        ?? $country_record->registeredCountry->name
+                        ?? $country_record->representedCountry->name
+                        ?? ($location_data['country'] ?? null);
+                    $location_data['country_code'] = $country_record->country->isoCode
+                        ?? $country_record->registeredCountry->isoCode
+                        ?? $country_record->representedCountry->isoCode
+                        ?? null;
+                } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
+                    // Not found in Country DB, continue
+                }
             }
 
             try {

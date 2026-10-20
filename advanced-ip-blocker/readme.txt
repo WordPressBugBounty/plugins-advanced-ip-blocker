@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.19
+Stable tag: 8.13.20
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,18 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.19 =
-Enhances File Integrity Monitor alerts with hash and file size comparisons to easily distinguish line-ending changes from modifications, adds size tracking to baselines, and fixes baseline persistence for newly added files.
+= 8.13.20 =
+Security & Stability Update: Upgrades the native JS Challenge to a cryptographic FNV-1a 32-bit Proof-of-Work engine, hardens 2FA across frontend login forms with strict token expiration, fixes MaxMind IPv6 geolocation fallbacks, and resolves FIM .htaccess alerts on subdirectory installs.
 
 == Changelog ==
+
+= 8.13.20 =
+* **SECURITY:** Hardened Two-Factor Authentication (2FA) by enforcing on-demand initialization of `ADVAIPBL_2FA_Manager` across all authentication contexts (including frontend login forms like WooCommerce `/my-account/` and custom login URLs), adding server-side expiration (`advaipbl_2fa_step1_expires`) to Step-1 interim tokens, and automatically revoking Step-1 tokens upon reaching the brute-force lockout threshold.
+* **SECURITY:** Upgraded the native JavaScript Challenge engine (Automatic & Managed modes) from static arithmetic to a cryptographic FNV-1a 32-bit Proof-of-Work (PoW) challenge with split-seed reconstruction, headless browser detection (`navigator.webdriver`), trusted DOM event verification (`event.isTrusted`), IP/mode HMAC binding, minimum execution time enforcement, and anti-replay protection.
+* **BUGFIX:** Fixed IPv6 geolocation failures when using the MaxMind GeoLite2 Local Database by adding fallback resolution to `registeredCountry`, `representedCountry`, and `GeoLite2-Country.mmdb`, as well as triggering external API fallback when local records only contain ASN data without a country code.
+* **BUGFIX:** Resolved a File Integrity Monitor (FIM) false-positive alert on subdirectory WordPress installations (where `siteurl` and `home` differ) caused by `.htaccess` path resolution mismatches between the `.htaccess` Firewall Manager (root `/.htaccess`) and the FIM scanner (`ABSPATH . '.htaccess'`).
+* **ENHANCEMENT:** Hardened root `.htaccess` path resolution in `ADVAIPBL_Htaccess_Manager` to deterministically compute the home directory from `ABSPATH` across frontend, WP-Cron, and CLI execution contexts.
+* **BUGFIX:** Removed a duplicate warning log entry when a JS Challenge verification fails.
 
 = 8.13.19 =
 * **ENHANCEMENT:** File Integrity Monitor (FIM) now captures cryptographic hash and file size deltas (e.g., `old_size` -> `new_size`, `old_hash` -> `new_hash`) in alert emails and the Audit Log, helping administrators instantly distinguish between byte-level line-ending changes and file modifications.

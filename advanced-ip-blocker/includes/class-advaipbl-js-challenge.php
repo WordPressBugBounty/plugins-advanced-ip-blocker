@@ -88,6 +88,24 @@ class ADVAIPBL_JS_Challenge
     }
 
     /**
+     * Computes a deterministic 32-bit FNV-1a hash matching the client JS implementation.
+     *
+     * @param string $input Input string.
+     * @return int Unsigned 32-bit integer hash.
+     */
+    private function compute_fnv32($input)
+    {
+        $h   = 0x811c9dc5;
+        $len = strlen($input);
+        for ($i = 0; $i < $len; $i++) {
+            $h ^= ord($input[$i]);
+            $h  = ($h * 0x01000193) & 0xffffffff;
+        }
+
+        return $h;
+    }
+
+    /**
      * Verifies the challenge token and sets the cookie if correct.
      *
      * @param string $cookie_name Name of the cookie to set.
@@ -98,46 +116,60 @@ class ADVAIPBL_JS_Challenge
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
         $token = sanitize_text_field(wp_unslash($_POST['_advaipbl_js_token'] ?? ''));
         // phpcs:ignore WordPress.Security.NonceVerification.Missing
-        $response = (int) sanitize_text_field(wp_unslash($_POST['_advaipbl_js_response'] ?? 0));
+        $response_raw = sanitize_text_field(wp_unslash($_POST['_advaipbl_js_response'] ?? ''));
 
-        $ip = $this->plugin->get_client_ip();
+        $ip       = $this->plugin->get_client_ip();
+        $is_valid = false;
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
-        $mode_reported = sanitize_key($_POST['_advaipbl_challenge_mode'] ?? 'managed');
-
-        $is_valid       = false;
-        $correct_answer = null;
-
-        if (!empty($token)) {
+        if (!empty($token) && !empty($response_raw) && strpos($response_raw, ':') !== false) {
             $decoded = base64_decode(strtr($token, '-_', '+/'));
             if ($decoded !== false && strpos($decoded, '::') !== false) {
                 list($payload, $signature) = explode('::', $decoded, 2);
 
                 $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
-                $expected_signature = hash_hmac('sha256', $payload, $salt);
+                $expected_signature = hash_hmac('sha256', $payload . '|' . $ip, $salt);
 
                 if (hash_equals($expected_signature, $signature)) {
                     $parts = explode('|', $payload);
-                    if (count($parts) === 2) {
-                        $parsed_answer = (int) $parts[0];
-                        $expiration    = (int) $parts[1];
+                    if (count($parts) === 5) {
+                        $issued_at  = (int) $parts[0];
+                        $expiration = (int) $parts[1];
+                        $seed       = $parts[2];
+                        $token_mode = $parts[3];
+                        $nonce_id   = preg_replace('/[^a-f0-9]/', '', $parts[4]);
+                        $now        = time();
 
-                        if (time() <= $expiration) {
-                            $correct_answer = $parsed_answer;
+                        if ($now <= $expiration && ($now - $issued_at) >= 1 && !empty($nonce_id) && !get_transient('advaipbl_jsc_used_' . $nonce_id)) {
+                            list($pow_nonce_str, $submitted_proof) = explode(':', $response_raw, 2);
+                            $pow_nonce = (int) $pow_nonce_str;
+
+                            if ($pow_nonce > 0 && strlen($submitted_proof) === 8) {
+                                $pow_hash = $this->compute_fnv32($seed . ':' . $pow_nonce);
+
+                                if (($pow_hash & 0x0fff) === 0x0a1b) {
+                                    if ($token_mode === 'managed') {
+                                        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                        if (isset($_POST['human_check'])) {
+                                            $expected_proof = sprintf('%08x', $this->compute_fnv32($seed . ':' . $pow_nonce . ':managed:1:' . $pow_hash));
+                                            if (hash_equals($expected_proof, strtolower($submitted_proof))) {
+                                                $is_valid = true;
+                                            }
+                                        }
+                                    } else {
+                                        $expected_proof = sprintf('%08x', $this->compute_fnv32($seed . ':' . $pow_nonce . ':auto:' . $pow_hash));
+                                        if (hash_equals($expected_proof, strtolower($submitted_proof))) {
+                                            $is_valid = true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if ($is_valid) {
+                                set_transient('advaipbl_jsc_used_' . $nonce_id, 1, 300);
+                            }
                         }
                     }
                 }
-            }
-        }
-
-        if ($correct_answer !== null && $response === $correct_answer) {
-            if ($mode_reported === 'managed') {
-                // phpcs:ignore WordPress.Security.NonceVerification.Missing
-                if (isset($_POST['human_check'])) {
-                    $is_valid = true;
-                }
-            } else {
-                $is_valid = true;
             }
         }
 
@@ -152,7 +184,9 @@ class ADVAIPBL_JS_Challenge
                 $this->plugin->challenge_metrics->increment('failed');
             }
             $this->plugin->log_event("JS Challenge verification failed (IP: {$ip}).", 'warning', [
-                'action' => 'js_challenge_failed'
+                'action'   => 'js_challenge_failed',
+                'ip'       => $ip,
+                'response' => $response_raw,
             ]);
         }
 
@@ -161,8 +195,6 @@ class ADVAIPBL_JS_Challenge
             define('DONOTCACHEPAGE', true);
         }
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-
-        $this->plugin->log_event('JS challenge verification failed.', 'warning', ['ip' => $ip, 'token' => $token, 'response' => $response]);
 
         wp_die(
             esc_html__('Verification failed. Please ensure JavaScript and cookies are enabled in your browser.', 'advanced-ip-blocker'),
@@ -298,17 +330,20 @@ class ADVAIPBL_JS_Challenge
         header('X-Content-Type-Options: nosniff');
         header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline';");
 
-        $num1   = wp_rand(1, 9);
-        $num2   = wp_rand(1, 9);
-        $answer = $num1 + $num2;
+        $ip          = $this->plugin->get_client_ip();
+        $issued_at   = time();
+        $expiration  = $issued_at + 300;
+        $seed        = bin2hex(random_bytes(8));
+        $nonce_id    = bin2hex(random_bytes(6));
+        $seed_p1     = substr($seed, 0, 8);
+        $seed_p2_rev = strrev(substr($seed, 8));
 
-        $expiration = time() + 300;
-        $payload    = $answer . '|' . $expiration;
-        $salt       = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
-        $signature  = hash_hmac('sha256', $payload, $salt);
-        $token_raw  = $payload . '::' . $signature;
+        $payload   = $issued_at . '|' . $expiration . '|' . $seed . '|' . $challenge_mode . '|' . $nonce_id;
+        $salt      = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : 'fallback_salt_advaipbl');
+        $signature = hash_hmac('sha256', $payload . '|' . $ip, $salt);
+        $token_raw = $payload . '::' . $signature;
 
-        $token      = strtr(base64_encode($token_raw), '+/', '-_');
+        $token = strtr(base64_encode($token_raw), '+/', '-_');
 
         status_header(503);
         header('Content-Type: text/html; charset=utf-8');
@@ -332,17 +367,52 @@ class ADVAIPBL_JS_Challenge
         $expired_message    = esc_html__('The security challenge has expired. Click the button below to get a new challenge.', 'advanced-ip-blocker');
         $reload_button_text = esc_html__('Start New Challenge', 'advanced-ip-blocker');
 
+        $pow_js_core = "
+            function fnv32(str) {
+                let h = 0x811c9dc5;
+                for (let i = 0; i < str.length; i++) {
+                    h ^= str.charCodeAt(i);
+                    h = Math.imul(h, 0x01000193) >>> 0;
+                }
+                return h >>> 0;
+            }
+            function toHex8(n) {
+                let s = (n >>> 0).toString(16);
+                while (s.length < 8) { s = '0' + s; }
+                return s;
+            }
+            function solvePoW() {
+                const isBot = !!(navigator.webdriver || window.callPhantom || window._phantom || window.__nightmare || (window.outerWidth === 0 && window.outerHeight === 0));
+                const s1 = document.getElementById('challenge_form').getAttribute('data-challenge-s') || '';
+                const s2 = '{$seed_p2_rev}'.split('').reverse().join('');
+                const seed = isBot ? 'bot' : (s1 + s2);
+                let nonce = 0;
+                let hash = 0;
+                while (nonce < 5000000) {
+                    nonce++;
+                    hash = fnv32(seed + ':' + nonce);
+                    if ((hash & 0x0fff) === 0x0a1b) {
+                        break;
+                    }
+                }
+                return { seed: seed, nonce: nonce, hash: hash };
+            }
+        ";
+
         if ($challenge_mode === 'automatic') {
             $main_text = esc_html__('Please wait while we verify your connection. This process is automatic and protects the website from automated attacks.', 'advanced-ip-blocker');
             $js_script = "<script>
+                {$pow_js_core}
                 let isSubmitting = false;
-                document.getElementById('js_response').value = {$num1} + {$num2};
                 document.getElementById('challenge_form').addEventListener('submit', function(e) {
                     if (isSubmitting) { e.preventDefault(); return false; }
                     isSubmitting = true;
                 });
                 setTimeout(function(){ 
                     if (!isSubmitting) {
+                        const pow = solvePoW();
+                        const proof = toHex8(fnv32(pow.seed + ':' + pow.nonce + ':auto:' + pow.hash));
+                        document.getElementById('js_response').value = pow.nonce + ':' + proof;
                         document.getElementById('challenge_form').submit();
                     }
                 }, 2500);
@@ -355,12 +425,29 @@ class ADVAIPBL_JS_Challenge
         } else {
             $main_text = esc_html__('To proceed, please prove you are human. This verification protects the website from automated attacks.', 'advanced-ip-blocker');
             $js_script = "<script>
+                {$pow_js_core}
                 let isSubmitting = false;
+                let powResult = null;
                 const TIMEOUT_SECONDS = 120;
-                document.getElementById('js_response').value = {$num1} + {$num2};
-                
+                const cb = document.getElementById('human_check_box');
+
+                function bindHumanProof(e) {
+                    if (e && e.isTrusted && powResult) {
+                        const proof = toHex8(fnv32(powResult.seed + ':' + powResult.nonce + ':managed:1:' + powResult.hash));
+                        document.getElementById('js_response').value = powResult.nonce + ':' + proof;
+                    }
+                }
+
+                if (cb) {
+                    cb.addEventListener('change', bindHumanProof);
+                    cb.addEventListener('click', bindHumanProof);
+                }
+
                 document.getElementById('challenge_form').addEventListener('submit', function(e) {
                     if (isSubmitting) { e.preventDefault(); return false; }
+                    if (cb && cb.checked && !document.getElementById('js_response').value) {
+                        bindHumanProof(e);
+                    }
                     isSubmitting = true;
                     var btn = document.getElementById('submit_btn');
                     if (btn) btn.disabled = true;
@@ -380,6 +467,7 @@ class ADVAIPBL_JS_Challenge
                     setTimeout(updateTimer, 1000);
                 }
                 setTimeout(function(){ 
+                    powResult = solvePoW();
                     document.getElementById('challenge_spinner').style.display = 'none';
                     document.getElementById('challenge_interaction').style.display = 'flex';
                     updateTimer();
@@ -389,7 +477,7 @@ class ADVAIPBL_JS_Challenge
             $form_content = '
                 <div id="challenge_spinner"></div>
                 <div id="challenge_interaction" style="display:none;">
-                    <label><input type="checkbox" name="human_check" required> ' . $checkbox_label . '</label>
+                    <label><input type="checkbox" id="human_check_box" name="human_check" required> ' . $checkbox_label . '</label>
                     <button type="submit" id="submit_btn">' . $button_text . '</button>
                     <div id="challenge_timer_container">' . $timer_text . '<span id="challenge_timer">120</span>s</div>
                 </div>
@@ -434,7 +522,7 @@ p.branding a:hover{text-decoration:underline;}
         <p class="site-info"><strong>' . esc_html($site_host) . '</strong> ' . $site_msg . '</p>
         <p>' . $main_text . '</p>
         
-        <form id="challenge_form" method="POST" action="' . $action_url . '">
+        <form id="challenge_form" method="POST" action="' . $action_url . '" data-challenge-s="' . esc_attr($seed_p1) . '">
             <input type="hidden" name="_advaipbl_js_token" value="' . esc_attr($token) . '">
             <input type="hidden" name="_advaipbl_js_response" id="js_response">
             <input type="hidden" name="_advaipbl_challenge_type" value="' . esc_attr($challenge_type) . '">    

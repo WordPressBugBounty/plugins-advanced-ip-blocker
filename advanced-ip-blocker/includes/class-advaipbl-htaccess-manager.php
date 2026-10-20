@@ -22,11 +22,32 @@ class ADVAIPBL_Htaccess_Manager
      */
     public function get_htaccess_path()
     {
+        $home    = set_url_scheme(get_option('home'), 'http');
+        $siteurl = set_url_scheme(get_option('siteurl'), 'http');
+        $abspath = wp_normalize_path(ABSPATH);
+
+        if (! empty($home) && 0 !== strcasecmp($home, $siteurl)) {
+            $wp_path_rel_to_home = trim(str_ireplace($home, '', $siteurl), '/');
+            if ($wp_path_rel_to_home !== '') {
+                $rel_suffix = '/' . $wp_path_rel_to_home . '/';
+                $pos = strripos($abspath, $rel_suffix);
+                if ($pos !== false) {
+                    $home_path = trailingslashit(substr($abspath, 0, $pos));
+                    return $home_path . '.htaccess';
+                }
+            }
+        }
+
         if (! function_exists('get_home_path')) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
         }
 
-        return get_home_path() . '.htaccess';
+        $home_path = get_home_path();
+        if (empty($home_path) || $home_path === '/') {
+            $home_path = ABSPATH;
+        }
+
+        return wp_normalize_path(trailingslashit($home_path) . '.htaccess');
     }
 
     /**

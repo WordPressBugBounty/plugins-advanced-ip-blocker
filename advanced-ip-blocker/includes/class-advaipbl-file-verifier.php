@@ -45,11 +45,19 @@ class ADVAIPBL_File_Verifier
             $wp_config_path = dirname(ABSPATH) . '/wp-config.php';
         }
 
+        $htaccess_path = ABSPATH . '.htaccess';
+        if (isset($this->main_instance->htaccess_manager) && method_exists($this->main_instance->htaccess_manager, 'get_htaccess_path')) {
+            $resolved_htaccess = $this->main_instance->htaccess_manager->get_htaccess_path();
+            if (file_exists($resolved_htaccess) || !file_exists($htaccess_path)) {
+                $htaccess_path = $resolved_htaccess;
+            }
+        }
+
         return [
             'wp-config.php'   => wp_normalize_path($wp_config_path),
             'index.php'       => wp_normalize_path(ABSPATH . 'index.php'),
             'wp-settings.php' => wp_normalize_path(ABSPATH . 'wp-settings.php'),
-            '.htaccess'       => wp_normalize_path(ABSPATH . '.htaccess'),
+            '.htaccess'       => wp_normalize_path($htaccess_path),
         ];
     }
 

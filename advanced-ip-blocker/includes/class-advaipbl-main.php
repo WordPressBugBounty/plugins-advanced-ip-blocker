@@ -7588,6 +7588,12 @@ class ADVAIPBL_Main
         if (! isset($_POST['advaipbl_2fa_login_step'])) {
             return;
         }
+        if (version_compare(PHP_VERSION, '8.1', '>=') && (! $this->tfa_manager || ! method_exists($this->tfa_manager, 'verify_code'))) {
+            require_once plugin_dir_path(__FILE__) . 'class-advaipbl-2fa-manager.php';
+            if (class_exists('BaconQrCode\Renderer\ImageRenderer')) {
+                $this->tfa_manager = new ADVAIPBL_2FA_Manager($this);
+            }
+        }
         $step = sanitize_text_field(wp_unslash($_POST['advaipbl_2fa_login_step']));
         $user_id = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
         $code = isset($_POST['advaipbl_2fa_code']) ? trim(sanitize_text_field(wp_unslash($_POST['advaipbl_2fa_code']))) : '';
@@ -7599,7 +7605,10 @@ class ADVAIPBL_Main
 
         $token = isset($_COOKIE['advaipbl_2fa_step1_' . $user_id]) ? sanitize_text_field(wp_unslash($_COOKIE['advaipbl_2fa_step1_' . $user_id])) : '';
         $saved_token = get_user_meta($user_id, 'advaipbl_2fa_step1_token', true);
-        if (empty($saved_token) || empty($token) || !hash_equals($saved_token, $token)) {
+        $saved_expires = (int) get_user_meta($user_id, 'advaipbl_2fa_step1_expires', true);
+        if (empty($saved_token) || empty($token) || !hash_equals((string) $saved_token, $token) || ($saved_expires > 0 && time() > $saved_expires)) {
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_expires');
             wp_die(esc_html__('Session expired or invalid. Please login again.', 'advanced-ip-blocker'));
         }
 
@@ -7608,6 +7617,9 @@ class ADVAIPBL_Main
         $rate_limit_key = 'advaipbl_2fa_fails_' . $user_id;
         $failures = (int) get_transient($rate_limit_key);
         if ($failures >= $max_fails) {
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_expires');
+            setcookie('advaipbl_2fa_step1_' . $user_id, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
             wp_die(sprintf(
                 /* translators: %d: number of minutes */
                 esc_html__('Too many failed 2FA attempts. Account temporarily locked for %d minutes.', 'advanced-ip-blocker'),
@@ -7632,6 +7644,7 @@ class ADVAIPBL_Main
         }
         if ($is_valid) {
             delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_expires');
             setcookie('advaipbl_2fa_step1_' . $user_id, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
             delete_transient($rate_limit_key);
             wp_set_auth_cookie($user->ID, isset($_POST['rememberme']));
@@ -7662,7 +7675,13 @@ class ADVAIPBL_Main
             wp_safe_redirect($redirect_to);
             exit;
         } else {
-            set_transient($rate_limit_key, $failures + 1, $lockout_mins * MINUTE_IN_SECONDS);
+            $new_failures = $failures + 1;
+            set_transient($rate_limit_key, $new_failures, $lockout_mins * MINUTE_IN_SECONDS);
+            if ($new_failures >= $max_fails) {
+                delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+                delete_user_meta($user_id, 'advaipbl_2fa_step1_expires');
+                setcookie('advaipbl_2fa_step1_' . $user_id, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
+            }
             // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
             do_action('wp_login_failed', $user->user_login, new WP_Error('failed_2fa', __('2FA Verification Failed (Password was compromised)', 'advanced-ip-blocker')));
 
@@ -7703,7 +7722,7 @@ class ADVAIPBL_Main
 
         $global_2fa_enabled = ! empty($this->options['enable_2fa']) && '1' === $this->options['enable_2fa'];
 
-        if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST && $global_2fa_enabled) {
+        if ($global_2fa_enabled && version_compare(PHP_VERSION, '8.1', '>=')) {
             if (! $this->tfa_manager || ! method_exists($this->tfa_manager, 'is_2fa_enabled_for_user')) {
                 require_once plugin_dir_path(__FILE__) . 'class-advaipbl-2fa-manager.php';
                 if (class_exists('BaconQrCode\Renderer\ImageRenderer')) {
@@ -7713,9 +7732,6 @@ class ADVAIPBL_Main
         }
 
         if (! $global_2fa_enabled || ! $this->tfa_manager || ! method_exists($this->tfa_manager, 'is_2fa_enabled_for_user')) {
-            if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
-                return $user;
-            }
             return $user;
         }
 
@@ -7731,8 +7747,10 @@ class ADVAIPBL_Main
 
         if ($user_has_2fa_setup) {
             $step1_token = wp_generate_password(32, false, false);
+            $step1_expires = time() + 600;
             update_user_meta($user->ID, 'advaipbl_2fa_step1_token', $step1_token);
-            setcookie('advaipbl_2fa_step1_' . $user->ID, $step1_token, time() + 600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
+            update_user_meta($user->ID, 'advaipbl_2fa_step1_expires', $step1_expires);
+            setcookie('advaipbl_2fa_step1_' . $user->ID, $step1_token, $step1_expires, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
 
             $args = [
                 'action' => 'advaipbl_validate_2fa',
@@ -7756,7 +7774,6 @@ class ADVAIPBL_Main
             update_user_meta($user->ID, '_advaipbl_2fa_setup_required', true);
         }
 
-        // En todos los demÃƒÆ’Ã‚Â¡s casos (no tiene 2FA y no estÃƒÆ’Ã‚Â¡ obligado), el login es normal.
         return $user;
     }
 
@@ -7774,7 +7791,10 @@ class ADVAIPBL_Main
         }
 
         $saved_token = get_user_meta($user_id, 'advaipbl_2fa_step1_token', true);
-        if (empty($saved_token) || empty($token) || !hash_equals($saved_token, $token)) {
+        $saved_expires = (int) get_user_meta($user_id, 'advaipbl_2fa_step1_expires', true);
+        if (empty($saved_token) || empty($token) || !hash_equals((string) $saved_token, $token) || ($saved_expires > 0 && time() > $saved_expires)) {
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_expires');
             wp_die(esc_html__('Session expired or invalid. Please login again.', 'advanced-ip-blocker'));
         }
 
@@ -7850,7 +7870,10 @@ class ADVAIPBL_Main
         }
 
         $saved_token = get_user_meta($user_id, 'advaipbl_2fa_step1_token', true);
-        if (empty($saved_token) || empty($token) || !hash_equals($saved_token, $token)) {
+        $saved_expires = (int) get_user_meta($user_id, 'advaipbl_2fa_step1_expires', true);
+        if (empty($saved_token) || empty($token) || !hash_equals((string) $saved_token, $token) || ($saved_expires > 0 && time() > $saved_expires)) {
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_token');
+            delete_user_meta($user_id, 'advaipbl_2fa_step1_expires');
             wp_die(esc_html__('Session expired or invalid. Please login again.', 'advanced-ip-blocker'));
         }
 

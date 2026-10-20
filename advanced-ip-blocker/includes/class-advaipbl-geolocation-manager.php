@@ -40,9 +40,24 @@ class ADVAIPBL_Geolocation_Manager
             }
         }
 
-        if (empty($location) || !empty($location['error'])) {
-            $location = $this->fetch_location_from_api($ip);
+        if (empty($location) || !empty($location['error']) || empty($location['country_code'])) {
+            $local_partial = (is_array($location) && empty($location['error'])) ? $location : [];
+            $api_location = $this->fetch_location_from_api($ip);
             $used_api = true;
+
+            if (is_array($api_location) && empty($api_location['error'])) {
+                if (empty($api_location['as']) && !empty($local_partial['as'])) {
+                    $api_location['as'] = $local_partial['as'];
+                }
+                if (empty($api_location['isp']) && !empty($local_partial['isp'])) {
+                    $api_location['isp'] = $local_partial['isp'];
+                }
+                $location = $api_location;
+            } elseif (!empty($local_partial)) {
+                $location = $local_partial;
+            } else {
+                $location = $api_location;
+            }
         }
 
         if ($location && empty($location['error']) && empty($location['as'])) {
