@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.20\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.21\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -7201,7 +7201,7 @@ msgid "Enable Email Notifications"
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:104
-msgid "Send an email when an IP is blocked."
+msgid "Send email alerts for blocked IPs and security system events."
 msgstr ""
 
 #: includes/class-advaipbl-settings-manager.php:106

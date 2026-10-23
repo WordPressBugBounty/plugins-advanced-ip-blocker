@@ -101,7 +101,7 @@ class ADVAIPBL_Settings_Manager
             ]
         );
         add_settings_section('advaipbl_email_notifications_section', null, null, $page);
-        add_settings_field('advaipbl_enable_email_notifications', __('Enable Email Notifications', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_email_notifications_section', ['name' => 'enable_email_notifications', 'label' => __('Send an email when an IP is blocked.', 'advanced-ip-blocker')]);
+        add_settings_field('advaipbl_enable_email_notifications', __('Enable Email Notifications', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_email_notifications_section', ['name' => 'enable_email_notifications', 'label' => __('Send email alerts for blocked IPs and security system events.', 'advanced-ip-blocker')]);
         add_settings_field('advaipbl_notification_frequency', __('Notification Frequency', 'advanced-ip-blocker'), [$this, 'notification_frequency_callback'], $page, 'advaipbl_email_notifications_section');
         add_settings_field('advaipbl_notification_email', __('Notification Email', 'advanced-ip-blocker'), [$this, 'email_field_callback'], $page, 'advaipbl_email_notifications_section', ['name' => 'notification_email', 'label' => __('Leave empty to use the admin email.', 'advanced-ip-blocker')]);
         add_settings_field('advaipbl_send_test_email_button', __('Send Test Email', 'advanced-ip-blocker'), [ $this, 'send_test_email_button_callback' ], $page, 'advaipbl_email_notifications_section');

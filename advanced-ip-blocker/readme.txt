@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.20
+Stable tag: 8.13.21
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,15 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.20 =
-Security & Stability Update: Upgrades the native JS Challenge to a cryptographic FNV-1a 32-bit Proof-of-Work engine, hardens 2FA across frontend login forms with strict token expiration, fixes MaxMind IPv6 geolocation fallbacks, and resolves FIM .htaccess alerts on subdirectory installs.
+= 8.13.21 =
+Enhancement Update: Introduces smart environment filtering for Remote Security Advisories (targeting specific vulnerable PHP branches, plugins, or themes), links all FIM email alerts to the master email switch, and clarifies notification settings.
 
 == Changelog ==
+
+= 8.13.21 =
+* **NEW FEATURE:** Enhanced Remote Security Advisories (`ADVAIPBL_Remote_Notices`) with intelligent local environment filtering, allowing security alerts to target specific vulnerable PHP branches (including EOL branches) or specific installed/active plugins and themes by slug and version threshold.
+* **ENHANCEMENT:** Linked File Integrity Monitor (FIM) critical file modification email alerts to the master "Enable Email Notifications" toggle (`enable_email_notifications`) for consistent centralized email notification control.
+* **UI/UX:** Clarified the "Enable Email Notifications" setting description to indicate that it governs both IP block notifications and system/security event alerts (such as AbuseIPDB quota warnings and FIM alerts).
 
 = 8.13.20 =
 * **SECURITY:** Hardened Two-Factor Authentication (2FA) by enforcing on-demand initialization of `ADVAIPBL_2FA_Manager` across all authentication contexts (including frontend login forms like WooCommerce `/my-account/` and custom login URLs), adding server-side expiration (`advaipbl_2fa_step1_expires`) to Step-1 interim tokens, and automatically revoking Step-1 tokens upon reaching the brute-force lockout threshold.

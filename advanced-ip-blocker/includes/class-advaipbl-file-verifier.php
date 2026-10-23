@@ -463,9 +463,11 @@ class ADVAIPBL_File_Verifier
             $fim_settings_url = admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-internal_security');
             $body = $this->main_instance->notification_manager->get_html_email_template($template_title, $body_content, $fim_settings_url);
 
-            add_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
-            wp_mail($to, $subject, $body);
-            remove_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
+            if (!empty($this->main_instance->options['enable_email_notifications']) && '1' === $this->main_instance->options['enable_email_notifications']) {
+                add_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
+                wp_mail($to, $subject, $body);
+                remove_filter('wp_mail_content_type', [$this->main_instance->notification_manager, 'set_html_mail_content_type']);
+            }
 
             if (!empty($this->main_instance->options['enable_push_notifications'])) {
                 $push_message_lines = [
@@ -482,7 +484,9 @@ class ADVAIPBL_File_Verifier
             }
         } else {
             $body = $body_content;
-            wp_mail($to, $subject, $body);
+            if (!empty($this->main_instance->options['enable_email_notifications']) && '1' === $this->main_instance->options['enable_email_notifications']) {
+                wp_mail($to, $subject, $body);
+            }
         }
     }
 
