@@ -74,9 +74,28 @@ jQuery(document).ready(function ($) {
             });
         }
         
-        const labels = ['Served', 'Passed', 'Failed'];
-        const values = [totalServed, totalPassed, totalFailed];
-        const colors = ['#3498db', '#2ecc71', '#e74c3c'];
+        const legendContainer = $('#advaipbl-challenges-legend');
+        legendContainer.empty();
+
+        const text = (typeof advaipbl_admin_data !== 'undefined' && advaipbl_admin_data.text) ? advaipbl_admin_data.text : {};
+        const passedLabel = text.challenge_passed || 'Passed';
+        const failedLabel = text.challenge_failed || 'Failed';
+        const unsolvedLabel = text.challenge_unsolved || 'Unsolved / Dropped';
+        const totalServedLabel = text.challenge_total_served || 'Total Served';
+        const noChallengesLabel = text.challenge_no_data || 'No challenge events recorded in the last 7 days.';
+
+        if (totalServed === 0) {
+            $('#advaipbl-challenges-chart').parent().html(`<div style="text-align:center; padding: 60px 10px; color: #888;"><span class="dashicons dashicons-yes-alt" style="font-size: 36px; width: 36px; height: 36px; margin-bottom: 10px; color: #2ecc71;"></span><p style="margin: 0; font-size: 13px;">${noChallengesLabel}</p></div>`);
+            legendContainer.html(`<h4>${totalServedLabel}: <strong>0</strong></h4>`);
+            return;
+        }
+
+        // Unsolved/Dropped represents automated bots/scrapers that were served the challenge and abandoned/failed to execute it.
+        const totalUnsolved = Math.max(0, totalServed - (totalPassed + totalFailed));
+        
+        const labels = [passedLabel, failedLabel, unsolvedLabel];
+        const values = [totalPassed, totalFailed, totalUnsolved];
+        const colors = ['#2ecc71', '#e74c3c', '#3498db'];
 
         new Chart(ctx, { 
             type: 'doughnut', 
@@ -91,23 +110,33 @@ jQuery(document).ready(function ($) {
             } 
         }); 
         
-        const legendContainer = $('#advaipbl-challenges-legend'); 
-        legendContainer.empty(); 
-        let legendHtml = `<h4>Total Served: <strong>${totalServed}</strong></h4>`; 
+        let legendHtml = `<h4>${totalServedLabel}: <strong>${totalServed}</strong></h4>`; 
         labels.forEach((label, index) => { 
             const count = values[index]; 
             const color = colors[index]; 
-            legendHtml += `<div class="legend-item"><span class="legend-label-group"><span class="legend-color-box" style="background-color: ${color};"></span><span class="legend-label">${label}</span></span><span class="legend-value">${count}</span></div>`; 
+            const pct = totalServed > 0 ? Math.round((count / totalServed) * 100) : 0;
+            legendHtml += `<div class="legend-item"><span class="legend-label-group"><span class="legend-color-box" style="background-color: ${color};"></span><span class="legend-label">${label}</span></span><span class="legend-value">${count} <small style="color:#888;">(${pct}%)</small></span></div>`; 
         }); 
         legendContainer.html(legendHtml);
     }
 
     function renderAdvancedRulesWidget(rulesStats) {
+        const container = $('#advaipbl-advanced-rules-chart').parent();
         const ctx = document.getElementById('advaipbl-advanced-rules-chart');
-        if (!ctx || !rulesStats || rulesStats.length === 0) return;
+        if (!ctx) return;
 
-        const labels = rulesStats.map(rule => rule.name);
-        const dataHits = rulesStats.map(rule => rule.hits);
+        const text = (typeof advaipbl_admin_data !== 'undefined' && advaipbl_admin_data.text) ? advaipbl_admin_data.text : {};
+        const noRulesHitsLabel = text.adv_rules_no_data || 'No advanced rule hits recorded in the last 7 days.';
+
+        const activeHits = (rulesStats && Array.isArray(rulesStats)) ? rulesStats.filter(rule => (rule.hits || 0) > 0) : [];
+
+        if (activeHits.length === 0) {
+            container.html(`<div style="text-align:center; padding: 60px 10px; color: #888;"><span class="dashicons dashicons-shield" style="font-size: 36px; width: 36px; height: 36px; margin-bottom: 10px; color: #bbb;"></span><p style="margin: 0; font-size: 13px;">${noRulesHitsLabel}</p></div>`);
+            return;
+        }
+
+        const labels = activeHits.map(rule => rule.name);
+        const dataHits = activeHits.map(rule => rule.hits);
 
         new Chart(ctx, {
             type: 'bar',
@@ -117,6 +146,7 @@ jQuery(document).ready(function ($) {
                     label: 'Hits',
                     data: dataHits,
                     backgroundColor: '#9b59b6',
+                    borderRadius: 4
                 }]
             },
             options: {
@@ -124,7 +154,10 @@ jQuery(document).ready(function ($) {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { beginAtZero: true }
+                    x: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
                 },
                 plugins: { legend: { display: false } }
             }

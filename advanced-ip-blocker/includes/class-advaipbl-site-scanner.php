@@ -81,6 +81,9 @@ class ADVAIPBL_Site_Scanner
         foreach ($all_themes as $slug => $theme) {
             $is_active = ($active_theme->get_stylesheet() === $slug);
             $is_parent = ($parent_theme && $parent_theme->get_stylesheet() === $slug);
+            $is_child = (bool) $theme->parent();
+            $parent_name = $is_child ? $theme->parent()->get('Name') : '';
+            $parent_version = $is_child ? $theme->parent()->get('Version') : '';
 
             $has_update = false;
             $update_version = '';
@@ -99,6 +102,9 @@ class ADVAIPBL_Site_Scanner
                 'version' => $theme->get('Version'),
                 'is_active' => $is_active,
                 'is_parent' => $is_parent,
+                'is_child' => $is_child,
+                'parent_name' => $parent_name,
+                'parent_version' => $parent_version,
                 'has_update' => $has_update,
                 'new_version' => $update_version,
                 'author' => $theme->get('Author'),
@@ -114,17 +120,17 @@ class ADVAIPBL_Site_Scanner
         $version = phpversion();
 
         $status = 'critical';
-        $message = __('Your PHP version is obsolete and insecure. Update immediately.', 'advanced-ip-blocker');
+        $message = __('End of Life (EOL). Obsolete and without official security support. Update immediately.', 'advanced-ip-blocker');
 
-        if (version_compare($version, '8.2', '>=')) {
+        if (version_compare($version, '8.4', '>=')) {
             $status = 'good';
-            $message = __('Up to date and secure.', 'advanced-ip-blocker');
-        } elseif (version_compare($version, '8.1', '>=')) {
+            $message = __('Actively supported and secure.', 'advanced-ip-blocker');
+        } elseif (version_compare($version, '8.3', '>=')) {
+            $status = 'good';
+            $message = __('Supported and secure (Security patches until Dec 2027).', 'advanced-ip-blocker');
+        } elseif (version_compare($version, '8.2', '>=')) {
             $status = 'warning';
-            $message = __('Security updates only. Consider upgrading soon.', 'advanced-ip-blocker');
-        } elseif (version_compare($version, '8.0', '>=')) {
-            $status = 'critical';
-            $message = __('End of Life. No security updates. Upgrade needed.', 'advanced-ip-blocker');
+            $message = __('Security updates only (until Dec 2026). Plan upgrading to PHP 8.3+ soon.', 'advanced-ip-blocker');
         }
 
         return ['current' => $version, 'status' => $status, 'message' => $message];
@@ -244,6 +250,14 @@ class ADVAIPBL_Site_Scanner
 
         $all_themes = wp_get_themes();
         foreach ($all_themes as $slug => $theme) {
+            if ($theme->parent()) {
+                $parent_slug = $theme->get_template();
+                $parent_version = $theme->parent()->get('Version');
+                if (!empty($parent_slug) && !empty($parent_version)) {
+                    $payload[$parent_slug] = $parent_version;
+                }
+                continue;
+            }
             $payload[$slug] = $theme->get('Version');
         }
 
@@ -273,6 +287,49 @@ class ADVAIPBL_Site_Scanner
 
         $body = wp_remote_retrieve_body($response);
         $vulnerabilities = json_decode($body, true);
+
+        if (empty($vulnerabilities) || !is_array($vulnerabilities)) {
+            return ['status' => 'clean', 'count' => 0, 'details' => []];
+        }
+
+        // Failsafe filter: Validate reported vulnerabilities against locally installed versions
+        // to eliminate false positives (e.g. "Flatsome <= 3.20.5" when 3.20.11 is installed).
+        foreach ($vulnerabilities as $slug => $vuln_item) {
+            $installed_ver = $payload[$slug] ?? null;
+            if (empty($installed_ver)) {
+                continue;
+            }
+
+            $vuln_data = is_array($vuln_item) ? (isset($vuln_item[0]) ? $vuln_item[0] : $vuln_item) : null;
+            if (!$vuln_data) {
+                continue;
+            }
+
+            // 1. Check if patched version is specified and installed version is already >= patched
+            $patched_in = $vuln_data['software'][0]['patched_versions'][0] ?? null;
+            if (empty($patched_in) && !empty($vuln_data['fix']) && preg_match('/Update to\s+([0-9]+(?:\.[0-9]+)+)/i', $vuln_data['fix'], $m_fix)) {
+                $patched_in = $m_fix[1];
+            }
+            if (!empty($patched_in) && $patched_in !== 'Unknown' && version_compare($installed_ver, $patched_in, '>=')) {
+                unset($vulnerabilities[$slug]);
+                continue;
+            }
+
+            // 2. Check if vulnerability title specifies affected upper bound (e.g. "<= 3.20.5" or "< 3.20.5")
+            if (!empty($vuln_data['title'])) {
+                if (preg_match('/<=\s*([0-9]+(?:\.[0-9]+)+)/', $vuln_data['title'], $m_lte)) {
+                    if (version_compare($installed_ver, $m_lte[1], '>')) {
+                        unset($vulnerabilities[$slug]);
+                        continue;
+                    }
+                } elseif (preg_match('/<\s*([0-9]+(?:\.[0-9]+)+)/', $vuln_data['title'], $m_lt)) {
+                    if (version_compare($installed_ver, $m_lt[1], '>=')) {
+                        unset($vulnerabilities[$slug]);
+                        continue;
+                    }
+                }
+            }
+        }
 
         if (empty($vulnerabilities)) {
             return ['status' => 'clean', 'count' => 0, 'details' => []];

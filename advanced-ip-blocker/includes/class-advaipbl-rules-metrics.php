@@ -108,7 +108,23 @@ class ADVAIPBL_Rules_Metrics
      */
     public function get_metrics()
     {
-        return get_option(self::OPTION_METRICS, []);
+        $metrics = get_option(self::OPTION_METRICS, []);
+        if (!is_array($metrics)) {
+            $metrics = [];
+        }
+
+        $buffer = get_transient(self::TRANSIENT_BUFFER);
+        if (is_array($buffer) && !empty($buffer)) {
+            foreach ($buffer as $rule_id => $counts) {
+                if (!isset($metrics[$rule_id])) {
+                    $metrics[$rule_id] = ['hits' => 0, 'passed' => 0];
+                }
+                $metrics[$rule_id]['hits'] += ($counts['hits'] ?? 0);
+                $metrics[$rule_id]['passed'] += ($counts['passed'] ?? 0);
+            }
+        }
+
+        return $metrics;
     }
 
     /**

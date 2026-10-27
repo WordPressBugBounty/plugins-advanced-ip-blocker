@@ -45,9 +45,16 @@ class ADVAIPBL_Remote_Notices {
     }
 
     public function display_notices() {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         if (!current_user_can('manage_options')) {
             return;
         }
+
+        $displayed = true;
 
         $notices = get_option('advaipbl_remote_notices', []);
         $dismissed = get_option('advaipbl_dismissed_notices', []);
@@ -56,7 +63,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.21';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.22';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {

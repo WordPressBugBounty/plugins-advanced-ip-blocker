@@ -2967,6 +2967,11 @@ class ADVAIPBL_Settings_Manager
 
     public function display_captcha_keys_warning()
     {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         $options = $this->plugin->options;
         $global_engine = $options['default_challenge_engine'] ?? 'js_automatic';
 
@@ -3017,6 +3022,7 @@ class ADVAIPBL_Settings_Manager
         }
 
         if (!empty($missing_keys_engines)) {
+            $displayed = true;
             $engines_str = implode(' and ', array_unique($missing_keys_engines));
             $settings_url = admin_url('admin.php?page=advaipbl_settings_page#sub-section-captcha');
 

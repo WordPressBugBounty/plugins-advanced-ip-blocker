@@ -1013,6 +1013,18 @@ class ADVAIPBL_CLI extends WP_CLI_Command
                 $main_instance = ADVAIPBL_Main::get_instance();
                 $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
                 list($key, $value) = $args;
+                if ($key === 'allowed_admin_users' || $key === 'tfa_force_roles') {
+                    if (in_array(strtolower(trim($value)), ['none', 'empty', '[]', 'null', '""'], true)) {
+                        $value = [];
+                    } elseif (is_string($value)) {
+                        $json_val = json_decode($value, true);
+                        if (is_array($json_val)) {
+                            $value = $json_val;
+                        } else {
+                            $value = array_filter(array_map('trim', explode(',', $value)));
+                        }
+                    }
+                }
                 $old_sanitized_value = $options[$key] ?? null;
                 $input_to_sanitize = array_merge($options, [$key => $value]);
                 $sanitized_options = $main_instance->settings_manager->sanitize_settings($input_to_sanitize);
@@ -1022,7 +1034,10 @@ class ADVAIPBL_CLI extends WP_CLI_Command
                     return;
                 }
                 $new_sanitized_value = $sanitized_options[$key];
-                if ($old_sanitized_value === $new_sanitized_value && $value !== (string)$old_sanitized_value) {
+                $old_compare = is_array($old_sanitized_value) ? wp_json_encode($old_sanitized_value) : (string)$old_sanitized_value;
+                $new_compare = is_array($new_sanitized_value) ? wp_json_encode($new_sanitized_value) : (string)$new_sanitized_value;
+                $input_compare = is_array($value) ? wp_json_encode($value) : (string)$value;
+                if ($old_sanitized_value === $new_sanitized_value && $input_compare !== $old_compare) {
                     WP_CLI::error("Invalid value '{$value}' provided for key '{$key}'. Please provide a valid value.");
 
                     return;
@@ -2339,6 +2354,147 @@ class ADVAIPBL_CLI extends WP_CLI_Command
             WP_CLI::success('Audit logs cleared.');
         } else {
             WP_CLI::error("Invalid subcommand. Use 'list' or 'clear'.");
+        }
+    }
+
+    /**
+     * Manages authorized administrators who can access the plugin dashboard.
+     *
+     * ## OPTIONS
+     *
+     * [<list|allow|remove|reset>]
+     * : The action to perform (default: list).
+     *
+     * [<user>]
+     * : User ID, username, or email of the administrator.
+     *
+     * ## EXAMPLES
+     *
+     *     $ wp advaipbl admin list
+     *     $ wp advaipbl admin allow 2
+     *     $ wp advaipbl admin allow john_doe
+     *     $ wp advaipbl admin remove 2
+     *     $ wp advaipbl admin reset
+     *
+     * @subcommand admin
+     */
+    public function admin($args, $assoc_args)
+    {
+        $subcommand = !empty($args[0]) ? array_shift($args) : 'list';
+        $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
+        $allowed_admins = isset($options['allowed_admin_users']) && is_array($options['allowed_admin_users']) ? $options['allowed_admin_users'] : [];
+
+        switch ($subcommand) {
+            case 'list':
+                $admins = get_users(['role' => 'administrator']);
+                if (empty($admins)) {
+                    WP_CLI::line('No administrator users found.');
+
+                    return;
+                }
+
+                $is_restricted = !empty($allowed_admins);
+                $table = [];
+                foreach ($admins as $u) {
+                    $uid_str = (string) $u->ID;
+                    if ($is_restricted) {
+                        $is_allowed = in_array($uid_str, $allowed_admins, true) || $u->ID == 1 || (is_multisite() && is_super_admin($u->ID));
+                        $status = $is_allowed ? 'Yes' : 'No (Restricted)';
+                    } else {
+                        $status = 'Yes (All Allowed)';
+                    }
+                    $table[] = [
+                        'ID'         => $u->ID,
+                        'Username'   => $u->user_login,
+                        'Email'      => $u->user_email,
+                        'Authorized' => $status,
+                    ];
+                }
+
+                WP_CLI\Utils\format_items('table', $table, ['ID', 'Username', 'Email', 'Authorized']);
+                if ($is_restricted) {
+                    WP_CLI::line(WP_CLI::colorize('%YRestriction active:%n Only authorized administrators have access to the plugin.'));
+                } else {
+                    WP_CLI::line(WP_CLI::colorize('%GNo restrictions active:%n All WordPress administrators have access to the plugin.'));
+                }
+                break;
+
+            case 'allow':
+            case 'add':
+                $user_identifier = array_shift($args);
+                if (empty($user_identifier)) {
+                    WP_CLI::error('Usage: wp advaipbl admin allow <user_id_or_username>');
+
+                    return;
+                }
+
+                $user = is_numeric($user_identifier) ? get_user_by('id', (int) $user_identifier) : get_user_by('login', $user_identifier);
+                if (!$user) {
+                    $user = get_user_by('email', $user_identifier);
+                }
+                if (!$user) {
+                    WP_CLI::error("User '{$user_identifier}' not found.");
+
+                    return;
+                }
+
+                if (!in_array('administrator', (array) $user->roles, true) && !(is_multisite() && is_super_admin($user->ID))) {
+                    WP_CLI::error("User '{$user->user_login}' is not an administrator.");
+
+                    return;
+                }
+
+                $uid_str = (string) $user->ID;
+                if (!in_array($uid_str, $allowed_admins, true)) {
+                    $allowed_admins[] = $uid_str;
+                    $options['allowed_admin_users'] = array_values(array_unique($allowed_admins));
+                    update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                    $this->log_event_autonomo("Administrator '{$user->user_login}' (ID {$user->ID}) authorized via WP-CLI.", 'info');
+                }
+
+                WP_CLI::success("Administrator '{$user->user_login}' (ID {$user->ID}) is now authorized.");
+                break;
+
+            case 'remove':
+                $user_identifier = array_shift($args);
+                if (empty($user_identifier)) {
+                    WP_CLI::error('Usage: wp advaipbl admin remove <user_id_or_username>');
+
+                    return;
+                }
+
+                $user = is_numeric($user_identifier) ? get_user_by('id', (int) $user_identifier) : get_user_by('login', $user_identifier);
+                if (!$user) {
+                    $user = get_user_by('email', $user_identifier);
+                }
+                if (!$user) {
+                    WP_CLI::error("User '{$user_identifier}' not found.");
+
+                    return;
+                }
+
+                $uid_str = (string) $user->ID;
+                if (($key = array_search($uid_str, $allowed_admins, true)) !== false) {
+                    unset($allowed_admins[$key]);
+                    $options['allowed_admin_users'] = array_values($allowed_admins);
+                    update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                    $this->log_event_autonomo("Administrator '{$user->user_login}' (ID {$user->ID}) removed from authorized list via WP-CLI.", 'info');
+                    WP_CLI::success("Administrator '{$user->user_login}' (ID {$user->ID}) removed from authorized list.");
+                } else {
+                    WP_CLI::warning("Administrator '{$user->user_login}' was not in the authorized list.");
+                }
+                break;
+
+            case 'reset':
+            case 'clear':
+                $options['allowed_admin_users'] = [];
+                update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                $this->log_event_autonomo('Authorized administrators restriction reset via WP-CLI.', 'info');
+                WP_CLI::success('Authorized administrators restriction has been reset. All administrators now have access.');
+                break;
+
+            default:
+                WP_CLI::error("Invalid subcommand '{$subcommand}'. Usage: wp advaipbl admin <list|allow|remove|reset>");
         }
     }
 }

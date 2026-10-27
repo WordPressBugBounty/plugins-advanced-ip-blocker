@@ -117,8 +117,7 @@ class ADVAIPBL_Admin_Pages
         <div id="advaipbl-notices-container">
             <?php
                 settings_errors();
-        $this->plugin->display_admin_notice();
-        ?>
+            ?>
         </div>
         
         <div class="advaipbl-main-nav-wrapper">
@@ -4439,10 +4438,13 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
                                             <td><?php echo esc_html($theme['version']); ?></td>
                                             <td>
                                                 <?php
-                                                if ($theme['is_parent']) {
+                                                if (!empty($theme['is_parent'])) {
                                                     echo '<span style="color:#2271b1; font-weight:bold;">' . esc_html__('Parent Theme', 'advanced-ip-blocker') . '</span>';
-                                                } elseif ($theme['is_active'] && !$theme['is_parent'] && $theme['is_active']) {
-                                                    echo esc_html__('Standard / Child', 'advanced-ip-blocker');
+                                                } elseif (!empty($theme['is_child'])) {
+                                                    $parent_info = !empty($theme['parent_name']) ? ' (' . $theme['parent_name'] . (!empty($theme['parent_version']) ? ' v' . $theme['parent_version'] : '') . ')' : '';
+                                                    echo '<span style="color:#6b7280; font-weight:bold;">' . esc_html__('Child Theme', 'advanced-ip-blocker') . esc_html($parent_info) . '</span>';
+                                                } elseif ($theme['is_active']) {
+                                                    echo esc_html__('Standard Theme', 'advanced-ip-blocker');
                                                 } else {
                                                     echo esc_html__('Inactive', 'advanced-ip-blocker');
                                                 }
@@ -4529,7 +4531,7 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
                         <!-- Resultados-->
                         <div id="advaipbl-scan-details" style="display:none; text-align: left; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
                             <table class="wp-list-table widefat fixed striped">
-                                <thead><tr><th style="width: 20px;"></th><th>Plugin</th><th>Severity</th><th>Issue</th><th>Fix</th></tr></thead>
+                                <thead><tr><th style="width: 20px;"></th><th><?php esc_html_e('Component (Plugin/Theme)', 'advanced-ip-blocker'); ?></th><th><?php esc_html_e('Severity', 'advanced-ip-blocker'); ?></th><th><?php esc_html_e('Issue', 'advanced-ip-blocker'); ?></th><th><?php esc_html_e('Fix', 'advanced-ip-blocker'); ?></th></tr></thead>
                                 <tbody><!-- JS llenarÃ¡ esto --></tbody>
                             </table>
                         </div>

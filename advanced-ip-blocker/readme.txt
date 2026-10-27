@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.21
+Stable tag: 8.13.22
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,19 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.21 =
-Enhancement Update: Introduces smart environment filtering for Remote Security Advisories (targeting specific vulnerable PHP branches, plugins, or themes), links all FIM email alerts to the master email switch, and clarifies notification settings.
+= 8.13.22 =
+Adds WP-CLI admin management with lockout failsafes, updates PHP lifecycle security checks (<8.2 EOL), fixes child theme vulnerability audits, and refines Dashboard challenge metrics and Advanced Rules tracking.
 
 == Changelog ==
+
+= 8.13.22 =
+* **NEW FEATURE:** Added dedicated WP-CLI administrator management subcommand (`wp advaipbl admin <list|allow|remove|reset>`) allowing administrators to view, authorize, remove, or reset access to the plugin dashboard directly via terminal.
+* **ENHANCEMENT:** Added automatic fail-safe recovery and `deleted_user` hook cleanup for Authorized Administrators (`allowed_admin_users`). If all authorized administrator accounts are deleted from WordPress, the plugin automatically restores access to active administrators with `manage_options`, preventing permanent orphaned lockouts while strictly maintaining access restrictions when authorized admins exist.
+* **ENHANCEMENT:** Improved WP-CLI `config set` parsing for array-based options (`allowed_admin_users`, `tfa_force_roles`), adding support for comma-separated values, JSON arrays, and clearing restrictions using `none` or `empty` without triggering PHP array-to-string notices.
+* **SECURITY:** Updated Site Health & Security Scanner PHP version classification to match official PHP lifecycle policies (<8.2 flagged as Critical/EOL with no security support, 8.2 as Warning, 8.3/8.4/8.5+ as Good/Active).
+* **ENHANCEMENT:** Fixed child theme handling in Vulnerability Audit. When child themes are installed, the scanner now inspects the parent theme's actual version rather than sending the child theme's local version, preventing false positive vulnerability alerts and clearly displaying child-to-parent relationships in the UI.
+* **UI/UX:** Enhanced Dashboard "Challenges Overview" chart breakdown. Out of total challenges served, the chart now accurately depicts the challenge outcomes: Verified Humans (Passed), Failed Attempts, and Unsolved/Dropped Bots (automated threats stopped before executing JavaScript), eliminating redundant slices.
+* **ENHANCEMENT:** Improved "Advanced Rules Hits" widget with real-time metrics buffer aggregation and graceful empty-state messaging when no rules have been triggered.
 
 = 8.13.21 =
 * **NEW FEATURE:** Enhanced Remote Security Advisories (`ADVAIPBL_Remote_Notices`) with intelligent local environment filtering, allowing security alerts to target specific vulnerable PHP branches (including EOL branches) or specific installed/active plugins and themes by slug and version threshold.

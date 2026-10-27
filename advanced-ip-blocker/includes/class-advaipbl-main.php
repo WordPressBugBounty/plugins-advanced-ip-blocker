@@ -275,10 +275,6 @@ class ADVAIPBL_Main
 
         add_action('admin_init', [$this, 'check_database_update']);
         $this->add_hooks();
-
-        if (is_admin()) {
-            add_action('admin_notices', [$this, 'display_admin_notice']);
-        }
     }
 
     public function initialize_backend_managers()
@@ -314,6 +310,7 @@ class ADVAIPBL_Main
         add_action('init', [$this, 'auto_whitelist_admin_on_session'], -9998);
 
         add_filter('user_has_cap', [$this, 'filter_advaipbl_capabilities'], 10, 4);
+        add_action('deleted_user', [$this, 'handle_deleted_admin_user'], 10, 1);
 
         add_filter('http_request_args', [$this, 'inject_loopback_token'], 10, 2);
 
@@ -623,6 +620,22 @@ class ADVAIPBL_Main
                 } else {
                     if (in_array((string)$user_id, $allowed_admins, true) || in_array($user_id, $allowed_admins, true)) {
                         $allowed = true;
+                    } else {
+                        // Fail-safe: Check if ANY of the configured authorized users still exist as an active administrator.
+                        // If all authorized administrators were deleted from WordPress (orphaned state),
+                        // allow access to any user with 'manage_options' to prevent irreversible lockout.
+                        $has_valid_authorized_admin = false;
+                        foreach ($allowed_admins as $auth_id) {
+                            $auth_user = get_userdata((int) $auth_id);
+                            if ($auth_user && in_array('administrator', (array) $auth_user->roles, true)) {
+                                $has_valid_authorized_admin = true;
+                                break;
+                            }
+                        }
+
+                        if (!$has_valid_authorized_admin && !empty($allcaps['manage_options'])) {
+                            $allowed = true;
+                        }
                     }
                 }
             }
@@ -633,6 +646,32 @@ class ADVAIPBL_Main
         }
 
         return $allcaps;
+    }
+
+    /**
+     * Cleans up authorized administrators list when a user is deleted from WordPress.
+     *
+     * @param int $deleted_user_id The deleted user's ID.
+     */
+    public function handle_deleted_admin_user($deleted_user_id)
+    {
+        $options = get_option(self::OPTION_SETTINGS, []);
+        if (empty($options['allowed_admin_users']) || !is_array($options['allowed_admin_users'])) {
+            return;
+        }
+
+        $id_str = (string) $deleted_user_id;
+        $key = array_search($id_str, $options['allowed_admin_users'], true);
+        if ($key === false) {
+            $key = array_search((int) $deleted_user_id, $options['allowed_admin_users'], true);
+        }
+
+        if ($key !== false) {
+            unset($options['allowed_admin_users'][$key]);
+            $options['allowed_admin_users'] = array_values($options['allowed_admin_users']);
+            update_option(self::OPTION_SETTINGS, $options);
+            $this->options = $options;
+        }
     }
 
     /**
@@ -2553,6 +2592,12 @@ class ADVAIPBL_Main
                     'discard_confirm_btn'      => __('Yes, Discard', 'advanced-ip-blocker'),
                     'attacks_label'            => __('attacks', 'advanced-ip-blocker'),
                     'blocks_label'             => __('blocks', 'advanced-ip-blocker'),
+                    'challenge_passed'         => __('Passed', 'advanced-ip-blocker'),
+                    'challenge_failed'         => __('Failed', 'advanced-ip-blocker'),
+                    'challenge_unsolved'       => __('Unsolved / Dropped', 'advanced-ip-blocker'),
+                    'challenge_total_served'   => __('Total Served', 'advanced-ip-blocker'),
+                    'challenge_no_data'        => __('No challenge events recorded in the last 7 days.', 'advanced-ip-blocker'),
+                    'adv_rules_no_data'        => __('No advanced rule hits recorded in the last 7 days.', 'advanced-ip-blocker'),
                     'confirm_bulk_action_title' => __('Confirm Bulk Action', 'advanced-ip-blocker'),
 
                     /* translators: %s is a placeholder */
@@ -6242,6 +6287,11 @@ class ADVAIPBL_Main
 
     public function display_under_attack_notice()
     {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         $mode = $this->options['under_attack_mode'] ?? 'off';
         $is_active = false;
         if ($mode === 'manual') {
@@ -6251,6 +6301,7 @@ class ADVAIPBL_Main
         }
 
         if ($is_active) {
+            $displayed = true;
             $settings_link = admin_url('admin.php?page=advaipbl_settings_page-settings&sub-tab=general_settings#sub-section-under-attack');
             $cancel_link = wp_nonce_url(admin_url('admin.php?page=advaipbl_settings_page&action=advaipbl_cancel_auto_panic'), 'advaipbl_cancel_auto_panic');
             ?>
@@ -6280,10 +6331,17 @@ class ADVAIPBL_Main
 
     public function display_admin_notice()
     {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
         if ($screen && strpos($screen->id, 'advaipbl_') === false) {
             return;
         }
+
+        $displayed = true;
 
         if (get_option('advaipbl_network_degraded')) {
             echo '<div class="notice notice-warning is-dismissible"><p>';
@@ -7028,6 +7086,11 @@ class ADVAIPBL_Main
     */
     public function display_telemetry_notice()
     {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
         if (strpos($page, 'advaipbl_settings_page') === false) {
@@ -7041,6 +7104,8 @@ class ADVAIPBL_Main
         if (get_option('advaipbl_telemetry_notice_dismissed')) {
             return;
         }
+
+        $displayed = true;
         ?>
         <div class="notice notice-info is-dismissible advaipbl-telemetry-notice">
             <p style="font-size: 14px; line-height: 1.6;">
@@ -8004,6 +8069,11 @@ class ADVAIPBL_Main
      */
     public function display_force_2fa_setup_notice()
     {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         if (! is_user_logged_in() || ! $this->tfa_manager) {
             return;
         }
@@ -8017,6 +8087,7 @@ class ADVAIPBL_Main
             $user_has_2fa_setup = $this->tfa_manager->is_2fa_enabled_for_user($user_id);
 
             if ($global_2fa_enabled && $user_is_forced && ! $user_has_2fa_setup) {
+                $displayed = true;
                 $profile_url = get_edit_profile_url($user_id);
                 ?>
                 <div class="notice notice-error is-dismissible advaipbl-force-2fa-notice">
@@ -8991,8 +9062,14 @@ class ADVAIPBL_Main
      */
     public function display_setup_wizard_notice()
     {
+        static $displayed = false;
+        if ($displayed) {
+            return;
+        }
+
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if (get_option('advaipbl_run_setup_wizard') && current_user_can('advaipbl_manage_settings') && (! isset($_GET['page']) || $_GET['page'] !== 'advaipbl-setup-wizard')) {
+            $displayed = true;
             $wizard_url = admin_url('admin.php?page=advaipbl-setup-wizard');
             ?>
         <div class="notice notice-info is-dismissible advaipbl-wizard-notice">
