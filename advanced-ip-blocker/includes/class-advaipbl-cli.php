@@ -981,27 +981,40 @@ class ADVAIPBL_CLI extends WP_CLI_Command
             return;
         }
         $subcommand = array_shift($args);
+        $main_instance = ADVAIPBL_Main::get_instance();
+        $defaults = $main_instance->get_default_settings();
+        $saved_options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
+        $options = wp_parse_args($saved_options, $defaults);
+
         switch ($subcommand) {
             case 'get':
-                $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
                 $key = array_shift($args);
                 if ($key) {
-                    if (isset($options[ $key ])) {
+                    if (array_key_exists($key, $options)) {
                         $value = $options[ $key ];
                         if (is_array($value)) {
                             WP_CLI::line(wp_json_encode($value));
                         } else {
-                            WP_CLI::line($value);
+                            WP_CLI::line((string) $value);
                         }
                     } else {
                         WP_CLI::error("Option '{$key}' not found in advaipbl_settings.");
                     }
                 } else {
+                    $format = $assoc_args['format'] ?? 'table';
+                    $search = $assoc_args['search'] ?? null;
+                    ksort($options);
                     $display_items = [];
                     foreach ($options as $option_key => $option_value) {
-                        $display_items[] = [ 'key' => $option_key, 'value' => is_array($option_value) ? wp_json_encode($option_value) : $option_value, ];
+                        if ($search && stripos($option_key, $search) === false) {
+                            continue;
+                        }
+                        $display_items[] = [
+                            'key' => $option_key,
+                            'value' => is_array($option_value) ? wp_json_encode($option_value) : (string) $option_value,
+                        ];
                     }
-                    WP_CLI\Utils\format_items('table', $display_items, [ 'key', 'value' ]);
+                    WP_CLI\Utils\format_items($format, $display_items, [ 'key', 'value' ]);
                 }
                 break;
             case 'set':
@@ -1010,23 +1023,33 @@ class ADVAIPBL_CLI extends WP_CLI_Command
 
                     return;
                 }
-                $main_instance = ADVAIPBL_Main::get_instance();
-                $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
                 list($key, $value) = $args;
-                if ($key === 'allowed_admin_users' || $key === 'tfa_force_roles') {
-                    if (in_array(strtolower(trim($value)), ['none', 'empty', '[]', 'null', '""'], true)) {
+
+                $val_lower = strtolower(trim((string) $value));
+                $bool_synonyms_on = ['true', 'yes', 'on', 'enabled'];
+                $bool_synonyms_off = ['false', 'no', 'off', 'disabled'];
+                if (in_array($val_lower, $bool_synonyms_on, true)) {
+                    $value = '1';
+                } elseif (in_array($val_lower, $bool_synonyms_off, true)) {
+                    $value = '0';
+                }
+
+                $array_keys = ['allowed_admin_users', 'tfa_force_roles', 'geoblock_countries', 'geo_challenge_countries'];
+                if (in_array($key, $array_keys, true)) {
+                    if (in_array($val_lower, ['none', 'empty', '[]', 'null', '""'], true)) {
                         $value = [];
                     } elseif (is_string($value)) {
                         $json_val = json_decode($value, true);
                         if (is_array($json_val)) {
                             $value = $json_val;
                         } else {
-                            $value = array_filter(array_map('trim', explode(',', $value)));
+                            $value = array_values(array_filter(array_map('trim', explode(',', $value))));
                         }
                     }
                 }
-                $old_sanitized_value = $options[$key] ?? null;
-                $input_to_sanitize = array_merge($options, [$key => $value]);
+
+                $old_sanitized_value = $saved_options[$key] ?? null;
+                $input_to_sanitize = array_merge($saved_options, [$key => $value]);
                 $sanitized_options = $main_instance->settings_manager->sanitize_settings($input_to_sanitize);
                 if (!isset($sanitized_options[$key])) {
                     WP_CLI::error("Invalid key '{$key}'.");
@@ -1034,9 +1057,9 @@ class ADVAIPBL_CLI extends WP_CLI_Command
                     return;
                 }
                 $new_sanitized_value = $sanitized_options[$key];
-                $old_compare = is_array($old_sanitized_value) ? wp_json_encode($old_sanitized_value) : (string)$old_sanitized_value;
-                $new_compare = is_array($new_sanitized_value) ? wp_json_encode($new_sanitized_value) : (string)$new_sanitized_value;
-                $input_compare = is_array($value) ? wp_json_encode($value) : (string)$value;
+                $old_compare = is_array($old_sanitized_value) ? wp_json_encode($old_sanitized_value) : (string) $old_sanitized_value;
+                $new_compare = is_array($new_sanitized_value) ? wp_json_encode($new_sanitized_value) : (string) $new_sanitized_value;
+                $input_compare = is_array($value) ? wp_json_encode($value) : (string) $value;
                 if ($old_sanitized_value === $new_sanitized_value && $input_compare !== $old_compare) {
                     WP_CLI::error("Invalid value '{$value}' provided for key '{$key}'. Please provide a valid value.");
 
@@ -2146,34 +2169,206 @@ class ADVAIPBL_CLI extends WP_CLI_Command
     public function status($args, $assoc_args)
     {
         $main_instance = ADVAIPBL_Main::get_instance();
-        $options = $main_instance->options;
+        $defaults = $main_instance->get_default_settings();
+        $saved_options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
+        $options = wp_parse_args($saved_options, $defaults);
 
-        $modules = [
-            'Web Application Firewall (WAF)' => !empty($options['enable_waf']),
-            'Intelligent Zero-Day Sync' => !empty($options['enable_intelligent_waf']),
-            'Attack Signature Engine' => !empty($options['enable_signature_engine']),
-            'Bot Verification' => !empty($options['enable_bot_verification']),
-            'Community Protection Network' => !empty($options['enable_community_network']),
-            '404 Lockdown Mode' => !empty($options['enable_404_lockdown']),
-            '403 Lockdown Mode' => !empty($options['enable_403_lockdown']),
-            'Login Protection (Lockdown)' => !empty($options['enable_login_lockdown']),
-            'Spamhaus ASN Blocklist' => !empty($options['enable_spamhaus_asn']),
-            'Geoblocking' => !empty($options['enable_geoblocking']),
-            'AbuseIPDB Integration' => !empty($options['enable_abuseipdb']),
-            'Cloudflare Sync' => !empty($options['enable_cloudflare']),
-            'File Integrity Monitoring (FIM)' => !empty($options['enable_fim']),
-            'Audit Logging' => !empty($options['enable_audit_log']),
+        $format = $assoc_args['format'] ?? 'table';
+
+        $under_attack_mode = $options['under_attack_mode'] ?? 'off';
+        $is_panic_transient = (bool) get_transient('advaipbl_is_under_attack');
+        $is_panic_active = ($under_attack_mode === 'manual') || ($under_attack_mode === 'auto' && $is_panic_transient);
+        $panic_status = $is_panic_active ? 'ALERT: ACTIVE (Under Attack)' : 'Standby (' . $under_attack_mode . ')';
+        $panic_details = "Mode: {$under_attack_mode} | Threshold: " . ($options['under_attack_threshold'] ?? 100) . ' in ' . ($options['under_attack_window'] ?? 60) . 's';
+
+        $geoblock_countries = $options['geoblock_countries'] ?? [];
+        $geoblock_count = is_array($geoblock_countries) ? count($geoblock_countries) : 0;
+        $geoblock_details = $geoblock_count > 0 ? "{$geoblock_count} countries blocked" : 'No countries selected';
+
+        $allowed_admins = $options['allowed_admin_users'] ?? [];
+        $is_admin_restricted = !empty($allowed_admins) && is_array($allowed_admins);
+        $admin_status = $is_admin_restricted ? 'Restricted' : 'No Restrictions';
+        $admin_details = $is_admin_restricted ? count($allowed_admins) . ' authorized admin(s)' : 'All administrators allowed';
+
+        $rl_limit = $options['rate_limiting_limit'] ?? 120;
+        $rl_window = $options['rate_limiting_window'] ?? 60;
+        $rl_details = "{$rl_limit} requests / {$rl_window}s";
+
+        $xmlrpc_mode = $options['xmlrpc_protection_mode'] ?? 'smart';
+        $xmlrpc_details = "Mode: {$xmlrpc_mode}";
+
+        $is_degraded = (bool) get_option('advaipbl_network_degraded');
+        $community_details = $is_degraded ? 'Limited feed (Degraded)' : '100,000+ threat IPs (Active)';
+
+        $items = [
+            [
+                'Category' => 'Emergency Defense',
+                'Component' => 'Distributed Attack (Auto-Panic)',
+                'Status' => $panic_status,
+                'Details' => $panic_details,
+            ],
+            [
+                'Category' => 'Firewall & WAF',
+                'Component' => 'Web Application Firewall (WAF)',
+                'Status' => !empty($options['enable_waf']) ? 'Enabled' : 'Disabled',
+                'Details' => !empty($options['enable_intelligent_waf']) ? 'Intelligent Zero-Day: Active' : 'Basic Mode',
+            ],
+            [
+                'Category' => 'Firewall & WAF',
+                'Component' => 'Rate Limiting',
+                'Status' => !empty($options['rate_limiting_enable']) ? 'Enabled' : 'Disabled',
+                'Details' => $rl_details,
+            ],
+            [
+                'Category' => 'Firewall & WAF',
+                'Component' => 'Attack Signature Engine',
+                'Status' => !empty($options['enable_signature_engine']) ? 'Enabled' : 'Disabled',
+                'Details' => !empty($options['enable_signature_analysis']) ? 'Analysis Engine: Active' : 'Passive',
+            ],
+            [
+                'Category' => 'Firewall & WAF',
+                'Component' => 'Honeypot Trap Protection',
+                'Status' => !empty($options['enable_honeypot_blocking']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Auto-ban on hidden trap URLs',
+            ],
+            [
+                'Category' => 'Firewall & WAF',
+                'Component' => 'Malicious User-Agent Blocker',
+                'Status' => !empty($options['enable_user_agent_blocking']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Vulnerability scanners & evil bots',
+            ],
+            [
+                'Category' => 'Firewall & WAF',
+                'Component' => 'Bot Verification',
+                'Status' => !empty($options['enable_bot_verification']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Search engines / AI bots verification',
+            ],
+            [
+                'Category' => 'Threat Feeds & Geo',
+                'Component' => 'Spamhaus ASN Blocklist',
+                'Status' => !empty($options['enable_spamhaus_asn']) ? 'Enabled' : 'Disabled',
+                'Details' => 'DROP / EDROP ASN feeds',
+            ],
+            [
+                'Category' => 'Threat Feeds & Geo',
+                'Component' => 'Geoblocking',
+                'Status' => !empty($options['enable_geoblocking']) ? 'Enabled' : 'Disabled',
+                'Details' => $geoblock_details,
+            ],
+            [
+                'Category' => 'Threat Feeds & Geo',
+                'Component' => 'AbuseIPDB Integration',
+                'Status' => !empty($options['enable_abuseipdb']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Threshold: ' . ($options['abuseipdb_threshold'] ?? 90) . '%',
+            ],
+            [
+                'Category' => 'Threat Feeds & Geo',
+                'Component' => 'Community Protection Network',
+                'Status' => !empty($options['enable_community_network']) ? 'Enabled' : 'Disabled',
+                'Details' => $community_details,
+            ],
+            [
+                'Category' => 'Threat Feeds & Geo',
+                'Component' => 'Cloudflare Edge Sync',
+                'Status' => !empty($options['enable_cloudflare']) ? 'Enabled' : 'Disabled',
+                'Details' => !empty($options['cf_safe_guard']) ? 'SafeGuard active' : 'Direct sync',
+            ],
+            [
+                'Category' => 'Access & Auth',
+                'Component' => 'Two-Factor Authentication (2FA)',
+                'Status' => !empty($options['enable_2fa']) ? 'Enabled' : 'Disabled',
+                'Details' => !empty($options['tfa_force_roles']) ? 'Forced on selected roles' : 'Optional',
+            ],
+            [
+                'Category' => 'Access & Auth',
+                'Component' => 'XML-RPC Protection',
+                'Status' => ($xmlrpc_mode !== 'disabled') ? 'Enabled' : 'Disabled',
+                'Details' => $xmlrpc_details,
+            ],
+            [
+                'Category' => 'Access & Auth',
+                'Component' => 'Login Protection (Lockdown)',
+                'Status' => !empty($options['enable_login_lockdown']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Threshold: ' . ($options['login_lockdown_event_threshold'] ?? 50) . ' attempts',
+            ],
+            [
+                'Category' => 'Access & Auth',
+                'Component' => '404 Lockdown Mode',
+                'Status' => !empty($options['enable_404_lockdown']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Threshold: ' . ($options['lockdown_404_event_threshold'] ?? 50) . ' events',
+            ],
+            [
+                'Category' => 'Access & Auth',
+                'Component' => '403 Lockdown Mode',
+                'Status' => !empty($options['enable_403_lockdown']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Threshold: ' . ($options['lockdown_403_event_threshold'] ?? 50) . ' events',
+            ],
+            [
+                'Category' => 'Hardening',
+                'Component' => 'Admin Access Control',
+                'Status' => $admin_status,
+                'Details' => $admin_details,
+            ],
+            [
+                'Category' => 'Hardening',
+                'Component' => 'Block PHP in Uploads',
+                'Status' => !empty($options['block_php_uploads']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Protects /wp-content/uploads/',
+            ],
+            [
+                'Category' => 'Hardening',
+                'Component' => 'Disable File Editor',
+                'Status' => !empty($options['disable_file_editor']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Blocks theme/plugin dashboard editor',
+            ],
+            [
+                'Category' => 'Hardening',
+                'Component' => 'Disable Application Passwords',
+                'Status' => !empty($options['disable_app_passwords']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Blocks REST API auth bypass',
+            ],
+            [
+                'Category' => 'Hardening',
+                'Component' => 'Hide WordPress Version',
+                'Status' => !empty($options['hide_wp_version']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Strips core generator tags',
+            ],
+            [
+                'Category' => 'Hardening',
+                'Component' => 'Disable ImageMagick',
+                'Status' => !empty($options['disable_imagick']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Forces safe GD library',
+            ],
+            [
+                'Category' => 'Forensics & Audit',
+                'Component' => 'File Integrity Monitoring (FIM)',
+                'Status' => !empty($options['enable_fim']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Frequency: ' . ($options['fim_scan_frequency'] ?? 'daily'),
+            ],
+            [
+                'Category' => 'Forensics & Audit',
+                'Component' => 'Activity Audit Logging',
+                'Status' => !empty($options['enable_audit_log']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Tracks administrative changes',
+            ],
+            [
+                'Category' => 'Forensics & Audit',
+                'Component' => 'Threat Scoring Engine',
+                'Status' => !empty($options['enable_threat_scoring']) ? 'Enabled' : 'Disabled',
+                'Details' => 'Threshold: ' . ($options['threat_score_threshold'] ?? 100) . ' pts',
+            ],
         ];
 
-        $items = [];
-        foreach ($modules as $name => $is_enabled) {
-            $items[] = [
-                'Module' => $name,
-                'Status' => $is_enabled ? 'Enabled' : 'Disabled',
-            ];
-        }
+        WP_CLI\Utils\format_items($format, $items, ['Category', 'Component', 'Status', 'Details']);
 
-        WP_CLI\Utils\format_items('table', $items, ['Module', 'Status']);
+        if ($format === 'table') {
+            if ($is_panic_active) {
+                WP_CLI::line(WP_CLI::colorize('%R*** CRITICAL ALERT: Distributed Attack Protection (Auto-Panic) is currently ENGAGED! ***%n'));
+            }
+            if ($is_degraded) {
+                WP_CLI::line(WP_CLI::colorize('%YNote: AIB Community Threat Feed is currently running in degraded/limited mode.%n'));
+            }
+        }
     }
 
     /**
@@ -2496,5 +2691,254 @@ class ADVAIPBL_CLI extends WP_CLI_Command
             default:
                 WP_CLI::error("Invalid subcommand '{$subcommand}'. Usage: wp advaipbl admin <list|allow|remove|reset>");
         }
+    }
+
+    /**
+     * Manages Distributed Attack Protection (Auto-Panic).
+     *
+     * ## OPTIONS
+     *
+     * [<action>]
+     * : 'status', 'on', 'off', or 'mode'. Default: 'status'.
+     *
+     * [<value>]
+     * : Required when setting 'mode': 'off', 'auto', or 'manual'.
+     *
+     * ## EXAMPLES
+     *
+     *     # Check Auto-Panic and attack status
+     *     $ wp advaipbl panic status
+     *
+     *     # Manually trigger Panic Mode immediately (activates global JS challenge)
+     *     $ wp advaipbl panic on
+     *
+     *     # Cancel Panic Mode immediately
+     *     $ wp advaipbl panic off
+     *
+     *     # Set Under Attack Mode to auto
+     *     $ wp advaipbl panic mode auto
+     *
+     * @subcommand panic
+     */
+    public function panic($args, $assoc_args)
+    {
+        $subcommand = !empty($args[0]) ? array_shift($args) : 'status';
+        $main_instance = ADVAIPBL_Main::get_instance();
+        $defaults = $main_instance->get_default_settings();
+        $saved_options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
+        $options = wp_parse_args($saved_options, $defaults);
+
+        switch ($subcommand) {
+            case 'status':
+                $mode = $options['under_attack_mode'] ?? 'off';
+                $is_transient_active = (bool) get_transient('advaipbl_is_under_attack');
+                $is_panic_active = ($mode === 'manual') || ($mode === 'auto' && $is_transient_active);
+
+                $status_label = $is_panic_active ? 'ACTIVE (Under Attack Challenge Engaged)' : 'Standby (Normal Traffic Flow)';
+                $items = [
+                    ['Property' => 'Panic State', 'Value' => $status_label],
+                    ['Property' => 'Under Attack Mode', 'Value' => $mode],
+                    ['Property' => 'Trigger Threshold', 'Value' => ($options['under_attack_threshold'] ?? 100) . ' blocks'],
+                    ['Property' => 'Detection Window', 'Value' => ($options['under_attack_window'] ?? 60) . ' seconds'],
+                    ['Property' => 'Panic Duration', 'Value' => ($options['under_attack_duration'] ?? 15) . ' minutes'],
+                    ['Property' => 'Challenge Mode', 'Value' => $options['under_attack_challenge_mode'] ?? 'automatic'],
+                    ['Property' => 'Alert Notifications', 'Value' => $options['under_attack_alerts'] ?? 'always'],
+                ];
+                WP_CLI\Utils\format_items('table', $items, ['Property', 'Value']);
+                if ($is_panic_active) {
+                    WP_CLI::line(WP_CLI::colorize('%RCritical Alert:%n Global JavaScript challenge is currently active for non-whitelisted visitors.'));
+                }
+                break;
+
+            case 'on':
+            case 'engage':
+                $options['under_attack_mode'] = 'manual';
+                update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                $duration_mins = (int) ($options['under_attack_duration'] ?? 15);
+                set_transient('advaipbl_is_under_attack', true, $duration_mins * MINUTE_IN_SECONDS);
+                $this->log_event_autonomo('Auto-Panic Mode manually engaged by administrator via WP-CLI.', 'warning');
+                WP_CLI::success('Distributed Attack Protection (Auto-Panic) engaged manually. Global challenge is now active.');
+                break;
+
+            case 'off':
+            case 'cancel':
+                delete_transient('advaipbl_is_under_attack');
+                if (($options['under_attack_mode'] ?? 'off') === 'manual') {
+                    $options['under_attack_mode'] = 'auto';
+                    update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                }
+                $this->log_event_autonomo('Auto-Panic Mode manually cancelled by administrator via WP-CLI.', 'info');
+                WP_CLI::success('Distributed Attack Protection (Auto-Panic) cancelled. Normal traffic flow restored.');
+                break;
+
+            case 'mode':
+                $new_mode = array_shift($args);
+                if (!in_array($new_mode, ['off', 'auto', 'manual'], true)) {
+                    WP_CLI::error("Invalid mode '{$new_mode}'. Allowed values: 'off', 'auto', 'manual'.");
+
+                    return;
+                }
+                $options['under_attack_mode'] = $new_mode;
+                if ($new_mode === 'off') {
+                    delete_transient('advaipbl_is_under_attack');
+                }
+                update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                $this->log_event_autonomo("Auto-Panic mode updated to '{$new_mode}' via WP-CLI.", 'info');
+                WP_CLI::success("Under Attack Mode updated to '{$new_mode}'.");
+                break;
+
+            default:
+                WP_CLI::error("Invalid subcommand '{$subcommand}'. Usage: wp advaipbl panic <status|on|off|mode>");
+        }
+    }
+
+    /**
+     * Manages WordPress Core Hardening protections.
+     *
+     * ## OPTIONS
+     *
+     * [<action>]
+     * : 'status', 'enable', or 'disable'. Default: 'status'.
+     *
+     * [<feature>]
+     * : Feature key: 'php-uploads', 'file-editor', 'app-passwords', 'wp-version', 'imagick', 'x-powered-by', or 'all'.
+     *
+     * ## EXAMPLES
+     *
+     *     # View hardening features status
+     *     $ wp advaipbl hardening status
+     *
+     *     # Block PHP execution in wp-content/uploads/
+     *     $ wp advaipbl hardening enable php-uploads
+     *
+     *     # Disable theme/plugin file editor
+     *     $ wp advaipbl hardening enable file-editor
+     *
+     *     # Enable all core hardening features
+     *     $ wp advaipbl hardening enable all
+     *
+     * @subcommand hardening
+     */
+    public function hardening($args, $assoc_args)
+    {
+        $subcommand = !empty($args[0]) ? array_shift($args) : 'status';
+        $main_instance = ADVAIPBL_Main::get_instance();
+        $defaults = $main_instance->get_default_settings();
+        $saved_options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
+        $options = wp_parse_args($saved_options, $defaults);
+
+        $feature_map = [
+            'php-uploads'     => ['key' => 'block_php_uploads',     'label' => 'Block PHP in Uploads'],
+            'file-editor'     => ['key' => 'disable_file_editor',   'label' => 'Disable File Editor'],
+            'app-passwords'   => ['key' => 'disable_app_passwords', 'label' => 'Disable Application Passwords'],
+            'wp-version'      => ['key' => 'hide_wp_version',       'label' => 'Hide WordPress Version'],
+            'imagick'         => ['key' => 'disable_imagick',       'label' => 'Disable ImageMagick (Use GD)'],
+            'x-powered-by'    => ['key' => 'remove_x_powered_by',   'label' => 'Remove X-Powered-By Header'],
+        ];
+
+        switch ($subcommand) {
+            case 'status':
+                $items = [];
+                foreach ($feature_map as $slug => $meta) {
+                    $is_enabled = !empty($options[$meta['key']]);
+                    $items[] = [
+                        'Feature' => $meta['label'],
+                        'CLI Flag' => $slug,
+                        'Status'  => $is_enabled ? 'Enabled' : 'Disabled',
+                    ];
+                }
+                $allowed_admins = $options['allowed_admin_users'] ?? [];
+                $admin_status = !empty($allowed_admins) && is_array($allowed_admins) ? 'Restricted (' . count($allowed_admins) . ' authorized)' : 'No Restrictions (All Allowed)';
+                $items[] = [
+                    'Feature' => 'Admin Access Control',
+                    'CLI Flag' => 'admin (see wp advaipbl admin)',
+                    'Status'  => $admin_status,
+                ];
+                WP_CLI\Utils\format_items('table', $items, ['Feature', 'CLI Flag', 'Status']);
+                break;
+
+            case 'enable':
+            case 'disable':
+                $feature = array_shift($args);
+                if (empty($feature)) {
+                    WP_CLI::error("Please specify a feature: '" . implode("', '", array_keys($feature_map)) . "' or 'all'.");
+
+                    return;
+                }
+                $target_val = ($subcommand === 'enable') ? '1' : '0';
+                $updated_features = [];
+
+                if ($feature === 'all') {
+                    foreach ($feature_map as $slug => $meta) {
+                        $options[$meta['key']] = $target_val;
+                        $updated_features[] = $meta['label'];
+                    }
+                } elseif (isset($feature_map[$feature])) {
+                    $meta = $feature_map[$feature];
+                    $options[$meta['key']] = $target_val;
+                    $updated_features[] = $meta['label'];
+                } else {
+                    WP_CLI::error("Unknown feature '{$feature}'. Allowed: '" . implode("', '", array_keys($feature_map)) . "' or 'all'.");
+
+                    return;
+                }
+
+                update_option(ADVAIPBL_Main::OPTION_SETTINGS, $options);
+                $action_text = ($subcommand === 'enable') ? 'enabled' : 'disabled';
+                $this->log_event_autonomo('Hardening features ' . $action_text . ' via WP-CLI: ' . implode(', ', $updated_features), 'info');
+                WP_CLI::success('Hardening features ' . $action_text . ': ' . implode(', ', $updated_features));
+                break;
+
+            default:
+                WP_CLI::error("Invalid subcommand '{$subcommand}'. Usage: wp advaipbl hardening <status|enable|disable> [feature]");
+        }
+    }
+
+    /**
+     * Purges temporary security transients, rate-limiting caches, and metric buffers.
+     *
+     * ## OPTIONS
+     *
+     * [<action>]
+     * : 'purge', 'flush', or 'status'. Default: 'purge'.
+     *
+     * ## EXAMPLES
+     *
+     *     # Purge all temporary security transients and metric buffers
+     *     $ wp advaipbl cache purge
+     *
+     *     # Check how many plugin transients are active
+     *     $ wp advaipbl cache status
+     *
+     * @subcommand cache
+     */
+    public function cache($args, $assoc_args)
+    {
+        $action = !empty($args[0]) ? array_shift($args) : 'purge';
+        $main_instance = ADVAIPBL_Main::get_instance();
+
+        if ($action === 'status') {
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_advaipbl_%' OR option_name LIKE '_transient_timeout_advaipbl_%'");
+            WP_CLI::line("Active Advanced IP Blocker transients in database: {$count}");
+
+            return;
+        }
+
+        if ($action === 'purge' || $action === 'flush') {
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $deleted = $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_advaipbl_%' OR option_name LIKE '_transient_timeout_advaipbl_%'");
+
+            $main_instance->resync_block_transients();
+
+            $this->log_event_autonomo('Temporary transients and security buffers purged via WP-CLI.', 'info');
+            WP_CLI::success("Purged {$deleted} security transient records. Block transients and caches successfully resynchronized.");
+
+            return;
+        }
+
+        WP_CLI::error("Invalid action '{$action}'. Usage: wp advaipbl cache <purge|flush|status>");
     }
 }

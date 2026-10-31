@@ -145,7 +145,19 @@ class ADVAIPBL_Htaccess_Manager
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_col($wpdb->prepare($sql, $limit));
 
-        return $results ? $results : [];
+        if (empty($results)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($results as $ip) {
+            if ($this->plugin->is_whitelisted($ip)) {
+                continue;
+            }
+            $filtered[] = $ip;
+        }
+
+        return $filtered;
     }
 
     public function generate_rules_content()

@@ -37,6 +37,7 @@ class ADVAIPBL_Remote_Notices {
         $code = wp_remote_retrieve_response_code($response);
         if ($code === 200) {
             $body = wp_remote_retrieve_body($response);
+            $body = preg_replace('/^[\xEF\xBB\xBF\s]+/', '', $body);
             $notices = json_decode($body, true);
             if (is_array($notices)) {
                 update_option('advaipbl_remote_notices', $notices, false); // false = not autoloaded unless needed
@@ -63,7 +64,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.22';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.23';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {
@@ -99,6 +100,19 @@ class ADVAIPBL_Remote_Notices {
     }
 
     private function matches_environment_filters($notice) {
+        if (!empty($notice['target_wp_rule'])) {
+            global $wp_version;
+            $rule = trim($notice['target_wp_rule']);
+            if (preg_match('/^(<=|<|=|>=|>)?\s*([0-9a-zA-Z\.\-_]+)$/', $rule, $matches)) {
+                $operator = !empty($matches[1]) ? $matches[1] : '<=';
+                $target_wp = $matches[2];
+                $current_wp = preg_replace('/[^0-9\.].*$/', '', $wp_version);
+                if (!version_compare($current_wp, $target_wp, $operator)) {
+                    return false;
+                }
+            }
+        }
+
         // 1. PHP branch version check (e.g. "8.2.35, 8.3.36, 8.4.27, 8.5.12")
         if (!empty($notice['target_php_safe'])) {
             $current_php = preg_replace('/[^0-9\.].*$/', '', PHP_VERSION);

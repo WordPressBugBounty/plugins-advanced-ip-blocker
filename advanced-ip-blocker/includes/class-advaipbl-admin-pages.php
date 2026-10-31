@@ -3059,9 +3059,19 @@ $default_waf_rules_list = [
                 <details style="margin-top: 10px; border: 1px solid #c3c4c7; padding: 10px; background-color: #f9f9f9;">
                     <summary style="cursor: pointer; font-weight: bold;"><?php esc_html_e('View Available Commands', 'advanced-ip-blocker'); ?></summary>
                     <pre style="background: #fff; border: 1px solid #ddd; padding: 15px; white-space: pre-wrap; word-wrap: break-word; font-size: 12px;"><code>
-# Core Help (Self-Documented)
+# Core & System Status
 wp advaipbl --help
 wp advaipbl &lt;command&gt; --help
+wp advaipbl status [--format=&lt;format&gt;]
+wp advaipbl config &lt;get|set&gt; [&lt;key&gt;] [&lt;value&gt;] [--search=&lt;term&gt;]
+wp advaipbl cache &lt;purge|flush|status&gt;
+
+# Emergency Defense & Anti-DDoS
+wp advaipbl panic &lt;status|on|off|mode&gt; [&lt;off|auto|manual&gt;]
+
+# Hardening & Admin Access Control
+wp advaipbl admin &lt;list|allow|remove|reset&gt; [&lt;user&gt;]
+wp advaipbl hardening &lt;status|enable|disable&gt; [&lt;feature|all&gt;]
 
 # IP & Access Management
 wp advaipbl block &lt;ip-or-range&gt; [--reason=&lt;reason&gt;]
@@ -3075,14 +3085,14 @@ wp advaipbl score &lt;list|get|reset|decay-run&gt;
 wp advaipbl signature &lt;list|delete|whitelist&gt; [--hash=&lt;hash&gt;]
 wp advaipbl signature-analyze
 
-# Geolocation & ASN
+# Geolocation & ASN Defense
 wp advaipbl geoblock &lt;add|remove|list&gt; [&lt;country_code&gt;]
 wp advaipbl asn &lt;add|remove|list&gt; [&lt;asn&gt;]
 wp advaipbl asn-whitelist &lt;add|remove|list&gt; [&lt;asn&gt;]
 wp advaipbl geo-challenge &lt;enable|disable|add|remove|list&gt;
 
 # WAF & Security Modules
-wp advaipbl waf &lt;add|remove|list|exclude&gt; [&lt;rule&gt;]
+wp advaipbl waf &lt;add|remove|list|exclude|stats|export|import&gt; [&lt;rule&gt;]
 wp advaipbl waf_enable / wp advaipbl waf_disable
 wp advaipbl xmlrpc_mode &lt;enabled|smart|disabled&gt;
 wp advaipbl spamhaus_enable / wp advaipbl spamhaus_disable
@@ -3093,14 +3103,10 @@ wp advaipbl session &lt;list|terminate&gt;
 wp advaipbl tfa_status &lt;user&gt;
 wp advaipbl tfa_reset &lt;user&gt;
 
-# Scans & Monitoring
-wp advaipbl scan
+# Forensics, Scans & Cloud Sync
+wp advaipbl scan &lt;run|results|status&gt;
 wp advaipbl fim &lt;scan|create-baseline&gt;
 wp advaipbl audit &lt;list|clear&gt;
-
-# Logs, Config & Status
-wp advaipbl status
-wp advaipbl config &lt;get|set&gt; [&lt;key&gt;] [&lt;value&gt;]
 wp advaipbl log &lt;list|clear&gt; [--type=&lt;type&gt;]
 wp advaipbl provider &lt;list|set|set_key|remove_key&gt;
 wp advaipbl cloudflare &lt;sync|clear&gt;

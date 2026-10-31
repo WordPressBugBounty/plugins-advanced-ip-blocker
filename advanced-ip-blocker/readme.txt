@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.22
+Stable tag: 8.13.23
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,25 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.22 =
-Adds WP-CLI admin management with lockout failsafes, updates PHP lifecycle security checks (<8.2 EOL), fixes child theme vulnerability audits, and refines Dashboard challenge metrics and Advanced Rules tracking.
+= 8.13.23 =
+Adds dedicated WP-CLI subcommands (panic, hardening, cache), enhances Import/Export and .htaccess anti-lockout protections, hardens Cloudflare edge rule uninstallation, adds WordPress targeting for security advisories, and fixes complete uninstallation data purge.
 
 == Changelog ==
+
+= 8.13.23 =
+* **SECURITY (.htaccess & Anti-Lockout):** Enforced strict whitelist filtering in Apache `.htaccess` rule generation, guaranteeing that whitelisted IPs (administrator sessions, search engine bots, loopback) are never written into server-level deny directives. Fixed uninstallation and deactivation routines to cleanly and unconditionally remove `# BEGIN Advanced IP Blocker` directives, and hardened unblock routines to purge stale records even if an IP was already listed in the whitelist.
+* **SECURITY (Import / Export):** Hardened Settings Import/Export against accidental lockouts. Excluded whitelisted and active administrator IPs from exported blocked IP tables, rejected whitelisted IPs during table restoration, enforced automatic admin unblocking and whitelist validation post-import, sanitized API keys (Turnstile/hCaptcha) from templates, isolated site-specific secrets, enforced strict upload validation (`is_uploaded_file()`) with a 10MB limit, and added UTF-8 BOM tolerance.
+* **ENHANCEMENT (Cloud Edge Defense):** Hardened Cloudflare edge rule uninstallation in `uninstall.php`. Added PHP execution time extension (`set_time_limit(300)`), streamlined request timeouts, and implemented rate-limiting delays (`usleep(30000)`) to ensure clean, uninterrupted edge firewall rule deletion without timing out during complete plugin removal.
+* **SECURITY (Advisories):** Expanded the Remote Notices system (`ADVAIPBL_Remote_Notices`) with WordPress Core version rule matching (`target_wp_rule`) to dynamically alert administrators about critical core vulnerabilities affecting specific release branches (e.g., WP 7.1.3 RCE upgrade vulnerability), and added automatic BOM stripping to ensure reliable JSON parsing.
+* **BUGFIX (Uninstaller):** Ensured 100% clean data deletion in `uninstall.php` when "Delete Data on Uninstall" is enabled. Added missing File Integrity Monitor baseline version (`advaipbl_fim_baseline_version`) and live feed token to the purge routine, and added a wildcard database sweep (`advaipbl_%` and `advanced-ip-blocker_%`) to guarantee no orphaned options remain in `wp_options`.
+* **BUGFIX (UI/UX):** Resolved duplicate admin notices on fresh installations and settings pages by removing redundant template invocations, eliminating duplicate hook registrations, and adding static execution guards to ensure every admin notice and telemetry banner renders strictly once per request.
+* **NEW FEATURE (WP-CLI):** Added dedicated `wp advaipbl panic <status|on|off|mode>` subcommand, allowing system administrators to inspect, manually engage (emergency DDoS JS challenge), or cancel Distributed Attack Protection (Auto-Panic) directly from the terminal.
+* **NEW FEATURE (WP-CLI):** Added dedicated `wp advaipbl hardening <status|enable|disable> [feature]` subcommand to audit and toggle WordPress Core Hardening protections (PHP in Uploads, File Editor, Application Passwords, WP Version, ImageMagick) via CLI.
+* **NEW FEATURE (WP-CLI):** Added dedicated `wp advaipbl cache <purge|flush|status>` subcommand to safely inspect and purge temporary block transients, rate-limiting counters, and security metrics buffers without affecting permanent rule lists.
+* **ENHANCEMENT (WP-CLI):** Redesigned `wp advaipbl status` into a comprehensive categorized report covering all modules (Emergency Defense, Firewall & WAF, Threat Feeds & Geo, Access & Auth, Hardening, and Forensics) with real-time attack alerts.
+* **ENHANCEMENT (WP-CLI):** Enhanced `wp advaipbl config get` to seamlessly merge database options with core plugin default settings, ensuring accurate runtime configuration inspection even on fresh installations, and added `--search` and format support.
+* **ENHANCEMENT (WP-CLI):** Improved `wp advaipbl config set` with natural boolean toggle recognition (`on`/`off`/`true`/`false`) and robust array parsing for geoblocking and role restrictions.
+* **UI/UX:** Updated the "WP-CLI Interface" documentation modal in the Credits / About tab with the complete and categorized command reference.
 
 = 8.13.22 =
 * **NEW FEATURE:** Added dedicated WP-CLI administrator management subcommand (`wp advaipbl admin <list|allow|remove|reset>`) allowing administrators to view, authorize, remove, or reset access to the plugin dashboard directly via terminal.

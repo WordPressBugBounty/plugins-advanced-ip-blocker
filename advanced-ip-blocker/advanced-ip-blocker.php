@@ -3,7 +3,7 @@
 Plugin Name: Advanced IP Blocker
 Plugin URI: https://advaipbl.com/
 Description: Your complete WordPress security firewall. Blocks IPs, bots & countries. Includes an intelligent WAF, Threat Scoring, and Two-Factor Authentication.
-Version: 8.13.22
+Version: 8.13.23
 Author: IniLerm
 Author URI: https://advaipbl.com/
 Text Domain: advanced-ip-blocker
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ADVAIPBL_VERSION', '8.13.22' );
+define( 'ADVAIPBL_VERSION', '8.13.23' );
 define( 'ADVAIPBL_PLUGIN_FILE', __FILE__ );
 
 if (!defined('ADVAIPBL_PLUGIN_PATH')) {
@@ -27,7 +27,7 @@ if (!defined('ADVAIPBL_PLUGIN_PATH')) {
 }
 define( 'ADVAIPBL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'ADVAIPBL_PLUGIN_NAME', 'advaipbl' );
-define( 'ADVAIPBL_DB_VERSION', '2.8' );
+define( 'ADVAIPBL_DB_VERSION', '2.9' );
 
 define( 'ADVAIPBL_USM_LOCATION_CACHE_KEY', 'advaipbl_usm_user_session_locations' );
 define( 'ADVAIPBL_USM_LOCATION_CACHE_TTL', 24 * 3600 );
@@ -152,11 +152,17 @@ function advaipbl_activate_plugin() {
     if ( isset( $instance->cron_manager ) ) {
         $instance->cron_manager->schedule_jobs();
     }
+    if ( isset( $instance->htaccess_manager ) && ! empty( $instance->options['enable_htaccess_write'] ) ) {
+        $instance->htaccess_manager->update_htaccess();
+    }
+    if ( ! empty( $instance->options['block_php_uploads'] ) ) {
+        $instance->manage_uploads_htaccess( true );
+    }
 }
 register_activation_hook( __FILE__, 'advaipbl_activate_plugin' );
 
 function advaipbl_deactivate_plugin() {
-    // Limpiar todos los crons programados
+    // Clear all scheduled crons.
     $cron_hooks = [
         'advaipbl_purge_old_logs_event',
         'advaipbl_send_summary_email',
@@ -191,5 +197,11 @@ function advaipbl_deactivate_plugin() {
     foreach ($cron_hooks as $hook) {
         wp_clear_scheduled_hook($hook);
     }
+
+    $instance = ADVAIPBL_Main::get_instance();
+    if ( isset( $instance->htaccess_manager ) ) {
+        $instance->htaccess_manager->remove_rules();
+    }
+    $instance->manage_uploads_htaccess( false );
 }
 register_deactivation_hook( __FILE__, 'advaipbl_deactivate_plugin' );

@@ -22,16 +22,15 @@ function advaipbl_uninstall_recursive_rmdir( $dir ) {
 }
 
 if (!function_exists('advaipbl_uninstall_cf_req')) {
-    function advaipbl_uninstall_cf_req($method, $endpoint, $token) {
+    function advaipbl_uninstall_cf_req($method, $endpoint, $token, $timeout = 10) {
         $url = 'https://api.cloudflare.com/client/v4/' . $endpoint;
         $args = [
             'method' => $method,
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
-                'X-AIB-Auth' => 'Bearer ' . $token,
                 'Content-Type' => 'application/json',
             ],
-            'timeout' => 15
+            'timeout' => $timeout,
         ];
         $resp = wp_remote_request($url, $args);
         if (is_wp_error($resp)) return false;
@@ -85,16 +84,21 @@ function advaipbl_process_site_uninstallation() {
         if ( ! empty( $settings_option['enable_cloudflare'] ) && '1' === $settings_option['enable_cloudflare'] &&
              ! empty( $settings_option['cf_api_token'] ) && ! empty( $settings_option['cf_zone_id'] ) ) {
             
+            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
+            if ( function_exists( 'set_time_limit' ) ) {
+                // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
+                @set_time_limit( 300 );
+            }
+
             $advaipbl_cf_token = $settings_option['cf_api_token'];
             $advaipbl_cf_zone  = $settings_option['cf_zone_id'];
 
-            
             $page = 1;
             $advaipbl_has_more = true;
             $advaipbl_rules_to_delete = [];
 
             while ($advaipbl_has_more) {
-                $advaipbl_res = advaipbl_uninstall_cf_req('GET', "zones/{$advaipbl_cf_zone}/firewall/access_rules/rules?per_page=100&page={$page}", $advaipbl_cf_token);
+                $advaipbl_res = advaipbl_uninstall_cf_req('GET', "zones/{$advaipbl_cf_zone}/firewall/access_rules/rules?per_page=100&page={$page}", $advaipbl_cf_token, 10);
                 if (!$advaipbl_res || empty($advaipbl_res['result'])) {
                     $advaipbl_has_more = false;
                     break;
@@ -111,9 +115,9 @@ function advaipbl_process_site_uninstallation() {
                 else $page++;
             }
 
-            
             foreach ($advaipbl_rules_to_delete as $advaipbl_rule_id) {
-                advaipbl_uninstall_cf_req('DELETE', "zones/{$advaipbl_cf_zone}/firewall/access_rules/rules/{$advaipbl_rule_id}", $advaipbl_cf_token);
+                advaipbl_uninstall_cf_req('DELETE', "zones/{$advaipbl_cf_zone}/firewall/access_rules/rules/{$advaipbl_rule_id}", $advaipbl_cf_token, 5);
+                usleep( 30000 );
             }
         }
 
@@ -202,6 +206,7 @@ function advaipbl_process_site_uninstallation() {
             'advanced-ip-blocker_ips_bloqueadas_manual',
             'advanced-ip-blocker_honeypot_urls',            
             'advaipbl_fim_baseline_hashes',
+            'advaipbl_fim_baseline_version',
             'advaipbl_fim_whitelist',
             'advaipbl_fim_history',
             'advaipbl_vip_salt_modifier',            
@@ -211,6 +216,7 @@ function advaipbl_process_site_uninstallation() {
             'advaipbl_legacy_options_cleaned',
             'advaipbl_ip_table_migration_complete',
             'advaipbl_loopback_secret',
+            'advaipbl_live_feed_token',
             'advaipbl_usm_sessions_per_page',
         ];
         
@@ -218,6 +224,9 @@ function advaipbl_process_site_uninstallation() {
         foreach ( $options_to_delete as $option_name ) {
             delete_option( $option_name );
         }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE `option_name` LIKE %s OR `option_name` LIKE %s", $wpdb->esc_like( 'advaipbl_' ) . '%', $wpdb->esc_like( 'advanced-ip-blocker_' ) . '%' ) );
 
         
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -310,33 +319,64 @@ if ( $advaipbl_global_should_delete ) {
     if ( is_dir( $advaipbl_quarantine_dir ) ) {
         advaipbl_uninstall_recursive_rmdir( $advaipbl_quarantine_dir );
     }
+}
 
-    
-    if ( function_exists('get_home_path') ) {
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound   
-        $htaccess_path = get_home_path() . '.htaccess';
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
-        if ( file_exists( $htaccess_path ) && is_writable( $htaccess_path ) ) {
-            $advaipbl_content = file_get_contents($htaccess_path);
-            if ($advaipbl_content !== false) {
-                // Regex para eliminar todo el bloque, incluÃ­dos los marcadores.
-                $advaipbl_new_content = preg_replace('/# BEGIN Advanced IP Blocker.*?# END Advanced IP Blocker\s*/s', '', $advaipbl_content);
-                if ($advaipbl_new_content !== null && $advaipbl_new_content !== $advaipbl_content) {
-                    file_put_contents($htaccess_path, $advaipbl_new_content);
-                }
+function advaipbl_uninstall_clean_htaccess() {
+    $home    = set_url_scheme( get_option('home'), 'http' );
+    $siteurl = set_url_scheme( get_option('siteurl'), 'http' );
+    $abspath = wp_normalize_path( ABSPATH );
+    $home_path = '';
+
+    if ( ! empty($home) && 0 !== strcasecmp($home, $siteurl) ) {
+        $wp_path_rel_to_home = trim(str_ireplace($home, '', $siteurl), '/');
+        if ( '' !== $wp_path_rel_to_home ) {
+            $rel_suffix = '/' . $wp_path_rel_to_home . '/';
+            $pos = strripos($abspath, $rel_suffix);
+            if ( false !== $pos ) {
+                $home_path = trailingslashit(substr($abspath, 0, $pos));
             }
         }
     }
-        
-    $advaipbl_uploads_htaccess_path = trailingslashit($upload_dir['basedir']) . '.htaccess';
+
+    if ( empty($home_path) ) {
+        if ( ! function_exists('get_home_path') ) {
+            if ( file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+            }
+        }
+        $home_path = function_exists('get_home_path') ? get_home_path() : '';
+        if ( empty($home_path) || '/' === $home_path ) {
+            $home_path = ABSPATH;
+        }
+    }
+
+    $htaccess_path = wp_normalize_path( trailingslashit($home_path) . '.htaccess' );
+
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+    if ( file_exists( $htaccess_path ) && is_writable( $htaccess_path ) ) {
+        $advaipbl_content = file_get_contents( $htaccess_path );
+        if ( false !== $advaipbl_content ) {
+            $advaipbl_new_content = preg_replace( '/# BEGIN Advanced IP Blocker.*?# END Advanced IP Blocker\s*/s', '', $advaipbl_content );
+            if ( null !== $advaipbl_new_content && $advaipbl_new_content !== $advaipbl_content ) {
+                // phpcs:ignore PluginCheck.CodeAnalysis.WriteFile.ABSPATHDetected, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+                file_put_contents( $htaccess_path, $advaipbl_new_content );
+            }
+        }
+    }
+
+    $upload_dir = wp_upload_dir();
+    $advaipbl_uploads_htaccess_path = trailingslashit( $upload_dir['basedir'] ) . '.htaccess';
     // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
     if ( file_exists( $advaipbl_uploads_htaccess_path ) && is_writable( $advaipbl_uploads_htaccess_path ) ) {
-        $advaipbl_uploads_content = file_get_contents($advaipbl_uploads_htaccess_path);
-        if ($advaipbl_uploads_content !== false) {
-            $advaipbl_new_uploads_content = preg_replace('/# BEGIN Advanced IP Blocker - Block PHP in Uploads.*?# END Advanced IP Blocker - Block PHP in Uploads\s*/s', '', $advaipbl_uploads_content);
-            if ($advaipbl_new_uploads_content !== null && $advaipbl_new_uploads_content !== $advaipbl_uploads_content) {
-                file_put_contents($advaipbl_uploads_htaccess_path, $advaipbl_new_uploads_content);
+        $advaipbl_uploads_content = file_get_contents( $advaipbl_uploads_htaccess_path );
+        if ( false !== $advaipbl_uploads_content ) {
+            $advaipbl_new_uploads_content = preg_replace( '/# BEGIN Advanced IP Blocker - Block PHP in Uploads.*?# END Advanced IP Blocker - Block PHP in Uploads\s*/s', '', $advaipbl_uploads_content );
+            if ( null !== $advaipbl_new_uploads_content && $advaipbl_new_uploads_content !== $advaipbl_uploads_content ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+                file_put_contents( $advaipbl_uploads_htaccess_path, $advaipbl_new_uploads_content );
             }
         }
     }
 }
+
+advaipbl_uninstall_clean_htaccess();

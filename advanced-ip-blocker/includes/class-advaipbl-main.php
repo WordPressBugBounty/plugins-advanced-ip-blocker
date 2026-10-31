@@ -2122,14 +2122,13 @@ class ADVAIPBL_Main
         }
 
         $whitelist = get_option(self::OPTION_WHITELIST, []);
-        if (array_key_exists($entry_to_whitelist, $whitelist)) {
-            return false;
+        $already_whitelisted = array_key_exists($entry_to_whitelist, $whitelist);
+
+        if (!$already_whitelisted) {
+            $whitelist[ $entry_to_whitelist ] = [ 'timestamp' => time(), 'detail' => $detail ];
+            update_option(self::OPTION_WHITELIST, $whitelist);
+            wp_cache_delete(self::OPTION_WHITELIST, 'options');
         }
-
-        $whitelist[ $entry_to_whitelist ] = [ 'timestamp' => time(), 'detail' => $detail ];
-        update_option(self::OPTION_WHITELIST, $whitelist);
-
-        wp_cache_delete(self::OPTION_WHITELIST, 'options');
 
         $this->desbloquear_ip($entry_to_whitelist);
 
@@ -2157,6 +2156,10 @@ class ADVAIPBL_Main
                 }
             }
         }
+        if ($already_whitelisted) {
+            return false;
+        }
+
         /* translators: %s is a placeholder */
         $this->log_event(sprintf(__('Entry %1$s added to whitelist by %2$s.', 'advanced-ip-blocker'), $entry_to_whitelist, $this->get_current_admin_username()), 'info', is_array($entry_to_whitelist) ? wp_json_encode($entry_to_whitelist) : $entry_to_whitelist);
 
@@ -3475,7 +3478,7 @@ class ADVAIPBL_Main
             }
         }
 
-        if ($this->is_cdn_safeguard_ip($ip)) {
+        if ($this->is_cdn_safeguard_ip($ip) || $this->is_whitelisted($ip)) {
             return;
         }
 
@@ -5733,15 +5736,25 @@ class ADVAIPBL_Main
 
         if (is_user_logged_in() && current_user_can('manage_options')) {
             $ip = $this->get_client_ip();
-            if (filter_var($ip, FILTER_VALIDATE_IP) && !$this->is_whitelisted($ip)) {
-                $user = wp_get_current_user();
-                $detail = sprintf(
-                    /* translators: %s is a placeholder */
-                    __('Auto-whitelisted admin session: %1$s (%2$s)', 'advanced-ip-blocker'),
-                    $user->user_login,
-                    $user->user_email
-                );
-                $this->add_to_whitelist_and_unblock($ip, $detail);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                if (!$this->is_whitelisted($ip)) {
+                    $user = wp_get_current_user();
+                    $detail = sprintf(
+                        /* translators: %s is a placeholder */
+                        __('Auto-whitelisted admin session: %1$s (%2$s)', 'advanced-ip-blocker'),
+                        $user->user_login,
+                        $user->user_email
+                    );
+                    $this->add_to_whitelist_and_unblock($ip, $detail);
+                } else {
+                    global $wpdb;
+                    $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    $is_blocked = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip));
+                    if ($is_blocked) {
+                        $this->desbloquear_ip($ip);
+                    }
+                }
             }
         }
     }
@@ -5761,14 +5774,24 @@ class ADVAIPBL_Main
         if (is_a($user, 'WP_User') && in_array('administrator', (array) $user->roles)) {
             $ip = $this->get_client_ip();
 
-            if (filter_var($ip, FILTER_VALIDATE_IP) && !$this->is_whitelisted($ip)) {
-                $detail = sprintf(
-                    /* translators: %s is a placeholder */
-                    __('Auto-whitelisted admin: %1$s (%2$s)', 'advanced-ip-blocker'),
-                    $user->user_login,
-                    $user->user_email
-                );
-                $this->add_to_whitelist_and_unblock($ip, $detail);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                if (!$this->is_whitelisted($ip)) {
+                    $detail = sprintf(
+                        /* translators: %s is a placeholder */
+                        __('Auto-whitelisted admin: %1$s (%2$s)', 'advanced-ip-blocker'),
+                        $user->user_login,
+                        $user->user_email
+                    );
+                    $this->add_to_whitelist_and_unblock($ip, $detail);
+                } else {
+                    global $wpdb;
+                    $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    $is_blocked = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE ip_range = %s", $ip));
+                    if ($is_blocked) {
+                        $this->desbloquear_ip($ip);
+                    }
+                }
             }
         }
     }
@@ -7327,7 +7350,32 @@ class ADVAIPBL_Main
                 'advaipbl_autoload_version',
                 'advaipbl_zeroday_waf_rules',
                 'advaipbl_zeroday_waf_last_sync',
-                'advaipbl_advanced_zeroday_waf_last_sync'
+                'advaipbl_advanced_zeroday_waf_last_sync',
+                'advaipbl_loopback_secret',
+                'advaipbl_live_feed_token',
+                'advaipbl_db_version',
+                'advaipbl_version_installed',
+                'advaipbl_remote_notices',
+                'advaipbl_dismissed_notices',
+                'advaipbl_telemetry_notice_dismissed',
+                'advaipbl_fim_baseline_version',
+                'advaipbl_fim_signatures',
+                'advaipbl_fim_signatures_raw',
+                'advaipbl_fim_signatures_regex',
+                'advaipbl_fim_signatures_md5',
+                'advaipbl_fim_signatures_sha256',
+                'advaipbl_fim_signatures_domains',
+                'advaipbl_fim_signatures_split',
+                'advaipbl_fim_signatures_last_sync',
+                'advaipbl_fim_signatures_version',
+                'advaipbl_network_degraded',
+                'advaipbl_legacy_options_cleaned',
+                'advaipbl_ip_table_migration_complete',
+                'advaipbl_blocked_ips_threat_score',
+                'advaipbl_blocked_ips_manual',
+                'advaipbl_blocked_ips_honeypot',
+                'advaipbl_blocked_ips_geoblock',
+                'advaipbl_blocked_ips_user_agent'
             ];
 
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -7360,12 +7408,25 @@ class ADVAIPBL_Main
             }
 
             if (!empty($blocked_ips_data)) {
-                $settings_to_export['blocked_ips_table'] = $blocked_ips_data;
+                $clean_blocked_ips = [];
+                $current_client_ip = $this->get_client_ip();
+                foreach ($blocked_ips_data as $row) {
+                    $ip = isset($row['ip_range']) ? trim($row['ip_range']) : '';
+                    if ($ip === '' || $ip === $current_client_ip || $this->is_whitelisted($ip)) {
+                        continue;
+                    }
+                    $clean_blocked_ips[] = $row;
+                }
+                if (!empty($clean_blocked_ips)) {
+                    $settings_to_export['blocked_ips_table'] = $clean_blocked_ips;
+                }
             }
 
             if ($export_type === 'template' && isset($settings_to_export[self::OPTION_SETTINGS])) {
                 $sensitive_keys = [
                     'recaptcha_site_key', 'recaptcha_secret_key',
+                    'turnstile_site_key', 'turnstile_secret_key',
+                    'hcaptcha_site_key', 'hcaptcha_secret_key',
                     'api_key_ipapicom', 'api_key_ipstackcom', 'api_key_ipinfocom',
                     'api_key_ip_apicom', 'maxmind_license_key', 'push_webhook_urls',
                     'cf_api_token', 'cf_zone_id', 'abuseipdb_api_key', 'api_token_v3'
@@ -7400,16 +7461,23 @@ class ADVAIPBL_Main
 
         $file_error = isset($_FILES['advaipbl_import_file']['error']) ? (int) $_FILES['advaipbl_import_file']['error'] : UPLOAD_ERR_NO_FILE;
         if (isset($_FILES['advaipbl_import_file']) && UPLOAD_ERR_OK === $file_error) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $tmp_name  = isset($_FILES['advaipbl_import_file']['tmp_name']) ? $_FILES['advaipbl_import_file']['tmp_name'] : '';
+            $file_size = isset($_FILES['advaipbl_import_file']['size']) ? (int) $_FILES['advaipbl_import_file']['size'] : 0;
             $file_name = isset($_FILES['advaipbl_import_file']['name']) ? sanitize_file_name(wp_unslash($_FILES['advaipbl_import_file']['name'])) : '';
-            if ('json' !== pathinfo($file_name, PATHINFO_EXTENSION)) {
+
+            if ($file_size > 10 * 1024 * 1024) {
+                $message = __('Error: The uploaded file is too large (maximum 10MB).', 'advanced-ip-blocker');
+                $this->log_event(sprintf('A failed settings import was attempted by %s (file too large).', $this->get_current_admin_username()), 'error');
+            } elseif ('json' !== strtolower(pathinfo($file_name, PATHINFO_EXTENSION))) {
                 $message = __('Error: The uploaded file is not a .json file.', 'advanced-ip-blocker');
                 $this->log_event(sprintf('A failed settings import was attempted by %s (invalid file type).', $this->get_current_admin_username()), 'error');
+            } elseif (empty($tmp_name) || !is_uploaded_file($tmp_name)) {
+                $message = __('Error: The uploaded file could not be verified.', 'advanced-ip-blocker');
+                $this->log_event(sprintf('A failed settings import was attempted by %s (unverified upload).', $this->get_current_admin_username()), 'error');
             } else {
-                $tmp_name = isset($_FILES['advaipbl_import_file']['tmp_name']) ? sanitize_text_field($_FILES['advaipbl_import_file']['tmp_name']) : '';
-                if (empty($tmp_name)) {
-                    return;
-                }
                 $file_content = file_get_contents($tmp_name);
+                $file_content = preg_replace('/^[\xEF\xBB\xBF\s]+/', '', $file_content);
                 $settings_to_import = json_decode($file_content, true);
 
                 if (JSON_ERROR_NONE === json_last_error() && is_array($settings_to_import)) {
@@ -7420,28 +7488,53 @@ class ADVAIPBL_Main
                     $imported_options_count = 0;
                     $imported_ips_count = 0;
 
+                    $skip_import_keys = [
+                        'advaipbl_db_version',
+                        'advaipbl_version_installed',
+                        'advaipbl_vip_salt_modifier',
+                        'advaipbl_fim_baseline_hashes',
+                        'advaipbl_last_cron_ip',
+                        'advaipbl_autoload_version',
+                        'advaipbl_spamhaus_last_update',
+                        'advaipbl_community_last_update',
+                        'advaipbl_flush_firewalls_needed',
+                        'advaipbl_zeroday_waf_rules',
+                        'advaipbl_zeroday_waf_last_sync',
+                        'advaipbl_advanced_zeroday_waf_last_sync',
+                        'advaipbl_loopback_secret',
+                        'advaipbl_live_feed_token',
+                        'advaipbl_remote_notices',
+                        'advaipbl_dismissed_notices',
+                        'advaipbl_telemetry_notice_dismissed',
+                        'advaipbl_fim_baseline_version',
+                        'advaipbl_fim_signatures',
+                        'advaipbl_fim_signatures_raw',
+                        'advaipbl_fim_signatures_regex',
+                        'advaipbl_fim_signatures_md5',
+                        'advaipbl_fim_signatures_sha256',
+                        'advaipbl_fim_signatures_domains',
+                        'advaipbl_fim_signatures_split',
+                        'advaipbl_fim_signatures_last_sync',
+                        'advaipbl_fim_signatures_version',
+                        'advaipbl_network_degraded',
+                        'advaipbl_legacy_options_cleaned',
+                        'advaipbl_ip_table_migration_complete',
+                        'advaipbl_blocked_ips_threat_score',
+                        'advaipbl_blocked_ips_manual',
+                        'advaipbl_blocked_ips_honeypot',
+                        'advaipbl_blocked_ips_geoblock',
+                        'advaipbl_blocked_ips_user_agent'
+                    ];
+
                     foreach ($settings_to_import as $key => $value) {
                         if (strpos($key, 'advaipbl_') === 0) {
-                            $skip_import_keys = [
-                                'advaipbl_db_version',
-                                'advaipbl_version_installed',
-                                'advaipbl_vip_salt_modifier',
-                                'advaipbl_fim_baseline_hashes',
-                                'advaipbl_last_cron_ip',
-                                'advaipbl_autoload_version',
-                                'advaipbl_spamhaus_last_update',
-                                'advaipbl_community_last_update',
-                                'advaipbl_flush_firewalls_needed',
-                                'advaipbl_zeroday_waf_rules',
-                                'advaipbl_zeroday_waf_last_sync',
-                                'advaipbl_advanced_zeroday_waf_last_sync'
-                            ];
-
                             if (!in_array($key, $skip_import_keys, true)) {
                                 if ($key === self::OPTION_SETTINGS && is_array($value)) {
                                     $current_settings = get_option(self::OPTION_SETTINGS, []);
                                     $sensitive_keys = [
                                         'recaptcha_site_key', 'recaptcha_secret_key',
+                                        'turnstile_site_key', 'turnstile_secret_key',
+                                        'hcaptcha_site_key', 'hcaptcha_secret_key',
                                         'api_key_ipapicom', 'api_key_ipstackcom', 'api_key_ipinfocom',
                                         'api_key_ip_apicom', 'maxmind_license_key', 'push_webhook_urls',
                                         'cf_api_token', 'cf_zone_id', 'abuseipdb_api_key', 'api_token_v3'
@@ -7478,19 +7571,23 @@ class ADVAIPBL_Main
                             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
                             $wpdb->query("TRUNCATE TABLE `{$table_name}`");
 
+                            $admin_ip = $this->get_client_ip();
                             foreach ($value as $row) {
+                                $ip = isset($row['ip_range']) ? sanitize_text_field(trim($row['ip_range'])) : '';
+                                if ($ip === '' || $ip === $admin_ip || $this->is_whitelisted($ip)) {
+                                    continue;
+                                }
+
                                 $data_to_insert = [
-                                    'ip_range'   => isset($row['ip_range']) ? sanitize_text_field($row['ip_range']) : null,
+                                    'ip_range'   => $ip,
                                     'block_type' => isset($row['block_type']) ? sanitize_key($row['block_type']) : 'manual',
                                     'timestamp'  => isset($row['timestamp']) ? absint($row['timestamp']) : time(),
                                     'expires_at' => isset($row['expires_at']) ? absint($row['expires_at']) : 0,
                                     'reason'     => isset($row['reason']) ? sanitize_textarea_field($row['reason']) : '',
                                 ];
-                                if ($data_to_insert['ip_range'] !== null) {
-                                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-                                    $wpdb->insert($table_name, $data_to_insert);
-                                    $imported_ips_count++;
-                                }
+                                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                                $wpdb->insert($table_name, $data_to_insert);
+                                $imported_ips_count++;
                             }
                             $this->clear_blocked_ips_cache();
                         }
@@ -7508,6 +7605,44 @@ class ADVAIPBL_Main
                         $this->log_event(sprintf('Plugin settings successfully imported by %s.', $this->get_current_admin_username()), 'warning');
 
                         $imported_settings = get_option(self::OPTION_SETTINGS, []);
+                        $this->options = $imported_settings;
+
+                        $admin_ip = $this->get_client_ip();
+                        if (filter_var($admin_ip, FILTER_VALIDATE_IP)) {
+                            if (!$this->is_whitelisted($admin_ip)) {
+                                $current_user = wp_get_current_user();
+                                $detail = sprintf(
+                                    /* translators: %s is a placeholder */
+                                    __('Auto-whitelisted admin after settings import: %1$s (%2$s)', 'advanced-ip-blocker'),
+                                    $current_user->user_login ?? 'admin',
+                                    $current_user->user_email ?? ''
+                                );
+                                $this->add_to_whitelist_and_unblock($admin_ip, $detail);
+                            } else {
+                                $this->desbloquear_ip($admin_ip);
+                            }
+                        }
+
+                        $whitelist = get_option(self::OPTION_WHITELIST, []);
+                        if (!empty($whitelist) && is_array($whitelist)) {
+                            global $wpdb;
+                            $table_name = $wpdb->prefix . 'advaipbl_blocked_ips';
+                            foreach (array_keys($whitelist) as $w_ip) {
+                                if (filter_var($w_ip, FILTER_VALIDATE_IP)) {
+                                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                                    $wpdb->delete($table_name, ['ip_range' => $w_ip]);
+                                }
+                            }
+                        }
+
+                        if (isset($this->htaccess_manager) && !empty($imported_settings['enable_htaccess_write'])) {
+                            $this->htaccess_manager->update_htaccess();
+                        }
+
+                        if (!empty($imported_settings['block_php_uploads'])) {
+                            $this->manage_uploads_htaccess(true);
+                        }
+
                         if (!empty($imported_settings['maxmind_license_key'])) {
                             wp_clear_scheduled_hook('advaipbl_update_geoip_db_event');
                             wp_schedule_event(time() + 60, 'advaipbl_3_days', 'advaipbl_update_geoip_db_event');
