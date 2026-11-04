@@ -27,7 +27,7 @@ class ADVAIPBL_Remote_Notices {
     public function fetch_remote_notices() {
         $response = wp_remote_get($this->api_url, [
             'timeout' => 15,
-            'sslverify' => false // For local dev/flexibility, though true is better for prod
+            'sslverify' => true
         ]);
 
         if (is_wp_error($response)) {
@@ -64,7 +64,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.23';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.24';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {

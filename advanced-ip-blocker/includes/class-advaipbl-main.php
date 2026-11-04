@@ -3482,6 +3482,10 @@ class ADVAIPBL_Main
             return;
         }
 
+        if (!empty($this->options['auto_whitelist_admin']) && '1' === $this->options['auto_whitelist_admin'] && function_exists('is_user_logged_in') && is_user_logged_in() && current_user_can('manage_options') && $ip === $this->get_client_ip()) {
+            return;
+        }
+
         global $wpdb;
         $lock_key = 'lock_blocking_' . md5($ip);
 
@@ -3500,6 +3504,13 @@ class ADVAIPBL_Main
                 exit;
             }
 
+            return;
+        }
+
+        wp_cache_delete(self::OPTION_WHITELIST, 'options');
+        if ($this->is_whitelisted($ip)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->delete("{$wpdb->prefix}advaipbl_cache", ['cache_key' => $lock_key]);
             return;
         }
 
@@ -5724,13 +5735,7 @@ class ADVAIPBL_Main
             return;
         }
 
-        $req_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-        if ((defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) ||
-             (defined('DOING_CRON') && DOING_CRON) ||
-             (defined('DOING_AJAX') && DOING_AJAX) ||
-             (function_exists('wp_is_json_request') && wp_is_json_request()) ||
-             strpos($req_uri, '/wp-json/') !== false ||
-             strpos($req_uri, 'rest_route=') !== false) {
+        if ((defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) || (defined('DOING_CRON') && DOING_CRON)) {
             return;
         }
 
@@ -6492,8 +6497,9 @@ class ADVAIPBL_Main
      */
     private function get_first_public_ip_from_string($ip_string)
     {
-        $ips = array_map('trim', explode(',', $ip_string));
+        $ips = explode(',', $ip_string);
         foreach ($ips as $ip) {
+            $ip = trim($ip);
             if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                 return $ip;
             }

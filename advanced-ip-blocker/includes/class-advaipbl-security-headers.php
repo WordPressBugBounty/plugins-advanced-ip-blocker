@@ -52,6 +52,9 @@ class ADVAIPBL_Security_Headers
             'sanitize_callback' => [$this, 'sanitize_options'],
             'default' => $this->get_default_options()
         ]);
+        add_filter('option_page_capability_' . self::OPTION_GROUP, function () {
+            return 'advaipbl_manage_settings';
+        });
     }
 
     public function get_default_options()

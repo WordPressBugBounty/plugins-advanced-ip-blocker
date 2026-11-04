@@ -48,6 +48,10 @@ class ADVAIPBL_Reporter_Manager
             return;
         }
 
+        if ($this->plugin->is_whitelisted($ip) || $this->plugin->is_cdn_safeguard_ip($ip)) {
+            return;
+        }
+
         if ($type === 'asn' && isset($extra_data['source']) && $extra_data['source'] === 'Manual List') {
             return;
         }

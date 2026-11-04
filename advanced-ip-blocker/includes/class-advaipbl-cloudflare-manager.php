@@ -99,6 +99,10 @@ class ADVAIPBL_Cloudflare_Manager
      */
     public function block_ip($ip, $note = 'Blocked by Advanced IP Blocker')
     {
+        if ($this->plugin->is_whitelisted($ip) || $this->plugin->is_cdn_safeguard_ip($ip)) {
+            return false;
+        }
+
         $zone_id = $this->plugin->options['cf_zone_id'] ?? '';
 
         if (empty($zone_id)) {
@@ -297,6 +301,10 @@ class ADVAIPBL_Cloudflare_Manager
         $errors = 0;
 
         foreach ($ips_to_sync as $ip) {
+            if ($this->plugin->is_whitelisted($ip) || $this->plugin->is_cdn_safeguard_ip($ip)) {
+                continue;
+            }
+
             $result = $this->block_ip($ip, 'Synced from Advanced IP Blocker');
 
             if (is_wp_error($result)) {

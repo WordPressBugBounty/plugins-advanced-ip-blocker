@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.23
+Stable tag: 8.13.24
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,17 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.23 =
-Adds dedicated WP-CLI subcommands (panic, hardening, cache), enhances Import/Export and .htaccess anti-lockout protections, hardens Cloudflare edge rule uninstallation, adds WordPress targeting for security advisories, and fixes complete uninstallation data purge.
+= 8.13.24 =
+Security and stability release: hardens WAF and Advanced Rules inspection engines, strengthens Admin Access Control capability checks across all backend endpoints, improves reverse-proxy client IP resolution, and optimizes memory usage when scanning large HTTP payloads.
 
 == Changelog ==
+
+= 8.13.24 =
+* **SECURITY (WAF & Advanced Rules Engine):** Hardened request URI and query string normalization, path exclusion parsing, and challenge session evaluation to ensure consistent enforcement of blocking, scoring, and rate-limiting rules across all request contexts.
+* **SECURITY (Access Control):** Strengthened capability verification (`advaipbl_manage_settings`) across WordPress Settings API groups, admin actions, File Integrity Monitor operations, and background task runners for strict role-based isolation.
+* **SECURITY (Network & Proxy Handling):** Improved multi-hop proxy header parsing (`X-Forwarded-For`) and enforced strict TLS certificate verification on outbound remote advisory connections.
+* **PERFORMANCE & STABILITY:** Capped raw HTTP body inspection (`php://input`) to 128 KB in the WAF and Advanced Rules engines to prevent excessive memory consumption during oversized POST requests, improved regex pattern preservation when saving custom rules in the admin UI, and implemented safe PCRE2 batch compilation in the File Integrity Monitor (FIM) regex scanner.
+* **SECURITY (Whitelist & Anti-Lockout):** Added multi-layer whitelist and active administrator session verification before dispatching IP blocks to Cloudflare Edge or queueing reports for the AIB Community Network, and ensured automatic Cloudflare rule removal when an IP is whitelisted.
 
 = 8.13.23 =
 * **SECURITY (.htaccess & Anti-Lockout):** Enforced strict whitelist filtering in Apache `.htaccess` rule generation, guaranteeing that whitelisted IPs (administrator sessions, search engine bots, loopback) are never written into server-level deny directives. Fixed uninstallation and deactivation routines to cleanly and unconditionally remove `# BEGIN Advanced IP Blocker` directives, and hardened unblock routines to purge stale records even if an IP was already listed in the whitelist.

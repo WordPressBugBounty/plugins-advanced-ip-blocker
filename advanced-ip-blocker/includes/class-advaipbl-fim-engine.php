@@ -34,7 +34,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_get_files()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => 'Unauthorized']);
         }
 
@@ -305,7 +305,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_scan_chunk()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => 'Unauthorized']);
         }
 
@@ -605,20 +605,61 @@ class ADVAIPBL_FIM_Engine
             }
         }
 
-        static $combined_regex = null;
+        static $combined_regex_chunks = null;
 
         if ($enable_regex && !empty($signatures['regex'])) {
-            if ($combined_regex === null) {
-                $patterns = [];
+            if ($combined_regex_chunks === null) {
+                $combined_regex_chunks = [];
+                $current_batch = [];
+                $current_len = 0;
+
                 foreach ($signatures['regex'] as $chars) {
                     $pattern = $decode_obfuscated($chars);
-                    $patterns[] = '(?:' . str_replace('~', '\~', $pattern) . ')';
+                    $escaped = preg_replace('/(?<!\\\\)~/', '\\~', $pattern);
+
+                    // Keep patterns with backreferences or large quantifiers standalone
+                    if (preg_match('/(?<!\\\\)\\\\[1-9]|\{\d{3,}/', $escaped)) {
+                        $combined_regex_chunks[] = '~(?:' . $escaped . ')~is';
+                        continue;
+                    }
+
+                    $item = '(?:' . $escaped . ')';
+                    $item_len = strlen($item);
+
+                    if ($current_len + $item_len > 4000 && !empty($current_batch)) {
+                        $candidate = '~' . implode('|', $current_batch) . '~is';
+                        if (@preg_match($candidate, '') !== false) {
+                            $combined_regex_chunks[] = $candidate;
+                        } else {
+                            foreach ($current_batch as $single) {
+                                $combined_regex_chunks[] = '~' . $single . '~is';
+                            }
+                        }
+                        $current_batch = [];
+                        $current_len = 0;
+                    }
+
+                    $current_batch[] = $item;
+                    $current_len += $item_len;
                 }
-                $combined_regex = '~' . implode('|', $patterns) . '~is';
+
+                if (!empty($current_batch)) {
+                    $candidate = '~' . implode('|', $current_batch) . '~is';
+                    if (@preg_match($candidate, '') !== false) {
+                        $combined_regex_chunks[] = $candidate;
+                    } else {
+                        foreach ($current_batch as $single) {
+                            $combined_regex_chunks[] = '~' . $single . '~is';
+                        }
+                    }
+                }
             }
 
-            if (@preg_match($combined_regex, $content)) {
-                $found[] = 'RegEx Match';
+            foreach ($combined_regex_chunks as $regex_chunk) {
+                if (@preg_match($regex_chunk, $content)) {
+                    $found[] = 'RegEx Match';
+                    break;
+                }
             }
         }
 
@@ -735,7 +776,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_log_error()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => 'Unauthorized']);
         }
 
@@ -752,7 +793,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_get_updates()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -763,7 +804,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_save_history()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -792,7 +833,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_get_history()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -865,7 +906,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_email_report()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -1040,7 +1081,7 @@ class ADVAIPBL_FIM_Engine
 
         $dashboard_url = admin_url('admin.php?page=advaipbl_settings_page&tab=integrity&sub-tab=fim_dashboard');
         $settings_url = admin_url('admin.php?page=advaipbl_settings_page&tab=settings&sub-tab=general_settings#section-notifications');
-        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.23';
+        $plugin_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.24';
 
         $html .= '<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center; line-height: 1.6;">';
         $html .= '<p style="margin: 0;">' . __('This email was generated by the Advanced IP Blocker plugin.', 'advanced-ip-blocker') . '</p>';
@@ -1123,7 +1164,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_get_whitelist_list()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => 'Unauthorized']);
         }
         $whitelist = $this->get_whitelist();
@@ -1133,7 +1174,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_add_whitelist()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => 'Unauthorized']);
         }
 
@@ -1157,7 +1198,7 @@ class ADVAIPBL_FIM_Engine
     public function ajax_remove_whitelist()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error(['message' => 'Unauthorized']);
         }
 
@@ -1260,7 +1301,7 @@ Deny from all
     public function ajax_quarantine_file()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -1291,7 +1332,7 @@ Deny from all
     public function ajax_restore_quarantine()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -1337,7 +1378,7 @@ Deny from all
     public function ajax_delete_quarantine()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 
@@ -1367,7 +1408,7 @@ Deny from all
     public function ajax_get_quarantine_list()
     {
         check_ajax_referer('advaipbl_admin_ajax_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('advaipbl_manage_settings')) {
             wp_send_json_error('Unauthorized');
         }
 

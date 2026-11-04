@@ -30,7 +30,7 @@ class ADVAIPBL_Action_Handler
         if (isset($_GET['action']) && $_GET['action'] === 'advaipbl_reset_2fa' && isset($_GET['user_id'])) {
             $user_id_to_reset = absint($_GET['user_id']);
             if (isset($_GET['advaipbl_2fa_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['advaipbl_2fa_nonce'])), 'advaipbl_reset_2fa_' . $user_id_to_reset)) {
-                if (current_user_can('edit_users')) {
+                if (current_user_can('edit_users') && current_user_can('advaipbl_manage_settings')) {
                     if ($this->plugin->tfa_manager) {
                         $this->plugin->tfa_manager->admin_reset_for_user($user_id_to_reset);
                         $user_info = get_userdata($user_id_to_reset);
@@ -47,7 +47,7 @@ class ADVAIPBL_Action_Handler
             $lockdown_id = absint($_GET['lockdown_id']);
             $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
 
-            if (wp_verify_nonce($nonce, 'advaipbl_delete_lockdown_' . $lockdown_id) && current_user_can('manage_options')) {
+            if (wp_verify_nonce($nonce, 'advaipbl_delete_lockdown_' . $lockdown_id) && current_user_can('advaipbl_manage_settings')) {
                 global $wpdb;
                 $lockdowns_table = $wpdb->prefix . 'advaipbl_endpoint_lockdowns';
                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -60,7 +60,7 @@ class ADVAIPBL_Action_Handler
             exit;
         } elseif (isset($_GET['action']) && $_GET['action'] === 'advaipbl_cancel_auto_panic') {
             $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
-            if (wp_verify_nonce($nonce, 'advaipbl_cancel_auto_panic') && current_user_can('manage_options')) {
+            if (wp_verify_nonce($nonce, 'advaipbl_cancel_auto_panic') && current_user_can('advaipbl_manage_settings')) {
                 delete_transient('advaipbl_is_under_attack');
 
                 /* translators: %s is a placeholder */
@@ -83,7 +83,7 @@ class ADVAIPBL_Action_Handler
             $nonce_is_valid = true;
         }
 
-        if (!$nonce_is_valid || !current_user_can('manage_options')) {
+        if (!$nonce_is_valid || !current_user_can('advaipbl_manage_settings')) {
             return;
         }
 
@@ -358,7 +358,7 @@ class ADVAIPBL_Action_Handler
         if (! isset($_POST['_wpnonce']) || ! wp_verify_nonce(sanitize_key($_POST['_wpnonce']), 'advaipbl_wizard_step_1_nonce')) {
             wp_die('Security check failed.');
         }
-        if (! current_user_can('manage_options')) {
+        if (! current_user_can('advaipbl_manage_settings')) {
             wp_die('Permission denied.');
         }
 
@@ -392,7 +392,7 @@ class ADVAIPBL_Action_Handler
         if (! isset($_POST['_wpnonce']) || ! wp_verify_nonce(sanitize_key($_POST['_wpnonce']), 'advaipbl_wizard_step_2_nonce')) {
             wp_die('Security check failed.');
         }
-        if (! current_user_can('manage_options')) {
+        if (! current_user_can('advaipbl_manage_settings')) {
             wp_die('Permission denied.');
         }
 
@@ -444,7 +444,7 @@ class ADVAIPBL_Action_Handler
         if (! isset($_POST['_wpnonce']) || ! wp_verify_nonce(sanitize_key($_POST['_wpnonce']), 'advaipbl_wizard_step_3_nonce')) {
             wp_die('Security check failed.');
         }
-        if (! current_user_can('manage_options')) {
+        if (! current_user_can('advaipbl_manage_settings')) {
             wp_die('Permission denied.');
         }
 
@@ -528,7 +528,7 @@ class ADVAIPBL_Action_Handler
         if (! isset($_POST['_wpnonce']) || ! wp_verify_nonce(sanitize_key($_POST['_wpnonce']), 'advaipbl_wizard_step_4_nonce')) {
             wp_die('Security check failed.');
         }
-        if (! current_user_can('manage_options')) {
+        if (! current_user_can('advaipbl_manage_settings')) {
             wp_die('Permission denied.');
         }
 

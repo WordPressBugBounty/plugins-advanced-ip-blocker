@@ -129,7 +129,7 @@ class ADVAIPBL_Rules_Engine
                 'type'     => $condition['type'],
                 'operator' => $condition['operator'],
                 'target'   => isset($condition['target']) ? sanitize_text_field($condition['target']) : '',
-                'value'    => isset($condition['value']) ? sanitize_text_field($condition['value']) : '' // Sanitización genérica y segura para todos los valores.
+                'value'    => isset($condition['value']) ? trim(preg_replace('/[\r\n\0\x0B]/', '', (string) $condition['value'])) : ''
             ];
 
             $sanitized_rule['conditions'][] = $sanitized_condition;
@@ -273,13 +273,10 @@ class ADVAIPBL_Rules_Engine
             return false;
         }
 
-        if (get_transient('advaipbl_grace_pass_' . md5($ip))) {
-            return false;
-        }
+        $has_vip_pass = (bool) get_transient('advaipbl_grace_pass_' . md5($ip))
+            || $this->plugin->js_challenge_manager->is_vip_pass_valid($ip);
 
-        if ($this->plugin->js_challenge_manager->is_vip_pass_valid()) {
-            return false;
-        }
+        $challenge_actions = ['challenge', 'challenge_automatic', 'challenge_turnstile', 'challenge_hcaptcha'];
 
         foreach ($rules as $rule) {
             if (isset($rule['is_active']) && $rule['is_active'] === false) {
@@ -287,6 +284,10 @@ class ADVAIPBL_Rules_Engine
             }
 
             if (!isset($rule['conditions']) || empty($rule['conditions']) || !isset($rule['action'])) {
+                continue;
+            }
+
+            if ($has_vip_pass && in_array($rule['action'], $challenge_actions, true)) {
                 continue;
             }
 
@@ -354,7 +355,13 @@ class ADVAIPBL_Rules_Engine
                 $subject = ($hostname && $hostname !== $ip) ? $hostname : '';
                 break;
             case 'uri':
-                $subject = $this->plugin->get_current_request_uri();
+                $raw_uri = $this->plugin->get_current_request_uri();
+                $decoded_uri = rawurldecode($raw_uri);
+                if (in_array($operator, ['contains', 'does_not_contain', 'matches_regex'], true) && $raw_uri !== $decoded_uri) {
+                    $subject = $raw_uri . "\n" . $decoded_uri;
+                } else {
+                    $subject = $decoded_uri;
+                }
                 break;
             case 'user_agent':
                 $subject = $this->plugin->get_user_agent();
@@ -393,17 +400,22 @@ class ADVAIPBL_Rules_Engine
                 }
                 break;
             case 'payload':
-                $raw_body = @file_get_contents('php://input');
+                $raw_body = @file_get_contents('php://input', false, null, 0, 131072);
                 // phpcs:disable WordPress.Security.NonceVerification.Missing
                 $post_data = !empty($_POST) ? urldecode(http_build_query($_POST)) : '';
-                // Incluir metadatos de archivos subidos para vulnerabilidades de File Upload / RCE (ej. CVE-2026-18431)
                 $files_data = !empty($_FILES) ? urldecode(http_build_query($_FILES)) : '';
                 // phpcs:enable WordPress.Security.NonceVerification.Missing
                 $subject = $raw_body . "\n" . $post_data . "\n" . $files_data;
                 break;
             case 'query_string':
                 // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-                $subject = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+                $raw_qs = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+                $decoded_qs = rawurldecode($raw_qs);
+                if (in_array($operator, ['contains', 'does_not_contain', 'matches_regex'], true) && $raw_qs !== $decoded_qs) {
+                    $subject = $raw_qs . "\n" . $decoded_qs;
+                } else {
+                    $subject = $decoded_qs;
+                }
                 break;
             case 'requires_version':
                 return version_compare(ADVAIPBL_VERSION, $value, '>=');

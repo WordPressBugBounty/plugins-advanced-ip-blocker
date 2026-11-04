@@ -73,6 +73,12 @@ class ADVAIPBL_Settings_Manager
 
         register_setting('advaipbl_settings_group', ADVAIPBL_Main::OPTION_SETTINGS, [$this, 'sanitize_settings']);
         register_setting('advaipbl_waf_rules_group', ADVAIPBL_Main::OPTION_WAF_RULES, ['sanitize_callback' => [$this, 'sanitize_waf_rules']]);
+        add_filter('option_page_capability_advaipbl_settings_group', function () {
+            return 'advaipbl_manage_settings';
+        });
+        add_filter('option_page_capability_advaipbl_waf_rules_group', function () {
+            return 'advaipbl_manage_settings';
+        });
 
         add_settings_section('advaipbl_general_settings_section', null, null, $page);
         add_settings_field('advaipbl_enable_logging', __('Enable Logging', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_general_settings_section', ['name' => 'enable_logging', 'label' => __('Enable logging of events to the database.', 'advanced-ip-blocker')]);

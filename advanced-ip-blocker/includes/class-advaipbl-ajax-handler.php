@@ -698,7 +698,7 @@ class ADVAIPBL_Ajax_Handler
         if (! isset($_POST['nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'advaipbl_update_geoip_nonce')) {
             wp_send_json_error(['message' => 'Nonce verification failed.'], 403);
         }
-        if (! current_user_can('manage_options') || ! $this->plugin->geoip_manager) {
+        if (! current_user_can('advaipbl_manage_settings') || ! $this->plugin->geoip_manager) {
             wp_send_json_error(['message' => 'Permission denied or module not available.'], 403);
         }
 
@@ -1643,15 +1643,24 @@ class ADVAIPBL_Ajax_Handler
             wp_send_json_error(['message' => __('Invalid cron hook.', 'advanced-ip-blocker')]);
         }
 
+        $crons = _get_cron_array();
+        $hook_exists_in_cron = false;
         $args = [];
-        if (!empty($sig)) {
-            $crons = _get_cron_array();
+
+        if (is_array($crons)) {
             foreach ($crons as $timestamp => $hooks) {
-                if (isset($hooks[$hook][$sig])) {
-                    $args = $hooks[$hook][$sig]['args'] ?? [];
-                    break;
+                if (isset($hooks[$hook])) {
+                    $hook_exists_in_cron = true;
+                    if (!empty($sig) && isset($hooks[$hook][$sig])) {
+                        $args = $hooks[$hook][$sig]['args'] ?? [];
+                        break;
+                    }
                 }
             }
+        }
+
+        if (!$hook_exists_in_cron) {
+            wp_send_json_error(['message' => __('Invalid cron hook.', 'advanced-ip-blocker')]);
         }
 
         try {

@@ -22,6 +22,7 @@ class ADVAIPBL_Waf_Manager
 
         $options = get_option(ADVAIPBL_Main::OPTION_SETTINGS, []);
         $raw_excluded_urls = $options['waf_excluded_urls'] ?? '';
+        $parsed_path = (string) wp_parse_url($request_uri, PHP_URL_PATH);
 
         if (!empty(trim($raw_excluded_urls))) {
             $excluded_urls = array_filter(array_map('trim', explode("\n", $raw_excluded_urls)));
@@ -32,14 +33,15 @@ class ADVAIPBL_Waf_Manager
                         continue;
                     }
 
-                    if (stripos($request_uri, $excluded_url_fragment) !== false) {
+                    $target_to_check = (strpos($excluded_url_fragment, '?') !== false || strpos($excluded_url_fragment, '=') !== false) ? $request_uri : $parsed_path;
+                    if (stripos($target_to_check, $excluded_url_fragment) !== false) {
                         return false;
                     }
                 }
             }
         }
 
-        if (strpos($request_uri, 'xmlrpc.php') !== false) {
+        if (substr(strtolower($parsed_path), -11) === '/xmlrpc.php' || strtolower($parsed_path) === 'xmlrpc.php') {
             return false;
         }
 
@@ -80,9 +82,9 @@ class ADVAIPBL_Waf_Manager
             'FILES'       => $_FILES,
             // phpcs:enable WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing
             'HEADERS'     => $headers,
-            'REQUEST_URI' => $request_uri,
+            'REQUEST_URI' => [$request_uri, rawurldecode($request_uri)],
             'USER_AGENT'  => $main_class->get_user_agent(),
-            'RAW_BODY'    => @file_get_contents('php://input'),
+            'RAW_BODY'    => @file_get_contents('php://input', false, null, 0, 131072),
         ];
 
         foreach ($rules as $rule) {
