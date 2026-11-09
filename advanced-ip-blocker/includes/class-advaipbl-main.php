@@ -363,6 +363,8 @@ class ADVAIPBL_Main
         add_action('init', [ $this, 'handle_login_geo_restriction' ], 6);
         add_action('wp_login', [$this, 'auto_whitelist_admin_on_login'], 10, 2);
         add_filter('rest_endpoints', [ $this, 'disable_rest_api_user_endpoints' ]);
+        add_filter('rest_pre_dispatch', [$this, 'restrict_rest_user_enumeration'], 10, 3);
+        add_action('rest_api_init', [$this, 'register_rest_author_sanitization']);
         add_filter('oembed_response_data', [$this, 'prevent_user_enumeration_via_oembed'], 99, 4);
         add_filter('authenticate', [$this, 'prevent_login_hinting'], 99, 1);
         add_action('lostpassword_post', [$this, 'prevent_lostpassword_hinting']);
@@ -1553,6 +1555,33 @@ class ADVAIPBL_Main
         ]);
 
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 429) {
+                if (!get_transient('advaipbl_waf_version_429_logged')) {
+                    $retry_after = wp_remote_retrieve_header($response, 'retry-after');
+                    $body_raw = wp_remote_retrieve_body($response);
+                    $body_json = json_decode($body_raw, true);
+                    $server_msg = '';
+                    if (is_array($body_json) && !empty($body_json['message'])) {
+                        /* translators: %s: Error message returned by the central server. */
+                        $server_msg = ' ' . sprintf(__('Server response: "%s".', 'advanced-ip-blocker'), sanitize_text_field($body_json['message']));
+                    }
+                    /* translators: %s: Cooldown time in seconds before retrying. */
+                    $retry_msg = !empty($retry_after) ? ' ' . sprintf(__('Retry-After: %ss.', 'advanced-ip-blocker'), sanitize_text_field($retry_after)) : '';
+                    $parsed_url = wp_parse_url($api_url, PHP_URL_PATH);
+                    $endpoint_path = !empty($parsed_url) ? $parsed_url : $api_url;
+
+                    $log_message = sprintf(
+                        /* translators: 1: Endpoint path, 2: Server response message, 3: Retry-After header info. */
+                        __('Intelligent WAF Version Check: Central API rate limit reached (HTTP 429) on endpoint [%1$s].%2$s%3$s Cooldown active.', 'advanced-ip-blocker'),
+                        $endpoint_path,
+                        $server_msg,
+                        $retry_msg
+                    );
+
+                    $this->log_event($log_message, 'warning');
+                    set_transient('advaipbl_waf_version_429_logged', true, HOUR_IN_SECONDS);
+                }
+            }
             return;
         }
 
@@ -1660,6 +1689,33 @@ class ADVAIPBL_Main
         ]);
 
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 429) {
+                if (!get_transient('advaipbl_adv_waf_version_429_logged')) {
+                    $retry_after = wp_remote_retrieve_header($response, 'retry-after');
+                    $body_raw = wp_remote_retrieve_body($response);
+                    $body_json = json_decode($body_raw, true);
+                    $server_msg = '';
+                    if (is_array($body_json) && !empty($body_json['message'])) {
+                        /* translators: %s: Error message returned by the central server. */
+                        $server_msg = ' ' . sprintf(__('Server response: "%s".', 'advanced-ip-blocker'), sanitize_text_field($body_json['message']));
+                    }
+                    /* translators: %s: Cooldown time in seconds before retrying. */
+                    $retry_msg = !empty($retry_after) ? ' ' . sprintf(__('Retry-After: %ss.', 'advanced-ip-blocker'), sanitize_text_field($retry_after)) : '';
+                    $parsed_url = wp_parse_url($api_url, PHP_URL_PATH);
+                    $endpoint_path = !empty($parsed_url) ? $parsed_url : $api_url;
+
+                    $log_message = sprintf(
+                        /* translators: 1: Endpoint path, 2: Server response message, 3: Retry-After header info. */
+                        __('Advanced WAF Version Check: Central API rate limit reached (HTTP 429) on endpoint [%1$s].%2$s%3$s Cooldown active.', 'advanced-ip-blocker'),
+                        $endpoint_path,
+                        $server_msg,
+                        $retry_msg
+                    );
+
+                    $this->log_event($log_message, 'warning');
+                    set_transient('advaipbl_adv_waf_version_429_logged', true, HOUR_IN_SECONDS);
+                }
+            }
             return;
         }
 
@@ -1821,6 +1877,33 @@ class ADVAIPBL_Main
         ]);
 
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 429) {
+                if (!get_transient('advaipbl_fim_version_429_logged')) {
+                    $retry_after = wp_remote_retrieve_header($response, 'retry-after');
+                    $body_raw = wp_remote_retrieve_body($response);
+                    $body_json = json_decode($body_raw, true);
+                    $server_msg = '';
+                    if (is_array($body_json) && !empty($body_json['message'])) {
+                        /* translators: %s: Error message returned by the central server. */
+                        $server_msg = ' ' . sprintf(__('Server response: "%s".', 'advanced-ip-blocker'), sanitize_text_field($body_json['message']));
+                    }
+                    /* translators: %s: Cooldown time in seconds before retrying. */
+                    $retry_msg = !empty($retry_after) ? ' ' . sprintf(__('Retry-After: %ss.', 'advanced-ip-blocker'), sanitize_text_field($retry_after)) : '';
+                    $parsed_url = wp_parse_url($api_url, PHP_URL_PATH);
+                    $endpoint_path = !empty($parsed_url) ? $parsed_url : $api_url;
+
+                    $log_message = sprintf(
+                        /* translators: 1: Endpoint path, 2: Server response message, 3: Retry-After header info. */
+                        __('FIM Signatures Version Check: Central API rate limit reached (HTTP 429) on endpoint [%1$s].%2$s%3$s Cooldown active.', 'advanced-ip-blocker'),
+                        $endpoint_path,
+                        $server_msg,
+                        $retry_msg
+                    );
+
+                    $this->log_event($log_message, 'warning');
+                    set_transient('advaipbl_fim_version_429_logged', true, HOUR_IN_SECONDS);
+                }
+            }
             return;
         }
 
@@ -2118,6 +2201,10 @@ class ADVAIPBL_Main
     public function add_to_whitelist_and_unblock($entry_to_whitelist, $detail)
     {
         if (! $this->is_valid_ip_or_range($entry_to_whitelist)) {
+            return false;
+        }
+
+        if (in_array($entry_to_whitelist, ['127.0.0.1', '::1', 'localhost'], true)) {
             return false;
         }
 
@@ -2959,6 +3046,12 @@ class ADVAIPBL_Main
             }
         }
 
+        if (!headers_sent()) {
+            header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('X-Accel-Expires: 0');
+        }
+
         if (isset($endpoints['/wp/v2/users'])) {
             unset($endpoints['/wp/v2/users']);
         }
@@ -2967,6 +3060,116 @@ class ADVAIPBL_Main
         }
 
         return $endpoints;
+    }
+
+    /**
+     * Intercepts REST API requests targeting user endpoints and enforces authorization checks.
+     * Hooked to 'rest_pre_dispatch'.
+     *
+     * @param mixed           $result  Response to replace the requested route with.
+     * @param WP_REST_Server  $server  Server instance.
+     * @param WP_REST_Request $request Request used to generate the response.
+     * @return mixed Original or error response.
+     */
+    public function restrict_rest_user_enumeration($result, $server, $request)
+    {
+        if (empty($this->options['disable_user_enumeration'])) {
+            return $result;
+        }
+
+        if (!($request instanceof WP_REST_Request)) {
+            return $result;
+        }
+
+        $route = untrailingslashit($request->get_route());
+        if (!preg_match('#^/wp/v2/users($|/)#i', $route)) {
+            return $result;
+        }
+
+        if (is_user_logged_in()) {
+            return $result;
+        }
+
+        $client_ip = $this->get_client_ip();
+        if ($this->is_whitelisted($client_ip) || !empty($this->request_is_asn_whitelisted) || !empty($this->is_advanced_rule_allowed)) {
+            return $result;
+        }
+
+        $ua = $this->get_user_agent();
+        $whitelisted_uas = get_option(self::OPTION_WHITELISTED_UAS, []);
+        if (! empty($whitelisted_uas) && is_array($whitelisted_uas)) {
+            foreach ($whitelisted_uas as $whitelisted_ua) {
+                if (stripos($ua, $whitelisted_ua) !== false) {
+                    return $result;
+                }
+            }
+        }
+
+        if (!headers_sent()) {
+            header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('X-Accel-Expires: 0');
+        }
+
+        if (! empty($this->options['block_author_scanning_403'])) {
+            $this->handle_threat_event($client_ip, '403', 'REST API user enumeration attempt', ['uri' => $this->get_current_request_uri()]);
+        }
+
+        return new WP_Error(
+            'rest_cannot_access',
+            __('User enumeration is disabled.', 'advanced-ip-blocker'),
+            ['status' => 403]
+        );
+    }
+
+    /**
+     * Registers filters on all public post types to sanitize author data in REST responses.
+     */
+    public function register_rest_author_sanitization()
+    {
+        if (empty($this->options['disable_user_enumeration'])) {
+            return;
+        }
+
+        $post_types = get_post_types(['public' => true], 'names');
+        foreach ($post_types as $post_type) {
+            add_filter("rest_prepare_{$post_type}", [$this, 'sanitize_rest_post_author'], 10, 3);
+        }
+    }
+
+    /**
+     * Strips author links and embedded author information from REST post responses for anonymous users.
+     *
+     * @param WP_REST_Response $response The response object.
+     * @param WP_Post          $post     The original post object.
+     * @param WP_REST_Request  $request  The request object.
+     * @return WP_REST_Response
+     */
+    public function sanitize_rest_post_author($response, $post, $request)
+    {
+        if (empty($this->options['disable_user_enumeration'])) {
+            return $response;
+        }
+
+        if (is_user_logged_in()) {
+            return $response;
+        }
+
+        if ($this->is_whitelisted($this->get_client_ip()) || !empty($this->request_is_asn_whitelisted) || !empty($this->is_advanced_rule_allowed)) {
+            return $response;
+        }
+
+        if ($response instanceof WP_REST_Response) {
+            $response->remove_link('author');
+            if (isset($response->data['author'])) {
+                $response->data['author'] = 0;
+            }
+            if (isset($response->data['_embedded']['author'])) {
+                unset($response->data['_embedded']['author']);
+            }
+        }
+
+        return $response;
     }
 
     /**
@@ -2981,7 +3184,14 @@ class ADVAIPBL_Main
 
         if (! empty($this->options['prevent_author_scanning']) && ! is_admin()) {
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-            if (isset($_GET['author']) && is_numeric($_GET['author'])) {
+            $has_author = (isset($_GET['author']) && is_numeric($_GET['author'])) || !empty($_GET['author_name']);
+            if ($has_author) {
+                if (!headers_sent()) {
+                    header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+                    header('Pragma: no-cache');
+                    header('X-Accel-Expires: 0');
+                }
+
                 if (! empty($this->options['block_author_scanning_403'])) {
                     $ip = $this->get_client_ip();
                     $this->handle_threat_event($ip, '403', 'Author enumeration attempt', ['uri' => $this->get_current_request_uri()]);
@@ -3360,6 +3570,10 @@ class ADVAIPBL_Main
 
     public function is_whitelisted($ip)
     {
+        if (in_array($ip, ['127.0.0.1', '::1'], true) && !$this->is_loopback_request) {
+            return false;
+        }
+
         if ($this->is_loopback_request) {
             return true;
         }
@@ -3728,7 +3942,7 @@ class ADVAIPBL_Main
             $this->cleanup_legacy_options();
 
             if (isset($this->community_manager)) {
-                $this->community_manager->update_list();
+                $this->community_manager->update_list(true);
                 $this->log_event('Community list forced update during DB upgrade.', 'info');
             }
         }
@@ -3744,6 +3958,10 @@ class ADVAIPBL_Main
 
             if (version_compare($installed_plugin_ver, '8.13.6', '<') && $installed_plugin_ver !== '0.0.0') {
                 $this->auto_migrate_8_13_6();
+            }
+
+            if (version_compare($installed_plugin_ver, '8.13.25', '<') && $installed_plugin_ver !== '0.0.0') {
+                $this->auto_migrate_8_13_25();
             }
 
             if (isset($this->file_verifier) && !empty($this->options['enable_fim'])) {
@@ -3848,6 +4066,29 @@ class ADVAIPBL_Main
                 $this->options = $settings;
                 $this->log_event('Migrated community_min_score from 1 to 3.', 'info');
             }
+        }
+    }
+
+    /**
+     * Automatic migration for version 8.13.25.
+     * Safely purges loopback IPs from the general whitelist while preserving them in trusted proxies.
+     */
+    private function auto_migrate_8_13_25()
+    {
+        $whitelist = get_option(self::OPTION_WHITELIST, []);
+        $updated = false;
+
+        foreach (['127.0.0.1', '::1', 'localhost'] as $loopback_ip) {
+            if (isset($whitelist[$loopback_ip])) {
+                unset($whitelist[$loopback_ip]);
+                $updated = true;
+            }
+        }
+
+        if ($updated) {
+            update_option(self::OPTION_WHITELIST, $whitelist);
+            wp_cache_delete(self::OPTION_WHITELIST, 'options');
+            $this->log_event('Successfully migrated whitelist: removed loopback IPs to prevent proxy bypass vulnerabilities.', 'info');
         }
     }
 

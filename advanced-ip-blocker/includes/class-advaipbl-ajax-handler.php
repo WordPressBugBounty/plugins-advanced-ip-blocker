@@ -53,7 +53,7 @@ class ADVAIPBL_Ajax_Handler
 
         set_transient('advaipbl_community_manual_sync_cooldown', true, 15 * MINUTE_IN_SECONDS);
 
-        $result = $this->plugin->community_manager->update_list();
+        $result = $this->plugin->community_manager->update_list(true);
 
         if ($result !== false) {
             $last_update = get_option('advaipbl_community_last_update', 0);
@@ -590,7 +590,7 @@ class ADVAIPBL_Ajax_Handler
         }
 
         if (isset($result['api_token'])) {
-            $this->plugin->community_manager->update_list();
+            $this->plugin->community_manager->update_list(true);
 
             wp_send_json_success([
                 'message' => __('API Key generated and saved successfully!', 'advanced-ip-blocker'),

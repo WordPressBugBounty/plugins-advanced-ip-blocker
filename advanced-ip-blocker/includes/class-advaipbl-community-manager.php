@@ -25,27 +25,88 @@ class ADVAIPBL_Community_Manager
      *
      * @return int|bool Returns the number of IPs synced, or false on failure.
      */
-    public function update_list()
+    public function update_list($force = false)
     {
+        if (!$force) {
+            $last_update = (int) get_option($this->last_update_option, 0);
+            if ($last_update > 0 && (time() - $last_update) < (2 * HOUR_IN_SECONDS)) {
+                return false;
+            }
+
+            if (get_transient('advaipbl_community_sync_running')) {
+                return false;
+            }
+        }
+
+        set_transient('advaipbl_community_sync_running', true, 10 * MINUTE_IN_SECONDS);
+
         $use_v4 = false;
         $feed_data = false;
 
         $api_token_v3 = $this->plugin->options['api_token_v3'] ?? '';
 
         if (!empty($api_token_v3)) {
+            $headers = [
+                'Authorization' => 'Bearer ' . $api_token_v3,
+                'X-AIB-Auth'    => 'Bearer ' . $api_token_v3,
+            ];
+            $saved_etag = get_option('advaipbl_community_etag', '');
+            if (!empty($saved_etag)) {
+                $headers['If-None-Match'] = $saved_etag;
+            }
+
             $response = wp_remote_get($this->feed_url_v4, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $api_token_v3,
-                    'X-AIB-Auth'    => 'Bearer ' . $api_token_v3
-                ],
+                'headers' => $headers,
                 'timeout' => 30
             ]);
 
-            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
-                $feed_data = wp_remote_retrieve_body($response);
-                $use_v4 = true;
+            if (!is_wp_error($response)) {
+                $response_code = wp_remote_retrieve_response_code($response);
+                if ($response_code === 304) {
+                    update_option($this->last_update_option, time());
+                    delete_transient('advaipbl_community_sync_running');
+                    return true;
+                }
+
+                if ($response_code === 200) {
+                    $feed_data = wp_remote_retrieve_body($response);
+                    $new_etag = wp_remote_retrieve_header($response, 'etag');
+                    if (!empty($new_etag)) {
+                        update_option('advaipbl_community_etag', sanitize_text_field($new_etag));
+                    }
+                    $use_v4 = true;
+                } elseif ($response_code === 429) {
+                    if (!get_transient('advaipbl_community_api_429_logged')) {
+                        $retry_after = wp_remote_retrieve_header($response, 'retry-after');
+                        $body_raw = wp_remote_retrieve_body($response);
+                        $body_json = json_decode($body_raw, true);
+                        $server_msg = '';
+                        if (is_array($body_json) && !empty($body_json['message'])) {
+                            /* translators: %s: Error message returned by the central server. */
+                            $server_msg = ' ' . sprintf(__('Server response: "%s".', 'advanced-ip-blocker'), sanitize_text_field($body_json['message']));
+                        }
+                        /* translators: %s: Cooldown time in seconds before retrying. */
+                        $retry_msg = !empty($retry_after) ? ' ' . sprintf(__('Retry-After: %ss.', 'advanced-ip-blocker'), sanitize_text_field($retry_after)) : '';
+                        $parsed_url = wp_parse_url($this->feed_url_v4, PHP_URL_PATH);
+                        $endpoint_path = !empty($parsed_url) ? $parsed_url : $this->feed_url_v4;
+
+                        $log_message = sprintf(
+                            /* translators: 1: Endpoint path, 2: Server response message, 3: Retry-After header info. */
+                            __('AIB Network Sync: Central API rate limit reached (HTTP 429) on endpoint [%1$s].%2$s%3$s Sync temporarily postponed for 1 hour to prevent server overload.', 'advanced-ip-blocker'),
+                            $endpoint_path,
+                            $server_msg,
+                            $retry_msg
+                        );
+
+                        $this->plugin->log_event($log_message, 'warning');
+                        set_transient('advaipbl_community_api_429_logged', true, HOUR_IN_SECONDS);
+                    }
+                    set_transient('advaipbl_community_api_error_cooldown_v4', true, HOUR_IN_SECONDS);
+                    delete_transient('advaipbl_community_sync_running');
+                    return false;
+                }
             } else {
-                $error_msg = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($response);
+                $error_msg = $response->get_error_message();
                 if (!get_transient('advaipbl_community_api_error_cooldown_v4')) {
                     $this->plugin->log_event('AIB Network Sync: V4 failed (' . $error_msg . '), falling back to V2.', 'warning');
                     set_transient('advaipbl_community_api_error_cooldown_v4', true, HOUR_IN_SECONDS);
@@ -66,6 +127,7 @@ class ADVAIPBL_Community_Manager
                 }
 
                 update_option(ADVAIPBL_Main::OPTION_COMMUNITY_SYNC_TIME, time());
+                delete_transient('advaipbl_community_sync_running');
 
                 return false;
             }
@@ -73,6 +135,7 @@ class ADVAIPBL_Community_Manager
         }
 
         if (!$feed_data) {
+            delete_transient('advaipbl_community_sync_running');
             if (!get_transient('advaipbl_community_api_error_cooldown_nodata')) {
                 $this->plugin->log_event('AIB Network list download failed: No data received from V4 or V2.', 'error');
                 set_transient('advaipbl_community_api_error_cooldown_nodata', true, HOUR_IN_SECONDS);
@@ -84,6 +147,7 @@ class ADVAIPBL_Community_Manager
         $data = json_decode($feed_data, true);
 
         if (!$data || !isset($data['ips']) || !is_array($data['ips'])) {
+            delete_transient('advaipbl_community_sync_running');
             $this->plugin->log_event('AIB Network list download failed: Invalid data format.', 'error');
 
             return false;
@@ -170,6 +234,7 @@ class ADVAIPBL_Community_Manager
         update_option($this->last_update_option, time());
         delete_transient('advaipbl_community_ips_count');
         delete_option('advaipbl_community_blocklist');
+        delete_transient('advaipbl_community_sync_running');
 
         return $total_ips;
     }

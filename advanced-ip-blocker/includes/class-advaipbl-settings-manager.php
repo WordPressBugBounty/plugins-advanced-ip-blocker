@@ -745,7 +745,11 @@ class ADVAIPBL_Settings_Manager
 
         add_settings_section('advaipbl_advanced_login_section', null, null, $page);
         add_settings_field('advaipbl_auto_whitelist_admin', __('Auto-Whitelist Admins', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', ['name' => 'auto_whitelist_admin', 'label' => __('Automatically add administrator IPs to the whitelist on successful login.', 'advanced-ip-blocker'), 'description' => __('Ideal for admins who travel or have dynamic IP addresses.', 'advanced-ip-blocker')]);
-        add_settings_field('advaipbl_disable_user_enumeration', __('REST API User Protection', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', ['name'  => 'disable_user_enumeration', 'label' => __('Disable User Enumeration via REST API', 'advanced-ip-blocker')]);
+        add_settings_field('advaipbl_disable_user_enumeration', __('REST API User Protection', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', [
+            'name'        => 'disable_user_enumeration',
+            'label'       => __('Disable User Enumeration via REST API', 'advanced-ip-blocker'),
+            'description' => __('Restricts user endpoints in the REST API and strips embedded author data from public post queries for unauthenticated visitors.', 'advanced-ip-blocker')
+        ]);
         add_settings_field('advaipbl_prevent_author_scanning', __('Author Scan Protection', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', ['name'  => 'prevent_author_scanning', 'label' => __('Prevent user enumeration via author scans', 'advanced-ip-blocker')]);
         add_settings_field('advaipbl_block_author_scanning_403', __('Strict Author Scan Block', 'advanced-ip-blocker'), [$this, 'switch_field_callback'], $page, 'advaipbl_advanced_login_section', [
             'name'  => 'block_author_scanning_403',

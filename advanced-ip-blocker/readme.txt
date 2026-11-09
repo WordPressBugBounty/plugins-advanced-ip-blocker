@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.24
+Stable tag: 8.13.25
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,20 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.24 =
-Security and stability release: hardens WAF and Advanced Rules inspection engines, strengthens Admin Access Control capability checks across all backend endpoints, improves reverse-proxy client IP resolution, and optimizes memory usage when scanning large HTTP payloads.
+= 8.13.25 =
+Security release: blocks REST and author user enumeration, prevents data leaks via ?_embed, enforces anti-cache headers, hardens IP whitelist loopbacks, and enriches API 429 diagnostics.
 
 == Changelog ==
+
+= 8.13.25 =
+* **SECURITY (REST API User Protection):** Migrated user endpoint protection to `rest_pre_dispatch` with strict 403 Forbidden responses for anonymous requests to `/wp/v2/users`, integrated with Threat Score scoring when Strict Author Scan Block is active, and enforced aggressive anti-cache HTTP headers (`Cache-Control: private, no-cache, no-store, must-revalidate`, `X-Accel-Expires: 0`) to prevent intermediate proxies (Varnish, Fastly, Cloudflare, Nginx) from caching and exposing unauthenticated user lists.
+* **SECURITY (Data Leak Prevention):** Implemented automated sanitization on all public REST API post types (`rest_prepare_{post_type}`) to strip embedded author links and objects (`_embedded.author`) from post queries, neutralizing username discovery through `?_embed`.
+* **SECURITY (Author Scan Protection):** Enhanced author enumeration detection to intercept both numeric ID queries (`?author=X`) and author slug queries (`?author_name=X`), accompanied by anti-cache headers.
+* **SECURITY (Whitelist & Proxy Isolation):** Hardened the IP whitelist to reject loopback addresses (`127.0.0.1`, `::1`) from being manually added as general whitelisted IPs, preventing reverse-proxy header spoofing and unintended authorization bypasses in multi-tier server architectures (Cloudflare, Varnish, Nginx). Includes automatic migration (`auto_migrate_8_13_25`) to clean legacy loopback entries from the whitelist while keeping them safely in Trusted Proxies.
+* **PERFORMANCE & RESILIENCE (Community Sync & Diagnostics):** Implemented client-side concurrency mutex locks and a 2-hour minimum cooldown between automatic scheduled synchronizations to prevent broken or aggressive visitor-triggered WP-Cron loops from overwhelming the central API. Added `If-None-Match` / ETag support to accept `304 Not Modified` responses without re-downloading identical feeds, and gracefully handled HTTP 429 rate-limiting responses with clear diagnostic warnings in the General Log and automatic cooldown backoff.
+* **ENHANCEMENT (Telemetry & Diagnostic Logging):** Enriched Central API HTTP 429 rate-limiting events in General Log across Community Blocklist and WAF/FIM version check endpoints. Log entries now capture the exact request endpoint path, server error response body, and `Retry-After` header interval for streamlined auditing and support troubleshooting, fully backed by internationalization (`.pot`).
+* **ENHANCEMENT (Remote Notices UI):** Redesigned the remote security advisories layout with an automatic 2-column container, official local dashboard icon (`assets/img/icon-256x256.png`), and backward-compatible support for dual aligned action buttons (primary and secondary).
+* **SECURITY (Cloud WAF Signatures):** Deployed 4 new cloud-synced Zero-Day WAF rules and signatures to defend against critical RCE and arbitrary file upload vulnerabilities in The Grid (CVE-2026-94169) and YOOtheme Pro (CVE-2026-102785).
 
 = 8.13.24 =
 * **SECURITY (WAF & Advanced Rules Engine):** Hardened request URI and query string normalization, path exclusion parsing, and challenge session evaluation to ensure consistent enforcement of blocking, scoring, and rate-limiting rules across all request contexts.

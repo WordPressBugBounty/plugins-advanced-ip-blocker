@@ -64,7 +64,7 @@ class ADVAIPBL_Remote_Notices {
             return;
         }
 
-        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.24';
+        $current_version = defined('ADVAIPBL_VERSION') ? ADVAIPBL_VERSION : '8.13.25';
 
         foreach ($notices as $notice) {
             if (in_array($notice['id'], $dismissed)) {
@@ -89,12 +89,39 @@ class ADVAIPBL_Remote_Notices {
             
             $button_html = '';
             if (!empty($notice['button_text']) && !empty($notice['button_link'])) {
-                $button_html = '<p><a href="' . esc_url($notice['button_link']) . '" class="button button-primary">' . esc_html($notice['button_text']) . '</a></p>';
+                $button_html .= '<a href="' . esc_url($notice['button_link']) . '" class="button button-primary" style="margin-right:8px;">' . esc_html($notice['button_text']) . '</a>';
+            }
+            if (!empty($notice['button_secondary_text']) && !empty($notice['button_secondary_link'])) {
+                $button_html .= '<a href="' . esc_url($notice['button_secondary_link']) . '" class="button button-secondary" target="_blank" rel="noopener">' . esc_html($notice['button_secondary_text']) . '</a>';
             }
 
+            $raw_message = isset($notice['message']) ? $notice['message'] : '';
+            $has_custom_layout = (stripos($raw_message, '<table') !== false || stripos($raw_message, '<img') !== false);
+
             echo '<div class="' . esc_attr($class) . '" data-notice-id="' . esc_attr($notice['id']) . '">';
-            echo '<p>' . wp_kses_post($notice['message']) . '</p>';
-            echo wp_kses_post($button_html);
+            
+            if ($has_custom_layout) {
+                echo wp_kses_post($raw_message);
+                if (!empty($button_html)) {
+                    echo '<p>' . wp_kses_post($button_html) . '</p>';
+                }
+            } else {
+                $icon_url = defined('ADVAIPBL_PLUGIN_URL') ? ADVAIPBL_PLUGIN_URL . 'assets/img/icon-256x256.png' : '';
+                echo '<table style="border:none;border-collapse:collapse;width:100%;margin:6px 0;"><tr>';
+                if (!empty($icon_url)) {
+                    echo '<td style="width:72px;vertical-align:top;padding:4px 16px 4px 0;">';
+                    echo '<img src="' . esc_url($icon_url) . '" width="64" height="64" style="border-radius:8px;display:block;" alt="Advanced IP Blocker" />';
+                    echo '</td>';
+                }
+                echo '<td style="vertical-align:middle;padding:4px 0;">';
+                echo wp_kses_post($raw_message);
+                if (!empty($button_html)) {
+                    echo '<div style="margin-top:10px;">' . wp_kses_post($button_html) . '</div>';
+                }
+                echo '</td>';
+                echo '</tr></table>';
+            }
+
             echo '</div>';
         }
     }
