@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.25
+Stable tag: 8.13.26
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,14 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.25 =
-Security release: blocks REST and author user enumeration, prevents data leaks via ?_embed, enforces anti-cache headers, hardens IP whitelist loopbacks, and enriches API 429 diagnostics.
+= 8.13.26 =
+Maintenance and optimization release: introduces the `advaipbl_show_branding` filter for white-label block and challenge screens, and reduces the default log retention period from 30 to 15 days to keep databases lean on shared hosting.
 
 == Changelog ==
+
+= 8.13.26 =
+* **NEW FEATURE (Developer Filter / White-Label):** Introduced the `advaipbl_show_branding` WordPress filter (`true` by default) and centralized branding rendering via `ADVAIPBL_Main::get_branding_html()`. Administrators and agencies can now cleanly disable the footer attribution (`Performance & security by Advanced IP Blocker`) globally or selectively by context (`block_page`, `login_whitelist`, `login_geo`, `js_challenge`, `captcha`) without modifying core plugin files.
+* **PERFORMANCE & OPTIMIZATION (Database Size):** Reduced the default `Log Retention (days)` value from **30 days to 15 days** across core defaults, settings UI, audit log cleanup, and challenge metrics retention to prevent excessive database growth on shared hosting environments while keeping existing user-configured retention values intact.
 
 = 8.13.25 =
 * **SECURITY (REST API User Protection):** Migrated user endpoint protection to `rest_pre_dispatch` with strict 403 Forbidden responses for anonymous requests to `/wp/v2/users`, integrated with Threat Score scoring when Strict Author Scan Block is active, and enforced aggressive anti-cache HTTP headers (`Cache-Control: private, no-cache, no-store, must-revalidate`, `X-Accel-Expires: 0`) to prevent intermediate proxies (Varnish, Fastly, Cloudflare, Nginx) from caching and exposing unauthenticated user lists.

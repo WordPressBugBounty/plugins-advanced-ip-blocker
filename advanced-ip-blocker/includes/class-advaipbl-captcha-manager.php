@@ -245,9 +245,7 @@ class ADVAIPBL_Captcha_Manager
                     </form>
                 </div>
 
-                <div class="footer-brand">
-                    <?php echo esc_html__('Performance &amp; security by', 'advanced-ip-blocker'); ?> <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank">Advanced IP Blocker</a>
-                </div>
+                <?php echo wp_kses_post($this->plugin->get_branding_html('captcha')); ?>
             </div>
             
             <script>

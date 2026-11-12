@@ -2962,7 +2962,7 @@ class ADVAIPBL_Main
                     $this->increment_login_lockdown_counter();
                 }
 
-                $branding_html = '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
+                $branding_html = $this->get_branding_html('login_whitelist');
                 wp_die(
                     wp_kses_post(esc_html__('Access to this page has been restricted by the administrator.', 'advanced-ip-blocker') . $branding_html),
                     esc_html__('Access Denied', 'advanced-ip-blocker'),
@@ -3005,7 +3005,7 @@ class ADVAIPBL_Main
                     $this->increment_login_lockdown_counter();
                 }
 
-                $branding_html = '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
+                $branding_html = $this->get_branding_html('login_geo');
                 wp_die(
                     wp_kses_post(esc_html__('Login access from your location is not allowed.', 'advanced-ip-blocker') . $branding_html),
                     esc_html__('Access Denied', 'advanced-ip-blocker'),
@@ -3867,7 +3867,7 @@ class ADVAIPBL_Main
     public function purge_old_logs()
     {
         $this->options = get_option(self::OPTION_SETTINGS, []);
-        $retention_days = (int) ($this->options['log_retention_days'] ?? 30);
+        $retention_days = (int) ($this->options['log_retention_days'] ?? 15);
         if ($retention_days <= 0) {
             return;
         }
@@ -5667,7 +5667,7 @@ class ADVAIPBL_Main
             $display_message = $default_title . '<br>' . $default_body;
         }
 
-        $branding_html = '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
+        $branding_html = $this->get_branding_html('block_page');
         $display_message .= $branding_html;
 
         if ($is_xmlrpc_request) {
@@ -5713,6 +5713,30 @@ class ADVAIPBL_Main
 
             wp_die(wp_kses_post($display_message), esc_html($title), ['response' => 403]);
         }
+    }
+
+    /**
+     * Returns the attribution branding HTML for block, challenge, and CAPTCHA screens.
+     * Can be disabled via the 'advaipbl_show_branding' filter.
+     *
+     * @param string $context Screen context ('block_page', 'login_whitelist', 'login_geo', 'js_challenge', 'captcha').
+     * @return string
+     */
+    public function get_branding_html($context = 'block_page')
+    {
+        if (!apply_filters('advaipbl_show_branding', true, $context)) {
+            return '';
+        }
+
+        if ($context === 'js_challenge') {
+            return '<p class="branding">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank">Advanced IP Blocker</a></p>';
+        }
+
+        if ($context === 'captcha') {
+            return '<div class="footer-brand">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank">Advanced IP Blocker</a></div>';
+        }
+
+        return '<p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank" style="color: #888; text-decoration: underline;">Advanced IP Blocker</a></p>';
     }
 
     public function desbloquear_ip($entry_to_unblock, $skip_htaccess_update = false)
@@ -6117,7 +6141,7 @@ class ADVAIPBL_Main
             'hcaptcha_secret_key'      => '',
 
             'enable_logging' => '1', 'enable_payload_logging' => '0',
-            'log_retention_days' => 30,
+            'log_retention_days' => 15,
             'log_timezone' => wp_timezone_string(),
             'custom_block_message' => '<h1>' . esc_html__('Access Restricted', 'advanced-ip-blocker') . '</h1><br>' . esc_html__('Your request was blocked by the security firewall.', 'advanced-ip-blocker'),
             'excluded_error_urls' => implode("\n", $default_exclusions_404_403),

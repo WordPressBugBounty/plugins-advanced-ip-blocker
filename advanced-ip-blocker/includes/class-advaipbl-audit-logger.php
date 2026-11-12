@@ -228,7 +228,7 @@ class ADVAIPBL_Audit_Logger
      */
     public function cleanup_logs()
     {
-        $retention_days = isset($this->main_instance->options['log_retention_days']) ? (int)$this->main_instance->options['log_retention_days'] : 30;
+        $retention_days = isset($this->main_instance->options['log_retention_days']) ? (int)$this->main_instance->options['log_retention_days'] : 15;
 
         if ($retention_days <= 0) {
             return;

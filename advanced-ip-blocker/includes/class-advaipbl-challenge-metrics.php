@@ -112,9 +112,9 @@ class ADVAIPBL_Challenge_Metrics
                 }
             }
 
-            $retention_days = (int) ($this->plugin->options['log_retention_days'] ?? 30);
+            $retention_days = (int) ($this->plugin->options['log_retention_days'] ?? 15);
             if ($retention_days < 1) {
-                $retention_days = 30;
+                $retention_days = 15;
             }
 
             $cutoff_date = gmdate('Y-m-d', strtotime("-{$retention_days} days"));

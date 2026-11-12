@@ -539,7 +539,7 @@ p.branding a:hover{text-decoration:underline;}
         
         <noscript><p style="color:red;font-weight:bold;">' . $noscript_text . '</p></noscript>
         
-        <p class="branding">' . esc_html__('Performance &amp; security by', 'advanced-ip-blocker') . ' <a rel="noopener noreferrer" href="https://advaipbl.com/" target="_blank">Advanced IP Blocker</a></p>
+        ' . $this->plugin->get_branding_html('js_challenge') . '
     </div>' . $js_script . '</body>
 </html>';
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
