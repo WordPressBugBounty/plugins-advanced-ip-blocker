@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.26
+Stable tag: 8.13.27
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,17 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.26 =
-Maintenance and optimization release: introduces the `advaipbl_show_branding` filter for white-label block and challenge screens, and reduces the default log retention period from 30 to 15 days to keep databases lean on shared hosting.
+= 8.13.27 =
+Improves Active User Sessions behind Cloudflare and Trusted Proxies (real public IP, individual session termination, modern browser detection), logs successful 2FA logins in Audit Log, and updates default Trusted Proxies to official Cloudflare CIDRs.
 
 == Changelog ==
+
+= 8.13.27 =
+* **BUGFIX & SECURITY (Active User Sessions / Proxy IP Resolution):** Added `sync_real_ip_on_auth_cookie()` hooked to `set_auth_cookie` to update newly created WordPress session tokens with the resolved real client IP (`get_client_ip()` via Trusted Proxies) using `WP_Session_Tokens` public APIs, preventing Cloudflare or reverse-proxy IPs from appearing in Active User Sessions even on servers without Nginx `real_ip` configured.
+* **NEW FEATURE (Active User Sessions Control):** Added individual session termination (**Close Session**) alongside **Close All** for multi-device users, plus a **Current** badge to clearly identify the administrator's active session and prevent accidental self-logout.
+* **ENHANCEMENT (Device Detection):** Upgraded `parse_user_agent()` to accurately identify modern Chromium browsers (`Edge`, `Opera`, `Samsung Internet`), iOS browsers (`CriOS`, `FxiOS`), and `ChromeOS`, and added a tooltip displaying the full `User-Agent` string on hover.
+* **ENHANCEMENT (Trusted Proxies & CDN Manager):** Switched default Trusted Proxies and the Cloudflare Quick Add preset from ASNs to official Cloudflare IPv4/IPv6 CIDRs (shared via `ADVAIPBL_CDN_Manager::get_cloudflare_cidrs()`), removed the discontinued StackPath preset, added line-by-line deduplication in Quick Add, and implemented `fetch_provider_ips()` for Cloudflare, Fastly, and QUIC.cloud.
+* **ENHANCEMENT (Audit Log & 2FA):** Successful 2FA step-2 logins in `handle_login_action()` now record `user_login` events in the Activity Audit Log cleanly without triggering duplicate third-party `wp_login` side effects.
 
 = 8.13.26 =
 * **NEW FEATURE (Developer Filter / White-Label):** Introduced the `advaipbl_show_branding` WordPress filter (`true` by default) and centralized branding rendering via `ADVAIPBL_Main::get_branding_html()`. Administrators and agencies can now cleanly disable the footer attribution (`Performance & security by Advanced IP Blocker`) globally or selectively by context (`block_page`, `login_whitelist`, `login_geo`, `js_challenge`, `captcha`) without modifying core plugin files.
@@ -464,37 +471,3 @@ Maintenance and optimization release: introduces the `advaipbl_show_branding` fi
 *   **ENHANCEMENT:** Modernized Admin UI. Redesigned all configuration inputs across the plugin to feature dynamic floating labels, sleek borderless designs, and premium dark background filters for a better user experience.
 *   **ENHANCEMENT:** Optimized Local WAF Rules. Refined the default and suggested regular expressions (e.g. Path Traversal) to be highly precise, eliminating false positives caused by overly aggressive legacy patterns (like `/?author=` or trailing hyphens).
 *   **BUGFIX:** Resolved a persistent PHPCS linting error (`OutputNotEscaped`) in the WAF status tag renderer.
-
-= 8.12.2 =
-*   **NEW FEATURE:** File Integrity Scanner (Phase 1). A brand new security module designed to scan WordPress core files, active plugins, and themes against their official WordPress.org checksums to detect unauthorized modifications or malware infections.
-*   **BUGFIX:** Resolved a critical race-condition flaw in the centralized `block_ip_instantly` engine. Stale database locks (e.g., from interrupted script executions) would silently prevent the plugin from executing new blocks, affecting Thresholds, Threat Scores, and Advanced Rules.
-*   **BUGFIX:** The "Threshold Reached" block notifications (Email and Push) now correctly display the dynamic number of errors that triggered the block (e.g., 4) instead of a hardcoded "1".
-*   **ENHANCEMENT:** The threshold blocking engine (404, 403, and Login) has been modernized to use the centralized blocking architecture and bypass legacy option tables, significantly improving performance on high-traffic sites.
-*   **ENHANCEMENT:** Minor UI improvements in the Security Dashboard layout and Environmental Summary panel.
-
-= 8.12.1 =
-*   **NEW FEATURE:** Community Minimum Threat Score. You can now define how many unique community reports an IP must have before your local plugin imports and blocks it, drastically reducing false positives from the global network.
-*   **ENHANCEMENT:** Upgraded the AIB Central API integration to retrocompatibly support Threat Scores. The local IP Inspector now displays real-time community report counts directly in the UI.
-*   **ENHANCEMENT:** Manual ASN blocks are no longer transmitted to the AIB Community Network, preventing edge-case configurations from polluting the global threat database.
-*   **BUGFIX:** Resolved a critical logical flaw where failures or rate-limits in external Geolocation APIs (e.g., ipquery.io fallback) would falsely classify legitimate servers without rDNS as Ghost IPs.
-*   **BUGFIX:** Fixed a character encoding issue (mojibake) that caused emojis in Distributed Attack Protection (Auto-Panic) webhook notifications to render incorrectly in Slack and Discord.
-
-= 8.12.0 =
-*   **ENHANCEMENT:** Tested and verified full compatibility with the upcoming WordPress 7.1 core release.
-*   **ENHANCEMENT:** Brand new CDN Manager architecture with a Quick Add dropdown to easily auto-fill trusted proxies like Cloudflare and QUIC.cloud.
-*   **SECURITY:** Added Zero-Day WAF rules for recent critical vulnerabilities including Wishlist Member X (CVE-2026-12949) and User Profile Builder (CVE-2026-15826).
-*   **NEW FEATURE:** Admin Access Control. You can now restrict access to the plugin's configuration dashboard to specific administrators. Users not on the allowed list will not see the Security menu, while User ID 1 is always protected against lockouts.
-*   **NEW FEATURE:** Hardening & Core Protections. Added a new section to securely hide the WordPress version, disable the built-in file editor, disable application passwords, disable ImageMagick (Imagick), and block PHP execution in the uploads folder via a managed `.htaccess`.
-*   **ENHANCEMENT:** Central Telemetry Update. The plugin now securely transmits the adoption rate of the new Hardening features (including Restricted Admins) for aggregated community statistics.
-*   **ENHANCEMENT:** Audit Logging. Changes to the authorized administrators list are now tracked and logged in the Activity Audit Log.
-*   **BUGFIX:** Resolved HTML rendering bug in the Admin Access Control multi-select field.
-*   **BUGFIX:** Fixed PHPCS warnings in the uninstaller file regarding interpolated variables and standard filesystem writes.
-*   **BUGFIX:** Resolved Content Security Policy (CSP) console errors on challenge pages caused by Cloudflare Web Analytics (beacon.min.js) auto-injection.
-*   **BUGFIX:** Ensured the Zero-Day WAF Lightweight Ping cron task is properly cleared upon plugin deactivation and uninstallation.
-*   **BUGFIX:** Zero-Day WAF synchronization now preserves informational comments for the UI while correctly excluding them from both the active WAF engine evaluation and the rules count log.
-*   **BUGFIX:** Fixed an issue where importing settings templates failed on Windows server environments (like XAMPP) due to backslashes being stripped from temporary upload file paths.
-*   **BUGFIX:** Updated hardcoded URLs in email templates and system redirects to correctly point to the new top-level `admin.php` menu structure instead of the legacy `options-general.php` location.
-*   **IMPROVEMENT:** Removed emojis from WordPress admin notices and email templates to prevent character encoding issues on certain server environments, keeping them exclusively for push webhook notifications (Slack, Discord, etc.).
-*   **IMPROVEMENT:** The "Unblock ALL IPs" bulk action now properly resets the Threat Score of all unblocked IPs to 0, ensuring consistent UX with individual unblocking and preventing immediate re-blocking upon minor infractions.
-
-

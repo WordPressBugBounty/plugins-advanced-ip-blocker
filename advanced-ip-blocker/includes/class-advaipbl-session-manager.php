@@ -32,13 +32,17 @@ class ADVAIPBL_User_Session_Manager
             'nonce_close_by_role'   => wp_create_nonce('advaipbl_close_sessions_by_role_nonce'),
 
             'text_confirm_close_user' => __('Close all sessions for this user?', 'advanced-ip-blocker'),
+            'text_confirm_close_single_session' => __('Close this specific session?', 'advanced-ip-blocker'),
+            'text_confirm_close_current_session' => __('This is your current active session. Closing it will log you out immediately. Continue?', 'advanced-ip-blocker'),
             'text_confirm_close_all'  => __('Close ALL sessions for ALL users?', 'advanced-ip-blocker'),
             'text_confirm_close_role' => __('Close all sessions for the selected role?', 'advanced-ip-blocker'),
             'text_select_role'        => __('Please select a role.', 'advanced-ip-blocker'),
             'title_close_user'        => __('Close User Sessions', 'advanced-ip-blocker'),
+            'title_close_single_session' => __('Close Single Session', 'advanced-ip-blocker'),
             'title_close_all'         => __('Close All Sessions', 'advanced-ip-blocker'),
             'title_close_role'        => __('Close Sessions by Role', 'advanced-ip-blocker'),
             'btn_close_user'          => __('Yes, Close Sessions', 'advanced-ip-blocker'),
+            'btn_close_single_session' => __('Yes, Close Session', 'advanced-ip-blocker'),
             'btn_close_all'           => __('Yes, Close All', 'advanced-ip-blocker'),
             'btn_close_role'          => __('Yes, Close for This Role', 'advanced-ip-blocker'),
             'title_clear_cache'       => __('Clear Location Cache', 'advanced-ip-blocker'),
@@ -110,8 +114,13 @@ class ADVAIPBL_User_Session_Manager
         $sessions_page = array_slice($sessions_to_display, ($current_page - 1) * $per_page, $per_page);
 
         $all_roles = [];
+        $user_session_counts = [];
         if (! empty($all_sessions)) {
             foreach ($all_sessions as $session) {
+                $uid = isset($session['user_id']) ? (int) $session['user_id'] : 0;
+                if ($uid > 0) {
+                    $user_session_counts[$uid] = ($user_session_counts[$uid] ?? 0) + 1;
+                }
                 if (isset($session['role'])) {
                     foreach (explode(', ', $session['role']) as $r) {
                         if (! empty($r)) {
@@ -121,6 +130,9 @@ class ADVAIPBL_User_Session_Manager
                 }
             }
         }
+        $current_user_id = get_current_user_id();
+        $current_token = function_exists('wp_get_session_token') ? wp_get_session_token() : '';
+        $current_verifier = $current_token ? (function_exists('hash') ? hash('sha256', $current_token) : sha1($current_token)) : '';
         $locations = $this->get_cached_locations(array_column($sessions_page, 'ip'));
         ?>
     
@@ -200,13 +212,34 @@ class ADVAIPBL_User_Session_Manager
                         $location_parts[] = $location['country'] . (!empty($location['country_code']) ? ' (' . $location['country_code'] . ')' : '');
                     }
                 } ?>
+                <?php
+                $session_uid = (int) ($session['user_id'] ?? 0);
+                $session_verifier = isset($session['verifier']) ? (string) $session['verifier'] : '';
+                $is_current_session = ($session_uid === $current_user_id && $current_verifier !== '' && $session_verifier !== '' && hash_equals($current_verifier, $session_verifier));
+                $user_sessions_total = $user_session_counts[$session_uid] ?? 1;
+                ?>
                 <tr>
-                    <td><?php echo esc_html($session['username']); ?><br><small><?php echo esc_html($session['email']); ?></small></td>
+                    <td>
+                        <?php echo esc_html($session['username']); ?>
+                        <?php if ($is_current_session) : ?>
+                            <span class="advaipbl-badge advaipbl-badge-success" style="display:inline-block;margin-left:4px;padding:1px 6px;font-size:11px;border-radius:3px;background:#d1e7dd;color:#0f5132;font-weight:600;"><?php esc_html_e('Current', 'advanced-ip-blocker'); ?></span>
+                        <?php endif; ?>
+                        <br><small><?php echo esc_html($session['email']); ?></small>
+                    </td>
                     <td><?php echo esc_html($session['role']); ?></td><td><?php echo esc_html($session['ip']); ?></td>
                     <td><?php if (! empty($location_parts)) : echo esc_html(implode(', ', $location_parts)); ?><br><button class="button button-small advaipbl-btn-map" data-lat="<?php echo esc_attr($location['lat'] ?? ''); ?>" data-lon="<?php echo esc_attr($location['lon'] ?? ''); ?>"><?php esc_html_e('View Map', 'advanced-ip-blocker'); ?></button><?php else : esc_html_e('Not available', 'advanced-ip-blocker'); endif; ?></td>
                     <td><?php echo esc_html($location['isp'] ?? 'N/A'); ?></td>
-                    <td><?php echo esc_html(ADVAIPBL_Main::get_formatted_datetime(strtotime($session['last_activity']))); ?><br><small><?php echo esc_html($this->parse_user_agent($session['device'])); ?></small></td>
-                    <td><button class="button advaipbl-btn-close-user" data-user-id="<?php echo esc_attr($session['user_id']); ?>"><?php esc_html_e('Close Sessions', 'advanced-ip-blocker'); ?></button></td>
+                    <td><?php echo esc_html(ADVAIPBL_Main::get_formatted_datetime(strtotime($session['last_activity']))); ?><br><small title="<?php echo esc_attr($session['device']); ?>"><?php echo esc_html($this->parse_user_agent($session['device'])); ?></small></td>
+                    <td>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                            <?php if ($session_verifier !== '') : ?>
+                                <button class="button advaipbl-btn-close-single-session" data-user-id="<?php echo esc_attr($session_uid); ?>" data-verifier="<?php echo esc_attr($session_verifier); ?>" data-is-current="<?php echo $is_current_session ? '1' : '0'; ?>"><?php esc_html_e('Close Session', 'advanced-ip-blocker'); ?></button>
+                            <?php endif; ?>
+                            <?php if ($session_verifier === '' || $user_sessions_total > 1) : ?>
+                                <button class="button advaipbl-btn-close-user" data-user-id="<?php echo esc_attr($session_uid); ?>"><?php echo ($user_sessions_total > 1) ? esc_html__('Close All', 'advanced-ip-blocker') : esc_html__('Close Sessions', 'advanced-ip-blocker'); ?></button>
+                            <?php endif; ?>
+                        </div>
+                    </td>
                 </tr>
             <?php endforeach; endif; ?>
         </tbody>
@@ -256,22 +289,58 @@ class ADVAIPBL_User_Session_Manager
             wp_send_json_error(['message' => __('Permission denied.', 'advanced-ip-blocker')]);
         }
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-        if ($user_id > 0) {
-            $user_to_logout = get_userdata($user_id);
-            WP_Session_Tokens::get_instance($user_id)->destroy_all();
+        $verifier = isset($_POST['verifier']) ? sanitize_text_field(wp_unslash($_POST['verifier'])) : '';
 
+        if ($user_id <= 0) {
+            wp_send_json_error(['message' => __('Invalid user ID.', 'advanced-ip-blocker')]);
+        }
+
+        $user_to_logout = get_userdata($user_id);
+
+        if ($verifier !== '') {
+            if (!preg_match('/^[a-f0-9]{40,64}$/i', $verifier)) {
+                wp_send_json_error(['message' => __('Invalid session identifier.', 'advanced-ip-blocker')]);
+            }
+
+            $manager = WP_Session_Tokens::get_instance($user_id);
+            if (!($manager instanceof WP_User_Meta_Session_Tokens)) {
+                wp_send_json_error(['message' => __('Individual session termination is only supported for default WordPress session storage.', 'advanced-ip-blocker')]);
+            }
+
+            $tokens = get_user_meta($user_id, 'session_tokens', true);
+            if (!is_array($tokens) || !array_key_exists($verifier, $tokens)) {
+                wp_send_json_error(['message' => __('Session not found or already expired.', 'advanced-ip-blocker')]);
+            }
+
+            unset($tokens[$verifier]);
+            if (empty($tokens)) {
+                delete_user_meta($user_id, 'session_tokens');
+            } else {
+                update_user_meta($user_id, 'session_tokens', $tokens);
+            }
+            wp_cache_delete($user_id, 'user_meta');
             delete_transient('advaipbl_active_sessions_cache');
 
             if ($user_to_logout) {
-                $message = sprintf(/* translators: %s is a placeholder */ __('Sessions for user "%1$s" were closed by %2$s.', 'advanced-ip-blocker'), $user_to_logout->user_login, wp_get_current_user()->user_login);
+                $message = sprintf(/* translators: %1$s: target username, %2$s: admin username */ __('Single session for user "%1$s" was closed by %2$s.', 'advanced-ip-blocker'), $user_to_logout->user_login, wp_get_current_user()->user_login);
                 if (isset($this->plugin_instance)) {
                     $this->plugin_instance->log_event($message, 'warning');
                 }
             }
             wp_send_json_success();
-        } else {
-            wp_send_json_error(['message' => __('Invalid user ID.', 'advanced-ip-blocker')]);
         }
+
+        WP_Session_Tokens::get_instance($user_id)->destroy_all();
+
+        delete_transient('advaipbl_active_sessions_cache');
+
+        if ($user_to_logout) {
+            $message = sprintf(/* translators: %s is a placeholder */ __('Sessions for user "%1$s" were closed by %2$s.', 'advanced-ip-blocker'), $user_to_logout->user_login, wp_get_current_user()->user_login);
+            if (isset($this->plugin_instance)) {
+                $this->plugin_instance->log_event($message, 'warning');
+            }
+        }
+        wp_send_json_success();
     }
 
     public function ajax_close_all_user_sessions()
@@ -354,10 +423,11 @@ class ADVAIPBL_User_Session_Manager
 
             $role = implode(', ', $user->roles);
 
-            foreach ($tokens as $token_data) {
+            foreach ($tokens as $verifier => $token_data) {
                 if (isset($token_data['expiration']) && $token_data['expiration'] > time()) {
                     $sessions[] = [
                         'user_id'       => $user->ID,
+                        'verifier'      => (string) $verifier,
                         'username'      => $user->user_login,
                         'email'         => $user->user_email,
                         'role'          => $role,
@@ -432,16 +502,42 @@ class ADVAIPBL_User_Session_Manager
         if (empty($ua) || $ua === __('Unknown', 'advanced-ip-blocker')) {
             return __('Unknown', 'advanced-ip-blocker');
         }
+
         $os = __('Unknown OS', 'advanced-ip-blocker');
+        $os_map = [
+            '/iPhone/i'              => 'iPhone',
+            '/iPad/i'                => 'iPad',
+            '/Android/i'             => 'Android',
+            '/CrOS/i'                => 'ChromeOS',
+            '/Windows/i'             => 'Windows',
+            '/Macintosh|Mac OS X/i'  => 'Macintosh',
+            '/Linux/i'               => 'Linux',
+        ];
+        foreach ($os_map as $pattern => $label) {
+            if (preg_match($pattern, $ua)) {
+                $os = $label;
+                break;
+            }
+        }
+
         $browser = __('Unknown Browser', 'advanced-ip-blocker');
-        if (preg_match('/(Windows|Macintosh|Android|iPhone|iPad|Linux)/i', $ua, $matches)) {
-            $os = $matches[1];
-        }
-        if (preg_match('/(Chrome|Firefox|Safari|Edge|MSIE|Trident)/i', $ua, $matches)) {
-            $browser = $matches[1] == 'Trident' || $matches[1] == 'MSIE' ? 'IE' : $matches[1];
-        }
-        if ($browser == 'Safari' && preg_match('/Chrome/i', $ua)) {
-            $browser = 'Chrome';
+        $browser_map = [
+            '/Edg(?:A|iOS)?\//i'     => 'Edge',
+            '/Edge\//i'              => 'Edge',
+            '/(?:OPR|Opera)\//i'     => 'Opera',
+            '/SamsungBrowser\//i'    => 'Samsung Internet',
+            '/CriOS\//i'             => 'Chrome',
+            '/FxiOS\//i'             => 'Firefox',
+            '/Firefox\//i'           => 'Firefox',
+            '/Chrome\//i'            => 'Chrome',
+            '/Safari\//i'            => 'Safari',
+            '/(?:MSIE|Trident)/i'    => 'IE',
+        ];
+        foreach ($browser_map as $pattern => $label) {
+            if (preg_match($pattern, $ua)) {
+                $browser = $label;
+                break;
+            }
         }
 
         return sprintf(/* translators: %s is a placeholder */ __('%1$s on %2$s', 'advanced-ip-blocker'), $browser, $os);

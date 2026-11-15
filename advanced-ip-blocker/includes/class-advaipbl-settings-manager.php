@@ -2070,8 +2070,32 @@ class ADVAIPBL_Settings_Manager
 
                 var $textarea = $('#<?php echo esc_js($textarea_id); ?>');
                 var currentVal = $textarea.val();
-                
-                if (currentVal.indexOf(presetValue) === -1) {
+                var existingSet = {};
+                currentVal.split(/\r?\n/).forEach(function(line) {
+                    var clean = line.split('#')[0].trim().toLowerCase();
+                    if (clean) {
+                        existingSet[clean] = true;
+                    }
+                });
+
+                var presetLines = presetValue.split(/\r?\n/);
+                var commentHeader = '';
+                var linesToAdd = [];
+                presetLines.forEach(function(line) {
+                    var trimmed = line.trim();
+                    if (!trimmed) return;
+                    if (trimmed.startsWith('#')) {
+                        if (!commentHeader && currentVal.indexOf(trimmed) === -1) {
+                            commentHeader = trimmed;
+                        }
+                        return;
+                    }
+                    if (!existingSet[trimmed.toLowerCase()]) {
+                        linesToAdd.push(trimmed);
+                    }
+                });
+
+                if (linesToAdd.length > 0) {
                     var newVal = currentVal;
                     if (newVal.length > 0 && !newVal.endsWith('\n')) {
                         newVal += '\n';
@@ -2079,7 +2103,10 @@ class ADVAIPBL_Settings_Manager
                     if (newVal.length > 0 && !newVal.endsWith('\n\n')) {
                         newVal += '\n';
                     }
-                    newVal += presetValue;
+                    if (commentHeader) {
+                        newVal += commentHeader + '\n';
+                    }
+                    newVal += linesToAdd.join('\n');
                     $textarea.val(newVal);
                     
                     $(this).text('<?php echo esc_js(__('Added!', 'advanced-ip-blocker')); ?>').css('color', 'green');

@@ -40,7 +40,7 @@ jQuery(document).ready(function ($) {
 
     const ajaxHandler = function (action, data, nonceValue) {
         const postData = { action: action, nonce: nonceValue, ...data };
-        const buttonsToDisable = $('.advaipbl-btn-close-user, #advaipbl-close-all-btn, #advaipbl-close-role-btn');
+        const buttonsToDisable = $('.advaipbl-btn-close-single-session, .advaipbl-btn-close-user, #advaipbl-close-all-btn, #advaipbl-close-role-btn');
         buttonsToDisable.prop('disabled', true);
 
         $.post(ajax_obj.ajax_url, postData)
@@ -61,6 +61,20 @@ jQuery(document).ready(function ($) {
                 buttonsToDisable.prop('disabled', false);
             });
     };
+
+    $('.wrap').on('click', '.advaipbl-btn-close-single-session', function () {
+        const userId = $(this).data('user-id');
+        const verifier = $(this).data('verifier');
+        const isCurrent = String($(this).data('is-current')) === '1';
+        window.AdvaipblAdmin.showConfirmModal({
+            title: ajax_obj.title_close_single_session,
+            message: isCurrent ? ajax_obj.text_confirm_close_current_session : ajax_obj.text_confirm_close_single_session,
+            confirmText: ajax_obj.btn_close_single_session,
+            onConfirm: function () {
+                ajaxHandler('advaipbl_close_user_session', { user_id: userId, verifier: verifier }, ajax_obj.nonce_close_session);
+            }
+        });
+    });
 
     $('.wrap').on('click', '.advaipbl-btn-close-user', function () {
         const userId = $(this).data('user-id');

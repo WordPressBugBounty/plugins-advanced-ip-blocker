@@ -313,6 +313,7 @@ class ADVAIPBL_Main
         add_action('deleted_user', [$this, 'handle_deleted_admin_user'], 10, 1);
 
         add_filter('http_request_args', [$this, 'inject_loopback_token'], 10, 2);
+        add_action('set_auth_cookie', [$this, 'sync_real_ip_on_auth_cookie'], 10, 6);
 
         add_action('init', [$this, 'is_visitor_asn_whitelisted'], -1000);
         add_action('init', [$this, 'verify_known_bots'], -999);
@@ -3541,15 +3542,10 @@ class ADVAIPBL_Main
             return false;
         }
 
-        static $cf_cidrs = [
-            '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
-            '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
-            '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
-            '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
-
-            '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
-            '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'
-        ];
+        static $cf_cidrs = null;
+        if ($cf_cidrs === null) {
+            $cf_cidrs = ADVAIPBL_CDN_Manager::get_cloudflare_cidrs();
+        }
 
         foreach ($cf_cidrs as $cidr) {
             if ($this->is_ip_in_range($ip, $cidr)) {
@@ -4497,6 +4493,35 @@ class ADVAIPBL_Main
         $this->client_ip = $ip_data['visitor_ip'] ?? '0.0.0.0';
 
         return $this->client_ip;
+    }
+
+    /**
+     * Updates the newly created session token with the resolved real client IP behind Cloudflare or Trusted Proxies.
+     *
+     * @param string $auth_cookie Authentication cookie value.
+     * @param int    $expire      Grace period expiration timestamp.
+     * @param int    $expiration  Session expiration timestamp.
+     * @param int    $user_id     User ID.
+     * @param string $scheme      Authentication scheme.
+     * @param string $token       Session token.
+     */
+    public function sync_real_ip_on_auth_cookie($auth_cookie, $expire, $expiration, $user_id, $scheme, $token)
+    {
+        if (empty($user_id) || empty($token)) {
+            return;
+        }
+
+        $real_ip = $this->get_client_ip();
+        if (!$real_ip || $real_ip === '0.0.0.0' || !filter_var($real_ip, FILTER_VALIDATE_IP)) {
+            return;
+        }
+
+        $manager = WP_Session_Tokens::get_instance($user_id);
+        $session = $manager->get($token);
+        if (is_array($session) && ($session['ip'] ?? '') !== $real_ip) {
+            $session['ip'] = $real_ip;
+            $manager->update($token, $session);
+        }
     }
 
     /**
@@ -6148,7 +6173,7 @@ class ADVAIPBL_Main
             'waf_excluded_urls' => implode("\n", $default_waf_exclusions),
             'ua_excluded_urls' => '',
             'rows_per_page' => 20, 'delete_data_on_uninstall' => '0', 'show_admin_bar_menu' => '1',
-            'trusted_proxies'    => "# Cloudflare\nAS13335\nAS209242\n# Fastly\nAS54113\n# Local Nginx/Varnish Proxy\n127.0.0.1\n::1",
+            'trusted_proxies'    => ADVAIPBL_CDN_Manager::get_default_trusted_proxies(),
 
             'enable_email_notifications' => '0', 'notification_frequency' => 'disabled', 'notification_email' => '',
             'enable_push_notifications' => '0',
@@ -8119,6 +8144,9 @@ class ADVAIPBL_Main
             setcookie('advaipbl_2fa_step1_' . $user_id, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
             delete_transient($rate_limit_key);
             wp_set_auth_cookie($user->ID, isset($_POST['rememberme']));
+            if (isset($this->audit_logger)) {
+                $this->audit_logger->log_login($user->user_login, $user);
+            }
 
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
             if (isset($_POST['interim-login']) && '1' === $_POST['interim-login']) {
