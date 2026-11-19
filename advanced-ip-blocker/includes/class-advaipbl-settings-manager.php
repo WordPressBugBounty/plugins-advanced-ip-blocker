@@ -1309,7 +1309,7 @@ class ADVAIPBL_Settings_Manager
         ]);
 
         // --- INTERNAL SECURITY & FORENSICS (v8.7.1) ---
-        add_settings_section('advaipbl_internal_security_section', __('Internal Security & Forensics', 'advanced-ip-blocker'), null, $page);
+        add_settings_section('advaipbl_internal_security_section', __('Internal Security & Forensics', 'advanced-ip-blocker'), [$this, 'internal_security_section_callback'], $page);
 
         add_settings_field(
             'advaipbl_enable_audit_log',
@@ -3074,5 +3074,29 @@ class ADVAIPBL_Settings_Manager
             echo '</p>';
             echo '</div>';
         }
+    }
+
+    /**
+     * Renders a status notice in the Internal Security section when the FIM engine file is missing.
+     */
+    public function internal_security_section_callback()
+    {
+        if (null !== $this->plugin->fim_engine) {
+            return;
+        }
+        ?>
+        <div class="notice notice-warning inline" style="margin: 10px 0 15px 0; padding: 10px 15px;">
+            <p>
+                <strong><?php esc_html_e('Malware Scanner Module Paused:', 'advanced-ip-blocker'); ?></strong>
+                <?php
+                printf(
+                    /* translators: %s: relative file path */
+                    esc_html__('The file %s is currently missing (commonly quarantined as a false positive by server-side antivirus scanners). Background malware signature syncing and deep malware scanning are automatically paused to prevent errors, while basic file checksum monitoring and all firewall modules continue operating normally.', 'advanced-ip-blocker'),
+                    '<code>includes/class-advaipbl-fim-engine.php</code>'
+                );
+                ?>
+            </p>
+        </div>
+        <?php
     }
 }

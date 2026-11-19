@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Advanced IP Blocker 8.13.27\n"
+"Project-Id-Version: Advanced IP Blocker 8.13.28\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-blocker\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -9405,4 +9405,40 @@ msgstr ""
 
 #: includes/class-advaipbl-site-scanner.php:696
 msgid "Remediation:"
+msgstr ""
+
+#: includes/class-advaipbl-main.php:220
+msgid "Advanced IP Blocker:"
+msgstr ""
+
+#: includes/class-advaipbl-main.php:220
+msgid "The File Integrity Monitor (FIM) & Malware Scanner module (class-advaipbl-fim-engine.php) is unavailable—often because a server-side antivirus quarantined it as a false positive. Your firewall, WAF, and all other protection modules continue operating normally."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:4691
+msgid "FIM & Malware Scanner Module Unavailable"
+msgstr ""
+
+#. translators: %s: relative file path
+#: includes/class-advaipbl-admin-pages.php:4696
+#, php-format
+msgid "The file %s is missing from your plugin installation. This usually happens when a server-side antivirus or malware scanner (such as Imunify360, cPGuard, BitNinja, or ClamAV) mistakenly quarantines it as a false positive."
+msgstr ""
+
+#: includes/class-advaipbl-admin-pages.php:4701
+msgid "Your WAF, Rate Limiting, Geo-blocking, and all other Advanced IP Blocker modules continue protecting your site normally. If you wish to use this built-in scanner instead of or alongside your server antivirus, restore the file from your hosting quarantine and add it to your scanner whitelist."
+msgstr ""
+
+#: includes/class-advaipbl-settings-manager.php:3092
+msgid "Malware Scanner Module Paused:"
+msgstr ""
+
+#. translators: %s: relative file path
+#: includes/class-advaipbl-settings-manager.php:3097
+#, php-format
+msgid "The file %s is currently missing (commonly quarantined as a false positive by server-side antivirus scanners). Background malware signature syncing and deep malware scanning are automatically paused to prevent errors, while basic file checksum monitoring and all firewall modules continue operating normally."
+msgstr ""
+
+#: includes/class-advaipbl-main.php:6699
+msgid "Dismiss permanently"
 msgstr ""

@@ -4686,7 +4686,26 @@ $is_threat_scoring_enabled = !empty($this->plugin->options['enable_threat_scorin
         <div class="wrap advaipbl-wrap">
     <h2><?php esc_html_e('File Integrity Monitor', 'advanced-ip-blocker'); ?></h2>
     <p><?php esc_html_e('Scan your WordPress core files and plugins against their official repository checksums to detect unauthorized modifications, backdoors, or malware.', 'advanced-ip-blocker'); ?></p>
-    
+
+    <?php if (null === $this->plugin->fim_engine) : ?>
+        <div class="notice notice-warning inline" style="margin: 20px 0; padding: 15px;">
+            <p><strong><?php esc_html_e('FIM & Malware Scanner Module Unavailable', 'advanced-ip-blocker'); ?></strong></p>
+            <p>
+                <?php
+                printf(
+                    /* translators: %s: relative file path */
+                    esc_html__('The file %s is missing from your plugin installation. This usually happens when a server-side antivirus or malware scanner (such as Imunify360, cPGuard, BitNinja, or ClamAV) mistakenly quarantines it as a false positive.', 'advanced-ip-blocker'),
+                    '<code>includes/class-advaipbl-fim-engine.php</code>'
+                );
+                ?>
+            </p>
+            <p><?php esc_html_e('Your WAF, Rate Limiting, Geo-blocking, and all other Advanced IP Blocker modules continue protecting your site normally. If you wish to use this built-in scanner instead of or alongside your server antivirus, restore the file from your hosting quarantine and add it to your scanner whitelist.', 'advanced-ip-blocker'); ?></p>
+        </div>
+        </div>
+        <?php
+        return;
+    endif; ?>
+
     <?php
     $opts = $this->plugin->options;
         $fim_raw = !isset($opts['fim_enable_raw']) || !empty($opts['fim_enable_raw']);

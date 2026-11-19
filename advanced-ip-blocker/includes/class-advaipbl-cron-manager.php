@@ -233,7 +233,7 @@ class ADVAIPBL_Cron_Manager
             wp_clear_scheduled_hook('advaipbl_advanced_zeroday_version_check_event');
         }
 
-        if (!empty($this->plugin->options['enable_fim']) && '1' === $this->plugin->options['enable_fim']) {
+        if (!empty($this->plugin->options['enable_fim']) && '1' === $this->plugin->options['enable_fim'] && null !== $this->plugin->fim_engine) {
             if (!wp_next_scheduled('advaipbl_fim_signatures_sync_event')) {
                 wp_schedule_event(time() + wp_rand(0, 4 * HOUR_IN_SECONDS), 'daily', 'advaipbl_fim_signatures_sync_event');
             }

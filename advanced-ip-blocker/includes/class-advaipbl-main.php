@@ -177,7 +177,6 @@ class ADVAIPBL_Main
             'class-advaipbl-reporter-manager.php',
             'class-advaipbl-community-manager.php',
             'class-advaipbl-site-scanner.php',
-            'class-advaipbl-fim-engine.php',
             'class-advaipbl-security-headers.php',
             'class-advaipbl-audit-logger.php',
             'class-advaipbl-file-verifier.php',
@@ -211,8 +210,13 @@ class ADVAIPBL_Main
             return;
         }
 
+        $fim_engine_path = $includes_dir . 'class-advaipbl-fim-engine.php';
+        if (file_exists($fim_engine_path)) {
+            require_once $fim_engine_path;
+        }
+
         $this->site_scanner = new ADVAIPBL_Site_Scanner($this);
-        $this->fim_engine = new ADVAIPBL_FIM_Engine($this);
+        $this->fim_engine = class_exists('ADVAIPBL_FIM_Engine') ? new ADVAIPBL_FIM_Engine($this) : null;
         $this->community_manager = new ADVAIPBL_Community_Manager($this);
         $this->admin_pages = new ADVAIPBL_Admin_Pages($this);
         $this->action_handler = new ADVAIPBL_Action_Handler($this);
@@ -1739,6 +1743,10 @@ class ADVAIPBL_Main
      */
     public function sync_fim_signatures()
     {
+        if (null === $this->fim_engine) {
+            return 'FIM engine module is unavailable.';
+        }
+
         if (empty($this->options['enable_fim']) || '1' !== $this->options['enable_fim']) {
             return 'FIM is disabled.';
         }
@@ -1856,6 +1864,10 @@ class ADVAIPBL_Main
      */
     public function check_fim_signatures_version()
     {
+        if (null === $this->fim_engine) {
+            return;
+        }
+
         if (empty($this->options['enable_fim']) || '1' !== $this->options['enable_fim']) {
             return;
         }
@@ -6447,6 +6459,17 @@ class ADVAIPBL_Main
 */
     public function conditionally_remove_admin_notices()
     {
+        if (
+            isset($_GET['advaipbl_dismiss_fim_notice'], $_GET['_wpnonce']) &&
+            '1' === sanitize_text_field(wp_unslash($_GET['advaipbl_dismiss_fim_notice'])) &&
+            current_user_can('manage_options') &&
+            wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'advaipbl_dismiss_fim_notice')
+        ) {
+            update_user_meta(get_current_user_id(), 'advaipbl_dismissed_fim_missing_notice', '1');
+            wp_safe_redirect(remove_query_arg(['advaipbl_dismiss_fim_notice', '_wpnonce']));
+            exit;
+        }
+
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $current_page_slug = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
         $plugin_pages = [
@@ -6660,6 +6683,21 @@ class ADVAIPBL_Main
         }
 
         $displayed = true;
+
+        if (
+            null === $this->fim_engine &&
+            current_user_can('manage_options') &&
+            !get_user_meta(get_current_user_id(), 'advaipbl_dismissed_fim_missing_notice', true)
+        ) {
+            $dismiss_url = wp_nonce_url(
+                add_query_arg('advaipbl_dismiss_fim_notice', '1'),
+                'advaipbl_dismiss_fim_notice'
+            );
+            echo '<div class="notice notice-warning"><p><strong>' . esc_html__('Advanced IP Blocker:', 'advanced-ip-blocker') . '</strong> ';
+            echo esc_html__('The File Integrity Monitor (FIM) & Malware Scanner module (class-advaipbl-fim-engine.php) is unavailable—often because a server-side antivirus quarantined it as a false positive. Your firewall, WAF, and all other protection modules continue operating normally.', 'advanced-ip-blocker');
+            echo ' <a href="' . esc_url($dismiss_url) . '" style="margin-left: 8px;">' . esc_html__('Dismiss permanently', 'advanced-ip-blocker') . '</a>';
+            echo '</p></div>';
+        }
 
         if (get_option('advaipbl_network_degraded')) {
             echo '<div class="notice notice-warning is-dismissible"><p>';

@@ -6,7 +6,7 @@ Tags: security, firewall, waf, geoblocking, 2fa
 Requires at least: 5.9
 Tested up to: 7.1
 Tested up to ClassicPress: 2.x
-Stable tag: 8.13.27
+Stable tag: 8.13.28
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -271,10 +271,15 @@ We improved our security compliance checks. The `advaipbl-loader.php` file is a 
 
 == Upgrade Notice ==
 
-= 8.13.27 =
-Improves Active User Sessions behind Cloudflare and Trusted Proxies (real public IP, individual session termination, modern browser detection), logs successful 2FA logins in Audit Log, and updates default Trusted Proxies to official Cloudflare CIDRs.
+= 8.13.28 =
+Implements graceful degradation for the File Integrity Monitor & Malware Scanner engine (`class-advaipbl-fim-engine.php`) so servers with strict antivirus quarantine keep running WAF, Rate Limiting, Geo-blocking, and all firewall modules uninterrupted.
 
 == Changelog ==
+
+= 8.13.28 =
+* **RESILIENCE & COMPATIBILITY (FIM Graceful Degradation):** Moved `includes/class-advaipbl-fim-engine.php` from mandatory core initialization to conditional loading. If a server-side antivirus or malware scanner (such as Imunify360, cPGuard, BitNinja, or ClamAV) quarantines that file as a false positive, Advanced IP Blocker now continues operating normally (WAF, Rate Limiting, Geo-blocking, Login Protection, 2FA, and basic file checksum verification remain active) instead of halting with a initialization failure.
+* **UI & UX (Plugin-Scoped Notice & Persistent Dismiss):** Added a clear warning notice shown exclusively inside Advanced IP Blocker admin pages when `class-advaipbl-fim-engine.php` is missing—respecting third-party notice suppression while including a nonce-protected **Dismiss permanently** option stored per user. Also added dedicated inline status notices in the File Integrity Monitor dashboard and under **Settings -> Internal Security & Forensics**.
+* **PERFORMANCE (Cron & Sync Guard):** Automatically pauses and unschedules background malware signature synchronization (`advaipbl_fim_signatures_sync_event` and `advaipbl_fim_signatures_version_check_event`) whenever `ADVAIPBL_FIM_Engine` is unavailable.
 
 = 8.13.27 =
 * **BUGFIX & SECURITY (Active User Sessions / Proxy IP Resolution):** Added `sync_real_ip_on_auth_cookie()` hooked to `set_auth_cookie` to update newly created WordPress session tokens with the resolved real client IP (`get_client_ip()` via Trusted Proxies) using `WP_Session_Tokens` public APIs, preventing Cloudflare or reverse-proxy IPs from appearing in Active User Sessions even on servers without Nginx `real_ip` configured.

@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/advanced-ip-"
 "blocker\n"
 "POT-Creation-Date: 2026-11-14T08:49:03+01:00\n"
-"PO-Revision-Date: 2026-11-15 09:30+0100\n"
+"PO-Revision-Date: 2026-11-19 09:07+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es\n"
@@ -11148,6 +11148,80 @@ msgstr "No hay detalles de la corrección disponibles."
 #: includes/class-advaipbl-site-scanner.php:696
 msgid "Remediation:"
 msgstr "Remediación:"
+
+#: includes/class-advaipbl-main.php:220
+msgid "Advanced IP Blocker:"
+msgstr "Advanced IP Blocker:"
+
+#: includes/class-advaipbl-main.php:220
+msgid ""
+"The File Integrity Monitor (FIM) & Malware Scanner module (class-advaipbl-"
+"fim-engine.php) is unavailable—often because a server-side antivirus "
+"quarantined it as a false positive. Your firewall, WAF, and all other "
+"protection modules continue operating normally."
+msgstr ""
+"El módulo de monitorización de la integridad de archivos (FIM) y análisis de "
+"malware (class-advaipbl-fim-engine.php) no está disponible; a menudo, esto "
+"se debe a que un antivirus en el servidor lo ha puesto en cuarentena al "
+"considerarlo un falso positivo. El cortafuegos (firewall), el WAF y el resto "
+"de los módulos de protección siguen funcionando con normalidad."
+
+#: includes/class-advaipbl-admin-pages.php:4691
+msgid "FIM & Malware Scanner Module Unavailable"
+msgstr "Módulo de FIM y escáner de malware no disponible"
+
+#. translators: %s: relative file path
+#: includes/class-advaipbl-admin-pages.php:4696
+#, php-format
+msgid ""
+"The file %s is missing from your plugin installation. This usually happens "
+"when a server-side antivirus or malware scanner (such as Imunify360, "
+"cPGuard, BitNinja, or ClamAV) mistakenly quarantines it as a false positive."
+msgstr ""
+"El archivo %s no se encuentra en la instalación de tu plugin. Esto suele "
+"ocurrir cuando un antivirus o un analizador de malware en el servidor (como "
+"Imunify360, cPGuard, BitNinja o ClamAV) lo pone en cuarentena por error, al "
+"considerarlo un falso positivo."
+
+#: includes/class-advaipbl-admin-pages.php:4701
+msgid ""
+"Your WAF, Rate Limiting, Geo-blocking, and all other Advanced IP Blocker "
+"modules continue protecting your site normally. If you wish to use this "
+"built-in scanner instead of or alongside your server antivirus, restore the "
+"file from your hosting quarantine and add it to your scanner whitelist."
+msgstr ""
+"Tu WAF, el control de tasa de peticiones (Rate Limiting), el bloqueo "
+"geográfico (Geo-blocking) y el resto de los módulos avanzados de bloqueo de "
+"IP siguen protegiendo tu sitio con normalidad. Si deseas utilizar este "
+"escáner integrado ya sea en lugar de tu antivirus de servidor o junto a él, "
+"restaura el archivo desde la cuarentena de tu alojamiento (hosting) y "
+"añádelo a la lista blanca del escáner."
+
+#: includes/class-advaipbl-settings-manager.php:3092
+msgid "Malware Scanner Module Paused:"
+msgstr "Módulo de análisis de malware en pausa:"
+
+#. translators: %s: relative file path
+#: includes/class-advaipbl-settings-manager.php:3097
+#, php-format
+msgid ""
+"The file %s is currently missing (commonly quarantined as a false positive "
+"by server-side antivirus scanners). Background malware signature syncing and "
+"deep malware scanning are automatically paused to prevent errors, while "
+"basic file checksum monitoring and all firewall modules continue operating "
+"normally."
+msgstr ""
+"El archivo %s no se encuentra disponible en este momento (a menudo es puesto "
+"en cuarentena como un falso positivo por los sistemas antivirus del "
+"servidor). La sincronización en segundo plano de firmas de malware y el "
+"análisis exhaustivo en busca de malware se pausan automáticamente para "
+"evitar errores, mientras que la supervisión básica de sumas de comprobación "
+"(checksums) de archivos y todos los módulos del cortafuegos siguen "
+"funcionando con normalidad."
+
+#: includes/class-advaipbl-main.php:6699
+msgid "Dismiss permanently"
+msgstr "Descartar permanentemente"
 
 #~ msgid "Your PHP version is obsolete and insecure. Update immediately."
 #~ msgstr ""
